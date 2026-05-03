@@ -1,0 +1,320 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum Role {
+  CLIENT
+  INFLUENCER
+  PROVIDER
+  ADMIN
+}
+
+enum Category {
+  COIFFURE
+  ESTHETIQUE
+  ONGLERIE
+  MASSAGE
+  PARFUMERIE
+  AUTRE
+}
+
+enum BookingStatus {
+  PENDING
+  CONFIRMED
+  COMPLETED
+  CANCELLED
+}
+
+enum CommissionStatus {
+  PENDING
+  PAID
+}
+
+enum PaymentStatus {
+  UNPAID
+  PAID
+  REFUNDED
+}
+
+enum PayoutStatus {
+  PENDING
+  PROCESSING
+  PAID
+  FAILED
+}
+
+enum CollabStatus {
+  PENDING
+  ACCEPTED
+  REJECTED
+}
+
+model User {
+  id            String    @id @default(cuid())
+  email         String    @unique
+  phone         String?
+  passwordHash  String?
+  role          Role      @default(CLIENT)
+  name          String?
+  avatar        String?
+  emailVerified      DateTime?
+  emailVerifyToken   String?   @unique
+  emailVerifyExpires DateTime?
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime  @updatedAt
+
+  providerProfile   ProviderProfile?
+  influencerProfile InfluencerProfile?
+  bookings          Booking[]
+  reviews           Review[]
+  accounts          Account[]
+  sessions          Session[]
+}
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String?
+  access_token      String?
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String?
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+}
+
+model ProviderProfile {
+  id           String   @id @default(cuid())
+  userId       String   @unique
+  salonName    String
+  category     Category
+  description  String?
+  address      String?
+  city         String?
+  lat          Float?
+  lng          Float?
+  phone        String?
+  photos       String[]
+  openingHours Json?
+  verified     Boolean  @default(false)
+  createdAt    DateTime @default(now())
+
+  user                  User                   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  offers                Offer[]
+  collaborationRequests CollaborationRequest[]
+}
+
+model InfluencerProfile {
+  id              String   @id @default(cuid())
+  userId          String   @unique
+  instagramHandle String
+  followersCount  Int      @default(0)
+  category        String?
+  bio             String?
+  verified        Boolean  @default(false)
+  totalEarnings   Decimal  @default(0) @db.Decimal(10, 3)
+  pendingBalance  Decimal  @default(0) @db.Decimal(10, 3)
+  createdAt       DateTime @default(now())
+
+  user                  User                   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  trackingLinks         TrackingLink[]
+  payouts               Payout[]
+  collaborationRequests CollaborationRequest[]
+}
+
+model Offer {
+  id              String    @id @default(cuid())
+  providerId      String
+  title           String
+  description     String?
+  originalPrice   Decimal   @db.Decimal(10, 3)
+  discountPrice   Decimal   @db.Decimal(10, 3)
+  category        Category
+  photos          String[]
+  durationMinutes Int       @default(60)
+  active          Boolean   @default(true)
+  createdAt       DateTime  @default(now())
+
+  provider              ProviderProfile             @relation(fields: [providerId], references: [id], onDelete: Cascade)
+  trackingLinks         TrackingLink[]
+  bookingItems          BookingItem[]
+  reviews               Review[]
+  slots                 TimeSlot[]
+  collaborationOffers   CollaborationOffer[]
+}
+
+model TimeSlot {
+  id          String   @id @default(cuid())
+  offerId     String
+  startTime   DateTime
+  endTime     DateTime
+  capacity    Int      @default(1)
+  bookedCount Int      @default(0)
+  createdAt   DateTime @default(now())
+
+  offer        Offer         @relation(fields: [offerId], references: [id], onDelete: Cascade)
+  bookingItems BookingItem[]
+
+  @@index([offerId, startTime])
+}
+
+model TrackingLink {
+  id               String   @id @default(cuid())
+  influencerId     String
+  offerId          String
+  token            String   @unique
+  clicksCount      Int      @default(0)
+  conversionsCount Int      @default(0)
+  createdAt        DateTime @default(now())
+
+  influencer         InfluencerProfile   @relation(fields: [influencerId], references: [id], onDelete: Cascade)
+  offer              Offer               @relation(fields: [offerId], references: [id], onDelete: Cascade)
+  clicks             Click[]
+  collaborationOffer CollaborationOffer?
+}
+
+model Click {
+  id             String   @id @default(cuid())
+  trackingLinkId String
+  clientIp       String?
+  userAgent      String?
+  referrer       String?
+  clickedAt      DateTime @default(now())
+  converted      Boolean  @default(false)
+  bookingId      String?  @unique
+
+  trackingLink TrackingLink @relation(fields: [trackingLinkId], references: [id], onDelete: Cascade)
+  booking      Booking?     @relation(fields: [bookingId], references: [id])
+}
+
+model Booking {
+  id            String        @id @default(cuid())
+  clientId      String
+  status        BookingStatus @default(PENDING)
+  paymentStatus PaymentStatus @default(UNPAID)
+  totalPrice    Decimal       @db.Decimal(10, 3)
+  notes         String?
+  qrCode        String?       @unique
+  qrVerified    Boolean       @default(false)
+  qrVerifiedAt  DateTime?
+  paidAt        DateTime?
+  createdAt     DateTime      @default(now())
+
+  client     User          @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  items      BookingItem[]
+  click      Click?
+  commission Commission?
+  review     Review?
+}
+
+model BookingItem {
+  id         String  @id @default(cuid())
+  bookingId  String
+  offerId    String
+  slotId     String
+  unitPrice  Decimal @db.Decimal(10, 3)
+
+  booking Booking  @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+  offer   Offer    @relation(fields: [offerId], references: [id], onDelete: Cascade)
+  slot    TimeSlot @relation(fields: [slotId], references: [id], onDelete: Restrict)
+
+  @@index([bookingId])
+}
+
+model Commission {
+  id               String           @id @default(cuid())
+  bookingId        String           @unique
+  providerAmount   Decimal          @db.Decimal(10, 3)
+  influencerAmount Decimal?         @db.Decimal(10, 3)
+  platformAmount   Decimal          @db.Decimal(10, 3)
+  status           CommissionStatus @default(PENDING)
+  createdAt        DateTime         @default(now())
+
+  booking Booking @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+}
+
+model Payout {
+  id           String       @id @default(cuid())
+  influencerId String
+  amount       Decimal      @db.Decimal(10, 3)
+  status       PayoutStatus @default(PENDING)
+  paidAt       DateTime?
+  createdAt    DateTime     @default(now())
+
+  influencer InfluencerProfile @relation(fields: [influencerId], references: [id], onDelete: Cascade)
+}
+
+model Review {
+  id        String   @id @default(cuid())
+  rating    Int
+  comment   String?
+  clientId  String
+  offerId   String
+  bookingId String   @unique
+  createdAt DateTime @default(now())
+
+  client  User    @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  offer   Offer   @relation(fields: [offerId], references: [id], onDelete: Cascade)
+  booking Booking @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+}
+
+model CollaborationRequest {
+  id             String       @id @default(cuid())
+  providerId     String
+  influencerId   String
+  commissionPct  Decimal      @db.Decimal(5, 2)
+  durationDays   Int
+  message        String?
+  status         CollabStatus @default(PENDING)
+  createdAt      DateTime     @default(now())
+  respondedAt    DateTime?
+
+  provider     ProviderProfile      @relation(fields: [providerId], references: [id], onDelete: Cascade)
+  influencer   InfluencerProfile    @relation(fields: [influencerId], references: [id], onDelete: Cascade)
+  offers       CollaborationOffer[]
+
+  @@index([providerId, status])
+  @@index([influencerId, status])
+}
+
+model CollaborationOffer {
+  id             String  @id @default(cuid())
+  collabId       String
+  offerId        String
+  trackingLinkId String? @unique
+
+  collab       CollaborationRequest @relation(fields: [collabId], references: [id], onDelete: Cascade)
+  offer        Offer                @relation(fields: [offerId], references: [id], onDelete: Cascade)
+  trackingLink TrackingLink?        @relation(fields: [trackingLinkId], references: [id], onDelete: SetNull)
+
+  @@unique([collabId, offerId])
+  @@index([offerId])
+}

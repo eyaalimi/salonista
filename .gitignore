@@ -39,3 +39,9 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+/src/generated/prisma
+
+# User uploads (kept on the server, not in git)
+/public/uploads/*
+!/public/uploads/.gitkeep
