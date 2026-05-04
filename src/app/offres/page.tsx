@@ -137,7 +137,7 @@ export default async function OffresPage({
               >
                 <div className="relative aspect-[4/5] overflow-hidden bg-gradient-to-br from-brand-nude to-brand-peach flex items-center justify-center">
                   {offer.photos.length > 0 ? (
-                    <Image src={offer.photos[0]} alt={offer.title} fill className="object-cover group-hover:scale-105 transition-transform duration-[1.2s]" />
+                    <Image src={offer.photos[0]} alt={offer.title} fill sizes="(max-width: 768px) 100vw, (max-width: 1024px) 50vw, 33vw" className="object-cover group-hover:scale-105 transition-transform duration-[1.2s]" />
                   ) : (
                     <span className="text-6xl opacity-30 group-hover:scale-110 transition-transform duration-[1.2s]">
                       💇‍♀️
