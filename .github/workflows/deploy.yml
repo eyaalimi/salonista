@@ -20,4 +20,4 @@ jobs:
           script: |
             set -e
             cd /home/ubuntu/salonista
-            ./scripts/deploy/deploy.sh
+            bash ./scripts/deploy/deploy.sh
