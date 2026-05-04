@@ -20,4 +20,8 @@ jobs:
           script: |
             set -e
             cd /home/ubuntu/salonista
+            # Pull the latest deploy.sh BEFORE running it, so we never execute
+            # a stale copy whose body changes mid-run when the script self-updates.
+            git fetch --all --prune
+            git reset --hard origin/main
             bash ./scripts/deploy/deploy.sh
