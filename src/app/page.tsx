@@ -68,71 +68,83 @@ export default async function Home() {
     <div className="min-h-screen bg-brand-cream">
       <HomeNav />
 
-      {/* HERO — full-bleed, minimal copy, instant search */}
-      <section className="relative h-[90vh] min-h-[600px] overflow-hidden">
-        <Image
-          src="/uploads/hero-beauty.jpg"
-          alt=""
-          fill
-          sizes="100vw"
-          className="object-cover"
-          priority
-        />
-        <div className="absolute inset-0 bg-gradient-to-b from-brand-bordeaux/30 via-brand-bordeaux/20 to-brand-bordeaux/70" />
+      {/* HERO — split, bounded image, search on the left */}
+      <section className="bg-brand-sand pt-20 md:pt-24">
+        <div className="max-w-7xl mx-auto px-6 md:px-12 grid grid-cols-1 lg:grid-cols-2 gap-10 lg:gap-16 items-center">
+          {/* Left: copy + search */}
+          <div className="py-12 lg:py-20">
+            <h1 className="luxury-heading text-4xl md:text-6xl lg:text-7xl text-brand-ink mb-3 luxury-slide-up">
+              Casse la routine.
+            </h1>
+            <h2 className="luxury-heading text-4xl md:text-6xl lg:text-7xl text-brand-ink mb-8 luxury-slide-up delay-200">
+              Réserve <span className="italic text-brand-gold">ton moment.</span>
+            </h2>
 
-        <div className="relative h-full max-w-5xl mx-auto px-6 md:px-12 flex flex-col items-center justify-center text-center pt-16">
-          <p className="text-[10px] md:text-xs tracking-[0.3em] uppercase text-white/80 mb-6 luxury-slide-up">
-            Salonista · Tunisie
-          </p>
-          <h1 className="luxury-heading text-5xl md:text-7xl lg:text-8xl text-white mb-4 luxury-slide-up delay-200">
-            Réservez votre
-            <br />
-            <span className="italic text-brand-gold-light">moment.</span>
-          </h1>
+            <p className="text-base text-brand-ink-soft mb-8 max-w-md luxury-slide-up delay-400">
+              Coiffure, esthétique, onglerie, massage — partout en Tunisie.
+            </p>
 
-          <form
-            action="/offres"
-            method="GET"
-            className="w-full max-w-xl mt-10 luxury-slide-up delay-400"
-          >
-            <div className="flex bg-white/95 backdrop-blur-md shadow-2xl">
-              <input
-                type="text"
-                name="q"
-                placeholder="Coiffure, manucure, massage…"
-                className="flex-1 px-6 py-5 text-sm text-brand-bordeaux placeholder:text-brand-bordeaux/40 bg-transparent focus:outline-none"
-              />
+            <form action="/offres" method="GET" className="space-y-3 max-w-md luxury-slide-up delay-500">
+              <div className="relative">
+                <svg className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-brand-ink-soft" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                </svg>
+                <input
+                  type="text"
+                  name="q"
+                  placeholder="Rechercher des soins / salons"
+                  className="w-full pl-12 pr-5 py-4 text-sm text-brand-ink placeholder:text-brand-ink-soft/60 bg-white border border-brand-line rounded-md focus:outline-none focus:border-brand-gold transition-colors"
+                />
+              </div>
+
+              <div className="relative">
+                <svg className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-brand-ink-soft" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M17.657 16.657L13.414 20.9a2 2 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                </svg>
+                <input
+                  type="text"
+                  name="city"
+                  placeholder="Ville ou quartier"
+                  className="w-full pl-12 pr-5 py-4 text-sm text-brand-ink placeholder:text-brand-ink-soft/60 bg-white border border-brand-line rounded-md focus:outline-none focus:border-brand-gold transition-colors"
+                />
+              </div>
+
               <button
                 type="submit"
-                className="px-8 py-5 bg-brand-bordeaux text-white hover:bg-brand-gold transition-colors duration-500"
-                aria-label="Rechercher"
+                className="w-full px-6 py-4 text-sm font-medium tracking-wide bg-brand-ink text-white hover:bg-brand-gold transition-colors duration-300 rounded-md"
               >
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                </svg>
+                Je recherche
               </button>
-            </div>
-          </form>
+            </form>
 
-          {/* Quick category chips */}
-          {categoryData.length > 0 && (
-            <div className="flex gap-2 md:gap-3 mt-6 flex-wrap justify-center luxury-slide-up delay-600">
-              {categoryData.slice(0, 5).map((cat) => (
-                <Link
-                  key={cat.key}
-                  href={`/offres?category=${cat.key}`}
-                  className="px-4 md:px-5 py-2 text-[11px] md:text-xs tracking-wider uppercase bg-white/15 backdrop-blur-md border border-white/30 text-white hover:bg-white hover:text-brand-bordeaux transition-all duration-500"
-                >
-                  {categoryEmoji[cat.key]} {cat.label}
-                </Link>
-              ))}
-            </div>
-          )}
-        </div>
+            {/* Quick category chips */}
+            {categoryData.length > 0 && (
+              <div className="flex gap-2 mt-8 flex-wrap luxury-slide-up delay-600">
+                {categoryData.slice(0, 5).map((cat) => (
+                  <Link
+                    key={cat.key}
+                    href={`/offres?category=${cat.key}`}
+                    className="px-4 py-2 text-xs bg-white border border-brand-line text-brand-ink-soft hover:border-brand-gold hover:text-brand-ink transition-all duration-300 rounded-full"
+                  >
+                    {categoryEmoji[cat.key]} {cat.label}
+                  </Link>
+                ))}
+              </div>
+            )}
+          </div>
 
-        {/* Scroll cue */}
-        <div className="absolute bottom-8 left-1/2 -translate-x-1/2 text-white/70 text-[10px] tracking-[0.3em] uppercase animate-pulse">
-          Découvrir ↓
+          {/* Right: bounded hero image */}
+          <div className="relative h-[420px] md:h-[520px] lg:h-[620px] order-first lg:order-last -mx-6 md:-mx-12 lg:mx-0">
+            <Image
+              src="/uploads/hero-beauty.jpg"
+              alt=""
+              fill
+              sizes="(max-width: 1024px) 100vw, 50vw"
+              className="object-cover"
+              priority
+            />
+          </div>
         </div>
       </section>
 
