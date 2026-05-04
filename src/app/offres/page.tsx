@@ -3,13 +3,14 @@ import { prisma } from "@/lib/prisma";
 import Link from "next/link";
 import Image from "next/image";
 import { NavAccount } from "@/components/nav-account";
+import { Logo } from "@/components/logo";
 
 export const metadata: Metadata = {
-  title: "Offres Beauté en Tunisie",
+  title: "Offres",
   description:
-    "Découvrez toutes les offres beauté en Tunisie : coiffure, esthétique, onglerie, massage. Jusqu'à -70% dans les meilleurs salons.",
+    "Toutes les offres beauté en Tunisie : coiffure, esthétique, onglerie, massage. Jusqu'à -70% dans les meilleurs salons.",
   openGraph: {
-    title: "Offres Beauté — Beauté.tn",
+    title: "Offres — Salonista",
     description: "Les meilleures offres beauté en Tunisie. Réservez en ligne.",
   },
 };
@@ -56,9 +57,7 @@ export default async function OffresPage({
       {/* Nav */}
       <nav className="bg-white/80 backdrop-blur-md border-b border-brand-gold/15 sticky top-0 z-50">
         <div className="max-w-7xl mx-auto px-6 md:px-12 flex items-center justify-between h-16">
-          <Link href="/" className="luxury-heading text-xl text-brand-bordeaux">
-            Beauté<span className="text-brand-gold">.</span>tn
-          </Link>
+          <Logo className="text-xl" />
           <NavAccount />
         </div>
       </nav>

@@ -34,7 +34,7 @@ export function NavAccount() {
     return (
       <Link
         href="/login"
-        className="text-xs tracking-[0.2em] uppercase text-brand-bordeaux/60 hover:text-brand-gold transition-colors duration-500"
+        className="text-xs tracking-[0.2em] uppercase text-brand-ink/60 hover:text-brand-gold transition-colors duration-500"
       >
         Connexion
       </Link>
@@ -47,13 +47,13 @@ export function NavAccount() {
         onClick={() => setMenuOpen(!menuOpen)}
         className="flex items-center gap-3 px-4 py-2 border border-brand-gold/20 hover:border-brand-gold transition-colors duration-500"
       >
-        <span className="w-7 h-7 bg-brand-bordeaux text-white flex items-center justify-center text-xs font-medium">
+        <span className="w-7 h-7 bg-brand-ink text-white flex items-center justify-center text-xs font-medium">
           {session.user.name?.[0]?.toUpperCase() || session.user.email?.[0]?.toUpperCase() || "?"}
         </span>
-        <span className="text-xs tracking-[0.15em] uppercase text-brand-bordeaux hidden sm:inline">
+        <span className="text-xs tracking-[0.15em] uppercase text-brand-ink hidden sm:inline">
           {session.user.name?.split(" ")[0] || "Compte"}
         </span>
-        <svg className={`w-3 h-3 text-brand-bordeaux/60 transition-transform duration-300 ${menuOpen ? "rotate-180" : ""}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <svg className={`w-3 h-3 text-brand-ink/60 transition-transform duration-300 ${menuOpen ? "rotate-180" : ""}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
         </svg>
       </button>
@@ -61,12 +61,12 @@ export function NavAccount() {
       {menuOpen && (
         <div className="absolute right-0 mt-2 w-56 bg-white border border-brand-gold/20 shadow-lg">
           <div className="px-4 py-3 border-b border-brand-gold/15">
-            <p className="text-xs text-brand-bordeaux/50 truncate">{session.user.email}</p>
+            <p className="text-xs text-brand-ink/50 truncate">{session.user.email}</p>
           </div>
           <Link
             href={dashboardByRole[session.user.role]?.href || "/"}
             onClick={() => setMenuOpen(false)}
-            className="block px-4 py-3 text-xs tracking-[0.15em] uppercase text-brand-bordeaux hover:bg-brand-cream transition-colors"
+            className="block px-4 py-3 text-xs tracking-[0.15em] uppercase text-brand-ink hover:bg-brand-cream transition-colors"
           >
             {dashboardByRole[session.user.role]?.label || "Mon espace"}
           </Link>
@@ -75,7 +75,7 @@ export function NavAccount() {
               setMenuOpen(false);
               signOut({ callbackUrl: "/" });
             }}
-            className="w-full text-left px-4 py-3 text-xs tracking-[0.15em] uppercase text-brand-bordeaux/70 hover:bg-brand-cream transition-colors border-t border-brand-gold/15"
+            className="w-full text-left px-4 py-3 text-xs tracking-[0.15em] uppercase text-brand-ink/70 hover:bg-brand-cream transition-colors border-t border-brand-gold/15"
           >
             Se déconnecter
           </button>

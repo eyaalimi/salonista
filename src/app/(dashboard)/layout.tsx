@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useSession, signOut } from "next-auth/react";
 import { useState } from "react";
+import { Logo } from "@/components/logo";
 
 const navItems: Record<string, { label: string; href: string }[]> = {
   PROVIDER: [
@@ -44,9 +45,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       {/* Sidebar */}
       <aside className="hidden md:flex md:w-64 flex-col bg-white border-r border-brand-gold/15">
         <div className="p-6 border-b border-brand-gold/10">
-          <Link href="/" className="luxury-heading text-xl tracking-wide text-brand-bordeaux">
-            Beauté<span className="text-brand-gold">.</span>tn
-          </Link>
+          <Logo className="text-xl" />
         </div>
         <nav className="flex-1 px-4 py-6 space-y-1">
           {items.map((item) => {
@@ -88,9 +87,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       {/* Mobile header */}
       <div className="flex-1 flex flex-col">
         <header className="md:hidden flex items-center justify-between p-4 bg-white border-b border-brand-gold/15">
-          <Link href="/" className="luxury-heading text-lg text-brand-bordeaux">
-            Beauté<span className="text-brand-gold">.</span>tn
-          </Link>
+          <Logo className="text-lg" />
           <button
             onClick={() => setMobileOpen(!mobileOpen)}
             className="p-2 text-brand-bordeaux"

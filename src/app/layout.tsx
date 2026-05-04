@@ -16,32 +16,32 @@ const playfair = Playfair_Display({
 });
 
 export const metadata: Metadata = {
-  metadataBase: new URL(process.env.NEXTAUTH_URL || "https://beaute.tn"),
+  metadataBase: new URL(process.env.NEXTAUTH_URL || "https://salonista.tn"),
   title: {
-    default: "Beauté.tn — Marketplace Beauté N°1 en Tunisie",
-    template: "%s | Beauté.tn",
+    default: "Salonista",
+    template: "%s — Salonista",
   },
   description:
-    "Découvrez les meilleures offres beauté en Tunisie : coiffure, esthétique, onglerie, massage. Réservez en ligne, payez en toute sécurité et présentez votre QR code au salon.",
+    "Réservez vos soins beauté en ligne. Coiffure, esthétique, onglerie, massage — partout en Tunisie.",
   keywords: [
-    "beauté tunisie", "salon de beauté", "coiffure tunis", "esthétique tunisie",
-    "offres beauté", "réservation salon", "marketplace beauté", "beaute.tn",
-    "onglerie", "massage tunisie", "soins beauté", "influenceuse beauté tunisie",
+    "salonista", "beauté tunisie", "salon de beauté", "coiffure tunis",
+    "esthétique tunisie", "offres beauté", "réservation salon", "onglerie",
+    "massage tunisie", "soins beauté",
   ],
-  authors: [{ name: "Beauté.tn" }],
+  authors: [{ name: "Salonista" }],
   openGraph: {
     type: "website",
     locale: "fr_TN",
-    siteName: "Beauté.tn",
-    title: "Beauté.tn — Marketplace Beauté N°1 en Tunisie",
+    siteName: "Salonista",
+    title: "Salonista",
     description:
-      "Les meilleures offres beauté en Tunisie, sélectionnées par vos influenceuses préférées. Réservez en un clic.",
+      "Réservez vos soins beauté en ligne, partout en Tunisie.",
   },
   twitter: {
     card: "summary_large_image",
-    title: "Beauté.tn — Marketplace Beauté N°1 en Tunisie",
+    title: "Salonista",
     description:
-      "Les meilleures offres beauté en Tunisie. Coiffure, esthétique, onglerie, massage. Réservez en ligne.",
+      "Réservez vos soins beauté en ligne, partout en Tunisie.",
   },
   robots: {
     index: true,
@@ -56,7 +56,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="fr" className={`${geistSans.variable} ${playfair.variable} h-full antialiased`}>
-      <body className="min-h-full flex flex-col bg-brand-cream text-brand-bordeaux">
+      <body className="min-h-full flex flex-col bg-brand-cream text-brand-ink">
         <Providers>{children}</Providers>
       </body>
     </html>

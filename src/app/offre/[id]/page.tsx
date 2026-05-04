@@ -24,9 +24,9 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
   return {
     title: `${offer.title} — ${offer.provider.salonName}`,
-    description: `${offer.title} à ${Number(offer.discountPrice).toFixed(0)} DT au lieu de ${Number(offer.originalPrice).toFixed(0)} DT (-${discount}%) chez ${offer.provider.salonName}${offer.provider.city ? `, ${offer.provider.city}` : ""}. Réservez en ligne sur Beauté.tn.`,
+    description: `${offer.title} à ${Number(offer.discountPrice).toFixed(0)} DT au lieu de ${Number(offer.originalPrice).toFixed(0)} DT (-${discount}%) chez ${offer.provider.salonName}${offer.provider.city ? `, ${offer.provider.city}` : ""}. Réservez en ligne sur Salonista.`,
     openGraph: {
-      title: `${offer.title} — ${offer.provider.salonName} | Beauté.tn`,
+      title: `${offer.title} — ${offer.provider.salonName} | Salonista`,
       description: `${offer.title} à -${discount}% chez ${offer.provider.salonName}. Réservez maintenant.`,
       type: "website",
     },

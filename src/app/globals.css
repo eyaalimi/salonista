@@ -7,32 +7,41 @@
   --font-mono: var(--font-geist-mono);
   --font-heading: var(--font-playfair);
 
-  --color-brand-rose: #E8829A;
-  --color-brand-rose-light: #F2B8C6;
-  --color-brand-nude: #EDD5C0;
-  --color-brand-peach: #F7EDE6;
-  --color-brand-bordeaux: #5A3E44;
-  --color-brand-gold: #C9A96E;
-  --color-brand-gold-light: #E8D5A8;
-  --color-brand-cream: #FBF8F4;
+  /* Salonista palette — modern, clean, warm */
+  --color-brand-ink: #1F1A1C;          /* primary text — soft charcoal */
+  --color-brand-ink-soft: #4A4244;     /* secondary text */
+  --color-brand-cream: #FBFAF7;        /* page background — warm white */
+  --color-brand-sand: #F4EFE8;         /* secondary background */
+  --color-brand-gold: #D4A574;         /* accent — champagne gold */
+  --color-brand-gold-soft: #E8D2B5;    /* light gold */
+  --color-brand-line: #E8E2D7;         /* dividers / borders */
+
+  /* Legacy aliases — keep so old pages still compile until migrated */
+  --color-brand-bordeaux: #1F1A1C;
+  --color-brand-cream-legacy: #FBFAF7;
+  --color-brand-rose: #D4A574;
+  --color-brand-rose-light: #E8D2B5;
+  --color-brand-nude: #F4EFE8;
+  --color-brand-peach: #F4EFE8;
+  --color-brand-gold-light: #E8D2B5;
 }
 
 :root {
-  --background: #FBF8F4;
-  --foreground: #5A3E44;
-  --primary: #C9A96E;
-  --primary-foreground: #ffffff;
-  --secondary: #F7EDE6;
-  --secondary-foreground: #5A3E44;
-  --accent: #E8829A;
-  --accent-foreground: #ffffff;
-  --muted: #EDD5C0;
-  --muted-foreground: #816068;
-  --border: #E8D5A8;
-  --ring: #C9A96E;
+  --background: #FBFAF7;
+  --foreground: #1F1A1C;
+  --primary: #1F1A1C;
+  --primary-foreground: #FBFAF7;
+  --secondary: #F4EFE8;
+  --secondary-foreground: #1F1A1C;
+  --accent: #D4A574;
+  --accent-foreground: #FBFAF7;
+  --muted: #F4EFE8;
+  --muted-foreground: #4A4244;
+  --border: #E8E2D7;
+  --ring: #D4A574;
   --card: #ffffff;
-  --card-foreground: #5A3E44;
-  --destructive: #ef4444;
+  --card-foreground: #1F1A1C;
+  --destructive: #D4574B;
   --destructive-foreground: #ffffff;
 }
 
@@ -40,59 +49,69 @@ body {
   background: var(--background);
   color: var(--foreground);
   font-family: var(--font-sans), Arial, Helvetica, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
-/* Luxury utility classes */
+/* Display heading — Playfair, tight, italic-friendly */
 .luxury-heading {
   font-family: var(--font-heading), Georgia, serif;
-  letter-spacing: -0.01em;
-  line-height: 1.1;
+  letter-spacing: -0.015em;
+  line-height: 1.05;
+  font-weight: 500;
 }
 
+/* Subtle uppercase label */
 .luxury-badge {
   display: inline-block;
-  font-size: 0.65rem;
-  letter-spacing: 0.2em;
+  font-size: 0.7rem;
+  letter-spacing: 0.18em;
   text-transform: uppercase;
-  padding: 0.4rem 1rem;
+  padding: 0.35rem 0.9rem;
   border: 1px solid var(--border);
   color: var(--muted-foreground);
+  background: rgba(255, 255, 255, 0.5);
+  backdrop-filter: blur(4px);
 }
 
 .luxury-divider {
-  width: 3rem;
+  width: 2.5rem;
   height: 1px;
-  background: var(--primary);
+  background: var(--accent);
   margin-left: auto;
   margin-right: auto;
 }
 
+/* Cards — soft, modern, no heavy shadows by default */
 .luxury-card {
   background: white;
-  border: 1px solid rgba(201, 169, 110, 0.15);
-  transition: all 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+  border: 1px solid var(--border);
+  transition: transform 0.5s cubic-bezier(0.4, 0, 0.2, 1),
+              box-shadow 0.5s cubic-bezier(0.4, 0, 0.2, 1),
+              border-color 0.5s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .luxury-card:hover {
-  border-color: rgba(201, 169, 110, 0.4);
-  box-shadow: 0 20px 60px -15px rgba(90, 62, 68, 0.1);
-  transform: translateY(-2px);
+  border-color: var(--accent);
+  box-shadow: 0 12px 40px -12px rgba(31, 26, 28, 0.12);
+  transform: translateY(-3px);
 }
 
 .luxury-slide-up {
-  animation: slideUp 0.8s ease-out forwards;
+  animation: slideUp 0.7s ease-out forwards;
   opacity: 0;
 }
 
-.delay-200 { animation-delay: 0.2s; }
-.delay-400 { animation-delay: 0.4s; }
-.delay-600 { animation-delay: 0.6s; }
-.delay-700 { animation-delay: 0.7s; }
+.delay-200 { animation-delay: 0.15s; }
+.delay-400 { animation-delay: 0.3s; }
+.delay-500 { animation-delay: 0.4s; }
+.delay-600 { animation-delay: 0.5s; }
+.delay-700 { animation-delay: 0.6s; }
 
 @keyframes slideUp {
   from {
     opacity: 0;
-    transform: translateY(30px);
+    transform: translateY(24px);
   }
   to {
     opacity: 1;
@@ -106,18 +125,17 @@ body {
 }
 
 .luxury-fade-in {
-  animation: fadeIn 0.5s ease-out;
+  animation: fadeIn 0.4s ease-out;
 }
 
-/* Smooth image reveal */
 .luxury-image-reveal {
-  animation: imageReveal 1.5s ease-out;
+  animation: imageReveal 1.2s ease-out;
 }
 
 @keyframes imageReveal {
   from {
     opacity: 0;
-    transform: scale(1.05);
+    transform: scale(1.04);
   }
   to {
     opacity: 1;
@@ -127,13 +145,13 @@ body {
 
 /* Gold gradient text */
 .text-gold-gradient {
-  background: linear-gradient(135deg, #C9A96E 0%, #E8D5A8 50%, #C9A96E 100%);
+  background: linear-gradient(135deg, #D4A574 0%, #E8D2B5 50%, #D4A574 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
 }
 
-/* Scrollbar styling */
+/* Scrollbar */
 ::-webkit-scrollbar {
   width: 6px;
 }
@@ -141,6 +159,12 @@ body {
   background: var(--secondary);
 }
 ::-webkit-scrollbar-thumb {
-  background: var(--primary);
+  background: var(--accent);
   border-radius: 3px;
+}
+
+/* Selection */
+::selection {
+  background: var(--accent);
+  color: white;
 }

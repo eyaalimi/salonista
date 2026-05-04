@@ -12,7 +12,7 @@ WWW_DOMAIN="www.salonista.tn"
 NODE_MAJOR=20
 
 echo "================================================================"
-echo "  Beauté.tn / salonista — Server bootstrap"
+echo "  Salonista — Server bootstrap"
 echo "================================================================"
 
 if [ "$(id -u)" -eq 0 ]; then

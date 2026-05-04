@@ -4,6 +4,7 @@ import { signIn } from "next-auth/react";
 import { Suspense, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
+import { Logo } from "@/components/logo";
 
 const roles = [
   {
@@ -122,18 +123,16 @@ function RegisterPageInner() {
   return (
     <div className="min-h-screen flex bg-brand-cream">
       {/* Left decorative panel */}
-      <div className="hidden lg:flex lg:w-1/2 bg-gradient-to-br from-brand-bordeaux to-brand-bordeaux/90 items-center justify-center relative overflow-hidden">
+      <div className="hidden lg:flex lg:w-1/2 bg-gradient-to-br from-brand-ink to-brand-ink/90 items-center justify-center relative overflow-hidden">
         <div className="absolute inset-0 opacity-10">
           <div className="absolute top-1/3 right-1/4 w-96 h-96 rounded-full bg-brand-gold blur-3xl" />
-          <div className="absolute bottom-1/3 left-1/4 w-64 h-64 rounded-full bg-brand-rose blur-3xl" />
+          <div className="absolute bottom-1/3 left-1/4 w-64 h-64 rounded-full bg-brand-gold-soft blur-3xl" />
         </div>
         <div className="relative text-center px-12">
-          <p className="luxury-heading text-5xl text-white mb-4">
-            Beauté<span className="text-brand-gold">.</span>tn
-          </p>
+          <Logo tone="light" className="text-5xl mb-4" href={null} />
           <div className="luxury-divider !bg-brand-gold/50 mt-6 mb-6" />
           <p className="text-white/50 text-sm tracking-wider max-w-sm mx-auto">
-            Rejoignez la première marketplace beauté en Tunisie
+            Rejoignez la marketplace beauté en Tunisie
           </p>
         </div>
       </div>
@@ -142,9 +141,7 @@ function RegisterPageInner() {
       <div className="flex-1 flex items-center justify-center px-6 py-12">
         <div className="w-full max-w-sm">
           <div className="lg:hidden mb-10 text-center">
-            <p className="luxury-heading text-2xl text-brand-bordeaux">
-              Beauté<span className="text-brand-gold">.</span>tn
-            </p>
+            <Logo className="text-2xl" href={null} />
           </div>
 
           <p className="luxury-badge mb-6">Nouveau compte</p>

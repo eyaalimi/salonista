@@ -7,6 +7,7 @@ import { useSession } from "next-auth/react";
 import { MultiServiceCalendar, type SimpleSlot } from "@/components/multi-service-calendar";
 import { DAY_KEYS, DAY_LABELS_FR, type OpeningHours } from "@/lib/opening-hours";
 import { NavAccount } from "@/components/nav-account";
+import { Logo } from "@/components/logo";
 
 interface Offer {
   id: string;
@@ -227,11 +228,9 @@ export function SalonClient({ salon }: { salon: Salon }) {
       {/* Nav */}
       <nav className="bg-white/80 backdrop-blur-md border-b border-brand-gold/15 sticky top-0 z-50">
         <div className="max-w-7xl mx-auto px-6 md:px-12 flex items-center justify-between h-16">
-          <Link href="/" className="luxury-heading text-xl text-brand-bordeaux">
-            Beauté<span className="text-brand-gold">.</span>tn
-          </Link>
+          <Logo className="text-xl" />
           <div className="flex items-center gap-6">
-            <Link href="/offres" className="text-xs tracking-[0.2em] uppercase text-brand-bordeaux/60 hover:text-brand-gold transition-colors duration-500">
+            <Link href="/offres" className="text-xs tracking-[0.2em] uppercase text-brand-ink-soft hover:text-brand-gold transition-colors duration-500">
               Toutes les offres
             </Link>
             <NavAccount />

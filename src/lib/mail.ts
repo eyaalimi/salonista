@@ -9,7 +9,7 @@ const transporter = nodemailer.createTransport({
   },
 });
 
-const from = process.env.SMTP_FROM || "Beaute.tn <noreply@beaute.tn>";
+const from = process.env.SMTP_FROM || "Salonista <noreply@salonista.tn>";
 
 function layout(content: string) {
   return `
@@ -25,8 +25,8 @@ function layout(content: string) {
       <table width="560" cellpadding="0" cellspacing="0" style="background:#FFFFFF;border:1px solid rgba(201,169,110,0.2);">
         <!-- Header -->
         <tr><td style="padding:32px 40px 24px;text-align:center;border-bottom:1px solid rgba(201,169,110,0.15);">
-          <span style="font-family:Georgia,'Times New Roman',serif;font-size:24px;color:#2D0A0A;letter-spacing:0.02em;">
-            Beaut&eacute;<span style="color:#C9A96E;">.</span>tn
+          <span style="font-family:Georgia,'Times New Roman',serif;font-size:26px;color:#1F1A1C;letter-spacing:-0.01em;">
+            <i>salon</i>ista<span style="color:#D4A574;">.</span>
           </span>
         </td></tr>
         <!-- Content -->
@@ -36,7 +36,7 @@ function layout(content: string) {
         <!-- Footer -->
         <tr><td style="padding:24px 40px;text-align:center;border-top:1px solid rgba(201,169,110,0.15);">
           <p style="margin:0;font-size:11px;color:#2D0A0A;opacity:0.3;letter-spacing:0.1em;text-transform:uppercase;">
-            &copy; ${new Date().getFullYear()} Beaut&eacute;.tn &mdash; Tunisie
+            &copy; ${new Date().getFullYear()} Salonista &mdash; Tunisie
           </p>
         </td></tr>
       </table>
@@ -58,7 +58,7 @@ export async function sendVerificationEmail(email: string, name: string, token: 
       Bonjour ${name || ""},
     </p>
     <p style="margin:0 0 24px;font-size:14px;color:#2D0A0A;opacity:0.6;line-height:1.6;">
-      Merci de vous &ecirc;tre inscrit(e) sur Beaut&eacute;.tn. Cliquez sur le bouton ci-dessous pour v&eacute;rifier votre adresse email.
+      Merci de vous &ecirc;tre inscrit(e) sur Salonista. Cliquez sur le bouton ci-dessous pour v&eacute;rifier votre adresse email.
     </p>
     <table cellpadding="0" cellspacing="0" style="margin:0 auto 24px;">
       <tr><td style="background:#2D0A0A;padding:14px 32px;">
@@ -75,7 +75,7 @@ export async function sendVerificationEmail(email: string, name: string, token: 
   await transporter.sendMail({
     from,
     to: email,
-    subject: "Vérifiez votre email — Beauté.tn",
+    subject: "Vérifiez votre email — Salonista",
     html,
   });
 }
@@ -269,7 +269,7 @@ export async function sendNewBookingToProvider(
       Nouvelle r&eacute;servation
     </h2>
     <p style="margin:0 0 24px;font-size:14px;color:#2D0A0A;opacity:0.6;line-height:1.6;">
-      Vous avez re&ccedil;u une nouvelle r&eacute;servation sur Beaut&eacute;.tn.
+      Vous avez re&ccedil;u une nouvelle r&eacute;servation sur Salonista.
     </p>
     <table width="100%" cellpadding="0" cellspacing="0" style="margin:0 0 24px;border:1px solid rgba(201,169,110,0.15);">
       <tr>

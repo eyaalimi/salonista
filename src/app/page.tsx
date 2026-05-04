@@ -2,6 +2,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { prisma } from "@/lib/prisma";
 import { HomeNav } from "@/components/home-nav";
+import { Logo } from "@/components/logo";
 
 const categoryLabels: Record<string, string> = {
   COIFFURE: "Coiffure",
@@ -81,7 +82,7 @@ export default async function Home() {
 
         <div className="relative h-full max-w-5xl mx-auto px-6 md:px-12 flex flex-col items-center justify-center text-center pt-16">
           <p className="text-[10px] md:text-xs tracking-[0.3em] uppercase text-white/80 mb-6 luxury-slide-up">
-            Beauté · Tunisie
+            Salonista · Tunisie
           </p>
           <h1 className="luxury-heading text-5xl md:text-7xl lg:text-8xl text-white mb-4 luxury-slide-up delay-200">
             Réservez votre
@@ -345,11 +346,9 @@ export default async function Home() {
       </section>
 
       {/* FOOTER — slim */}
-      <footer className="bg-brand-bordeaux text-white border-t border-white/10">
+      <footer className="bg-brand-ink text-white border-t border-white/10">
         <div className="max-w-7xl mx-auto px-6 md:px-12 py-10 flex flex-col md:flex-row items-center justify-between gap-6">
-          <Link href="/" className="luxury-heading text-2xl">
-            Beauté<span className="text-brand-gold">.</span>tn
-          </Link>
+          <Logo tone="light" className="text-2xl" />
           <div className="flex items-center gap-6 md:gap-8 text-[11px] tracking-[0.2em] uppercase text-white/50">
             <Link href="/offres" className="hover:text-brand-gold transition-colors">Offres</Link>
             <Link href="/login" className="hover:text-brand-gold transition-colors">Connexion</Link>
@@ -366,9 +365,9 @@ export default async function Home() {
           __html: JSON.stringify({
             "@context": "https://schema.org",
             "@type": "WebSite",
-            name: "Beauté.tn",
+            name: "Salonista",
             url: process.env.NEXTAUTH_URL || "https://salonista.tn",
-            description: "Marketplace beauté N°1 en Tunisie",
+            description: "Réservez vos soins beauté en ligne, partout en Tunisie.",
             potentialAction: {
               "@type": "SearchAction",
               target: `${process.env.NEXTAUTH_URL || "https://salonista.tn"}/offres?q={search_term_string}`,
@@ -383,9 +382,9 @@ export default async function Home() {
           __html: JSON.stringify({
             "@context": "https://schema.org",
             "@type": "Organization",
-            name: "Beauté.tn",
+            name: "Salonista",
             url: process.env.NEXTAUTH_URL || "https://salonista.tn",
-            description: "La première marketplace beauté en Tunisie",
+            description: "Marketplace beauté en Tunisie",
             areaServed: { "@type": "Country", name: "Tunisia" },
           }),
         }}
