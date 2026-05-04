@@ -12,8 +12,11 @@ echo "[1/6] Pull latest code"
 git fetch --all --prune
 git reset --hard origin/main
 
-echo "[2/6] Install dependencies (production lockfile)"
-npm ci --no-audit --no-fund
+echo "[2/6] Install dependencies"
+# Use npm install (not npm ci) for tolerance with peer-dep edge cases.
+# Lockfile is committed but npm 10 can't always do strict ci on it due to
+# duplicated transient peer-dep ranges (e.g. preact via @auth/core).
+npm install --no-audit --no-fund
 
 echo "[3/6] Apply Prisma migrations"
 npx prisma migrate deploy
