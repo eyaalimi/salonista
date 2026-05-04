@@ -16,13 +16,24 @@ function isRateLimited(key: string, max: number): boolean {
   return false;
 }
 
+// Derive the public origin: prefer forwarded headers (when behind Nginx),
+// then NEXTAUTH_URL, then fall back to the request URL.
+function publicOrigin(req: NextRequest): string {
+  const proto = req.headers.get("x-forwarded-proto");
+  const host = req.headers.get("x-forwarded-host") || req.headers.get("host");
+  if (proto && host) return `${proto}://${host}`;
+  if (process.env.NEXTAUTH_URL) return process.env.NEXTAUTH_URL;
+  return new URL(req.url).origin;
+}
+
 // GET: register a click and redirect to offer page
 export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url);
   const token = searchParams.get("ref");
+  const origin = publicOrigin(req);
 
   if (!token) {
-    return NextResponse.redirect(new URL("/offres", req.url));
+    return NextResponse.redirect(new URL("/offres", origin));
   }
 
   const trackingLink = await prisma.trackingLink.findUnique({
@@ -30,7 +41,7 @@ export async function GET(req: NextRequest) {
   });
 
   if (!trackingLink) {
-    return NextResponse.redirect(new URL("/offres", req.url));
+    return NextResponse.redirect(new URL("/offres", origin));
   }
 
   const offerId = trackingLink.offerId;
@@ -40,7 +51,7 @@ export async function GET(req: NextRequest) {
   const ip = forwarded?.split(",")[0]?.trim() || "unknown";
   const anonymizedIp = ip.split(".").slice(0, 3).join(".") + ".0";
 
-  const redirectUrl = new URL(`/offre/${offerId}`, req.url);
+  const redirectUrl = new URL(`/offre/${offerId}`, origin);
   const response = NextResponse.redirect(redirectUrl);
 
   // Set tracking cookie here (last click wins, valid 7 days)
