@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 
@@ -22,6 +22,14 @@ interface VerificationData {
 }
 
 export default function VerificationPage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen bg-brand-cream" />}>
+      <VerificationPageInner />
+    </Suspense>
+  );
+}
+
+function VerificationPageInner() {
   const searchParams = useSearchParams();
   const code = searchParams.get("code");
   const [data, setData] = useState<VerificationData | null>(null);

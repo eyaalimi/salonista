@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 
@@ -27,6 +27,14 @@ interface ClientBooking {
 }
 
 export default function PaiementPage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen bg-brand-cream" />}>
+      <PaiementPageInner />
+    </Suspense>
+  );
+}
+
+function PaiementPageInner() {
   const searchParams = useSearchParams();
   const bookingId = searchParams.get("bookingId");
   const [loading, setLoading] = useState(false);

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 
@@ -24,6 +24,14 @@ interface BookingDetail {
 }
 
 export default function ReservationDetailPage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen bg-brand-cream" />}>
+      <ReservationDetailPageInner />
+    </Suspense>
+  );
+}
+
+function ReservationDetailPageInner() {
   const searchParams = useSearchParams();
   const bookingId = searchParams.get("id");
   const [data, setData] = useState<BookingDetail | null>(null);
