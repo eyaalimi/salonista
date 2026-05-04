@@ -1,18 +1,23 @@
 "use client";
 
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import Image from "next/image";
 
 interface ImageUploadProps {
   images: string[];
   onChange: (images: string[]) => void;
+  onUploadingChange?: (uploading: boolean) => void;
   max?: number;
 }
 
-export function ImageUpload({ images, onChange, max = 5 }: ImageUploadProps) {
+export function ImageUpload({ images, onChange, onUploadingChange, max = 5 }: ImageUploadProps) {
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState("");
   const inputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    onUploadingChange?.(uploading);
+  }, [uploading, onUploadingChange]);
 
   async function handleFiles(fileList: FileList) {
     const remaining = max - images.length;

@@ -30,6 +30,7 @@ export default function EditOfferPage() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const [photoUploading, setPhotoUploading] = useState(false);
   const [error, setError] = useState("");
   const [form, setForm] = useState({
     title: "",
@@ -211,6 +212,7 @@ export default function EditOfferPage() {
             <ImageUpload
               images={form.photos}
               onChange={(photos) => setForm({ ...form, photos })}
+              onUploadingChange={setPhotoUploading}
             />
           </div>
           <div className="flex items-center gap-3 pt-6">
@@ -230,10 +232,10 @@ export default function EditOfferPage() {
         <div className="flex gap-3 pt-6 border-t border-brand-gold/15">
           <button
             type="submit"
-            disabled={saving}
-            className="px-8 py-3 text-xs tracking-[0.2em] uppercase bg-brand-bordeaux text-white hover:bg-brand-gold transition-colors duration-500 disabled:opacity-50"
+            disabled={saving || photoUploading}
+            className="px-8 py-3 text-xs tracking-[0.2em] uppercase bg-brand-bordeaux text-white hover:bg-brand-gold transition-colors duration-500 disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            {saving ? "Enregistrement..." : "Enregistrer"}
+            {saving ? "Enregistrement..." : photoUploading ? "Upload des photos..." : "Enregistrer"}
           </button>
           <button
             type="button"

@@ -34,6 +34,7 @@ export default function ProviderOffersPage() {
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [photoUploading, setPhotoUploading] = useState(false);
   const [form, setForm] = useState({
     title: "",
     description: "",
@@ -194,6 +195,7 @@ export default function ProviderOffersPage() {
               <ImageUpload
                 images={form.photos}
                 onChange={(photos) => setForm({ ...form, photos })}
+                onUploadingChange={setPhotoUploading}
               />
             </div>
             <div className="md:col-span-2 pt-4 border-t border-brand-gold/15 bg-brand-cream/30 -mx-8 px-8 py-5">
@@ -212,10 +214,10 @@ export default function ProviderOffersPage() {
           )}
           <button
             type="submit"
-            disabled={saving}
-            className="px-8 py-3 text-xs tracking-[0.2em] uppercase bg-brand-bordeaux text-white hover:bg-brand-gold transition-colors duration-500 disabled:opacity-50"
+            disabled={saving || photoUploading}
+            className="px-8 py-3 text-xs tracking-[0.2em] uppercase bg-brand-bordeaux text-white hover:bg-brand-gold transition-colors duration-500 disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            {saving ? "Creation..." : "Creer l'offre"}
+            {saving ? "Création..." : photoUploading ? "Upload des photos..." : "Créer l'offre"}
           </button>
         </form>
       )}
