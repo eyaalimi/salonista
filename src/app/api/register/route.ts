@@ -36,7 +36,10 @@ export async function POST(req: NextRequest) {
     }
 
     const passwordHash = await hash(password, 12);
-    const requireVerification = process.env.REQUIRE_EMAIL_VERIFICATION === "true";
+    // Inline-checkout flow (autoVerify) only for CLIENT — provider/influencer always verify.
+    const inlineCheckout = body.autoVerify === true && role === "CLIENT";
+    const requireVerification =
+      process.env.REQUIRE_EMAIL_VERIFICATION === "true" && !inlineCheckout;
     const verifyToken = requireVerification ? nanoid(32) : null;
 
     const user = await prisma.user.create({

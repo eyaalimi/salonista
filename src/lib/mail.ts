@@ -80,6 +80,41 @@ export async function sendVerificationEmail(email: string, name: string, token: 
   });
 }
 
+// ─── Password reset ───
+
+export async function sendPasswordResetEmail(email: string, name: string, token: string) {
+  const url = `${process.env.NEXTAUTH_URL}/reset-password?token=${token}`;
+  const html = layout(`
+    <h2 style="margin:0 0 8px;font-family:Georgia,'Times New Roman',serif;font-size:22px;color:#1F1A1C;font-weight:normal;">
+      R&eacute;initialiser votre mot de passe
+    </h2>
+    <p style="margin:0 0 24px;font-size:14px;color:#1F1A1C;opacity:0.5;">
+      Bonjour ${name || ""},
+    </p>
+    <p style="margin:0 0 24px;font-size:14px;color:#1F1A1C;opacity:0.6;line-height:1.6;">
+      Vous avez demand&eacute; &agrave; r&eacute;initialiser votre mot de passe sur Salonista.
+      Cliquez sur le bouton ci-dessous pour choisir un nouveau mot de passe.
+    </p>
+    <table cellpadding="0" cellspacing="0" style="margin:0 auto 24px;">
+      <tr><td style="background:#1F1A1C;padding:14px 32px;">
+        <a href="${url}" style="color:#FFFFFF;font-size:12px;letter-spacing:0.2em;text-transform:uppercase;text-decoration:none;font-family:'Helvetica Neue',Helvetica,Arial,sans-serif;">
+          Choisir un nouveau mot de passe
+        </a>
+      </td></tr>
+    </table>
+    <p style="margin:0;font-size:12px;color:#1F1A1C;opacity:0.3;line-height:1.5;">
+      Ce lien expire dans 1 heure. Si vous n&rsquo;avez pas demand&eacute; cette r&eacute;initialisation, ignorez cet email.
+    </p>
+  `);
+
+  await transporter.sendMail({
+    from,
+    to: email,
+    subject: "Réinitialiser votre mot de passe — Salonista",
+    html,
+  });
+}
+
 // ─── Booking confirmation (for client) ───
 
 export async function sendBookingConfirmationEmail(

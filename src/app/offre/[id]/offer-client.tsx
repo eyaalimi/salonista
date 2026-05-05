@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useSession } from "next-auth/react";
+import { useSession, signIn } from "next-auth/react";
 import Link from "next/link";
 import Image from "next/image";
 import { BookingCalendar } from "@/components/booking-calendar";
@@ -65,7 +65,7 @@ export function OfferClient({
   reviews?: ReviewData[];
   avgRating?: number;
 }) {
-  const { data: session } = useSession();
+  const { data: session, update: updateSession } = useSession();
   const [showBooking, setShowBooking] = useState(false);
   const [selectedSlot, setSelectedSlot] = useState<string>("");
   const [bookingNotes, setBookingNotes] = useState("");
@@ -74,6 +74,13 @@ export function OfferClient({
   const [bookingId, setBookingId] = useState("");
   const [error, setError] = useState("");
   const [selectedPhoto, setSelectedPhoto] = useState(0);
+
+  // Inline auth state — used when an unauthenticated visitor lands via a tracking link
+  const [authMode, setAuthMode] = useState<"register" | "login">("register");
+  const [authName, setAuthName] = useState("");
+  const [authEmail, setAuthEmail] = useState("");
+  const [authPhone, setAuthPhone] = useState("");
+  const [authPassword, setAuthPassword] = useState("");
 
   const discount = Math.round(
     ((offer.originalPrice - offer.discountPrice) / offer.originalPrice) * 100
@@ -85,17 +92,33 @@ export function OfferClient({
     }
   }, [trackingToken]);
 
+  async function createBooking(slotStartTime: string) {
+    const token = trackingToken || localStorage.getItem("tracking_ref");
+    const res = await fetch("/api/bookings", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        offerIds: [offer.id],
+        startTime: slotStartTime,
+        notes: bookingNotes || null,
+        trackingToken: token,
+      }),
+    });
+    if (!res.ok) {
+      const data = await res.json().catch(() => ({}));
+      throw new Error(data.error || "Erreur lors de la réservation");
+    }
+    return res.json();
+  }
+
   async function handleBook(e: React.FormEvent) {
     e.preventDefault();
-    if (!session) {
-      window.location.href = `/login?callbackUrl=/offre/${offer.id}${trackingToken ? `?ref=${trackingToken}` : ""}`;
-      return;
-    }
+    setError("");
+
     if (!selectedSlot) {
       setError("Veuillez choisir un créneau");
       return;
     }
-
     const slotObj = offer.slots.find((s) => s.id === selectedSlot);
     if (!slotObj) {
       setError("Créneau introuvable");
@@ -103,30 +126,64 @@ export function OfferClient({
     }
 
     setLoading(true);
-    setError("");
 
-    const token = trackingToken || localStorage.getItem("tracking_ref");
+    try {
+      // Already authenticated → straight to booking
+      if (session) {
+        const data = await createBooking(slotObj.startTime);
+        setBookingId(data.id);
+        setSuccess(true);
+        return;
+      }
 
-    const res = await fetch("/api/bookings", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        offerIds: [offer.id],
-        startTime: slotObj.startTime,
-        notes: bookingNotes || null,
-        trackingToken: token,
-      }),
-    });
+      // Inline auth: register or login first, then book
+      if (!authEmail || !authPassword) {
+        throw new Error("Email et mot de passe requis");
+      }
 
-    setLoading(false);
+      if (authMode === "register") {
+        if (!authName) throw new Error("Veuillez entrer votre nom");
+        const regRes = await fetch("/api/register", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            email: authEmail,
+            password: authPassword,
+            name: authName,
+            phone: authPhone || null,
+            role: "CLIENT",
+            autoVerify: true,
+          }),
+        });
+        if (!regRes.ok) {
+          const data = await regRes.json().catch(() => ({}));
+          throw new Error(data.error || "Inscription impossible");
+        }
+      }
 
-    if (res.ok) {
-      const data = await res.json();
+      const signInRes = await signIn("credentials", {
+        email: authEmail,
+        password: authPassword,
+        redirect: false,
+      });
+      if (signInRes?.error) {
+        throw new Error(
+          authMode === "login"
+            ? "Email ou mot de passe incorrect"
+            : "Compte créé mais connexion impossible. Réessayez."
+        );
+      }
+
+      // Refresh the session so subsequent server calls see the cookie
+      await updateSession();
+
+      const data = await createBooking(slotObj.startTime);
       setBookingId(data.id);
       setSuccess(true);
-    } else {
-      const data = await res.json();
-      setError(data.error || "Erreur lors de la réservation");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Erreur");
+    } finally {
+      setLoading(false);
     }
   }
 
@@ -251,24 +308,113 @@ export function OfferClient({
                 Réserver maintenant
               </button>
             ) : (
-              <form onSubmit={handleBook} className="space-y-5 p-6 border border-brand-gold/20 bg-white">
+              <form onSubmit={handleBook} className="space-y-6 p-6 border border-brand-gold/20 bg-white">
                 {error && (
                   <div className="p-3 text-sm text-red-600 bg-red-50 border border-red-100">{error}</div>
                 )}
+
+                {/* 1. Slot picker */}
                 <div>
-                  <label className="block text-[10px] tracking-[0.15em] uppercase text-brand-bordeaux/60 mb-3">
-                    Choisir un créneau *
-                  </label>
+                  <p className="text-[10px] tracking-[0.15em] uppercase text-brand-bordeaux/60 mb-3">
+                    1. Choisir un créneau
+                  </p>
                   <BookingCalendar
                     slots={offer.slots}
                     selectedSlotId={selectedSlot}
                     onSelect={setSelectedSlot}
                   />
                 </div>
-                <div>
-                  <label className="block text-[10px] tracking-[0.15em] uppercase text-brand-bordeaux/60 mb-2">
-                    Notes (optionnel)
-                  </label>
+
+                {/* 2. Inline auth — only if not signed in */}
+                {!session && (
+                  <div className="pt-5 border-t border-brand-gold/15">
+                    <p className="text-[10px] tracking-[0.15em] uppercase text-brand-bordeaux/60 mb-3">
+                      2. Vos coordonnées
+                    </p>
+
+                    <div className="flex gap-2 mb-4 text-[10px] tracking-[0.15em] uppercase">
+                      <button
+                        type="button"
+                        onClick={() => setAuthMode("register")}
+                        className={`flex-1 py-2.5 transition-colors ${
+                          authMode === "register"
+                            ? "bg-brand-bordeaux text-white"
+                            : "border border-brand-gold/20 text-brand-bordeaux/60 hover:border-brand-gold"
+                        }`}
+                      >
+                        Nouveau client
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setAuthMode("login")}
+                        className={`flex-1 py-2.5 transition-colors ${
+                          authMode === "login"
+                            ? "bg-brand-bordeaux text-white"
+                            : "border border-brand-gold/20 text-brand-bordeaux/60 hover:border-brand-gold"
+                        }`}
+                      >
+                        J&apos;ai déjà un compte
+                      </button>
+                    </div>
+
+                    <div className="space-y-3">
+                      {authMode === "register" && (
+                        <>
+                          <input
+                            type="text"
+                            value={authName}
+                            onChange={(e) => setAuthName(e.target.value)}
+                            placeholder="Nom complet *"
+                            required={authMode === "register"}
+                            autoComplete="name"
+                            className="w-full px-4 py-3 border border-brand-gold/20 text-brand-bordeaux text-sm placeholder:text-brand-bordeaux/30 focus:outline-none focus:border-brand-gold transition-colors bg-transparent"
+                          />
+                          <input
+                            type="tel"
+                            value={authPhone}
+                            onChange={(e) => setAuthPhone(e.target.value)}
+                            placeholder="Téléphone (optionnel)"
+                            autoComplete="tel"
+                            className="w-full px-4 py-3 border border-brand-gold/20 text-brand-bordeaux text-sm placeholder:text-brand-bordeaux/30 focus:outline-none focus:border-brand-gold transition-colors bg-transparent"
+                          />
+                        </>
+                      )}
+                      <input
+                        type="email"
+                        value={authEmail}
+                        onChange={(e) => setAuthEmail(e.target.value)}
+                        placeholder="Email *"
+                        required
+                        autoComplete="email"
+                        className="w-full px-4 py-3 border border-brand-gold/20 text-brand-bordeaux text-sm placeholder:text-brand-bordeaux/30 focus:outline-none focus:border-brand-gold transition-colors bg-transparent"
+                      />
+                      <input
+                        type="password"
+                        value={authPassword}
+                        onChange={(e) => setAuthPassword(e.target.value)}
+                        placeholder={authMode === "register" ? "Mot de passe (min. 6 caractères) *" : "Mot de passe *"}
+                        required
+                        minLength={authMode === "register" ? 6 : undefined}
+                        autoComplete={authMode === "register" ? "new-password" : "current-password"}
+                        className="w-full px-4 py-3 border border-brand-gold/20 text-brand-bordeaux text-sm placeholder:text-brand-bordeaux/30 focus:outline-none focus:border-brand-gold transition-colors bg-transparent"
+                      />
+                      {authMode === "login" && (
+                        <Link
+                          href="/forgot-password"
+                          className="block text-[10px] tracking-[0.15em] uppercase text-brand-bordeaux/50 hover:text-brand-gold transition-colors"
+                        >
+                          Mot de passe oublié ?
+                        </Link>
+                      )}
+                    </div>
+                  </div>
+                )}
+
+                {/* 3. Notes */}
+                <div className="pt-5 border-t border-brand-gold/15">
+                  <p className="text-[10px] tracking-[0.15em] uppercase text-brand-bordeaux/60 mb-2">
+                    {session ? "2." : "3."} Notes (optionnel)
+                  </p>
                   <textarea
                     value={bookingNotes}
                     onChange={(e) => setBookingNotes(e.target.value)}
@@ -277,13 +423,16 @@ export function OfferClient({
                     placeholder="Précisions, préférences..."
                   />
                 </div>
+
                 <div className="flex gap-3">
                   <button
                     type="submit"
                     disabled={loading}
                     className="flex-1 py-3.5 text-xs tracking-[0.2em] uppercase bg-brand-bordeaux text-white hover:bg-brand-gold transition-colors duration-500 disabled:opacity-50"
                   >
-                    {loading ? "Réservation..." : `Confirmer · ${offer.discountPrice.toFixed(0)} DT`}
+                    {loading
+                      ? "Traitement…"
+                      : `Réserver · ${offer.discountPrice.toFixed(0)} DT`}
                   </button>
                   <button
                     type="button"
@@ -293,11 +442,6 @@ export function OfferClient({
                     Annuler
                   </button>
                 </div>
-                {!session && (
-                  <p className="text-[10px] tracking-wider text-brand-bordeaux/40 text-center">
-                    Vous serez redirigé vers la connexion pour finaliser
-                  </p>
-                )}
               </form>
             )}
           </div>

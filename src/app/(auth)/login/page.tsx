@@ -98,9 +98,17 @@ function LoginPageInner() {
             </div>
 
             <div>
-              <label htmlFor="password" className="block text-[10px] tracking-[0.15em] uppercase text-brand-bordeaux/60 mb-2">
-                Mot de passe
-              </label>
+              <div className="flex items-center justify-between mb-2">
+                <label htmlFor="password" className="block text-[10px] tracking-[0.15em] uppercase text-brand-bordeaux/60">
+                  Mot de passe
+                </label>
+                <Link
+                  href="/forgot-password"
+                  className="text-[10px] tracking-[0.15em] uppercase text-brand-bordeaux/50 hover:text-brand-gold transition-colors"
+                >
+                  Oublié ?
+                </Link>
+              </div>
               <input
                 id="password"
                 type="password"

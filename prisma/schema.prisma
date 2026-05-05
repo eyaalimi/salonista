@@ -62,11 +62,13 @@ model User {
   role          Role      @default(CLIENT)
   name          String?
   avatar        String?
-  emailVerified      DateTime?
-  emailVerifyToken   String?   @unique
-  emailVerifyExpires DateTime?
-  createdAt          DateTime  @default(now())
-  updatedAt          DateTime  @updatedAt
+  emailVerified         DateTime?
+  emailVerifyToken      String?   @unique
+  emailVerifyExpires    DateTime?
+  passwordResetToken    String?   @unique
+  passwordResetExpires  DateTime?
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
 
   providerProfile   ProviderProfile?
   influencerProfile InfluencerProfile?
