@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
-import Image from "next/image";
+import { UploadedImage } from "@/components/uploaded-image";
 
 interface ImageUploadProps {
   images: string[];
@@ -69,10 +69,11 @@ export function ImageUpload({ images, onChange, onUploadingChange, max = 5 }: Im
         <div className="grid grid-cols-3 gap-3 mb-3">
           {images.map((url, i) => (
             <div key={url} className="relative aspect-square group">
-              <Image
+              <UploadedImage
                 src={url}
                 alt={`Photo ${i + 1}`}
                 fill
+                sizes="200px"
                 className="object-cover"
               />
               <button

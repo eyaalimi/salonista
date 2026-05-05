@@ -2,8 +2,8 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import Image from "next/image";
 import { ImageUpload } from "@/components/image-upload";
+import { UploadedImage } from "@/components/uploaded-image";
 
 const categories = [
   { value: "COIFFURE", label: "Coiffure" },
@@ -239,7 +239,7 @@ export default function ProviderOffersPage() {
             <div key={offer.id} className="bg-white border border-brand-gold/20 overflow-hidden hover:border-brand-gold transition-colors duration-500">
               {offer.photos.length > 0 && (
                 <div className="relative aspect-[16/9] overflow-hidden">
-                  <Image src={offer.photos[0]} alt={offer.title} fill sizes="(max-width: 768px) 100vw, 33vw" className="object-cover" />
+                  <UploadedImage src={offer.photos[0]} alt={offer.title} fill sizes="(max-width: 768px) 100vw, 33vw" className="object-cover" />
                 </div>
               )}
               <div className="p-6">

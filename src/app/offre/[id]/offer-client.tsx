@@ -3,9 +3,9 @@
 import { useEffect, useState } from "react";
 import { useSession, signIn } from "next-auth/react";
 import Link from "next/link";
-import Image from "next/image";
 import { BookingCalendar } from "@/components/booking-calendar";
 import { Logo } from "@/components/logo";
+import { UploadedImage } from "@/components/uploaded-image";
 
 interface Slot {
   id: string;
@@ -238,7 +238,7 @@ export function OfferClient({
           <div className="space-y-3">
             <div className="relative aspect-[4/5] bg-gradient-to-br from-brand-nude to-brand-peach flex items-center justify-center overflow-hidden luxury-image-reveal">
               {offer.photos.length > 0 ? (
-                <Image src={offer.photos[selectedPhoto]} alt={offer.title} fill sizes="(max-width: 768px) 100vw, 50vw" className="object-cover" />
+                <UploadedImage src={offer.photos[selectedPhoto]} alt={offer.title} fill sizes="(max-width: 768px) 100vw, 50vw" className="object-cover" />
               ) : (
                 <span className="text-8xl opacity-30">💇‍♀️</span>
               )}
@@ -252,7 +252,7 @@ export function OfferClient({
                     onClick={() => setSelectedPhoto(i)}
                     className={`relative aspect-square overflow-hidden border-2 transition-colors ${i === selectedPhoto ? "border-brand-gold" : "border-transparent hover:border-brand-gold/30"}`}
                   >
-                    <Image src={photo} alt={`Photo ${i + 1}`} fill sizes="100px" className="object-cover" />
+                    <UploadedImage src={photo} alt={`Photo ${i + 1}`} fill sizes="100px" className="object-cover" />
                   </button>
                 ))}
               </div>

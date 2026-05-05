@@ -1,8 +1,8 @@
 import Link from "next/link";
-import Image from "next/image";
 import { prisma } from "@/lib/prisma";
 import { HomeNav } from "@/components/home-nav";
 import { Logo } from "@/components/logo";
+import { UploadedImage } from "@/components/uploaded-image";
 
 const categoryLabels: Record<string, string> = {
   COIFFURE: "Coiffure",
@@ -136,7 +136,7 @@ export default async function Home() {
 
           {/* Right: bounded hero image */}
           <div className="relative h-[420px] md:h-[520px] lg:h-[620px] order-first lg:order-last -mx-6 md:-mx-12 lg:mx-0">
-            <Image
+            <UploadedImage
               src="/uploads/hero-beauty.jpg"
               alt=""
               fill
@@ -209,7 +209,7 @@ export default async function Home() {
                     }`}
                   >
                     {offer.photos.length > 0 ? (
-                      <Image
+                      <UploadedImage
                         src={offer.photos[0]}
                         alt={offer.title}
                         fill
@@ -291,7 +291,7 @@ export default async function Home() {
                   >
                     <div className="relative aspect-square overflow-hidden bg-gradient-to-br from-brand-nude to-brand-peach mb-3">
                       {cover ? (
-                        <Image
+                        <UploadedImage
                           src={cover}
                           alt={salon.salonName}
                           fill

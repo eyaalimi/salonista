@@ -2,7 +2,7 @@
 
 import { useState, useMemo, useEffect, useRef } from "react";
 import Link from "next/link";
-import Image from "next/image";
+import { UploadedImage } from "@/components/uploaded-image";
 import { useSession } from "next-auth/react";
 import { MultiServiceCalendar, type SimpleSlot } from "@/components/multi-service-calendar";
 import { DAY_KEYS, DAY_LABELS_FR, type OpeningHours } from "@/lib/opening-hours";
@@ -243,7 +243,7 @@ export function SalonClient({ salon }: { salon: Salon }) {
         <div className="mb-12">
           {salon.photos.length > 0 && (
             <div className="relative aspect-[21/9] mb-8 overflow-hidden">
-              <Image src={salon.photos[0]} alt={salon.salonName} fill className="object-cover" sizes="100vw" />
+              <UploadedImage src={salon.photos[0]} alt={salon.salonName} fill className="object-cover" sizes="100vw" />
             </div>
           )}
           <div className="flex items-start justify-between flex-wrap gap-4">
@@ -313,7 +313,7 @@ export function SalonClient({ salon }: { salon: Salon }) {
                       >
                         {offer.photos.length > 0 && (
                           <div className="relative w-32 sm:w-40 aspect-square shrink-0">
-                            <Image src={offer.photos[0]} alt={offer.title} fill className="object-cover" sizes="160px" />
+                            <UploadedImage src={offer.photos[0]} alt={offer.title} fill className="object-cover" sizes="160px" />
                           </div>
                         )}
                         <div className="flex-1 p-4 sm:p-5 flex flex-col">
