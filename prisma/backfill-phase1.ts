@@ -13,6 +13,10 @@
  *   npx tsx prisma/backfill-phase1.ts
  */
 
+// MUST be the first import: loads .env so process.env.DATABASE_URL is set
+// before src/lib/prisma evaluates its connection-string at module import time.
+import "dotenv/config";
+
 import { prisma } from "../src/lib/prisma";
 import { tryNormalizePhone } from "../src/lib/phone";
 
