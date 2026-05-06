@@ -336,12 +336,16 @@ export async function createSaleFromPayload(args: {
       });
 
       // Create stock movements pointing back at this sale.
+      // SYNC_NEGATIVE is reserved for offline syncs that drove stock below
+      // zero. Online sales that go negative are still flagged for review,
+      // but their reason stays "SALE" so the sync-issues dashboard isn't
+      // polluted by normal-flow transactions.
       if (stockMovementsToCreate.length > 0) {
         await tx.stockMovement.createMany({
           data: stockMovementsToCreate.map((m) => ({
             productId: m.productId,
             delta: m.delta,
-            reason: m.requiresReview ? "SYNC_NEGATIVE" : "SALE",
+            reason: m.requiresReview && fromSync ? "SYNC_NEGATIVE" : "SALE",
             saleId: sale.id,
             employeeId,
             requiresReview: m.requiresReview,

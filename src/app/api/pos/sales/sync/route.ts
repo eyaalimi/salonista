@@ -32,6 +32,19 @@ export async function POST(req: NextRequest) {
       results.push({ status: "error", error: "offlineId requis" });
       continue;
     }
+    // Mirror the online POST's discount permission check so a CASHIER
+    // without pos.discount can't sneak a discount in via the offline path.
+    const usesDiscount =
+      (payload.saleDiscount !== undefined && payload.saleDiscount !== null) ||
+      (Array.isArray(payload.lines) && payload.lines.some((l) => l.discount));
+    if (usesDiscount && !employee.permissions["pos.discount"]) {
+      results.push({
+        offlineId: payload.offlineId,
+        status: "conflict",
+        error: "Permission insuffisante pour appliquer une remise",
+      });
+      continue;
+    }
     const result = await createSaleFromPayload({
       payload,
       providerId: employee.providerId,

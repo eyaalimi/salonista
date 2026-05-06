@@ -1,9 +1,10 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import { formatDT } from "@/lib/money";
+import { formatDT, ttcToHt } from "@/lib/money";
 import { RefundModal } from "./refund-modal";
+import { ReceiptPrintFrame, type ReceiptData } from "./receipt";
 
 type Sale = {
   id: string;
@@ -110,6 +111,62 @@ export function SaleDetailClient({
       setEmailSending(false);
     }
   }
+
+  // Build the receipt-print payload from the loaded sale so "Réimprimer"
+  // actually has something to print. Without rendering ReceiptPrintFrame the
+  // global @media print rule hides everything and produces a blank page.
+  const receiptData: ReceiptData | null = useMemo(() => {
+    if (!sale) return null;
+    const breakdownByRate = new Map<string, { baseM: number; taxM: number }>();
+    for (const it of sale.items) {
+      const rate = String(it.taxRateSnapshot);
+      const ht = Number(ttcToHt(String(it.lineTotal), rate));
+      const tax = Number(it.lineTotal) - ht;
+      const entry = breakdownByRate.get(rate) ?? { baseM: 0, taxM: 0 };
+      entry.baseM += Math.round(ht * 1000);
+      entry.taxM += Math.round(tax * 1000);
+      breakdownByRate.set(rate, entry);
+    }
+    const taxBreakdown = Array.from(breakdownByRate.entries())
+      .sort((a, b) => Number(a[0]) - Number(b[0]))
+      .map(([rate, { baseM, taxM }]) => ({
+        rate,
+        base: (baseM / 1000).toFixed(3),
+        tax: (taxM / 1000).toFixed(3),
+      }));
+    return {
+      receiptNumber: sale.receiptNumber,
+      provider: {
+        id: "",
+        salonName: sale.provider.salonName,
+        address: sale.provider.address,
+        city: sale.provider.city,
+        phone: sale.provider.phone,
+        matriculeFiscal: sale.provider.matriculeFiscal,
+        receiptFooter: sale.provider.receiptFooter,
+      },
+      employee: { displayName: sale.employee.displayName },
+      customerName: sale.customer
+        ? [sale.customer.firstName, sale.customer.lastName].filter(Boolean).join(" ") ||
+          sale.customer.phone
+        : null,
+      items: sale.items.map((it) => ({
+        name: it.nameSnapshot,
+        quantity: it.quantity,
+        assignedEmployee: it.assignedEmployee?.displayName ?? null,
+        lineTotal: String(it.lineTotal),
+        taxRate: String(it.taxRateSnapshot),
+      })),
+      subtotal: String(sale.subtotal),
+      discountAmount: String(sale.discountAmount),
+      taxBreakdown,
+      tipTotal: String(sale.tipTotal),
+      total: String(sale.total),
+      payments: sale.payments.map((p) => ({ method: p.method, amount: String(p.amount) })),
+      date: sale.closedAt ?? sale.createdAt,
+      offline: false,
+    };
+  }, [sale]);
 
   if (loading) return <p className="p-6 text-sm text-brand-ink-soft">Chargement…</p>;
   if (!sale) return <p className="p-6 text-sm text-brand-ink-soft">Vente introuvable.</p>;
@@ -312,6 +369,8 @@ export function SaleDetailClient({
           }}
         />
       )}
+
+      {receiptData && <ReceiptPrintFrame data={receiptData} />}
     </div>
   );
 }

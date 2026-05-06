@@ -204,7 +204,19 @@ export async function markSaleFailed(offlineId: string, error: string): Promise<
   await d.put("pending_sales", entry);
 }
 
+// Module-level mutex to prevent two callers from sending the same offlineIds
+// in parallel (e.g. Background Sync + manual reconnect both fire at once).
+let _syncInFlight: Promise<SyncResult[]> | null = null;
+
 export async function attemptSync(): Promise<SyncResult[]> {
+  if (_syncInFlight) return _syncInFlight;
+  _syncInFlight = doAttemptSync().finally(() => {
+    _syncInFlight = null;
+  });
+  return _syncInFlight;
+}
+
+async function doAttemptSync(): Promise<SyncResult[]> {
   const list = await listPendingSales();
   if (list.length === 0) return [];
 

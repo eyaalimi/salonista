@@ -2,7 +2,7 @@ import { NextRequest } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireModule } from "@/lib/modules";
 import { requirePermission, toResponse } from "@/lib/employee-session";
-import { addMoney, toMillimes } from "@/lib/money";
+import { addMoney, fromMillimes, toMillimes } from "@/lib/money";
 import type { PaymentMethod, RefundReason } from "@/generated/prisma/enums";
 
 type RefundLineInput = {
@@ -43,120 +43,139 @@ export async function POST(req: NextRequest, ctx: { params: Promise<{ id: string
     return Response.json({ error: "Aucun article à rembourser" }, { status: 400 });
   }
 
-  const sale = await prisma.sale.findUnique({
+  // Existence + ownership check outside the transaction (cheap, no row lock
+  // needed yet). Quantity validation is repeated *inside* the transaction
+  // to defend against concurrent refunds racing on the same sale.
+  const saleHead = await prisma.sale.findUnique({
     where: { id },
-    include: { items: true },
+    select: { id: true, providerId: true, status: true, receiptNumber: true },
   });
-  if (!sale || sale.providerId !== employee.providerId) {
+  if (!saleHead || saleHead.providerId !== employee.providerId) {
     return Response.json({ error: "Vente introuvable" }, { status: 404 });
   }
-  if (sale.status === "REFUNDED" || sale.status === "VOIDED") {
+  if (saleHead.status === "REFUNDED" || saleHead.status === "VOIDED") {
     return Response.json(
       { error: "Vente déjà entièrement remboursée ou annulée" },
       { status: 409 },
     );
   }
 
-  // Validate refund items don't exceed remaining quantity, compute amount per line.
-  const lineMap = new Map(sale.items.map((it) => [it.id, it]));
-  let refundAmountStr = "0.000";
-  const refundLines: Array<{
-    saleItemId: string;
-    productId: string | null;
-    quantity: number;
-    amountRefunded: string;
-    restock: boolean;
-  }> = [];
-
-  for (const ri of body.items) {
-    const item = lineMap.get(ri.saleItemId);
-    if (!item) {
-      return Response.json({ error: `Ligne inconnue: ${ri.saleItemId}` }, { status: 400 });
-    }
-    const remaining = item.quantity - item.refundedQuantity;
-    if (ri.quantity <= 0 || ri.quantity > remaining) {
-      return Response.json(
-        { error: `Quantité invalide pour la ligne ${item.nameSnapshot}` },
-        { status: 400 },
-      );
-    }
-    // Per-unit amount = (lineTotal / quantity) — preserves the discount split.
-    const unitAmountM = Math.round(toMillimes(String(item.lineTotal)) / item.quantity);
-    const lineRefundM = unitAmountM * ri.quantity;
-    const lineRefundStr = (lineRefundM / 1000).toFixed(3);
-    refundAmountStr = addMoney(refundAmountStr, lineRefundStr);
-    refundLines.push({
-      saleItemId: item.id,
-      productId: item.productId,
-      quantity: ri.quantity,
-      amountRefunded: lineRefundStr,
-      restock: ri.restock !== false,
-    });
-  }
-
-  const result = await prisma.$transaction(async (tx) => {
-    const refund = await tx.refund.create({
-      data: {
-        saleId: sale.id,
-        employeeId: employee.id,
-        reason: body.reason,
-        notes: body.notes ?? null,
-        totalAmount: refundAmountStr,
-        refundMethod: body.refundMethod,
-        reference: body.reference ?? null,
-        items: {
-          create: refundLines.map((rl) => ({
-            saleItemId: rl.saleItemId,
-            productId: rl.productId,
-            quantity: rl.quantity,
-            amountRefunded: rl.amountRefunded,
-            restock: rl.restock,
-          })),
-        },
-      },
-    });
-
-    // Increment refundedQuantity on each line.
-    for (const rl of refundLines) {
-      await tx.saleItem.update({
-        where: { id: rl.saleItemId },
-        data: { refundedQuantity: { increment: rl.quantity } },
+  try {
+    const result = await prisma.$transaction(async (tx) => {
+      // Re-read sale + items inside the tx for fresh quantities under
+      // serializable isolation.
+      const sale = await tx.sale.findUnique({
+        where: { id },
+        include: { items: true },
       });
-    }
+      if (!sale) throw new Error("Vente introuvable");
+      if (sale.status === "REFUNDED" || sale.status === "VOIDED") {
+        throw new Error("ALREADY_FULLY_REFUNDED");
+      }
 
-    // Restock products marked restock=true.
-    for (const rl of refundLines) {
-      if (!rl.productId || !rl.restock) continue;
-      await tx.product.update({
-        where: { id: rl.productId },
-        data: { stockQuantity: { increment: rl.quantity } },
-      });
-      await tx.stockMovement.create({
+      const lineMap = new Map(sale.items.map((it) => [it.id, it]));
+      let refundAmountStr = "0.000";
+      const refundLines: Array<{
+        saleItemId: string;
+        productId: string | null;
+        quantity: number;
+        amountRefunded: string;
+        restock: boolean;
+      }> = [];
+
+      for (const ri of body.items) {
+        const item = lineMap.get(ri.saleItemId);
+        if (!item) throw new Error(`Ligne inconnue: ${ri.saleItemId}`);
+        const remaining = item.quantity - item.refundedQuantity;
+        if (ri.quantity <= 0 || ri.quantity > remaining) {
+          throw new Error(`Quantité invalide pour la ligne ${item.nameSnapshot}`);
+        }
+        // Per-unit amount preserves any discount split. Use integer-millime
+        // math throughout so we never round inconsistently with what the
+        // sale originally stored.
+        const unitAmountM = Math.round(toMillimes(String(item.lineTotal)) / item.quantity);
+        const lineRefundStr = fromMillimes(unitAmountM * ri.quantity);
+        refundAmountStr = addMoney(refundAmountStr, lineRefundStr);
+        refundLines.push({
+          saleItemId: item.id,
+          productId: item.productId,
+          quantity: ri.quantity,
+          amountRefunded: lineRefundStr,
+          restock: ri.restock !== false,
+        });
+      }
+
+      const refund = await tx.refund.create({
         data: {
-          productId: rl.productId,
-          delta: rl.quantity,
-          reason: "RETURN",
-          refundId: refund.id,
+          saleId: sale.id,
           employeeId: employee.id,
-          note: `Remboursement vente ${sale.receiptNumber}`,
+          reason: body.reason,
+          notes: body.notes ?? null,
+          totalAmount: refundAmountStr,
+          refundMethod: body.refundMethod,
+          reference: body.reference ?? null,
+          items: {
+            create: refundLines.map((rl) => ({
+              saleItemId: rl.saleItemId,
+              productId: rl.productId,
+              quantity: rl.quantity,
+              amountRefunded: rl.amountRefunded,
+              restock: rl.restock,
+            })),
+          },
         },
       });
-    }
 
-    // Update parent sale totals + status.
-    const newRefundedTotal = addMoney(String(sale.refundedTotal), refundAmountStr);
-    const allLines = await tx.saleItem.findMany({ where: { saleId: sale.id } });
-    const fullyRefunded = allLines.every((l) => l.refundedQuantity >= l.quantity);
-    await tx.sale.update({
-      where: { id: sale.id },
-      data: {
-        refundedTotal: newRefundedTotal,
-        status: fullyRefunded ? "REFUNDED" : "PARTIALLY_REFUNDED",
-      },
+      for (const rl of refundLines) {
+        await tx.saleItem.update({
+          where: { id: rl.saleItemId },
+          data: { refundedQuantity: { increment: rl.quantity } },
+        });
+      }
+
+      for (const rl of refundLines) {
+        if (!rl.productId || !rl.restock) continue;
+        await tx.product.update({
+          where: { id: rl.productId },
+          data: { stockQuantity: { increment: rl.quantity } },
+        });
+        await tx.stockMovement.create({
+          data: {
+            productId: rl.productId,
+            delta: rl.quantity,
+            reason: "RETURN",
+            refundId: refund.id,
+            employeeId: employee.id,
+            note: `Remboursement vente ${sale.receiptNumber}`,
+          },
+        });
+      }
+
+      // Determine post-refund state from values we just incremented in this
+      // transaction (already present in `refundLines`), no extra round-trip.
+      const fullyRefunded = sale.items.every((l) => {
+        const refundedHere = refundLines
+          .filter((rl) => rl.saleItemId === l.id)
+          .reduce((s, r) => s + r.quantity, 0);
+        return l.refundedQuantity + refundedHere >= l.quantity;
+      });
+
+      const newRefundedTotal = addMoney(String(sale.refundedTotal), refundAmountStr);
+      await tx.sale.update({
+        where: { id: sale.id },
+        data: {
+          refundedTotal: newRefundedTotal,
+          status: fullyRefunded ? "REFUNDED" : "PARTIALLY_REFUNDED",
+        },
+      });
+
+      return refund;
     });
 
-    return refund;
-  });
-
-  return Response.json(result, { status: 201 });
+    return Response.json(result, { status: 201 });
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : "Erreur";
+    const status = msg === "ALREADY_FULLY_REFUNDED" ? 409 : 400;
+    return Response.json({ error: msg }, { status });
+  }
 }
