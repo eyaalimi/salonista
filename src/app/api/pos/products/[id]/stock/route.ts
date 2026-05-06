@@ -1,0 +1,62 @@
+import { NextRequest } from "next/server";
+import { prisma } from "@/lib/prisma";
+import { requirePermission, toResponse } from "@/lib/employee-session";
+import type { StockMovementReason } from "@/generated/prisma/enums";
+
+const ALLOWED_REASONS: StockMovementReason[] = [
+  "PURCHASE",
+  "ADJUSTMENT",
+  "RETURN",
+  "LOSS",
+];
+
+type Body = {
+  delta?: number;
+  reason?: StockMovementReason;
+  note?: string | null;
+};
+
+export async function POST(req: NextRequest, ctx: { params: Promise<{ id: string }> }) {
+  let employee;
+  try {
+    employee = await requirePermission("inventory.edit");
+  } catch (err) {
+    const r = toResponse(err);
+    if (r) return r;
+    throw err;
+  }
+  const { id } = await ctx.params;
+  const product = await prisma.product.findUnique({ where: { id } });
+  if (!product || product.providerId !== employee.providerId) {
+    return Response.json({ error: "Produit introuvable" }, { status: 404 });
+  }
+
+  const body = (await req.json().catch(() => null)) as Body | null;
+  if (!body || typeof body.delta !== "number" || !body.reason) {
+    return Response.json({ error: "delta et raison requis" }, { status: 400 });
+  }
+  if (!ALLOWED_REASONS.includes(body.reason)) {
+    return Response.json({ error: "Raison invalide" }, { status: 400 });
+  }
+
+  const updated = await prisma.$transaction(async (tx) => {
+    const newStock = product.stockQuantity + body.delta!;
+    const movement = await tx.stockMovement.create({
+      data: {
+        productId: product.id,
+        delta: body.delta!,
+        reason: body.reason!,
+        employeeId: employee.id,
+        note: body.note ?? null,
+        requiresReview: newStock < 0,
+      },
+    });
+    const next = await tx.product.update({
+      where: { id: product.id },
+      data: { stockQuantity: newStock },
+    });
+    return { product: next, movement };
+  });
+
+  return Response.json(updated);
+}

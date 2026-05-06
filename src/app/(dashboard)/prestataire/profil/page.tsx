@@ -24,6 +24,8 @@ export default function ProviderProfilePage() {
     address: "",
     city: "",
     phone: "",
+    matriculeFiscal: "",
+    receiptFooter: "",
   });
   const [openingHours, setOpeningHours] = useState<OpeningHours>(emptyOpeningHours());
   const [error, setError] = useState("");
@@ -40,6 +42,8 @@ export default function ProviderProfilePage() {
           address: profile.address || "",
           city: profile.city || "",
           phone: profile.phone || "",
+          matriculeFiscal: profile.matriculeFiscal || "",
+          receiptFooter: profile.receiptFooter || "",
         });
         if (isValidOpeningHours(profile.openingHours)) {
           setOpeningHours(profile.openingHours);
@@ -157,6 +161,40 @@ export default function ProviderProfilePage() {
               className="w-full px-4 py-3 border border-brand-gold/20 bg-transparent text-brand-bordeaux text-sm placeholder:text-brand-bordeaux/30 focus:outline-none focus:border-brand-gold transition-colors"
               placeholder="Presentez votre salon..."
             />
+          </div>
+        </div>
+
+        <div className="pt-6 border-t border-brand-gold/15">
+          <p className="luxury-badge mb-3">Informations fiscales</p>
+          <h2 className="luxury-heading text-xl text-brand-bordeaux mb-2">Reçus & TVA</h2>
+          <p className="text-xs text-brand-bordeaux/50 mb-5 max-w-2xl">
+            Imprimés sur les reçus de caisse. Le matricule fiscal est requis pour la conformité TVA.
+          </p>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-5 mb-8">
+            <div>
+              <label className="block text-[10px] tracking-[0.15em] uppercase text-brand-bordeaux/60 mb-2">
+                Matricule fiscal
+              </label>
+              <input
+                value={form.matriculeFiscal}
+                onChange={(e) => setForm({ ...form, matriculeFiscal: e.target.value })}
+                className="w-full px-4 py-3 border border-brand-gold/20 bg-transparent text-brand-bordeaux text-sm focus:outline-none focus:border-brand-gold"
+                placeholder="1234567/A/M/000"
+              />
+            </div>
+            <div className="md:col-span-2">
+              <label className="block text-[10px] tracking-[0.15em] uppercase text-brand-bordeaux/60 mb-2">
+                Pied de reçu
+              </label>
+              <textarea
+                value={form.receiptFooter}
+                onChange={(e) => setForm({ ...form, receiptFooter: e.target.value })}
+                rows={2}
+                maxLength={200}
+                className="w-full px-4 py-3 border border-brand-gold/20 bg-transparent text-brand-bordeaux text-sm focus:outline-none focus:border-brand-gold"
+                placeholder="Note imprimée en bas du reçu (politique de retour, remerciement, etc.)"
+              />
+            </div>
           </div>
         </div>
 

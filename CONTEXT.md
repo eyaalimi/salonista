@@ -254,7 +254,8 @@ REQUIRE_EMAIL_VERIFICATION=true
 - **`useSearchParams()` needs `<Suspense>`** in Next.js 16 — wrap login/register/verification/payment/reservation pages.
 - **Image `sizes` is required** when `fill` is set — Next.js logs a warning otherwise.
 - **`localPatterns` in `next.config.ts`** must include any new public path that goes through the optimizer (currently `/uploads/**`, `/images/**`).
-- **PWA service worker caches aggressively in production**. After deploying changes that affect `/salon-pin` or `/prestataire/pos`, users may need to close and reopen the installed app for `skipWaiting/clientsClaim` to take effect. Bump `SW_VERSION` in `public/sw.js` if a hard refresh is needed.
+- **PWA service worker caches aggressively in production**. After deploying changes that affect `/salon-pin` or `/pos`, users may need to close and reopen the installed app for `skipWaiting/clientsClaim` to take effect. Bump `SW_VERSION` in `public/sw.js` if a hard refresh is needed.
+- **Stock can go negative** when offline POS sales sync. This is intentional Tier B graceful degradation — `StockMovement.requiresReview = true` flags those movements, and the conflict surfaces at `/pos/sync-issues`.
 
 ---
 
@@ -313,6 +314,39 @@ Routes added:
 Dashboard nav for PROVIDER now conditionally includes "Caisse" — only when the provider's `POS` subscription is active. Layout fetches `getActiveModules()` server-side and passes the list to the client nav.
 
 One-time backfill: `npx tsx prisma/backfill-phase1.ts` (idempotent — see deploy README).
+
+---
+
+## Phase 2 additions (POS Core + Tier B offline)
+
+- **POS lives at `/pos`** (separate top-level route group `(pos)`, not under `/prestataire`). Full-screen layout with a top bar — no dashboard sidebar.
+- **New models**: `Product`, `StockMovement`, `Sale`, `SaleItem`, `Payment`, `TipAllocation`, `Refund`, `RefundItem`, `SaleSequence`. Plus enums `SaleStatus`, `SaleItemKind`, `PaymentMethod`, `RefundReason`, `StockMovementReason`.
+- **Receipt numbers** `S-YYYYMMDD-NNNN`, daily counter per salon via the `SaleSequence` model with row-level upsert + `increment` for atomicity. Offline sales temp ID `OFF-<short>` swapped on sync.
+- **Pricing convention**: prices stored TTC (Tunisian convention). HT/TVA derived for receipts via `src/lib/money.ts`. Sale-level discounts allocated proportionally across lines so per-rate tax breakdowns stay correct.
+- **Three-panel POS UI** (`src/components/pos/pos-client.tsx`): Customer | Cart | Catalog. Catalog has Services + Products tabs; products tab auto-focuses a barcode input.
+- **Charge modal**: split tender (cash + card + transfer + other), tip auto-allocation across line stylists with manual override, optional print + email receipt.
+- **Receipt component** (`src/components/pos/receipt.tsx`): hidden print-only div with `@page { size: 80mm }` styles for thermal printers.
+- **Refunds**: per-line, gated by `pos.refund`. Optional `restock` per product line, generates `StockMovement` rows with `RETURN` reason.
+- **Per-line stylist assignment** stored on `SaleItem.assignedEmployeeId`. Cart defaults services to the current cashier.
+- **PWA Tier B offline** via `public/sw.js` (Workbox 7 from CDN, no build-step injection):
+  - `NetworkFirst` for `/salon-pin` + `/pos*` shell (3s timeout)
+  - `StaleWhileRevalidate` for `/api/pos/catalog` and `/api/customers/lookup`
+  - `CacheFirst` for `/uploads/**`, `/images/**`, `/_next/static/**`
+  - POSTs to `/api/pos/sales` are NOT cached — they go through `src/lib/pos-offline-db.ts` (IndexedDB queue) when offline, retried via Background Sync (Chrome) or in-app polling (Safari).
+- **Online status**: `OnlineStatusProvider` + `OnlineStatusBadge` in the POS top bar. Probes `/api/health` every 30s, listens for `online`/`offline` window events, auto-syncs on reconnect.
+- **Sync conflicts** (deleted entities, price drift, stock negative) surface on `Sale.syncConflicts: Json` and at `/pos/sync-issues` (gated by `pos.refund`).
+- **Provider profile** gained `matriculeFiscal` and `receiptFooter` — a yellow banner at the top of `/pos` nudges providers to fill in matricule fiscal.
+
+Routes added:
+- `/pos`, `/pos/sales`, `/pos/sales/[id]`, `/pos/products`, `/pos/products/new`, `/pos/products/[id]/edit`, `/pos/sync-issues`
+- `/api/pos/sales` (GET list / POST create), `/api/pos/sales/[id]` (GET detail), `/api/pos/sales/[id]/refunds` (POST), `/api/pos/sales/[id]/email` (POST), `/api/pos/sales/sync` (POST batch)
+- `/api/pos/products`, `/api/pos/products/[id]`, `/api/pos/products/[id]/stock`, `/api/pos/products/lookup?barcode=`
+- `/api/pos/catalog` (offline cache primer)
+- `/api/health` (connectivity probe)
+
+Helpers: `computeTotals()` + `totalsEqual()` (sale-totals.ts, run client- and server-side), `nextReceiptNumber()` (atomic via SaleSequence), `formatDT()` / `ttcToHt()` / `htToTtc()` / `taxFromTtc()` / `applyDiscount()` (money.ts, ints-in-millimes math), `pos-offline-db` IndexedDB layer (`refreshCatalog`, `queueSale`, `attemptSync`, `findCachedProductByBarcode`, etc.).
+
+**Note on Serwist**: The Phase 2 plan called for `@serwist/next`; we kept Phase 1's static `public/sw.js` and added Workbox 7 via `importScripts` from CDN instead. Reason: `@serwist/next` injects a webpack config but Next 16 defaults to Turbopack, which conflicts. Workbox-from-CDN gives the same caching strategies without a build-step dependency.
 
 ---
 
