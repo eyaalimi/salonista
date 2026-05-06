@@ -2,11 +2,42 @@
 
 import Link from "next/link";
 import { useSession } from "next-auth/react";
-import { NavAccount } from "@/components/nav-account";
 import { Logo } from "@/components/logo";
 
+function ProfileAvatar({
+  name,
+  image,
+}: {
+  name: string | null | undefined;
+  image: string | null | undefined;
+}) {
+  const initials =
+    (name?.trim().split(/\s+/)[0]?.[0] || "?").toUpperCase();
+
+  if (image) {
+    return (
+      <span className="block h-9 w-9 overflow-hidden rounded-full border border-brand-gold">
+        {/* Plain <img> — provider avatars are remote (Google) or stable. */}
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          src={image}
+          alt={name || "Profil"}
+          className="h-full w-full object-cover"
+          referrerPolicy="no-referrer"
+        />
+      </span>
+    );
+  }
+
+  return (
+    <span className="flex h-9 w-9 items-center justify-center rounded-full border border-brand-gold bg-brand-sand text-sm font-semibold text-brand-ink">
+      {initials}
+    </span>
+  );
+}
+
 export function HomeNav() {
-  const { data: session } = useSession();
+  const { data: session, status } = useSession();
 
   return (
     <nav className="fixed top-0 left-0 right-0 z-50 bg-white/95 backdrop-blur-md border-b border-brand-line">
@@ -29,15 +60,27 @@ export function HomeNav() {
           </a>
         </div>
 
-        {/* Account / sign-in — always visible, big tap target */}
-        <div className="flex items-center gap-2">
-          <NavAccount />
-          {!session?.user && (
+        {/* Right-side: avatar (signed-in) or Connexion button */}
+        <div className="flex items-center">
+          {status === "loading" ? (
+            <span className="block h-9 w-9 rounded-full bg-brand-sand animate-pulse" />
+          ) : session?.user ? (
             <Link
-              href="/register"
-              className="hidden md:inline-flex items-center justify-center rounded-md bg-brand-ink px-5 py-2.5 text-sm font-medium text-white hover:bg-brand-gold transition-colors min-w-[44px] min-h-[44px]"
+              href="/cliente"
+              aria-label="Mon profil"
+              className="flex items-center justify-center min-h-[44px] min-w-[44px]"
             >
-              S&apos;inscrire
+              <ProfileAvatar
+                name={session.user.name}
+                image={session.user.image}
+              />
+            </Link>
+          ) : (
+            <Link
+              href="/login"
+              className="rounded-full border border-brand-line px-3 py-1.5 text-sm font-medium text-brand-ink hover:border-brand-gold transition-colors"
+            >
+              Connexion
             </Link>
           )}
         </div>

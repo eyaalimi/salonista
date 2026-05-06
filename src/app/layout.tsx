@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Geist } from "next/font/google";
 import { Playfair_Display } from "next/font/google";
 import { Providers } from "@/components/providers";
+import { BottomNav } from "@/components/bottom-nav";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -57,7 +58,10 @@ export default function RootLayout({
   return (
     <html lang="fr" className={`${geistSans.variable} ${playfair.variable} h-full antialiased`}>
       <body className="min-h-full flex flex-col bg-brand-cream text-brand-ink">
-        <Providers>{children}</Providers>
+        <Providers>
+          <main className="flex-1 pb-[76px] md:pb-0">{children}</main>
+          <BottomNav />
+        </Providers>
       </body>
     </html>
   );

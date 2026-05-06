@@ -527,9 +527,9 @@ export function OfferClient({
         </div>
       </div>
 
-      {/* Mobile sticky CTA — only when booking form is hidden */}
+      {/* Mobile sticky CTA — sits above the BottomNav (60px tall) */}
       {!showBooking && (
-        <div className="fixed bottom-0 left-0 right-0 z-40 border-t border-brand-line bg-white p-4 md:hidden">
+        <div className="fixed bottom-[60px] left-0 right-0 z-40 border-t border-brand-line bg-white p-4 md:hidden">
           <button
             onClick={() => setShowBooking(true)}
             className="flex w-full min-h-[52px] items-center justify-center gap-2 rounded-2xl bg-brand-ink text-base font-semibold text-white transition-colors hover:bg-brand-gold"
