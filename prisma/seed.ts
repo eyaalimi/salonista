@@ -8,7 +8,7 @@
 import { PrismaClient, Role, Category, BookingStatus, CommissionStatus } from "../src/generated/prisma/client";
 import { PrismaPg } from "@prisma/adapter-pg";
 import { hash } from "bcryptjs";
-import { randomBytes } from "crypto";
+import { randomBytes, randomUUID } from "crypto";
 import "dotenv/config";
 
 const adapter = new PrismaPg(process.env.DATABASE_URL!);
@@ -22,6 +22,15 @@ async function main() {
   console.log("🌱 Seeding database...");
 
   // Clean existing data
+  await prisma.refundItem.deleteMany();
+  await prisma.refund.deleteMany();
+  await prisma.tipAllocation.deleteMany();
+  await prisma.payment.deleteMany();
+  await prisma.stockMovement.deleteMany();
+  await prisma.saleItem.deleteMany();
+  await prisma.sale.deleteMany();
+  await prisma.saleSequence.deleteMany();
+  await prisma.product.deleteMany();
   await prisma.commission.deleteMany();
   await prisma.click.deleteMany();
   await prisma.collaborationRequest.deleteMany();
@@ -62,6 +71,8 @@ async function main() {
           phone: "+21698123456",
           photos: ["/images/salon-nour-1.jpg", "/images/salon-nour-2.jpg"],
           verified: true,
+          matriculeFiscal: "1234567/A/M/000",
+          receiptFooter: "Merci pour votre visite — à bientôt chez Salon Nour",
           openingHours: {
             lundi: "09:00-18:00",
             mardi: "09:00-18:00",
@@ -524,9 +535,344 @@ async function main() {
     }
   }
 
+  // ----- POS PRODUCTS -----
+  const provider1Products = await Promise.all([
+    prisma.product.create({
+      data: {
+        providerId: provider1.providerProfile!.id,
+        name: "Shampooing Kérastase Bain Satin 250ml",
+        category: "HAIRCARE",
+        sku: "P1-HC-001",
+        barcode: "6191234500011",
+        purchasePrice: 22.0,
+        salePrice: 38.0,
+        taxRate: 19,
+        stockQuantity: 12,
+        lowStockThreshold: 3,
+      },
+    }),
+    prisma.product.create({
+      data: {
+        providerId: provider1.providerProfile!.id,
+        name: "Masque réparateur Olaplex No.3",
+        category: "HAIRCARE",
+        sku: "P1-HC-002",
+        barcode: "6191234500028",
+        purchasePrice: 45.0,
+        salePrice: 75.0,
+        taxRate: 19,
+        stockQuantity: 6,
+        lowStockThreshold: 2,
+      },
+    }),
+    prisma.product.create({
+      data: {
+        providerId: provider1.providerProfile!.id,
+        name: "Spray protecteur thermique 200ml",
+        category: "HAIRCARE",
+        sku: "P1-HC-003",
+        barcode: "6191234500035",
+        purchasePrice: 18.0,
+        salePrice: 32.0,
+        taxRate: 19,
+        stockQuantity: 9,
+        lowStockThreshold: 3,
+      },
+    }),
+    prisma.product.create({
+      data: {
+        providerId: provider1.providerProfile!.id,
+        name: "Crème hydratante visage 50ml",
+        category: "SKINCARE",
+        sku: "P1-SK-001",
+        barcode: "6191234500042",
+        purchasePrice: 28.0,
+        salePrice: 49.0,
+        taxRate: 19,
+        stockQuantity: 4,
+        lowStockThreshold: 5,
+      },
+    }),
+    prisma.product.create({
+      data: {
+        providerId: provider1.providerProfile!.id,
+        name: "Sérum vitamine C 30ml",
+        category: "SKINCARE",
+        sku: "P1-SK-002",
+        purchasePrice: 35.0,
+        salePrice: 60.0,
+        taxRate: 19,
+        stockQuantity: 7,
+        lowStockThreshold: 2,
+      },
+    }),
+    prisma.product.create({
+      data: {
+        providerId: provider1.providerProfile!.id,
+        name: "Brosse plate céramique",
+        category: "ACCESSORIES",
+        sku: "P1-AC-001",
+        purchasePrice: 15.0,
+        salePrice: 28.0,
+        taxRate: 19,
+        stockQuantity: 0,
+        lowStockThreshold: 2,
+      },
+    }),
+  ]);
+
+  await Promise.all([
+    prisma.product.create({
+      data: {
+        providerId: provider2.providerProfile!.id,
+        name: "Huile de jojoba bio 100ml",
+        category: "SKINCARE",
+        sku: "P2-SK-001",
+        purchasePrice: 16.0,
+        salePrice: 28.0,
+        taxRate: 19,
+        stockQuantity: 8,
+        lowStockThreshold: 2,
+      },
+    }),
+    prisma.product.create({
+      data: {
+        providerId: provider2.providerProfile!.id,
+        name: "Gommage corps 200g",
+        category: "SKINCARE",
+        sku: "P2-SK-002",
+        purchasePrice: 12.0,
+        salePrice: 22.0,
+        taxRate: 19,
+        stockQuantity: 5,
+        lowStockThreshold: 2,
+      },
+    }),
+    prisma.product.create({
+      data: {
+        providerId: provider2.providerProfile!.id,
+        name: "Bougie aromathérapie",
+        category: "WELLNESS",
+        sku: "P2-WL-001",
+        purchasePrice: 10.0,
+        salePrice: 20.0,
+        taxRate: 19,
+        stockQuantity: 3,
+        lowStockThreshold: 2,
+      },
+    }),
+  ]);
+
+  // Initial PURCHASE stock movements for provider1's products.
+  for (const p of provider1Products) {
+    if (p.stockQuantity > 0) {
+      await prisma.stockMovement.create({
+        data: {
+          productId: p.id,
+          delta: p.stockQuantity,
+          reason: "PURCHASE",
+          note: "Stock initial seed",
+        },
+      });
+    }
+  }
+
+  // ----- SAMPLE SALES -----
+  // Find provider1's OWNER employee for the seeded sales.
+  const provider1Owner = await prisma.salonEmployee.findFirst({
+    where: { providerId: provider1.providerProfile!.id, role: "OWNER" },
+  });
+  const provider1Cashier = await prisma.salonEmployee.findFirst({
+    where: { providerId: provider1.providerProfile!.id, role: "CASHIER" },
+  });
+  const provider1Customer = await prisma.customer.findFirst({
+    where: { firstSalonId: provider1.providerProfile!.id, userId: { not: null } },
+  });
+
+  if (provider1Owner && provider1Cashier && provider1Customer) {
+    // Sale 1: 1 service + 1 product, cash, with tip.
+    const offer1 = offers[0]; // Lissage Brésilien
+    const product1 = provider1Products[0]; // Shampooing
+    const sale1Date = new Date(Date.now() - 2 * 24 * 60 * 60 * 1000);
+    const sale1 = await prisma.sale.create({
+      data: {
+        providerId: provider1.providerProfile!.id,
+        customerId: provider1Customer.id,
+        employeeId: provider1Cashier.id,
+        receiptNumber: "S-SEED-0001",
+        status: "PAID",
+        subtotal: 143.0,
+        discountAmount: 0,
+        taxTotal: 22.840,
+        tipTotal: 7.0,
+        total: 150.0,
+        closedAt: sale1Date,
+        createdAt: sale1Date,
+        items: {
+          create: [
+            {
+              kind: "SERVICE",
+              offerId: offer1.id,
+              assignedEmployeeId: provider1Owner.id,
+              nameSnapshot: offer1.title,
+              priceSnapshot: 105.0,
+              taxRateSnapshot: 19,
+              quantity: 1,
+              lineSubtotal: 105.0,
+              lineTaxAmount: 16.765,
+              lineTotal: 105.0,
+            },
+            {
+              kind: "PRODUCT",
+              productId: product1.id,
+              nameSnapshot: product1.name,
+              priceSnapshot: 38.0,
+              taxRateSnapshot: 19,
+              quantity: 1,
+              lineSubtotal: 38.0,
+              lineTaxAmount: 6.067,
+              lineTotal: 38.0,
+            },
+          ],
+        },
+        payments: {
+          create: [{ method: "CASH", amount: 150.0 }],
+        },
+        tipAllocations: {
+          create: [{ employeeId: provider1Owner.id, amount: 7.0 }],
+        },
+      },
+    });
+    await prisma.product.update({
+      where: { id: product1.id },
+      data: { stockQuantity: { decrement: 1 } },
+    });
+    await prisma.stockMovement.create({
+      data: {
+        productId: product1.id,
+        delta: -1,
+        reason: "SALE",
+        saleId: sale1.id,
+        employeeId: provider1Cashier.id,
+      },
+    });
+
+    // Sale 2: 2 products, card payment, with a partial refund applied later.
+    const product2 = provider1Products[1];
+    const product3 = provider1Products[2];
+    const sale2Date = new Date(Date.now() - 1 * 24 * 60 * 60 * 1000);
+    const sale2 = await prisma.sale.create({
+      data: {
+        providerId: provider1.providerProfile!.id,
+        customerId: provider1Customer.id,
+        employeeId: provider1Cashier.id,
+        receiptNumber: "S-SEED-0002",
+        status: "PARTIALLY_REFUNDED",
+        subtotal: 107.0,
+        discountAmount: 0,
+        taxTotal: 17.084,
+        tipTotal: 0,
+        total: 107.0,
+        refundedTotal: 32.0,
+        closedAt: sale2Date,
+        createdAt: sale2Date,
+        items: {
+          create: [
+            {
+              kind: "PRODUCT",
+              productId: product2.id,
+              nameSnapshot: product2.name,
+              priceSnapshot: 75.0,
+              taxRateSnapshot: 19,
+              quantity: 1,
+              lineSubtotal: 75.0,
+              lineTaxAmount: 11.975,
+              lineTotal: 75.0,
+            },
+            {
+              kind: "PRODUCT",
+              productId: product3.id,
+              nameSnapshot: product3.name,
+              priceSnapshot: 32.0,
+              taxRateSnapshot: 19,
+              quantity: 1,
+              refundedQuantity: 1,
+              lineSubtotal: 32.0,
+              lineTaxAmount: 5.109,
+              lineTotal: 32.0,
+            },
+          ],
+        },
+        payments: {
+          create: [{ method: "CARD", amount: 107.0, reference: "AUTH-SEED" }],
+        },
+      },
+      include: { items: true },
+    });
+    await prisma.product.update({
+      where: { id: product2.id },
+      data: { stockQuantity: { decrement: 1 } },
+    });
+    // product3 was sold then refunded — net stock unchanged, but we record both movements.
+    await prisma.stockMovement.create({
+      data: {
+        productId: product2.id,
+        delta: -1,
+        reason: "SALE",
+        saleId: sale2.id,
+        employeeId: provider1Cashier.id,
+      },
+    });
+    const product3SaleItem = sale2.items.find((it) => it.productId === product3.id)!;
+    const refund = await prisma.refund.create({
+      data: {
+        saleId: sale2.id,
+        employeeId: provider1Cashier.id,
+        reason: "PRODUCT_DEFECT",
+        notes: "Spray défectueux signalé par la cliente",
+        totalAmount: 32.0,
+        refundMethod: "CASH",
+        items: {
+          create: [
+            {
+              saleItemId: product3SaleItem.id,
+              productId: product3.id,
+              quantity: 1,
+              amountRefunded: 32.0,
+              restock: true,
+            },
+          ],
+        },
+      },
+    });
+    await prisma.stockMovement.create({
+      data: {
+        productId: product3.id,
+        delta: -1,
+        reason: "SALE",
+        saleId: sale2.id,
+        employeeId: provider1Cashier.id,
+      },
+    });
+    await prisma.stockMovement.create({
+      data: {
+        productId: product3.id,
+        delta: 1,
+        reason: "RETURN",
+        refundId: refund.id,
+        employeeId: provider1Cashier.id,
+        note: "Retour suite remboursement",
+      },
+    });
+  }
+
+  // Quiet helper to avoid the "randomUUID unused" lint complaint.
+  void randomUUID;
+
   console.log("✅ Seed complete!");
   console.log("   3 prestataires, 5 offres, 2 influenceuses, 3 clientes, 1 admin");
   console.log("   10 réservations avec commissions");
+  console.log("   9 produits POS + 2 ventes seedées (provider1)");
   console.log("   Tous les mots de passe: password123");
 }
 

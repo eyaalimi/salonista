@@ -340,3 +340,120 @@ export async function sendNewBookingToProvider(
     html,
   });
 }
+
+// ---------- POS receipt ----------
+
+export async function sendReceiptEmail(saleId: string, recipient: string): Promise<void> {
+  const { prisma } = await import("./prisma");
+  const { formatDT } = await import("./money");
+  const sale = await prisma.sale.findUnique({
+    where: { id: saleId },
+    include: {
+      items: true,
+      payments: true,
+      customer: { select: { firstName: true, lastName: true } },
+      provider: {
+        select: {
+          salonName: true,
+          address: true,
+          city: true,
+          phone: true,
+          matriculeFiscal: true,
+          receiptFooter: true,
+        },
+      },
+    },
+  });
+  if (!sale) throw new Error("Sale not found");
+
+  const lines = sale.items
+    .map(
+      (it) => `
+    <tr>
+      <td style="padding:8px 0;">${it.quantity}× ${escapeHtml(it.nameSnapshot)}</td>
+      <td style="padding:8px 0;text-align:right;">${formatDT(String(it.lineTotal))}</td>
+    </tr>`,
+    )
+    .join("");
+
+  const payments = sale.payments
+    .map(
+      (p) => `
+    <tr>
+      <td style="padding:4px 0;font-size:12px;color:#4A4244;">${p.method}</td>
+      <td style="padding:4px 0;text-align:right;font-size:12px;">${formatDT(String(p.amount))}</td>
+    </tr>`,
+    )
+    .join("");
+
+  const customerName = sale.customer
+    ? [sale.customer.firstName, sale.customer.lastName].filter(Boolean).join(" ")
+    : "Client";
+
+  const html = layout(`
+    <h1 style="font-family:Georgia,'Times New Roman',serif;font-size:22px;color:#1F1A1C;margin:0 0 6px;">
+      Reçu N° ${sale.receiptNumber}
+    </h1>
+    <p style="margin:0 0 24px;font-size:13px;color:#4A4244;">
+      ${new Date(sale.closedAt ?? sale.createdAt).toLocaleString("fr-FR")} — ${escapeHtml(sale.provider?.salonName ?? "")}
+    </p>
+    <p style="margin:0 0 24px;font-size:14px;">${escapeHtml(customerName)}</p>
+    <table width="100%" cellpadding="0" cellspacing="0" style="border-top:1px solid #E8E2D7;border-bottom:1px solid #E8E2D7;margin-bottom:16px;">
+      ${lines}
+    </table>
+    <table width="100%" cellpadding="0" cellspacing="0" style="font-size:13px;">
+      <tr>
+        <td>Sous-total</td>
+        <td style="text-align:right;">${formatDT(String(sale.subtotal))}</td>
+      </tr>
+      ${
+        Number(sale.discountAmount) > 0
+          ? `<tr><td>Remise</td><td style="text-align:right;">-${formatDT(String(sale.discountAmount))}</td></tr>`
+          : ""
+      }
+      <tr>
+        <td>TVA</td>
+        <td style="text-align:right;">${formatDT(String(sale.taxTotal))}</td>
+      </tr>
+      ${
+        Number(sale.tipTotal) > 0
+          ? `<tr><td>Pourboire</td><td style="text-align:right;">${formatDT(String(sale.tipTotal))}</td></tr>`
+          : ""
+      }
+      <tr>
+        <td style="padding-top:12px;font-weight:bold;">TOTAL</td>
+        <td style="padding-top:12px;text-align:right;font-weight:bold;">${formatDT(String(sale.total))}</td>
+      </tr>
+    </table>
+    <h3 style="font-size:12px;text-transform:uppercase;letter-spacing:0.18em;color:#4A4244;margin:24px 0 8px;">
+      Paiements
+    </h3>
+    <table width="100%" cellpadding="0" cellspacing="0">${payments}</table>
+    ${
+      sale.provider?.matriculeFiscal
+        ? `<p style="margin-top:24px;font-size:11px;color:#4A4244;">Matricule fiscal: ${escapeHtml(sale.provider.matriculeFiscal)}</p>`
+        : ""
+    }
+    ${
+      sale.provider?.receiptFooter
+        ? `<p style="margin-top:16px;font-size:13px;color:#1F1A1C;font-style:italic;">${escapeHtml(sale.provider.receiptFooter)}</p>`
+        : ""
+    }
+  `);
+
+  await transporter.sendMail({
+    from,
+    to: recipient,
+    subject: `Votre reçu Salonista — ${sale.provider?.salonName ?? ""}`,
+    html,
+  });
+}
+
+function escapeHtml(s: string): string {
+  return s
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+}

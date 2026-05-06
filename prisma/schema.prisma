@@ -73,6 +73,44 @@ enum SubscriptionStatus {
   TRIAL
 }
 
+enum SaleStatus {
+  DRAFT
+  PENDING_SYNC
+  PAID
+  PARTIALLY_REFUNDED
+  REFUNDED
+  VOIDED
+}
+
+enum SaleItemKind {
+  SERVICE
+  PRODUCT
+}
+
+enum PaymentMethod {
+  CASH
+  CARD
+  TRANSFER
+  OTHER
+}
+
+enum RefundReason {
+  CUSTOMER_REQUEST
+  SERVICE_ISSUE
+  PRODUCT_DEFECT
+  PRICING_ERROR
+  OTHER
+}
+
+enum StockMovementReason {
+  PURCHASE
+  SALE
+  ADJUSTMENT
+  RETURN
+  LOSS
+  SYNC_NEGATIVE
+}
+
 model User {
   id            String    @id @default(cuid())
   email         String    @unique
@@ -135,26 +173,30 @@ model VerificationToken {
 }
 
 model ProviderProfile {
-  id           String   @id @default(cuid())
-  userId       String   @unique
-  salonName    String
-  category     Category
-  description  String?
-  address      String?
-  city         String?
-  lat          Float?
-  lng          Float?
-  phone        String?
-  photos       String[]
-  openingHours Json?
-  verified     Boolean  @default(false)
-  createdAt    DateTime @default(now())
+  id              String   @id @default(cuid())
+  userId          String   @unique
+  salonName       String
+  category        Category
+  description     String?
+  address         String?
+  city            String?
+  lat             Float?
+  lng             Float?
+  phone           String?
+  photos          String[]
+  openingHours    Json?
+  matriculeFiscal String?
+  receiptFooter   String?
+  verified        Boolean  @default(false)
+  createdAt       DateTime @default(now())
 
   user                  User                   @relation(fields: [userId], references: [id], onDelete: Cascade)
   offers                Offer[]
   collaborationRequests CollaborationRequest[]
   employees             SalonEmployee[]
   subscriptions         SalonSubscription[]
+  products              Product[]
+  sales                 Sale[]
 }
 
 model InfluencerProfile {
@@ -195,6 +237,7 @@ model Offer {
   reviews               Review[]
   slots                 TimeSlot[]
   collaborationOffers   CollaborationOffer[]
+  saleItems             SaleItem[]
 }
 
 model TimeSlot {
@@ -265,6 +308,7 @@ model Booking {
   click              Click?
   commission         Commission?
   review             Review?
+  sale               Sale?
 
   @@index([customerId])
   @@index([assignedEmployeeId])
@@ -372,6 +416,7 @@ model Customer {
 
   user     User?     @relation(fields: [userId], references: [id], onDelete: SetNull)
   bookings Booking[]
+  sales    Sale[]
 
   @@index([phone])
   @@index([firstSalonId])
@@ -392,10 +437,15 @@ model SalonEmployee {
   createdAt   DateTime     @default(now())
   updatedAt   DateTime     @updatedAt
 
-  provider    ProviderProfile @relation(fields: [providerId], references: [id], onDelete: Cascade)
-  user        User?           @relation(fields: [userId], references: [id], onDelete: SetNull)
-  bookingsLed Booking[]       @relation("BookingAssignedEmployee")
-  itemsLed    BookingItem[]   @relation("BookingItemAssignedEmployee")
+  provider          ProviderProfile @relation(fields: [providerId], references: [id], onDelete: Cascade)
+  user              User?           @relation(fields: [userId], references: [id], onDelete: SetNull)
+  bookingsLed       Booking[]       @relation("BookingAssignedEmployee")
+  itemsLed          BookingItem[]   @relation("BookingItemAssignedEmployee")
+  salesRung         Sale[]
+  saleItemsAssigned SaleItem[]      @relation("SaleItemAssignedEmployee")
+  tipAllocations    TipAllocation[] @relation("TipAllocationEmployee")
+  refundsIssued     Refund[]        @relation("RefundEmployee")
+  stockMovements    StockMovement[]
 
   @@index([providerId, active])
   @@index([userId])
@@ -418,4 +468,204 @@ model SalonSubscription {
 
   @@unique([providerId, module])
   @@index([status])
+}
+
+model Product {
+  id                String   @id @default(cuid())
+  providerId        String
+  name              String
+  description       String?
+  category          String?
+  sku               String
+  barcode           String?
+  purchasePrice     Decimal  @db.Decimal(10, 3)
+  salePrice         Decimal  @db.Decimal(10, 3)
+  taxRate           Decimal  @default(19.00) @db.Decimal(5, 2)
+  stockQuantity     Int      @default(0)
+  lowStockThreshold Int      @default(5)
+  photo             String?
+  active            Boolean  @default(true)
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  provider       ProviderProfile @relation(fields: [providerId], references: [id], onDelete: Cascade)
+  saleItems      SaleItem[]
+  stockMovements StockMovement[]
+  refundItems    RefundItem[]
+
+  @@unique([providerId, sku])
+  @@unique([providerId, barcode])
+  @@index([providerId, active])
+  @@index([barcode])
+}
+
+model StockMovement {
+  id             String              @id @default(cuid())
+  productId      String
+  delta          Int
+  reason         StockMovementReason
+  saleId         String?
+  refundId       String?
+  employeeId     String?
+  note           String?
+  requiresReview Boolean             @default(false)
+  createdAt      DateTime            @default(now())
+
+  product  Product        @relation(fields: [productId], references: [id], onDelete: Cascade)
+  sale     Sale?          @relation(fields: [saleId], references: [id], onDelete: SetNull)
+  refund   Refund?        @relation(fields: [refundId], references: [id], onDelete: SetNull)
+  employee SalonEmployee? @relation(fields: [employeeId], references: [id], onDelete: SetNull)
+
+  @@index([productId, createdAt])
+  @@index([requiresReview])
+}
+
+model Sale {
+  id                String     @id @default(cuid())
+  providerId        String
+  customerId        String?
+  employeeId        String
+  bookingId         String?    @unique
+  receiptNumber     String
+  status            SaleStatus @default(DRAFT)
+
+  subtotal          Decimal  @db.Decimal(10, 3)
+  discountAmount    Decimal  @default(0) @db.Decimal(10, 3)
+  discountIsPercent Boolean  @default(false)
+  discountValue     Decimal? @db.Decimal(10, 3)
+  taxTotal          Decimal  @db.Decimal(10, 3)
+  tipTotal          Decimal  @default(0) @db.Decimal(10, 3)
+  total             Decimal  @db.Decimal(10, 3)
+  refundedTotal     Decimal  @default(0) @db.Decimal(10, 3)
+
+  notes String?
+
+  offlineId     String?   @unique
+  syncedAt      DateTime?
+  syncConflicts Json?
+
+  createdAt DateTime  @default(now())
+  closedAt  DateTime?
+  updatedAt DateTime  @updatedAt
+
+  provider       ProviderProfile @relation(fields: [providerId], references: [id], onDelete: Cascade)
+  customer       Customer?       @relation(fields: [customerId], references: [id], onDelete: SetNull)
+  employee       SalonEmployee   @relation(fields: [employeeId], references: [id])
+  booking        Booking?        @relation(fields: [bookingId], references: [id], onDelete: SetNull)
+  items          SaleItem[]
+  payments       Payment[]
+  tipAllocations TipAllocation[]
+  refunds        Refund[]
+  stockMovements StockMovement[]
+
+  @@unique([providerId, receiptNumber])
+  @@index([providerId, status, createdAt])
+  @@index([customerId])
+  @@index([employeeId])
+}
+
+model SaleItem {
+  id                 String       @id @default(cuid())
+  saleId             String
+  kind               SaleItemKind
+  offerId            String?
+  productId          String?
+  assignedEmployeeId String?
+
+  nameSnapshot    String
+  priceSnapshot   Decimal @db.Decimal(10, 3)
+  taxRateSnapshot Decimal @db.Decimal(5, 2)
+  quantity        Int     @default(1)
+
+  discountAmount    Decimal  @default(0) @db.Decimal(10, 3)
+  discountIsPercent Boolean  @default(false)
+  discountValue     Decimal? @db.Decimal(10, 3)
+
+  lineSubtotal  Decimal @db.Decimal(10, 3)
+  lineTaxAmount Decimal @db.Decimal(10, 3)
+  lineTotal     Decimal @db.Decimal(10, 3)
+
+  refundedQuantity Int @default(0)
+
+  createdAt DateTime @default(now())
+
+  sale             Sale           @relation(fields: [saleId], references: [id], onDelete: Cascade)
+  offer            Offer?         @relation(fields: [offerId], references: [id], onDelete: SetNull)
+  product          Product?       @relation(fields: [productId], references: [id], onDelete: SetNull)
+  assignedEmployee SalonEmployee? @relation("SaleItemAssignedEmployee", fields: [assignedEmployeeId], references: [id], onDelete: SetNull)
+  refundItems      RefundItem[]
+
+  @@index([saleId])
+}
+
+model Payment {
+  id        String        @id @default(cuid())
+  saleId    String
+  method    PaymentMethod
+  amount    Decimal       @db.Decimal(10, 3)
+  reference String?
+  createdAt DateTime      @default(now())
+
+  sale Sale @relation(fields: [saleId], references: [id], onDelete: Cascade)
+
+  @@index([saleId])
+}
+
+model TipAllocation {
+  id         String   @id @default(cuid())
+  saleId     String
+  employeeId String
+  amount     Decimal  @db.Decimal(10, 3)
+  createdAt  DateTime @default(now())
+
+  sale     Sale          @relation(fields: [saleId], references: [id], onDelete: Cascade)
+  employee SalonEmployee @relation("TipAllocationEmployee", fields: [employeeId], references: [id])
+
+  @@index([saleId])
+  @@index([employeeId])
+}
+
+model Refund {
+  id           String        @id @default(cuid())
+  saleId       String
+  employeeId   String
+  reason       RefundReason
+  notes        String?
+  totalAmount  Decimal       @db.Decimal(10, 3)
+  refundMethod PaymentMethod
+  reference    String?
+  createdAt    DateTime      @default(now())
+
+  sale           Sale            @relation(fields: [saleId], references: [id], onDelete: Cascade)
+  employee       SalonEmployee   @relation("RefundEmployee", fields: [employeeId], references: [id])
+  items          RefundItem[]
+  stockMovements StockMovement[]
+
+  @@index([saleId])
+}
+
+model RefundItem {
+  id             String   @id @default(cuid())
+  refundId       String
+  saleItemId     String
+  productId      String?
+  quantity       Int
+  amountRefunded Decimal  @db.Decimal(10, 3)
+  restock        Boolean  @default(true)
+  createdAt      DateTime @default(now())
+
+  refund   Refund   @relation(fields: [refundId], references: [id], onDelete: Cascade)
+  saleItem SaleItem @relation(fields: [saleItemId], references: [id])
+  product  Product? @relation(fields: [productId], references: [id], onDelete: SetNull)
+
+  @@index([refundId])
+  @@index([saleItemId])
+}
+
+model SaleSequence {
+  providerId String
+  date       DateTime
+  counter    Int      @default(0)
+
+  @@id([providerId, date])
 }

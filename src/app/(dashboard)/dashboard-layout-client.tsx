@@ -12,7 +12,7 @@ type NavItem = { label: string; href: string; module?: SubscriptionModule };
 const navItems: Record<string, NavItem[]> = {
   PROVIDER: [
     { label: "Dashboard", href: "/prestataire" },
-    { label: "Caisse", href: "/prestataire/pos", module: "POS" },
+    { label: "Caisse", href: "/pos", module: "POS" },
     { label: "Mes offres", href: "/prestataire/offres" },
     { label: "Réservations", href: "/prestataire/reservations" },
     { label: "Collaborations", href: "/prestataire/collaborations" },

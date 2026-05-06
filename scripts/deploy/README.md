@@ -249,3 +249,5 @@ Re-running it is a no-op once the data is in place.
 - **Service worker (`/sw.js`)** is a static file in `public/`. Nginx must serve it with `Cache-Control: no-cache`. The default config passes through to Next.js, which sets correct headers — no Nginx change needed unless you add explicit caching rules for `.js` files.
 - **PWA manifest** at `/manifest.json` is also static; same rule.
 - **PWA icons** in `public/icons/` are generated from `src/app/icon.svg` via `npm run icons:pwa` (one-time, then committed). Re-run only if the brand mark changes.
+- **POS service worker (`public/sw.js`)** loads Workbox 7 via `importScripts` from `storage.googleapis.com/workbox-cdn`. Outbound CDN must be reachable from the salon's network for the first SW install on each device — afterwards the SW is cached. If your CSP restricts external scripts, allow `storage.googleapis.com` in `script-src` for `/sw.js`.
+- **Cache busting on POS deploys**: bump `SW_VERSION` constant in `public/sw.js` if a release affects the POS shell and you need clients to pick it up immediately. Otherwise the existing SW will swap on the next page load thanks to `skipWaiting` + `clientsClaim`.

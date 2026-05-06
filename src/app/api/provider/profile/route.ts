@@ -29,15 +29,45 @@ export async function PUT(req: NextRequest) {
   }
 
   const body = await req.json();
-  const { salonName, category, description, address, city, phone, openingHours } = body;
+  const {
+    salonName,
+    category,
+    description,
+    address,
+    city,
+    phone,
+    openingHours,
+    matriculeFiscal,
+    receiptFooter,
+  } = body;
 
   if (openingHours !== undefined && !isValidOpeningHours(openingHours)) {
     return NextResponse.json({ error: "Horaires d'ouverture invalides" }, { status: 400 });
   }
+  if (
+    receiptFooter !== undefined &&
+    typeof receiptFooter === "string" &&
+    receiptFooter.length > 200
+  ) {
+    return NextResponse.json(
+      { error: "Le pied de reçu ne peut excéder 200 caractères" },
+      { status: 400 },
+    );
+  }
 
   const profile = await prisma.providerProfile.upsert({
     where: { userId: session.user.id },
-    update: { salonName, category, description, address, city, phone, openingHours },
+    update: {
+      salonName,
+      category,
+      description,
+      address,
+      city,
+      phone,
+      openingHours,
+      ...(matriculeFiscal !== undefined ? { matriculeFiscal: matriculeFiscal || null } : {}),
+      ...(receiptFooter !== undefined ? { receiptFooter: receiptFooter || null } : {}),
+    },
     create: {
       userId: session.user.id,
       salonName: salonName || "Mon Salon",
@@ -47,6 +77,8 @@ export async function PUT(req: NextRequest) {
       city,
       phone,
       openingHours,
+      matriculeFiscal: matriculeFiscal || null,
+      receiptFooter: receiptFooter || null,
     },
   });
 

@@ -79,7 +79,7 @@ export default function SalonPinClient() {
           setError("PIN incorrect");
           setPin("");
         } else if (result?.ok) {
-          router.push("/prestataire/pos");
+          router.push("/pos");
         }
       } finally {
         setLoading(false);
