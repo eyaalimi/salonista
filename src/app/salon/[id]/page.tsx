@@ -53,6 +53,7 @@ export default async function SalonPage({ params }: Props) {
           description: o.description,
           originalPrice: Number(o.originalPrice),
           discountPrice: Number(o.discountPrice),
+          taxRate: Number(o.taxRate),
           category: o.category,
           durationMinutes: o.durationMinutes,
           photos: o.photos,

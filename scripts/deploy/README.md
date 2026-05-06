@@ -218,3 +218,34 @@ If you ever need to renew Let's Encrypt manually while proxied, temporarily swit
 - **`deploy.sh`** — incremental deploy (run by GitHub Actions on every push)
 - **`.env.production.example`** — template for the production `.env`
 - **`README.md`** — this file
+
+---
+
+## One-time scripts
+
+After deploying a migration that needs data backfill, SSH in and run the
+matching script. They're all idempotent — safe to re-run.
+
+### `prisma/backfill-phase1.ts` (Phase 1)
+
+Run once, after `prisma migrate deploy` on the Phase 1 deploy:
+
+```bash
+cd /home/ubuntu/salonista
+npx tsx prisma/backfill-phase1.ts
+```
+
+What it does:
+- Creates a `Customer` row for every `User` with role=CLIENT and a non-null phone.
+- Sets `Booking.customerId` for existing bookings whose client has a matching phone.
+- Creates an `OWNER` `SalonEmployee` row for every `ProviderProfile` that doesn't already have one.
+
+Re-running it is a no-op once the data is in place.
+
+---
+
+## Notes
+
+- **Service worker (`/sw.js`)** is a static file in `public/`. Nginx must serve it with `Cache-Control: no-cache`. The default config passes through to Next.js, which sets correct headers — no Nginx change needed unless you add explicit caching rules for `.js` files.
+- **PWA manifest** at `/manifest.json` is also static; same rule.
+- **PWA icons** in `public/icons/` are generated from `src/app/icon.svg` via `npm run icons:pwa` (one-time, then committed). Re-run only if the brand mark changes.

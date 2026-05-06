@@ -21,6 +21,7 @@ interface OfferData {
   description: string | null;
   originalPrice: number;
   discountPrice: number;
+  taxRate: number;
   category: string;
   photos: string[];
   provider: {
@@ -290,20 +291,25 @@ export function OfferClient({
             </h1>
 
             {/* Price */}
-            <div className="mt-5 mb-6 flex items-baseline gap-3 border-b border-brand-line pb-6">
-              <span className="luxury-heading text-3xl text-brand-gold sm:text-4xl">
-                {offer.discountPrice.toFixed(0)} DT
-              </span>
-              {offer.originalPrice > offer.discountPrice && (
-                <>
-                  <span className="text-base text-gray-400 line-through sm:text-lg">
-                    {offer.originalPrice.toFixed(0)} DT
-                  </span>
-                  <span className="rounded-full bg-brand-ink px-2.5 py-0.5 text-xs font-bold text-[#FBFAF7]">
-                    -{discount}%
-                  </span>
-                </>
-              )}
+            <div className="mt-5 mb-6 border-b border-brand-line pb-6">
+              <div className="flex items-baseline gap-3">
+                <span className="luxury-heading text-3xl text-brand-gold sm:text-4xl">
+                  {offer.discountPrice.toFixed(0)} DT
+                </span>
+                {offer.originalPrice > offer.discountPrice && (
+                  <>
+                    <span className="text-base text-gray-400 line-through sm:text-lg">
+                      {offer.originalPrice.toFixed(0)} DT
+                    </span>
+                    <span className="rounded-full bg-brand-ink px-2.5 py-0.5 text-xs font-bold text-[#FBFAF7]">
+                      -{discount}%
+                    </span>
+                  </>
+                )}
+              </div>
+              <p className="mt-1 text-[11px] uppercase tracking-[0.18em] text-brand-ink-soft">
+                TVA incluse: {Number(offer.taxRate ?? 19)}%
+              </p>
             </div>
 
             {offer.description && (

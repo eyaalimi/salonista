@@ -1,0 +1,17 @@
+{
+  "name": "Salonista POS",
+  "short_name": "Salonista",
+  "description": "Caisse et réservations pour salons Salonista",
+  "start_url": "/salon-pin",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#FBFAF7",
+  "theme_color": "#1F1A1C",
+  "icons": [
+    { "src": "/icons/pwa-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "/icons/pwa-512.png", "sizes": "512x512", "type": "image/png" },
+    { "src": "/icons/pwa-512-maskable.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" },
+    { "src": "/icons/pwa-180-apple.png", "sizes": "180x180", "type": "image/png" }
+  ],
+  "categories": ["business", "productivity"]
+}

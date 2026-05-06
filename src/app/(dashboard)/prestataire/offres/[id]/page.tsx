@@ -16,6 +16,13 @@ const categories = [
 
 const DURATION_OPTIONS = [15, 30, 45, 60, 75, 90, 105, 120, 150, 180, 240];
 
+const TVA_PRESETS = [
+  { value: "0", label: "0% – Exonéré" },
+  { value: "7", label: "7% – TVA réduite" },
+  { value: "13", label: "13% – TVA intermédiaire" },
+  { value: "19", label: "19% – TVA standard (par défaut)" },
+];
+
 interface Slot {
   id: string;
   startTime: string;
@@ -39,6 +46,8 @@ export default function EditOfferPage() {
     discountPrice: "",
     category: "COIFFURE",
     durationMinutes: 60,
+    taxRate: "19",
+    customTaxRate: "",
     active: true,
     photos: [] as string[],
   });
@@ -49,6 +58,8 @@ export default function EditOfferPage() {
       const res = await fetch(`/api/offers/${id}`);
       if (res.ok) {
         const offer = await res.json();
+        const taxRateNum = Number(offer.taxRate ?? 19);
+        const isPreset = ["0", "7", "13", "19"].includes(String(taxRateNum));
         setForm({
           title: offer.title,
           description: offer.description || "",
@@ -56,6 +67,8 @@ export default function EditOfferPage() {
           discountPrice: String(offer.discountPrice),
           category: offer.category,
           durationMinutes: offer.durationMinutes || 60,
+          taxRate: isPreset ? String(taxRateNum) : "custom",
+          customTaxRate: isPreset ? "" : String(taxRateNum),
           active: offer.active,
           photos: offer.photos || [],
         });
@@ -71,14 +84,26 @@ export default function EditOfferPage() {
     setSaving(true);
     setError("");
     try {
+      const taxRate =
+        form.taxRate === "custom"
+          ? parseFloat(form.customTaxRate)
+          : parseFloat(form.taxRate);
+      if (Number.isNaN(taxRate) || taxRate < 0 || taxRate > 100) {
+        setError("Taux de TVA invalide (0–100)");
+        return;
+      }
       const res = await fetch(`/api/offers/${id}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          ...form,
+          title: form.title,
+          description: form.description,
+          category: form.category,
+          active: form.active,
           originalPrice: parseFloat(form.originalPrice),
           discountPrice: parseFloat(form.discountPrice),
           durationMinutes: form.durationMinutes,
+          taxRate,
           photos: form.photos,
         }),
       });
@@ -197,6 +222,31 @@ export default function EditOfferPage() {
             <p className="text-[10px] text-brand-bordeaux/40 mt-1">
               Modifier la durée régénère les créneaux non réservés.
             </p>
+          </div>
+          <div>
+            <label className="block text-[10px] tracking-[0.15em] uppercase text-brand-bordeaux/60 mb-2">TVA</label>
+            <select
+              value={form.taxRate}
+              onChange={(e) => setForm({ ...form, taxRate: e.target.value })}
+              className="w-full px-4 py-3 border border-brand-gold/20 bg-transparent text-brand-bordeaux text-sm focus:outline-none focus:border-brand-gold transition-colors"
+            >
+              {TVA_PRESETS.map((p) => (
+                <option key={p.value} value={p.value}>{p.label}</option>
+              ))}
+              <option value="custom">Personnalisé...</option>
+            </select>
+            {form.taxRate === "custom" && (
+              <input
+                type="number"
+                step="0.01"
+                min="0"
+                max="100"
+                value={form.customTaxRate}
+                onChange={(e) => setForm({ ...form, customTaxRate: e.target.value })}
+                placeholder="Taux personnalisé (%)"
+                className="mt-2 w-full px-4 py-3 border border-brand-gold/20 bg-transparent text-brand-bordeaux text-sm focus:outline-none focus:border-brand-gold transition-colors"
+              />
+            )}
           </div>
           <div className="md:col-span-2">
             <label className="block text-[10px] tracking-[0.15em] uppercase text-brand-bordeaux/60 mb-2">Description</label>

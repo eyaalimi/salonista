@@ -16,6 +16,13 @@ const categories = [
 
 const DURATION_OPTIONS = [15, 30, 45, 60, 75, 90, 105, 120, 150, 180, 240];
 
+const TVA_PRESETS = [
+  { value: "0", label: "0% – Exonéré" },
+  { value: "7", label: "7% – TVA réduite" },
+  { value: "13", label: "13% – TVA intermédiaire" },
+  { value: "19", label: "19% – TVA standard (par défaut)" },
+];
+
 interface Offer {
   id: string;
   title: string;
@@ -23,6 +30,7 @@ interface Offer {
   discountPrice: string;
   category: string;
   durationMinutes: number;
+  taxRate: string;
   photos: string[];
   active: boolean;
   createdAt: string;
@@ -42,6 +50,8 @@ export default function ProviderOffersPage() {
     discountPrice: "",
     category: "COIFFURE",
     durationMinutes: 60,
+    taxRate: "19",
+    customTaxRate: "",
     photos: [] as string[],
   });
   const [createError, setCreateError] = useState("");
@@ -61,14 +71,25 @@ export default function ProviderOffersPage() {
     setSaving(true);
     setCreateError("");
     try {
+      const taxRate =
+        form.taxRate === "custom"
+          ? parseFloat(form.customTaxRate)
+          : parseFloat(form.taxRate);
+      if (Number.isNaN(taxRate) || taxRate < 0 || taxRate > 100) {
+        setCreateError("Taux de TVA invalide (0–100)");
+        return;
+      }
       const res = await fetch("/api/offers", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          ...form,
+          title: form.title,
+          description: form.description,
+          category: form.category,
           originalPrice: parseFloat(form.originalPrice),
           discountPrice: parseFloat(form.discountPrice),
           durationMinutes: form.durationMinutes,
+          taxRate,
           photos: form.photos,
         }),
       });
@@ -78,7 +99,7 @@ export default function ProviderOffersPage() {
         return;
       }
       setShowForm(false);
-      setForm({ title: "", description: "", originalPrice: "", discountPrice: "", category: "COIFFURE", durationMinutes: 60, photos: [] });
+      setForm({ title: "", description: "", originalPrice: "", discountPrice: "", category: "COIFFURE", durationMinutes: 60, taxRate: "19", customTaxRate: "", photos: [] });
       await loadOffers();
     } catch (err) {
       setCreateError(err instanceof Error ? err.message : "Erreur réseau");
@@ -179,6 +200,35 @@ export default function ProviderOffersPage() {
                   </option>
                 ))}
               </select>
+            </div>
+            <div>
+              <label className="block text-[10px] tracking-[0.15em] uppercase text-brand-bordeaux/60 mb-2">
+                TVA *
+              </label>
+              <select
+                value={form.taxRate}
+                onChange={(e) => setForm({ ...form, taxRate: e.target.value })}
+                className="w-full px-4 py-3 border border-brand-gold/20 bg-transparent text-brand-bordeaux text-sm focus:outline-none focus:border-brand-gold transition-colors"
+              >
+                {TVA_PRESETS.map((p) => (
+                  <option key={p.value} value={p.value}>
+                    {p.label}
+                  </option>
+                ))}
+                <option value="custom">Personnalisé...</option>
+              </select>
+              {form.taxRate === "custom" && (
+                <input
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  max="100"
+                  value={form.customTaxRate}
+                  onChange={(e) => setForm({ ...form, customTaxRate: e.target.value })}
+                  placeholder="Taux personnalisé (%)"
+                  className="mt-2 w-full px-4 py-3 border border-brand-gold/20 bg-transparent text-brand-bordeaux text-sm focus:outline-none focus:border-brand-gold transition-colors"
+                />
+              )}
             </div>
             <div className="md:col-span-2">
               <label className="block text-[10px] tracking-[0.15em] uppercase text-brand-bordeaux/60 mb-2">Description</label>

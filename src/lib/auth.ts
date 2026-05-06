@@ -3,6 +3,8 @@ import CredentialsProvider from "next-auth/providers/credentials";
 import GoogleProvider from "next-auth/providers/google";
 import { compare } from "bcryptjs";
 import { prisma } from "./prisma";
+import { mergePermissions } from "./permissions";
+import type { EmployeeSessionData } from "@/types/next-auth";
 
 export const authOptions: NextAuthOptions = {
   session: {
@@ -54,6 +56,58 @@ export const authOptions: NextAuthOptions = {
         };
       },
     }),
+    CredentialsProvider({
+      id: "salon-pin",
+      name: "Salon PIN",
+      credentials: {
+        employeeId: { label: "Employé", type: "text" },
+        pin: { label: "PIN", type: "password" },
+      },
+      async authorize(credentials) {
+        if (!credentials?.employeeId || !credentials?.pin) {
+          throw new Error("Identifiant employé et PIN requis");
+        }
+
+        const employee = await prisma.salonEmployee.findUnique({
+          where: { id: credentials.employeeId },
+          include: {
+            provider: { select: { userId: true } },
+            user: { select: { email: true } },
+          },
+        });
+
+        if (!employee || !employee.active || !employee.pinHash) {
+          throw new Error("PIN incorrect");
+        }
+
+        const ok = await compare(credentials.pin, employee.pinHash);
+        if (!ok) {
+          throw new Error("PIN incorrect");
+        }
+
+        await prisma.salonEmployee.update({
+          where: { id: employee.id },
+          data: { lastLoginAt: new Date() },
+        });
+
+        const permissions = mergePermissions(employee.role, employee.permissions);
+        const employeeSession: EmployeeSessionData = {
+          id: employee.id,
+          providerId: employee.providerId,
+          role: employee.role,
+          displayName: employee.displayName,
+          permissions,
+        };
+
+        return {
+          id: employee.userId ?? `pin:${employee.id}`,
+          email: employee.user?.email ?? employee.email ?? null,
+          name: employee.displayName,
+          role: "PROVIDER",
+          employee: employeeSession,
+        };
+      },
+    }),
   ],
   callbacks: {
     async signIn({ user, account }) {
@@ -81,9 +135,17 @@ export const authOptions: NextAuthOptions = {
       if (user) {
         token.role = (user as { role: string }).role;
         token.id = user.id;
+        const maybeEmployee = (user as { employee?: EmployeeSessionData | null }).employee;
+        if (maybeEmployee) {
+          token.employee = maybeEmployee;
+        }
       }
-      // Refresh role from DB on each token refresh
-      if (token.id) {
+      // PIN-authenticated sessions keep their session role ("PROVIDER") and
+      // their employee payload regardless of any underlying User row's role.
+      // Without this guard, a cashier whose linked User happens to be a CLIENT
+      // would lose PROVIDER access on the first token refresh.
+      const isPinSession = !!token.employee || (typeof token.id === "string" && token.id.startsWith("pin:"));
+      if (token.id && !isPinSession) {
         const dbUser = await prisma.user.findUnique({
           where: { id: token.id as string },
           select: { role: true },
@@ -97,6 +159,7 @@ export const authOptions: NextAuthOptions = {
         (session.user as { id: string; role: string }).id = token.id as string;
         (session.user as { id: string; role: string }).role = token.role as string;
       }
+      session.employee = token.employee ?? null;
       return session;
     },
   },
