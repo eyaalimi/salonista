@@ -168,3 +168,30 @@ body {
   background: var(--accent);
   color: white;
 }
+
+/* Mobile typography — readability on Android mid-range */
+@media (max-width: 640px) {
+  body {
+    font-size: 15px;
+    -webkit-text-size-adjust: 100%;
+  }
+
+  /* Avoid iOS zoom on focused inputs */
+  input, select, textarea {
+    font-size: 16px !important;
+  }
+
+  /* Tighten extra-loose uppercase tracking on mobile */
+  .tracking-\[0\.18em\] {
+    letter-spacing: 0.08em;
+  }
+
+  /* Tap targets minimum (Apple HIG / Material) */
+  button, a {
+    min-height: 44px;
+  }
+}
+
+/* Horizontal scroll without scrollbar (used for category chips & feed rails) */
+.no-scrollbar::-webkit-scrollbar { display: none; }
+.no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }

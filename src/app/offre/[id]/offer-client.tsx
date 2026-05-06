@@ -226,13 +226,13 @@ export function OfferClient({
       <nav className="bg-white/80 backdrop-blur-md border-b border-brand-gold/15 sticky top-0 z-50">
         <div className="max-w-7xl mx-auto px-6 md:px-12 flex items-center justify-between h-16">
           <Logo className="text-xl" />
-          <Link href="/offres" className="text-xs tracking-[0.2em] uppercase text-brand-ink-soft hover:text-brand-gold transition-colors duration-500">
+          <Link href="/offres" className="text-sm font-medium text-brand-ink-soft hover:text-brand-gold transition-colors">
             Toutes les offres
           </Link>
         </div>
       </nav>
 
-      <div className="max-w-5xl mx-auto px-6 md:px-12 py-12 md:py-20">
+      <div className="max-w-5xl mx-auto px-6 md:px-12 py-12 md:py-20 pb-32 md:pb-20">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-12 md:gap-16">
           {/* Image */}
           <div className="space-y-3">
@@ -261,49 +261,60 @@ export function OfferClient({
 
           {/* Info */}
           <div className="flex flex-col justify-center">
-            <p className="luxury-badge mb-6">
-              {offer.category}
-            </p>
+            {/* Salon + quartier — above the fold on mobile */}
+            <div className="mb-3 flex items-center gap-2">
+              <span className="rounded-full bg-brand-sand px-3 py-1 text-xs font-medium text-brand-ink">
+                {offer.category}
+              </span>
+              {reviews.length > 0 && (
+                <div className="flex items-center gap-1">
+                  <StarRating rating={Math.round(avgRating)} />
+                  <span className="text-xs text-brand-ink-soft">
+                    {avgRating.toFixed(1)} · {reviews.length} avis
+                  </span>
+                </div>
+              )}
+            </div>
 
-            {reviews.length > 0 && (
-              <div className="flex items-center gap-2 mb-4">
-                <StarRating rating={Math.round(avgRating)} />
-                <span className="text-sm text-brand-bordeaux/60">{avgRating.toFixed(1)}</span>
-                <span className="text-xs text-brand-bordeaux/30">({reviews.length} avis)</span>
-              </div>
+            <p className="text-base font-semibold text-brand-ink">
+              {offer.provider.salonName}
+            </p>
+            {offer.provider.city && (
+              <p className="mt-0.5 text-sm text-brand-ink-soft">
+                📍 {offer.provider.city}
+              </p>
             )}
 
-            <h1 className="luxury-heading text-3xl md:text-4xl text-brand-bordeaux mb-3">
+            <h1 className="luxury-heading mt-4 text-2xl text-brand-ink md:text-4xl">
               {offer.title}
             </h1>
 
-            <p className="text-xs tracking-[0.2em] uppercase text-brand-bordeaux/40 mb-6">
-              {offer.provider.salonName}
-              {offer.provider.city && ` — ${offer.provider.city}`}
-            </p>
-
             {/* Price */}
-            <div className="flex items-baseline gap-4 mb-6 pb-6 border-b border-brand-gold/15">
-              <span className="luxury-heading text-4xl text-brand-gold">
+            <div className="mt-5 mb-6 flex items-baseline gap-3 border-b border-brand-line pb-6">
+              <span className="luxury-heading text-3xl text-brand-gold sm:text-4xl">
                 {offer.discountPrice.toFixed(0)} DT
               </span>
-              <span className="text-brand-bordeaux/30 line-through text-lg">
-                {offer.originalPrice.toFixed(0)} DT
-              </span>
-              <span className="text-xs tracking-[0.15em] uppercase text-brand-gold font-medium">
-                -{discount}%
-              </span>
+              {offer.originalPrice > offer.discountPrice && (
+                <>
+                  <span className="text-base text-gray-400 line-through sm:text-lg">
+                    {offer.originalPrice.toFixed(0)} DT
+                  </span>
+                  <span className="rounded-full bg-brand-ink px-2.5 py-0.5 text-xs font-bold text-[#FBFAF7]">
+                    -{discount}%
+                  </span>
+                </>
+              )}
             </div>
 
             {offer.description && (
-              <p className="text-brand-bordeaux/60 leading-relaxed mb-8">{offer.description}</p>
+              <p className="mb-8 leading-relaxed text-brand-ink-soft">{offer.description}</p>
             )}
 
-            {/* CTA */}
+            {/* CTA — desktop button (mobile uses the sticky bar at bottom) */}
             {!showBooking ? (
               <button
                 onClick={() => setShowBooking(true)}
-                className="w-full py-4 text-xs tracking-[0.2em] uppercase bg-brand-bordeaux text-white hover:bg-brand-gold transition-colors duration-500"
+                className="hidden w-full rounded-2xl bg-brand-ink py-4 text-base font-semibold text-white transition-colors hover:bg-brand-gold md:block"
               >
                 Réserver maintenant
               </button>
@@ -515,6 +526,18 @@ export function OfferClient({
           </div>
         </div>
       </div>
+
+      {/* Mobile sticky CTA — only when booking form is hidden */}
+      {!showBooking && (
+        <div className="fixed bottom-0 left-0 right-0 z-40 border-t border-brand-line bg-white p-4 md:hidden">
+          <button
+            onClick={() => setShowBooking(true)}
+            className="flex w-full min-h-[52px] items-center justify-center gap-2 rounded-2xl bg-brand-ink text-base font-semibold text-white transition-colors hover:bg-brand-gold"
+          >
+            Réserver maintenant — {offer.discountPrice.toFixed(0)} DT
+          </button>
+        </div>
+      )}
     </div>
   );
 }

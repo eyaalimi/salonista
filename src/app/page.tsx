@@ -3,27 +3,29 @@ import { prisma } from "@/lib/prisma";
 import { HomeNav } from "@/components/home-nav";
 import { Logo } from "@/components/logo";
 import { UploadedImage } from "@/components/uploaded-image";
+import { Greeting } from "@/components/greeting";
+import { PromoBanner } from "@/components/promo-banner";
 
 const categoryLabels: Record<string, string> = {
   COIFFURE: "Coiffure",
-  ESTHETIQUE: "Esthétique",
-  ONGLERIE: "Onglerie",
+  ESTHETIQUE: "Soin visage",
+  ONGLERIE: "Ongles",
   MASSAGE: "Massage",
   PARFUMERIE: "Parfumerie",
   AUTRE: "Autre",
 };
 
 const categoryEmoji: Record<string, string> = {
-  COIFFURE: "✂️",
+  COIFFURE: "💇‍♀️",
   ESTHETIQUE: "✨",
   ONGLERIE: "💅",
-  MASSAGE: "🧖‍♀️",
+  MASSAGE: "💆",
   PARFUMERIE: "🌸",
   AUTRE: "💄",
 };
 
 export default async function Home() {
-  const [offers, stats, topSalons, categories] = await Promise.all([
+  const [offers, topSalons, categories] = await Promise.all([
     prisma.offer.findMany({
       where: { active: true },
       orderBy: { createdAt: "desc" },
@@ -32,11 +34,6 @@ export default async function Home() {
         provider: { select: { salonName: true, city: true } },
       },
     }),
-    Promise.all([
-      prisma.providerProfile.count(),
-      prisma.offer.count({ where: { active: true } }),
-      prisma.booking.count(),
-    ]),
     prisma.providerProfile.findMany({
       take: 8,
       include: {
@@ -56,317 +53,284 @@ export default async function Home() {
     }),
   ]);
 
-  const [providerCount, offerCount, bookingCount] = stats;
-
-  const categoryData = Object.keys(categoryLabels).map((key) => ({
-    key,
-    label: categoryLabels[key],
-    count: categories.find((c) => c.category === key)?._count || 0,
-  })).filter((c) => c.count > 0);
+  const categoryData = Object.keys(categoryLabels)
+    .map((key) => ({
+      key,
+      label: categoryLabels[key],
+      count: categories.find((c) => c.category === key)?._count || 0,
+    }))
+    .filter((c) => c.count > 0);
 
   return (
     <div className="min-h-screen bg-brand-cream">
       <HomeNav />
 
-      {/* HERO — split, bounded image, search on the left */}
-      <section className="bg-brand-sand pt-20 md:pt-24">
-        <div className="max-w-7xl mx-auto px-6 md:px-12 grid grid-cols-1 lg:grid-cols-2 gap-10 lg:gap-16 items-center">
-          {/* Left: copy + search */}
-          <div className="py-12 lg:py-20">
-            <h1 className="luxury-heading text-4xl md:text-6xl lg:text-7xl text-brand-ink mb-3 luxury-slide-up">
-              Casse la routine.
-            </h1>
-            <h2 className="luxury-heading text-4xl md:text-6xl lg:text-7xl text-brand-ink mb-8 luxury-slide-up delay-200">
-              Réserve <span className="italic text-brand-gold">ton moment.</span>
-            </h2>
+      {/* Spacer for fixed nav */}
+      <div className="h-14 md:h-20" />
 
-            <p className="text-base text-brand-ink-soft mb-8 max-w-md luxury-slide-up delay-400">
-              Coiffure, esthétique, onglerie, massage — partout en Tunisie.
-            </p>
+      {/* GREETING */}
+      <Greeting />
 
-            <form action="/offres" method="GET" className="space-y-3 max-w-md luxury-slide-up delay-500">
-              <div className="relative">
-                <svg className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-brand-ink-soft" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                </svg>
-                <input
-                  type="text"
-                  name="q"
-                  placeholder="Rechercher des soins / salons"
-                  className="w-full pl-12 pr-5 py-4 text-sm text-brand-ink placeholder:text-brand-ink-soft/60 bg-white border border-brand-line rounded-md focus:outline-none focus:border-brand-gold transition-colors"
-                />
-              </div>
-
-              <div className="relative">
-                <svg className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-brand-ink-soft" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M17.657 16.657L13.414 20.9a2 2 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
-                </svg>
-                <input
-                  type="text"
-                  name="city"
-                  placeholder="Ville ou quartier"
-                  className="w-full pl-12 pr-5 py-4 text-sm text-brand-ink placeholder:text-brand-ink-soft/60 bg-white border border-brand-line rounded-md focus:outline-none focus:border-brand-gold transition-colors"
-                />
-              </div>
-
-              <button
-                type="submit"
-                className="w-full px-6 py-4 text-sm font-medium tracking-wide bg-brand-ink text-white hover:bg-brand-gold transition-colors duration-300 rounded-md"
-              >
-                Je recherche
-              </button>
-            </form>
-
-            {/* Quick category chips */}
-            {categoryData.length > 0 && (
-              <div className="flex gap-2 mt-8 flex-wrap luxury-slide-up delay-600">
-                {categoryData.slice(0, 5).map((cat) => (
-                  <Link
-                    key={cat.key}
-                    href={`/offres?category=${cat.key}`}
-                    className="px-4 py-2 text-xs bg-white border border-brand-line text-brand-ink-soft hover:border-brand-gold hover:text-brand-ink transition-all duration-300 rounded-full"
-                  >
-                    {categoryEmoji[cat.key]} {cat.label}
-                  </Link>
-                ))}
-              </div>
-            )}
-          </div>
-
-          {/* Right: bounded hero image */}
-          <div className="relative h-[420px] md:h-[520px] lg:h-[620px] order-first lg:order-last -mx-6 md:-mx-12 lg:mx-0">
-            <UploadedImage
-              src="/uploads/hero-beauty.jpg"
-              alt=""
-              fill
-              sizes="(max-width: 1024px) 100vw, 50vw"
-              className="object-cover"
-              priority
+      {/* SEARCH — mobile-first, big, friendly */}
+      <section className="px-4 pt-4">
+        <form action="/offres" method="GET" className="relative">
+          <svg
+            className="pointer-events-none absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-brand-gold"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
             />
-          </div>
-        </div>
+          </svg>
+          <input
+            type="text"
+            name="q"
+            placeholder="Cherche un soin, un salon..."
+            aria-label="Rechercher"
+            className="w-full rounded-2xl border border-brand-gold-soft bg-brand-sand py-3 pl-12 pr-4 text-base text-brand-ink placeholder:text-brand-ink-soft/70 focus:border-brand-gold focus:outline-none"
+          />
+        </form>
       </section>
 
-      {/* TRUST STRIP */}
-      <section className="border-y border-brand-gold/15 bg-white py-8">
-        <div className="max-w-5xl mx-auto px-6 md:px-12 grid grid-cols-3 gap-4 text-center">
-          <div>
-            <p className="luxury-heading text-2xl md:text-3xl text-brand-bordeaux">
-              {offerCount > 0 ? `${offerCount}+` : "200+"}
-            </p>
-            <p className="text-[9px] md:text-[10px] tracking-[0.2em] uppercase text-brand-bordeaux/40 mt-1">Offres</p>
-          </div>
-          <div className="border-x border-brand-gold/15">
-            <p className="luxury-heading text-2xl md:text-3xl text-brand-bordeaux">
-              {providerCount > 0 ? `${providerCount}+` : "50+"}
-            </p>
-            <p className="text-[9px] md:text-[10px] tracking-[0.2em] uppercase text-brand-bordeaux/40 mt-1">Salons</p>
-          </div>
-          <div>
-            <p className="luxury-heading text-2xl md:text-3xl text-brand-bordeaux">
-              {bookingCount > 0 ? `${bookingCount}+` : "1K+"}
-            </p>
-            <p className="text-[9px] md:text-[10px] tracking-[0.2em] uppercase text-brand-bordeaux/40 mt-1">Réservations</p>
-          </div>
-        </div>
-      </section>
+      {/* PROMO BANNER */}
+      <PromoBanner />
 
-      {/* THE FEED — main attraction */}
-      {offers.length > 0 && (
-        <section id="offres" className="py-16 md:py-24">
-          <div className="max-w-7xl mx-auto px-4 md:px-12">
-            <div className="flex items-end justify-between mb-10">
-              <div>
-                <p className="text-[10px] tracking-[0.3em] uppercase text-brand-gold mb-2">Le feed</p>
-                <h2 className="luxury-heading text-3xl md:text-5xl text-brand-bordeaux">
-                  Tendances <span className="italic">du moment</span>
-                </h2>
-              </div>
+      {/* CATEGORY CHIPS — horizontal scroll */}
+      {categoryData.length > 0 && (
+        <section className="mt-5">
+          <div className="no-scrollbar flex gap-2 overflow-x-auto px-4 pb-1">
+            <Link
+              href="/offres"
+              className="shrink-0 rounded-full border border-brand-line bg-brand-sand px-4 py-2 text-sm text-brand-ink"
+            >
+              Tout
+            </Link>
+            {categoryData.map((cat) => (
               <Link
-                href="/offres"
-                className="hidden md:inline-flex items-center gap-2 text-[11px] tracking-[0.2em] uppercase text-brand-bordeaux/60 hover:text-brand-gold transition-colors"
+                key={cat.key}
+                href={`/offres?category=${cat.key}`}
+                className="shrink-0 rounded-full border border-brand-line bg-brand-sand px-4 py-2 text-sm text-brand-ink"
               >
-                Tout voir →
+                {categoryEmoji[cat.key]} {cat.label}
               </Link>
-            </div>
+            ))}
+          </div>
+        </section>
+      )}
 
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2 md:gap-4">
-              {offers.map((offer, idx) => {
-                const discount = Math.round(
-                  ((Number(offer.originalPrice) - Number(offer.discountPrice)) /
-                    Number(offer.originalPrice)) *
-                    100
-                );
-                // Mix portrait + square for visual rhythm
-                const isPortrait = idx % 5 === 0 || idx % 5 === 3;
-                return (
-                  <Link
-                    key={offer.id}
-                    href={`/offre/${offer.id}`}
-                    className={`group relative overflow-hidden bg-gradient-to-br from-brand-nude to-brand-peach ${
-                      isPortrait ? "aspect-[3/4] md:row-span-2" : "aspect-square"
-                    }`}
-                  >
+      {/* OFFERS — horizontal rail of compact cards */}
+      {offers.length > 0 && (
+        <section className="mt-6">
+          <div className="flex items-center justify-between px-4 mb-3">
+            <h2 className="text-sm font-semibold text-brand-ink">
+              🔥 Soldes — Offres du jour
+            </h2>
+            <Link
+              href="/offres"
+              className="text-sm font-semibold text-brand-gold"
+            >
+              Voir →
+            </Link>
+          </div>
+
+          <div className="no-scrollbar flex gap-3 overflow-x-auto px-4 pb-2">
+            {offers.map((offer) => {
+              const original = Number(offer.originalPrice);
+              const discounted = Number(offer.discountPrice);
+              const discount =
+                original > 0
+                  ? Math.round(((original - discounted) / original) * 100)
+                  : 0;
+
+              return (
+                <Link
+                  key={offer.id}
+                  href={`/offre/${offer.id}`}
+                  className="flex w-[160px] shrink-0 flex-col overflow-hidden rounded-2xl border border-brand-line bg-white"
+                >
+                  <div className="relative h-[90px] w-full bg-gradient-to-br from-brand-sand to-brand-gold-soft/40">
                     {offer.photos.length > 0 ? (
                       <UploadedImage
                         src={offer.photos[0]}
                         alt={offer.title}
                         fill
-                        sizes="(max-width: 768px) 50vw, (max-width: 1024px) 33vw, 25vw"
-                        className="object-cover group-hover:scale-105 transition-transform duration-1000"
+                        sizes="160px"
+                        className="object-cover"
                       />
                     ) : (
-                      <div className="absolute inset-0 flex items-center justify-center text-6xl opacity-40">
+                      <div className="flex h-full items-center justify-center text-3xl">
                         {categoryEmoji[offer.category]}
                       </div>
                     )}
-
-                    {/* Gradient overlay always — content readable */}
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent opacity-90 group-hover:opacity-100 transition-opacity" />
-
-                    {/* Discount badge */}
                     {discount > 0 && (
-                      <div className="absolute top-3 right-3 px-2.5 py-1 bg-brand-gold text-white text-[10px] md:text-xs font-bold tracking-wide">
+                      <span className="absolute right-2 top-2 rounded-full bg-brand-ink px-2 py-0.5 text-[10px] font-bold text-[#FBFAF7]">
                         -{discount}%
+                      </span>
+                    )}
+                  </div>
+
+                  <div className="flex flex-1 flex-col px-2 pb-2">
+                    <p className="mt-2 line-clamp-1 text-[10px] text-brand-ink-soft">
+                      {offer.provider.salonName}
+                      {offer.provider.city && ` · ${offer.provider.city}`}
+                    </p>
+                    <h3 className="mt-0.5 line-clamp-2 text-xs font-semibold leading-tight text-brand-ink">
+                      {offer.title}
+                    </h3>
+                    <div className="mt-auto flex items-baseline gap-1.5 pt-2">
+                      <span className="text-sm font-bold text-brand-gold">
+                        {discounted.toFixed(0)} DT
+                      </span>
+                      {original > discounted && (
+                        <span className="text-xs text-gray-400 line-through">
+                          {original.toFixed(0)}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                </Link>
+              );
+            })}
+          </div>
+        </section>
+      )}
+
+      {/* SALONS — visual rail */}
+      {topSalons.length > 0 && (
+        <section id="salons" className="mt-6">
+          <div className="flex items-center justify-between px-4 mb-3">
+            <h2 className="text-sm font-semibold text-brand-ink">
+              ✨ Salons populaires
+            </h2>
+            <Link
+              href="/offres"
+              className="text-sm font-semibold text-brand-gold"
+            >
+              Voir →
+            </Link>
+          </div>
+
+          <div className="no-scrollbar flex gap-3 overflow-x-auto px-4 pb-2">
+            {topSalons.map((salon) => {
+              const cover = salon.offers[0]?.photos[0];
+              return (
+                <Link
+                  key={salon.id}
+                  href={`/salon/${salon.id}`}
+                  className="block w-[140px] shrink-0"
+                >
+                  <div className="relative aspect-square overflow-hidden rounded-2xl bg-gradient-to-br from-brand-sand to-brand-gold-soft/40">
+                    {cover ? (
+                      <UploadedImage
+                        src={cover}
+                        alt={salon.salonName}
+                        fill
+                        sizes="140px"
+                        className="object-cover"
+                      />
+                    ) : (
+                      <div className="absolute inset-0 flex items-center justify-center text-4xl text-brand-ink/30">
+                        {salon.salonName.charAt(0).toUpperCase()}
                       </div>
                     )}
-
-                    {/* Bottom info */}
-                    <div className="absolute bottom-0 left-0 right-0 p-3 md:p-4 text-white">
-                      <p className="text-[9px] md:text-[10px] tracking-[0.15em] uppercase opacity-70 mb-1 line-clamp-1">
-                        {offer.provider.salonName}
-                        {offer.provider.city && ` · ${offer.provider.city}`}
-                      </p>
-                      <h3 className="luxury-heading text-sm md:text-base leading-tight mb-2 line-clamp-2">
-                        {offer.title}
-                      </h3>
-                      <div className="flex items-baseline gap-2">
-                        <span className="luxury-heading text-lg md:text-xl text-brand-gold-light">
-                          {Number(offer.discountPrice).toFixed(0)} DT
-                        </span>
-                        <span className="text-xs opacity-50 line-through">
-                          {Number(offer.originalPrice).toFixed(0)}
-                        </span>
-                      </div>
-                    </div>
-                  </Link>
-                );
-              })}
-            </div>
-
-            <div className="text-center mt-12 md:hidden">
-              <Link
-                href="/offres"
-                className="inline-block px-10 py-4 text-xs tracking-[0.2em] uppercase bg-brand-bordeaux text-white"
-              >
-                Voir toutes les offres
-              </Link>
-            </div>
+                  </div>
+                  <h3 className="mt-2 line-clamp-1 text-sm font-semibold text-brand-ink">
+                    {salon.salonName}
+                  </h3>
+                  <p className="line-clamp-1 text-xs text-brand-ink-soft">
+                    {salon.city || "Tunisie"} · {salon._count.offers} offre
+                    {salon._count.offers > 1 ? "s" : ""}
+                  </p>
+                </Link>
+              );
+            })}
           </div>
         </section>
       )}
 
-      {/* SALONS — visual cards */}
-      {topSalons.length > 0 && (
-        <section id="salons" className="py-16 md:py-24 bg-white">
-          <div className="max-w-7xl mx-auto px-4 md:px-12">
-            <div className="flex items-end justify-between mb-10">
-              <div>
-                <p className="text-[10px] tracking-[0.3em] uppercase text-brand-gold mb-2">Salons</p>
-                <h2 className="luxury-heading text-3xl md:text-5xl text-brand-bordeaux">
-                  Nos <span className="italic">favoris</span>
-                </h2>
-              </div>
-            </div>
-
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 md:gap-5">
-              {topSalons.map((salon) => {
-                const cover = salon.offers[0]?.photos[0];
-                return (
-                  <Link
-                    key={salon.id}
-                    href={`/salon/${salon.id}`}
-                    className="group block"
-                  >
-                    <div className="relative aspect-square overflow-hidden bg-gradient-to-br from-brand-nude to-brand-peach mb-3">
-                      {cover ? (
-                        <UploadedImage
-                          src={cover}
-                          alt={salon.salonName}
-                          fill
-                          sizes="(max-width: 768px) 50vw, 25vw"
-                          className="object-cover group-hover:scale-105 transition-transform duration-1000"
-                        />
-                      ) : (
-                        <div className="absolute inset-0 flex items-center justify-center">
-                          <span className="luxury-heading text-5xl text-brand-bordeaux/30">
-                            {salon.salonName.charAt(0).toUpperCase()}
-                          </span>
-                        </div>
-                      )}
-                      <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
-                    </div>
-                    <h3 className="luxury-heading text-base md:text-lg text-brand-bordeaux group-hover:text-brand-gold transition-colors line-clamp-1">
-                      {salon.salonName}
-                    </h3>
-                    <p className="text-[10px] tracking-[0.15em] uppercase text-brand-bordeaux/40 mt-1">
-                      {salon.city || "Tunisie"} · {salon._count.offers} offre{salon._count.offers > 1 ? "s" : ""}
-                    </p>
-                  </Link>
-                );
-              })}
-            </div>
+      {/* SALONS NEAR YOU CTA */}
+      <section className="mt-6 px-0">
+        <div className="mx-4 flex items-center justify-between gap-3 rounded-2xl bg-brand-sand p-4">
+          <div className="min-w-0">
+            <p className="text-sm font-semibold text-brand-ink">
+              Salons près de toi 📍
+            </p>
+            <p className="text-xs text-brand-ink-soft">
+              Disponibles maintenant
+            </p>
           </div>
-        </section>
-      )}
+          <Link
+            href="/offres"
+            className="shrink-0 text-sm font-semibold text-brand-gold"
+          >
+            Voir →
+          </Link>
+        </div>
+      </section>
 
-      {/* PRO CTA — minimal, dual */}
-      <section className="py-16 md:py-24 bg-brand-bordeaux text-white">
-        <div className="max-w-7xl mx-auto px-6 md:px-12 grid md:grid-cols-2 gap-1 md:gap-1">
+      {/* PRO CTA — kept compact, stacked on mobile */}
+      <section className="mt-8 bg-brand-ink text-white">
+        <div className="mx-auto max-w-7xl">
           <Link
             href="/register"
-            className="group p-10 md:p-14 border border-white/10 hover:bg-white/5 transition-colors"
+            className="block border-b border-white/10 p-6 sm:p-10"
           >
-            <p className="text-[10px] tracking-[0.3em] uppercase text-brand-gold-light mb-3">Prestataire</p>
-            <h3 className="luxury-heading text-2xl md:text-4xl mb-4">
+            <p className="mb-2 text-[11px] tracking-widest uppercase text-brand-gold-soft">
+              Prestataire
+            </p>
+            <h3 className="luxury-heading text-xl sm:text-3xl">
               Vous avez un <span className="italic">salon</span> ?
             </h3>
-            <p className="text-sm text-white/60 mb-6 max-w-sm">
+            <p className="mt-2 text-sm text-white/60">
               Recevez des réservations qualifiées chaque jour.
             </p>
-            <span className="inline-flex items-center gap-2 text-[11px] tracking-[0.2em] uppercase text-brand-gold-light group-hover:gap-4 transition-all">
+            <span className="mt-3 inline-block text-sm font-semibold text-brand-gold-soft">
               Rejoindre →
             </span>
           </Link>
           <Link
             href="/register"
-            className="group p-10 md:p-14 border border-white/10 hover:bg-white/5 transition-colors"
+            className="block p-6 sm:p-10"
           >
-            <p className="text-[10px] tracking-[0.3em] uppercase text-brand-gold-light mb-3">Influenceuse</p>
-            <h3 className="luxury-heading text-2xl md:text-4xl mb-4">
+            <p className="mb-2 text-[11px] tracking-widest uppercase text-brand-gold-soft">
+              Influenceuse
+            </p>
+            <h3 className="luxury-heading text-xl sm:text-3xl">
               Monétisez votre <span className="italic">audience</span>
             </h3>
-            <p className="text-sm text-white/60 mb-6 max-w-sm">
+            <p className="mt-2 text-sm text-white/60">
               10% de commission sur chaque réservation.
             </p>
-            <span className="inline-flex items-center gap-2 text-[11px] tracking-[0.2em] uppercase text-brand-gold-light group-hover:gap-4 transition-all">
+            <span className="mt-3 inline-block text-sm font-semibold text-brand-gold-soft">
               Devenir partenaire →
             </span>
           </Link>
         </div>
       </section>
 
-      {/* FOOTER — slim */}
+      {/* FOOTER */}
       <footer className="bg-brand-ink text-white border-t border-white/10">
-        <div className="max-w-7xl mx-auto px-6 md:px-12 py-10 flex flex-col md:flex-row items-center justify-between gap-6">
-          <Logo tone="light" className="text-2xl" />
-          <div className="flex items-center gap-6 md:gap-8 text-[11px] tracking-[0.2em] uppercase text-white/50">
-            <Link href="/offres" className="hover:text-brand-gold transition-colors">Offres</Link>
-            <Link href="/login" className="hover:text-brand-gold transition-colors">Connexion</Link>
-            <Link href="/register" className="hover:text-brand-gold transition-colors">Inscription</Link>
+        <div className="mx-auto flex max-w-7xl flex-col items-center justify-between gap-5 px-6 py-8 sm:flex-row md:px-12">
+          <Logo tone="light" className="text-xl" />
+          <div className="flex items-center gap-5 text-xs text-white/60">
+            <Link href="/offres" className="hover:text-brand-gold transition-colors">
+              Offres
+            </Link>
+            <Link href="/login" className="hover:text-brand-gold transition-colors">
+              Connexion
+            </Link>
+            <Link href="/register" className="hover:text-brand-gold transition-colors">
+              Inscription
+            </Link>
           </div>
-          <p className="text-[10px] text-white/30 tracking-wider">© 2026 · Fait en Tunisie</p>
+          <p className="text-[10px] text-white/30">
+            © 2026 · Fait en Tunisie
+          </p>
         </div>
       </footer>
 

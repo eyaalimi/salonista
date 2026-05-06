@@ -82,17 +82,17 @@ export default async function OffresPage({
 
         {/* Search + Filters */}
         <div className="mb-12 space-y-4">
-          <form action="/offres" method="GET" className="flex bg-white border border-brand-gold/20 overflow-hidden max-w-2xl mx-auto">
+          <form action="/offres" method="GET" className="mx-auto flex max-w-2xl overflow-hidden rounded-2xl border border-brand-gold-soft bg-brand-sand">
             <input
               type="text"
               name="q"
               defaultValue={q || ""}
-              placeholder="Rechercher un service, un salon, une ville..."
-              className="flex-1 px-6 py-3.5 text-sm text-brand-bordeaux placeholder:text-brand-bordeaux/30 bg-transparent focus:outline-none"
+              placeholder="Cherche un soin, un salon..."
+              className="flex-1 bg-transparent px-5 py-3 text-base text-brand-ink placeholder:text-brand-ink-soft/70 focus:outline-none"
             />
             <button
               type="submit"
-              className="px-6 py-3.5 text-xs tracking-[0.2em] uppercase bg-brand-bordeaux text-white hover:bg-brand-gold transition-colors duration-500"
+              className="bg-brand-ink px-5 py-3 text-sm font-semibold text-white transition-colors hover:bg-brand-gold"
             >
               Rechercher
             </button>
@@ -132,40 +132,46 @@ export default async function OffresPage({
               <Link
                 key={offer.id}
                 href={`/offre/${offer.id}`}
-                className="group luxury-card overflow-hidden"
+                className="group flex min-h-[80px] flex-col overflow-hidden rounded-2xl border border-brand-line bg-white transition-shadow hover:shadow-md"
               >
-                <div className="relative aspect-[4/5] overflow-hidden bg-gradient-to-br from-brand-nude to-brand-peach flex items-center justify-center">
+                <div className="relative aspect-[4/5] overflow-hidden bg-gradient-to-br from-brand-sand to-brand-gold-soft/40">
                   {offer.photos.length > 0 ? (
-                    <UploadedImage src={offer.photos[0]} alt={offer.title} fill sizes="(max-width: 768px) 100vw, (max-width: 1024px) 50vw, 33vw" className="object-cover group-hover:scale-105 transition-transform duration-[1.2s]" />
+                    <UploadedImage src={offer.photos[0]} alt={offer.title} fill sizes="(max-width: 768px) 100vw, (max-width: 1024px) 50vw, 33vw" className="object-cover transition-transform duration-700 group-hover:scale-105" />
                   ) : (
-                    <span className="text-6xl opacity-30 group-hover:scale-110 transition-transform duration-[1.2s]">
+                    <div className="flex h-full items-center justify-center text-6xl opacity-30">
                       💇‍♀️
-                    </span>
+                    </div>
                   )}
-                  <div className="absolute top-4 left-4">
-                    <span className="luxury-badge text-[10px] bg-white/90 backdrop-blur-sm">
-                      {categoryLabels[offer.category] || offer.category}
-                    </span>
-                  </div>
-                </div>
-                <div className="p-5 md:p-6">
-                  <p className="text-[10px] tracking-[0.2em] uppercase text-brand-bordeaux/40 mb-2">
-                    {offer.provider.salonName}
-                    {offer.provider.city && ` — ${offer.provider.city}`}
-                  </p>
-                  <h3 className="luxury-heading text-lg text-brand-bordeaux mb-3 group-hover:text-brand-gold transition-colors duration-500">
-                    {offer.title}
-                  </h3>
-                  <div className="flex items-baseline gap-3">
-                    <span className="luxury-heading text-xl text-brand-gold">
-                      {Number(offer.discountPrice).toFixed(0)} DT
-                    </span>
-                    <span className="text-sm text-brand-bordeaux/30 line-through">
-                      {Number(offer.originalPrice).toFixed(0)} DT
-                    </span>
-                    <span className="ml-auto text-[10px] tracking-[0.15em] uppercase text-brand-gold font-medium">
+                  <span className="absolute left-3 top-3 rounded-full bg-white/95 px-3 py-1 text-[11px] font-semibold text-brand-ink backdrop-blur-sm">
+                    {categoryLabels[offer.category] || offer.category}
+                  </span>
+                  {discount > 0 && (
+                    <span className="absolute right-3 top-3 rounded-full bg-brand-ink px-3 py-1 text-xs font-bold text-[#FBFAF7]">
                       -{discount}%
                     </span>
+                  )}
+                </div>
+                <div className="flex flex-1 flex-col p-4 sm:p-5">
+                  <p className="line-clamp-1 text-sm font-medium text-brand-ink">
+                    {offer.provider.salonName}
+                  </p>
+                  {offer.provider.city && (
+                    <p className="line-clamp-1 text-xs text-brand-ink-soft">
+                      📍 {offer.provider.city}
+                    </p>
+                  )}
+                  <h3 className="mt-2 line-clamp-2 text-sm font-semibold leading-snug text-brand-ink">
+                    {offer.title}
+                  </h3>
+                  <div className="mt-auto flex items-baseline gap-2 pt-3">
+                    <span className="text-base font-bold text-brand-gold">
+                      {Number(offer.discountPrice).toFixed(0)} DT
+                    </span>
+                    {Number(offer.originalPrice) > Number(offer.discountPrice) && (
+                      <span className="text-xs text-gray-400 line-through">
+                        {Number(offer.originalPrice).toFixed(0)} DT
+                      </span>
+                    )}
                   </div>
                 </div>
               </Link>
