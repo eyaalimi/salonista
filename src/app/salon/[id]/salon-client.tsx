@@ -15,6 +15,7 @@ interface Offer {
   description: string | null;
   originalPrice: number;
   discountPrice: number;
+  taxRate: number;
   category: string;
   durationMinutes: number;
   photos: string[];
@@ -326,6 +327,9 @@ export function SalonClient({ salon }: { salon: Salon }) {
                               {discount > 0 && (
                                 <p className="text-[10px] tracking-wider uppercase text-brand-gold/70">-{discount}%</p>
                               )}
+                              <p className="text-[9px] tracking-[0.15em] uppercase text-brand-bordeaux/40">
+                                TVA {Number(offer.taxRate ?? 19)}%
+                              </p>
                             </div>
                           </div>
                           <p className="text-[10px] tracking-[0.15em] uppercase text-brand-bordeaux/40 mb-2">

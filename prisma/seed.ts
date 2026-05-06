@@ -1,3 +1,10 @@
+// Seed credentials:
+//   Provider 1 (POS + Rewards trial):  salon.nour@example.com / password123
+//   Provider 2 (POS only):              institut.yasmine@example.com / password123
+//   Provider 3 (no modules):            nails.mariem@example.com / password123
+//   Cashier PIN (provider1 + provider2): 1234
+//   Admin: run `npx tsx scripts/create-admin.ts`
+
 import { PrismaClient, Role, Category, BookingStatus, CommissionStatus } from "../src/generated/prisma/client";
 import { PrismaPg } from "@prisma/adapter-pg";
 import { hash } from "bcryptjs";
@@ -24,6 +31,9 @@ async function main() {
   await prisma.trackingLink.deleteMany();
   await prisma.payout.deleteMany();
   await prisma.offer.deleteMany();
+  await prisma.salonSubscription.deleteMany();
+  await prisma.salonEmployee.deleteMany();
+  await prisma.customer.deleteMany();
   await prisma.influencerProfile.deleteMany();
   await prisma.providerProfile.deleteMany();
   await prisma.session.deleteMany();
@@ -307,6 +317,133 @@ async function main() {
     }),
   ]);
 
+  // --- SALON EMPLOYEES (one OWNER + optional CASHIER per provider) ---
+  const cashierPinHash = await hash("1234", 10);
+  await prisma.salonEmployee.create({
+    data: {
+      providerId: provider1.providerProfile!.id,
+      userId: provider1.id,
+      displayName: provider1.name!,
+      role: "OWNER",
+    },
+  });
+  await prisma.salonEmployee.create({
+    data: {
+      providerId: provider1.providerProfile!.id,
+      displayName: "Sarra (Caisse)",
+      role: "CASHIER",
+      pinHash: cashierPinHash,
+    },
+  });
+  await prisma.salonEmployee.create({
+    data: {
+      providerId: provider2.providerProfile!.id,
+      userId: provider2.id,
+      displayName: provider2.name!,
+      role: "OWNER",
+    },
+  });
+  await prisma.salonEmployee.create({
+    data: {
+      providerId: provider2.providerProfile!.id,
+      displayName: "Mounir (Caisse)",
+      role: "CASHIER",
+      pinHash: cashierPinHash,
+    },
+  });
+  await prisma.salonEmployee.create({
+    data: {
+      providerId: provider3.providerProfile!.id,
+      userId: provider3.id,
+      displayName: provider3.name!,
+      role: "OWNER",
+    },
+  });
+
+  // --- SUBSCRIPTIONS ---
+  // provider1: POS active + REWARDS trial expiring in 30 days
+  // provider2: POS only
+  // provider3: nothing (contrast case)
+  const trialExpiry = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
+  await prisma.salonSubscription.create({
+    data: {
+      providerId: provider1.providerProfile!.id,
+      module: "POS",
+      status: "ACTIVE",
+      pricingSnapshot: { monthlyPrice: 30, currency: "DT" },
+    },
+  });
+  await prisma.salonSubscription.create({
+    data: {
+      providerId: provider1.providerProfile!.id,
+      module: "REWARDS",
+      status: "TRIAL",
+      expiresAt: trialExpiry,
+      pricingSnapshot: { monthlyPrice: 20, currency: "DT" },
+    },
+  });
+  await prisma.salonSubscription.create({
+    data: {
+      providerId: provider2.providerProfile!.id,
+      module: "POS",
+      status: "ACTIVE",
+      pricingSnapshot: { monthlyPrice: 30, currency: "DT" },
+    },
+  });
+
+  // --- CUSTOMERS (decoupled from User; covers walk-ins + linked clients) ---
+  const customer1 = await prisma.customer.create({
+    data: {
+      phone: clients[0].phone!,
+      firstName: "Fatma",
+      lastName: "Bouzid",
+      email: clients[0].email,
+      userId: clients[0].id,
+      firstSalonId: provider1.providerProfile!.id,
+    },
+  });
+  const customer2 = await prisma.customer.create({
+    data: {
+      phone: clients[1].phone!,
+      firstName: "Ines",
+      lastName: "Mansouri",
+      email: clients[1].email,
+      userId: clients[1].id,
+      firstSalonId: provider2.providerProfile!.id,
+    },
+  });
+  // Walk-ins (no User)
+  await prisma.customer.create({
+    data: {
+      phone: "+21622000111",
+      firstName: "Salma",
+      lastName: "Khelifi",
+      firstSalonId: provider1.providerProfile!.id,
+    },
+  });
+  await prisma.customer.create({
+    data: {
+      phone: "+21622000222",
+      firstName: "Ahlem",
+      lastName: "Hamdi",
+      firstSalonId: provider2.providerProfile!.id,
+    },
+  });
+  await prisma.customer.create({
+    data: {
+      phone: "+21622000333",
+      firstName: "Yosra",
+      lastName: "Ben Salem",
+      firstSalonId: provider1.providerProfile!.id,
+    },
+  });
+
+  const clientCustomers: Record<string, string | null> = {
+    [clients[0].id]: customer1.id,
+    [clients[1].id]: customer2.id,
+    [clients[2].id]: null,
+  };
+
   // --- BOOKINGS + COMMISSIONS (with tracking) ---
   const bookingData = [
     { client: clients[0], offer: offers[0], trackingLink: trackingLinks[0], status: BookingStatus.COMPLETED, date: new Date("2026-03-15T10:00:00") },
@@ -339,6 +476,7 @@ async function main() {
     const booking = await prisma.booking.create({
       data: {
         clientId: bd.client.id,
+        customerId: clientCustomers[bd.client.id] ?? null,
         status: bd.status,
         totalPrice: price,
         notes: bd.status === BookingStatus.CANCELLED ? "Client a annulé" : null,

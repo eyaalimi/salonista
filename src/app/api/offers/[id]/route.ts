@@ -56,6 +56,15 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
     nextDuration = d;
   }
 
+  let nextTaxRate: number | undefined;
+  if (body.taxRate !== undefined) {
+    const t = Number(body.taxRate);
+    if (Number.isNaN(t) || t < 0 || t > 100) {
+      return NextResponse.json({ error: "Taux de TVA invalide (0–100)" }, { status: 400 });
+    }
+    nextTaxRate = t;
+  }
+
   const updated = await prisma.offer.update({
     where: { id },
     data: {
@@ -67,6 +76,7 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
       photos: body.photos ?? offer.photos,
       active: body.active ?? offer.active,
       durationMinutes: nextDuration,
+      ...(nextTaxRate !== undefined ? { taxRate: nextTaxRate } : {}),
     },
   });
 

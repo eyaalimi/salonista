@@ -63,7 +63,7 @@ export async function POST(req: NextRequest) {
   }
 
   const body = await req.json();
-  const { title, description, originalPrice, discountPrice, category, photos, durationMinutes } = body;
+  const { title, description, originalPrice, discountPrice, category, photos, durationMinutes, taxRate } = body;
 
   if (!title || !originalPrice || !discountPrice || !category) {
     return NextResponse.json({ error: "Champs requis manquants" }, { status: 400 });
@@ -77,6 +77,11 @@ export async function POST(req: NextRequest) {
     );
   }
 
+  const tax = taxRate === undefined ? 19 : Number(taxRate);
+  if (Number.isNaN(tax) || tax < 0 || tax > 100) {
+    return NextResponse.json({ error: "Taux de TVA invalide (0–100)" }, { status: 400 });
+  }
+
   const offer = await prisma.offer.create({
     data: {
       providerId: profile.id,
@@ -87,6 +92,7 @@ export async function POST(req: NextRequest) {
       category,
       photos: photos || [],
       durationMinutes: duration,
+      taxRate: tax,
     },
   });
 

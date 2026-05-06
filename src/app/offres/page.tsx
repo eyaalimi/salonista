@@ -163,15 +163,20 @@ export default async function OffresPage({
                   <h3 className="mt-2 line-clamp-2 text-sm font-semibold leading-snug text-brand-ink">
                     {offer.title}
                   </h3>
-                  <div className="mt-auto flex items-baseline gap-2 pt-3">
-                    <span className="text-base font-bold text-brand-gold">
-                      {Number(offer.discountPrice).toFixed(0)} DT
-                    </span>
-                    {Number(offer.originalPrice) > Number(offer.discountPrice) && (
-                      <span className="text-xs text-gray-400 line-through">
-                        {Number(offer.originalPrice).toFixed(0)} DT
+                  <div className="mt-auto pt-3">
+                    <div className="flex items-baseline gap-2">
+                      <span className="text-base font-bold text-brand-gold">
+                        {Number(offer.discountPrice).toFixed(0)} DT
                       </span>
-                    )}
+                      {Number(offer.originalPrice) > Number(offer.discountPrice) && (
+                        <span className="text-xs text-gray-400 line-through">
+                          {Number(offer.originalPrice).toFixed(0)} DT
+                        </span>
+                      )}
+                    </div>
+                    <p className="mt-0.5 text-[9px] uppercase tracking-[0.15em] text-brand-bordeaux/40">
+                      TVA incluse: {Number(offer.taxRate ?? 19)}%
+                    </p>
                   </div>
                 </div>
               </Link>

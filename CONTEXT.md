@@ -254,6 +254,7 @@ REQUIRE_EMAIL_VERIFICATION=true
 - **`useSearchParams()` needs `<Suspense>`** in Next.js 16 — wrap login/register/verification/payment/reservation pages.
 - **Image `sizes` is required** when `fill` is set — Next.js logs a warning otherwise.
 - **`localPatterns` in `next.config.ts`** must include any new public path that goes through the optimizer (currently `/uploads/**`, `/images/**`).
+- **PWA service worker caches aggressively in production**. After deploying changes that affect `/salon-pin` or `/prestataire/pos`, users may need to close and reopen the installed app for `skipWaiting/clientsClaim` to take effect. Bump `SW_VERSION` in `public/sw.js` if a hard refresh is needed.
 
 ---
 
@@ -289,6 +290,29 @@ npx tsx scripts/create-admin.ts
 - No CDN in front of `/uploads/` yet. Nginx 7-day caching handles it for now.
 - Payment is a stub (no real PSP integration).
 - Mobile app is not on the roadmap.
+
+---
+
+## Phase 1 additions (foundations + PWA shell)
+
+- **Customer entity** decoupled from User. Walk-ins have a `Customer` row but no `User`. Linked to a User via `Customer.userId` when the client also signs up. `firstSalonId` records the salon that registered them and gates cross-salon visibility.
+- **SalonEmployee** with role-based permissions (`OWNER`/`MANAGER`/`CASHIER`/`STYLIST`) plus a per-employee JSON override map. PIN auth via NextAuth `salon-pin` Credentials provider — same JWT session strategy, second provider id.
+- **SalonSubscription** gates paid modules (`POS`, `REWARDS`). Helpers in [src/lib/modules.ts](src/lib/modules.ts): `hasModule()`, `requireModule()`, `getActiveModules()`. Server component [`<ModuleGate>`](src/components/module-gate.tsx) renders a French "Module non activé" placeholder when inactive.
+- **Tax rate on Offer**: Tunisian TVA (0/7/13/19% + custom). Stored as `Decimal(5, 2)` with a 19.00 default. Displayed under the price on `/offre/[id]`, `/salon/[id]`, and `/offres`.
+- **Phone normalization**: [src/lib/phone.ts](src/lib/phone.ts) — accepts `12345678`/`012345678`/`216...`/`+216...` and returns E.164. Tested in [src/lib/phone.test.ts](src/lib/phone.test.ts) (vitest, 31 cases).
+- **PWA scaffolding**: static [`public/manifest.json`](public/manifest.json) + four PNG icons in `public/icons/` (generated from `src/app/icon.svg` via `npm run icons:pwa`) + a no-op `public/sw.js` registered globally by [`<SwRegister>`](src/components/sw-register.tsx). [`<PwaInstallPrompt>`](src/components/pwa-install-prompt.tsx) is mounted on `/salon-pin` only. **Note**: we did not use Serwist — it doesn't yet support Next 16 / Turbopack. Phase 2 will pick a different path (or revisit Serwist when it ships Turbopack support).
+
+Routes added:
+- `/salon-pin` — employee PIN entry (PWA install entry point)
+- `/admin/subscriptions` — module activation
+- `/prestataire/pos` — placeholder, gated by POS module + `pos.sell` permission
+- `/api/customers/lookup`, `/api/customers`, `/api/customers/[id]`
+- `/api/admin/subscriptions`, `/api/admin/subscriptions/[id]`
+- `/api/salon-pin/resolve`
+
+Dashboard nav for PROVIDER now conditionally includes "Caisse" — only when the provider's `POS` subscription is active. Layout fetches `getActiveModules()` server-side and passes the list to the client nav.
+
+One-time backfill: `npx tsx prisma/backfill-phase1.ts` (idempotent — see deploy README).
 
 ---
 

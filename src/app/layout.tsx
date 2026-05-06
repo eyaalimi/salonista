@@ -1,8 +1,9 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Geist } from "next/font/google";
 import { Playfair_Display } from "next/font/google";
 import { Providers } from "@/components/providers";
 import { BottomNav } from "@/components/bottom-nav";
+import { SwRegister } from "@/components/sw-register";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -48,6 +49,20 @@ export const metadata: Metadata = {
     index: true,
     follow: true,
   },
+  manifest: "/manifest.json",
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "black-translucent",
+    title: "Salonista POS",
+  },
+  icons: {
+    icon: "/icon.svg",
+    apple: "/icons/pwa-180-apple.png",
+  },
+};
+
+export const viewport: Viewport = {
+  themeColor: "#1F1A1C",
 };
 
 export default function RootLayout({
@@ -61,6 +76,7 @@ export default function RootLayout({
         <Providers>
           <main className="flex-1 pb-[76px] md:pb-0">{children}</main>
           <BottomNav />
+          <SwRegister />
         </Providers>
       </body>
     </html>

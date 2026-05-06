@@ -100,6 +100,7 @@ export default async function OffrePage({ params, searchParams }: Props) {
         description: offer.description,
         originalPrice: Number(offer.originalPrice),
         discountPrice: Number(offer.discountPrice),
+        taxRate: Number(offer.taxRate),
         category: categoryLabels[offer.category] || offer.category,
         photos: offer.photos,
         provider: offer.provider,

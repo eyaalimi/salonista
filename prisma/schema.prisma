@@ -54,6 +54,25 @@ enum CollabStatus {
   REJECTED
 }
 
+enum EmployeeRole {
+  OWNER
+  MANAGER
+  CASHIER
+  STYLIST
+}
+
+enum SubscriptionModule {
+  POS
+  REWARDS
+}
+
+enum SubscriptionStatus {
+  ACTIVE
+  SUSPENDED
+  EXPIRED
+  TRIAL
+}
+
 model User {
   id            String    @id @default(cuid())
   email         String    @unique
@@ -76,6 +95,8 @@ model User {
   reviews           Review[]
   accounts          Account[]
   sessions          Session[]
+  customer          Customer?
+  employeeAccounts  SalonEmployee[]
 }
 
 model Account {
@@ -132,6 +153,8 @@ model ProviderProfile {
   user                  User                   @relation(fields: [userId], references: [id], onDelete: Cascade)
   offers                Offer[]
   collaborationRequests CollaborationRequest[]
+  employees             SalonEmployee[]
+  subscriptions         SalonSubscription[]
 }
 
 model InfluencerProfile {
@@ -162,6 +185,7 @@ model Offer {
   category        Category
   photos          String[]
   durationMinutes Int       @default(60)
+  taxRate         Decimal   @default(19.00) @db.Decimal(5, 2)
   active          Boolean   @default(true)
   createdAt       DateTime  @default(now())
 
@@ -218,37 +242,49 @@ model Click {
 }
 
 model Booking {
-  id            String        @id @default(cuid())
-  clientId      String
-  status        BookingStatus @default(PENDING)
-  paymentStatus PaymentStatus @default(UNPAID)
-  totalPrice    Decimal       @db.Decimal(10, 3)
-  notes         String?
-  qrCode        String?       @unique
-  qrVerified    Boolean       @default(false)
-  qrVerifiedAt  DateTime?
-  paidAt        DateTime?
-  createdAt     DateTime      @default(now())
+  id                 String        @id @default(cuid())
+  clientId           String
+  customerId         String?
+  walkIn             Boolean       @default(false)
+  createdViaPos      Boolean       @default(false)
+  assignedEmployeeId String?
+  status             BookingStatus @default(PENDING)
+  paymentStatus      PaymentStatus @default(UNPAID)
+  totalPrice         Decimal       @db.Decimal(10, 3)
+  notes              String?
+  qrCode             String?       @unique
+  qrVerified         Boolean       @default(false)
+  qrVerifiedAt       DateTime?
+  paidAt             DateTime?
+  createdAt          DateTime      @default(now())
 
-  client     User          @relation(fields: [clientId], references: [id], onDelete: Cascade)
-  items      BookingItem[]
-  click      Click?
-  commission Commission?
-  review     Review?
+  client             User           @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  customer           Customer?      @relation(fields: [customerId], references: [id], onDelete: SetNull)
+  assignedEmployee   SalonEmployee? @relation("BookingAssignedEmployee", fields: [assignedEmployeeId], references: [id], onDelete: SetNull)
+  items              BookingItem[]
+  click              Click?
+  commission         Commission?
+  review             Review?
+
+  @@index([customerId])
+  @@index([assignedEmployeeId])
 }
 
 model BookingItem {
-  id         String  @id @default(cuid())
-  bookingId  String
-  offerId    String
-  slotId     String
-  unitPrice  Decimal @db.Decimal(10, 3)
+  id                 String  @id @default(cuid())
+  bookingId          String
+  offerId            String
+  slotId             String
+  unitPrice          Decimal @db.Decimal(10, 3)
+  assignedEmployeeId String?
 
-  booking Booking  @relation(fields: [bookingId], references: [id], onDelete: Cascade)
-  offer   Offer    @relation(fields: [offerId], references: [id], onDelete: Cascade)
-  slot    TimeSlot @relation(fields: [slotId], references: [id], onDelete: Restrict)
+  booking          Booking        @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+  offer            Offer          @relation(fields: [offerId], references: [id], onDelete: Cascade)
+  slot             TimeSlot       @relation(fields: [slotId], references: [id], onDelete: Restrict)
+  assignedEmployee SalonEmployee? @relation("BookingItemAssignedEmployee", fields: [assignedEmployeeId], references: [id], onDelete: SetNull)
 
   @@index([bookingId])
+  @@index([assignedEmployeeId])
 }
 
 model Commission {
@@ -319,4 +355,67 @@ model CollaborationOffer {
 
   @@unique([collabId, offerId])
   @@index([offerId])
+}
+
+model Customer {
+  id           String    @id @default(cuid())
+  phone        String    @unique
+  firstName    String?
+  lastName     String?
+  email        String?
+  birthday     DateTime?
+  notes        String?
+  userId       String?   @unique
+  firstSalonId String?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  user     User?     @relation(fields: [userId], references: [id], onDelete: SetNull)
+  bookings Booking[]
+
+  @@index([phone])
+  @@index([firstSalonId])
+}
+
+model SalonEmployee {
+  id          String       @id @default(cuid())
+  providerId  String
+  userId      String?
+  displayName String
+  phone       String?
+  email       String?
+  pinHash     String?
+  role        EmployeeRole @default(CASHIER)
+  permissions Json?
+  active      Boolean      @default(true)
+  lastLoginAt DateTime?
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+
+  provider    ProviderProfile @relation(fields: [providerId], references: [id], onDelete: Cascade)
+  user        User?           @relation(fields: [userId], references: [id], onDelete: SetNull)
+  bookingsLed Booking[]       @relation("BookingAssignedEmployee")
+  itemsLed    BookingItem[]   @relation("BookingItemAssignedEmployee")
+
+  @@index([providerId, active])
+  @@index([userId])
+}
+
+model SalonSubscription {
+  id                String             @id @default(cuid())
+  providerId        String
+  module            SubscriptionModule
+  status            SubscriptionStatus @default(ACTIVE)
+  activatedAt       DateTime           @default(now())
+  expiresAt         DateTime?
+  activatedByUserId String?
+  pricingSnapshot   Json?
+  notes             String?
+  createdAt         DateTime           @default(now())
+  updatedAt         DateTime           @updatedAt
+
+  provider ProviderProfile @relation(fields: [providerId], references: [id], onDelete: Cascade)
+
+  @@unique([providerId, module])
+  @@index([status])
 }
