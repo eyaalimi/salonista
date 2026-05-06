@@ -32,6 +32,21 @@ export async function PUT(req: NextRequest, ctx: { params: Promise<{ id: string 
   }
 
   const isOwn = customer.firstSalonId === employee.providerId;
+  if (!isOwn) {
+    // External salons may still update name fields IF they have a relationship
+    // (a booking with this customer at one of their offers). Otherwise the
+    // requester has no business editing the row at all.
+    const hasBookingHere = await prisma.booking.findFirst({
+      where: {
+        customerId: customer.id,
+        items: { some: { offer: { providerId: employee.providerId } } },
+      },
+      select: { id: true },
+    });
+    if (!hasBookingHere) {
+      return Response.json({ error: "Client introuvable" }, { status: 404 });
+    }
+  }
 
   if (!isOwn) {
     const restricted =

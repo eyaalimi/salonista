@@ -16,9 +16,10 @@ self.addEventListener("activate", (event) => {
   event.waitUntil(self.clients.claim());
 });
 
-// No fetch handler in Phase 1: pass-through to the network for everything.
-// Adding a no-op fetch handler still makes the app installable as a PWA in Chrome.
-self.addEventListener("fetch", () => {});
+// Phase 1: no caching strategies — every request goes to the network unchanged.
+// The fetch listener is intentionally absent. Chrome still considers the app
+// installable; a SW with at least install + activate handlers + a manifest is
+// enough. Phase 2 will add `event.respondWith(...)` handlers per-route.
 
 // Surface version for diagnostics.
 self.addEventListener("message", (event) => {

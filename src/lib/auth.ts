@@ -140,8 +140,12 @@ export const authOptions: NextAuthOptions = {
           token.employee = maybeEmployee;
         }
       }
-      // For PIN-authenticated sessions, the token.id starts with "pin:" and there is no DB user.
-      if (token.id && !String(token.id).startsWith("pin:")) {
+      // PIN-authenticated sessions keep their session role ("PROVIDER") and
+      // their employee payload regardless of any underlying User row's role.
+      // Without this guard, a cashier whose linked User happens to be a CLIENT
+      // would lose PROVIDER access on the first token refresh.
+      const isPinSession = !!token.employee || (typeof token.id === "string" && token.id.startsWith("pin:"));
+      if (token.id && !isPinSession) {
         const dbUser = await prisma.user.findUnique({
           where: { id: token.id as string },
           select: { role: true },

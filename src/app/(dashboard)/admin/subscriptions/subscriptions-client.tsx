@@ -95,14 +95,17 @@ export default function SubscriptionsClient() {
   const [filter, setFilter] = useState<Filter>("ALL");
   const [drawerProvider, setDrawerProvider] = useState<Provider | null>(null);
 
-  async function load() {
+  async function load(): Promise<Provider[]> {
     const res = await fetch("/api/admin/subscriptions");
-    if (res.ok) {
-      const data = await res.json();
-      setProviders(data.providers);
-      setAdmins(data.admins);
+    if (!res.ok) {
+      setLoading(false);
+      return [];
     }
+    const data = await res.json();
+    setProviders(data.providers);
+    setAdmins(data.admins);
     setLoading(false);
+    return data.providers as Provider[];
   }
 
   useEffect(() => {
@@ -219,8 +222,8 @@ export default function SubscriptionsClient() {
           admins={admins}
           onClose={() => setDrawerProvider(null)}
           onChange={async () => {
-            await load();
-            const refreshed = providers.find((p) => p.id === drawerProvider.id);
+            const fresh = await load();
+            const refreshed = fresh.find((p) => p.id === drawerProvider.id);
             if (refreshed) setDrawerProvider(refreshed);
           }}
         />
