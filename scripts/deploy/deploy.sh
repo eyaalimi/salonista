@@ -23,7 +23,10 @@ npx prisma migrate deploy
 npx prisma generate
 
 echo "[4/6] Build Next.js"
-npm run build
+# Lightsail's 1 GB RAM + 2 GB swap is enough for `next build`, but Node's
+# default old-space heap (~512 MB) caps the TypeScript checker before it
+# can grow into swap. Raise the limit so the build can use available memory.
+NODE_OPTIONS="--max-old-space-size=2048" npm run build
 
 echo "[5/6] Ensure uploads dir exists with correct ownership"
 mkdir -p "${APP_DIR}/public/uploads"
