@@ -18,6 +18,7 @@ import { prisma } from "@/lib/prisma";
 import { computeTotals, type CartInput } from "@/lib/sale-totals";
 import { toMillimes, fromMillimes } from "@/lib/money";
 import { nextReceiptNumber } from "@/lib/receipt-number";
+import { findOpenSession } from "@/lib/cash-drawer";
 import type { PaymentMethod, SaleStatus } from "@/generated/prisma/enums";
 import type { Prisma } from "@/generated/prisma/client";
 
@@ -227,6 +228,29 @@ export async function createSaleFromPayload(args: {
     };
   }
 
+  // Cash-payment sessions: link CASH payments to the cashier's currently-open
+  // drawer session, if any. Offline syncs do their own resolution further
+  // down (the original session may have closed before the sync happened).
+  let openDrawerId: string | null = null;
+  if (!fromSync) {
+    const open = await findOpenSession(employeeId);
+    openDrawerId = open?.id ?? null;
+  } else {
+    // For offline syncs, find the session that was open at the sale's
+    // createdAt timestamp. If none, leave null and the sync-issues page
+    // will surface it as "Paiement sans session".
+    const saleDate = payload.createdAt ? new Date(payload.createdAt) : new Date();
+    const session = await prisma.cashDrawerSession.findFirst({
+      where: {
+        employeeId,
+        openedAt: { lte: saleDate },
+        OR: [{ closedAt: null }, { closedAt: { gte: saleDate } }],
+      },
+      orderBy: { openedAt: "desc" },
+    });
+    openDrawerId = session?.id ?? null;
+  }
+
   // Begin the persistence transaction.
   try {
     const result = await prisma.$transaction(async (tx) => {
@@ -321,6 +345,11 @@ export async function createSaleFromPayload(args: {
               method: p.method,
               amount: p.amount,
               reference: p.reference ?? null,
+              // Link CASH payments to the cashier's open drawer session if any.
+              // Card / transfer / other are not affected by drawer reconciliation.
+              ...(p.method === "CASH" && openDrawerId
+                ? { cashDrawerSessionId: openDrawerId }
+                : {}),
             })),
           },
           tipAllocations:
@@ -334,6 +363,85 @@ export async function createSaleFromPayload(args: {
               : undefined,
         },
       });
+
+      // ----- Booking ↔ Sale linkage -----
+      // If the sale references a booking, mark it COMPLETED and ensure the
+      // sale.bookingId is set. Otherwise, auto-create a phantom Booking so
+      // analytics + the calendar see this transaction.
+      if (payload.bookingId) {
+        await tx.booking.update({
+          where: { id: payload.bookingId },
+          data: { status: "COMPLETED" },
+        });
+      } else {
+        // Compute end time from sum of service durations (default 30 min).
+        let durationMin = 0;
+        for (const line of resolved) {
+          if (line.kind !== "SERVICE" || !line.offerId) continue;
+          const offer = await tx.offer.findUnique({
+            where: { id: line.offerId },
+            select: { durationMinutes: true },
+          });
+          if (offer) durationMin += offer.durationMinutes * line.quantity;
+        }
+        if (durationMin === 0) durationMin = 30;
+
+        const saleDate = payload.createdAt ? new Date(payload.createdAt) : new Date();
+
+        // Determine clientId: the customer's linked User if present, else
+        // the provider's own User.
+        let phantomClientId: string | null = null;
+        if (customerId) {
+          const c = await tx.customer.findUnique({
+            where: { id: customerId },
+            select: { userId: true },
+          });
+          phantomClientId = c?.userId ?? null;
+        }
+        if (!phantomClientId) {
+          const provider = await tx.providerProfile.findUnique({
+            where: { id: providerId },
+            select: { userId: true },
+          });
+          phantomClientId = provider?.userId ?? null;
+        }
+
+        // Most-common assigned employee on the lines (or null).
+        const assignmentCounts = new Map<string, number>();
+        for (const line of resolved) {
+          if (!line.assignedEmployeeId) continue;
+          assignmentCounts.set(
+            line.assignedEmployeeId,
+            (assignmentCounts.get(line.assignedEmployeeId) ?? 0) + 1,
+          );
+        }
+        let assignedEmpId: string | null = null;
+        for (const [eid, cnt] of assignmentCounts) {
+          if (!assignedEmpId || cnt > (assignmentCounts.get(assignedEmpId) ?? 0)) {
+            assignedEmpId = eid;
+          }
+        }
+
+        if (phantomClientId) {
+          const phantom = await tx.booking.create({
+            data: {
+              clientId: phantomClientId,
+              customerId: customerId,
+              walkIn: true,
+              createdViaPos: true,
+              phantom: true,
+              assignedEmployeeId: assignedEmpId,
+              status: "COMPLETED",
+              totalPrice: totals.total,
+              createdAt: saleDate,
+            },
+          });
+          await tx.sale.update({
+            where: { id: sale.id },
+            data: { bookingId: phantom.id },
+          });
+        }
+      }
 
       // Create stock movements pointing back at this sale.
       // SYNC_NEGATIVE is reserved for offline syncs that drove stock below

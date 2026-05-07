@@ -7,6 +7,7 @@ import { hasModule } from "@/lib/modules";
 import { prisma } from "@/lib/prisma";
 import { OnlineStatusBadge } from "@/components/pos/online-status-badge";
 import { OnlineStatusProvider } from "@/components/pos/online-status";
+import { CashDrawerIndicator } from "@/components/pos/cash-drawer-indicator";
 
 export const metadata = {
   title: "Caisse — Salonista",
@@ -60,10 +61,21 @@ export default async function PosLayout({ children }: { children: React.ReactNod
               {provider?.salonName}
             </span>
           </div>
-          <nav className="hidden sm:flex items-center gap-4 text-[10px] uppercase tracking-[0.18em] text-brand-cream/70">
+          <nav className="hidden md:flex items-center gap-4 text-[10px] uppercase tracking-[0.18em] text-brand-cream/70">
             <Link href="/pos" className="hover:text-brand-cream">Caisse</Link>
             <Link href="/pos/sales" className="hover:text-brand-cream">Ventes</Link>
-            <Link href="/pos/products" className="hover:text-brand-cream">Produits</Link>
+            {employee.permissions["inventory.view"] && (
+              <Link href="/pos/products" className="hover:text-brand-cream">Produits</Link>
+            )}
+            {employee.permissions["pos.cash_drawer"] && (
+              <Link href="/pos/cash-drawer" className="hover:text-brand-cream">Sessions</Link>
+            )}
+            {employee.permissions["analytics.view"] && (
+              <Link href="/pos/analytics" className="hover:text-brand-cream">Analytique</Link>
+            )}
+            {employee.permissions["pos.refund"] && (
+              <Link href="/pos/sync-issues" className="hover:text-brand-cream">Conflits</Link>
+            )}
           </nav>
           <div className="flex-1 text-center text-sm">
             <span className="font-medium">{employee.displayName}</span>
@@ -71,7 +83,10 @@ export default async function PosLayout({ children }: { children: React.ReactNod
               {employee.role}
             </span>
           </div>
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-4">
+            {employee.permissions["pos.cash_drawer"] && (
+              <CashDrawerIndicator canOpen={true} />
+            )}
             <OnlineStatusBadge />
           </div>
         </header>

@@ -15,6 +15,9 @@ import {
 import { useOnlineStatus } from "@/components/pos/online-status";
 import { ChargeModal } from "@/components/pos/charge-modal";
 import { ReceiptPrintFrame, type ReceiptData } from "@/components/pos/receipt";
+import { PosCalendar } from "@/components/pos/pos-calendar";
+import { BookingCreateDrawer } from "@/components/pos/booking-create-drawer";
+import { BookingDetailDrawer } from "@/components/pos/booking-detail-drawer";
 
 type Permission = string;
 type EmployeeProp = {
@@ -70,6 +73,16 @@ export function PosClient({ employee }: { employee: EmployeeProp }) {
   const [chargeOpen, setChargeOpen] = useState(false);
   const [lastReceipt, setLastReceipt] = useState<ReceiptData | null>(null);
   const [printNow, setPrintNow] = useState(false);
+
+  // Phase 3: center-panel mode toggle.
+  const [centerMode, setCenterMode] = useState<"cart" | "calendar">("cart");
+  const [bookingDraft, setBookingDraft] = useState<Date | null>(null);
+  const [openBookingId, setOpenBookingId] = useState<string | null>(null);
+  const [convertingFromBooking, setConvertingFromBooking] = useState<{
+    id: string;
+    customerLabel: string;
+    when: string;
+  } | null>(null);
 
   const barcodeRef = useRef<HTMLInputElement | null>(null);
 
@@ -367,9 +380,66 @@ export function PosClient({ employee }: { employee: EmployeeProp }) {
         )}
       </aside>
 
-      {/* Cart panel */}
+      {/* Cart / Calendar panel */}
       <section className="bg-brand-cream/50 flex flex-col overflow-hidden">
+        {/* Mode toggle */}
+        <div className="border-b border-brand-line bg-white px-3 py-2 flex items-center gap-2">
+          <button
+            type="button"
+            onClick={() => setCenterMode("cart")}
+            className={`flex-1 rounded-lg py-1.5 text-[10px] uppercase tracking-[0.18em] ${
+              centerMode === "cart"
+                ? "bg-brand-ink text-brand-cream"
+                : "border border-brand-line bg-white text-brand-ink-soft"
+            }`}
+          >
+            Panier {cart.length > 0 ? `(${cart.length})` : ""}
+          </button>
+          <button
+            type="button"
+            onClick={() => setCenterMode("calendar")}
+            className={`flex-1 rounded-lg py-1.5 text-[10px] uppercase tracking-[0.18em] ${
+              centerMode === "calendar"
+                ? "bg-brand-ink text-brand-cream"
+                : "border border-brand-line bg-white text-brand-ink-soft"
+            }`}
+          >
+            Calendrier
+          </button>
+        </div>
+
+        {centerMode === "calendar" ? (
+          <div className="flex-1 overflow-hidden">
+            <PosCalendar
+              onCreateAt={(start) => {
+                if (!online) return;
+                setBookingDraft(start);
+              }}
+              onOpenBooking={(id) => setOpenBookingId(id)}
+            />
+          </div>
+        ) : (
+        <>
         <div className="flex-1 overflow-y-auto p-5">
+          {convertingFromBooking && (
+            <div className="mb-3 rounded-lg border border-brand-gold bg-brand-gold-soft/40 px-4 py-3">
+              <p className="text-xs text-brand-ink">
+                Encaissement de la réservation —{" "}
+                <span className="font-medium">{convertingFromBooking.customerLabel}</span> ·{" "}
+                {convertingFromBooking.when}
+              </p>
+              <button
+                type="button"
+                onClick={() => {
+                  setConvertingFromBooking(null);
+                  setCart([]);
+                }}
+                className="mt-1 text-[10px] uppercase tracking-[0.18em] text-brand-ink-soft hover:text-brand-ink"
+              >
+                Annuler la conversion
+              </button>
+            </div>
+          )}
           {cart.length === 0 ? (
             <p className="mt-12 text-center text-sm text-brand-ink-soft">
               Panier vide. Sélectionnez un service ou un produit, ou scannez un code-barres.
@@ -521,6 +591,8 @@ export function PosClient({ employee }: { employee: EmployeeProp }) {
             Encaisser
           </button>
         </div>
+        </>
+        )}
       </section>
 
       {/* Catalog panel */}
@@ -643,7 +715,7 @@ export function PosClient({ employee }: { employee: EmployeeProp }) {
           cart={cart}
           totals={totals}
           customerId={
-            selectedCustomer && selectedCustomer.id !== "__walkin__"
+            selectedCustomer && selectedCustomer.id !== "__walkin__" && selectedCustomer.id !== "__from-booking__"
               ? selectedCustomer.id
               : null
           }
@@ -655,9 +727,82 @@ export function PosClient({ employee }: { employee: EmployeeProp }) {
           provider={catalog?.provider ?? null}
           employee={employee}
           online={online}
+          bookingId={convertingFromBooking?.id ?? null}
           onClose={() => setChargeOpen(false)}
-          onCompleted={handleSold}
+          onCompleted={(receipt, shouldPrint) => {
+            handleSold(receipt, shouldPrint);
+            setConvertingFromBooking(null);
+          }}
           queueOffline={queueSale}
+        />
+      )}
+
+      {/* Booking create drawer (calendar slot click) */}
+      {bookingDraft && (
+        <BookingCreateDrawer
+          initialStart={bookingDraft}
+          online={online}
+          defaultEmployeeId={employee.id}
+          onClose={() => setBookingDraft(null)}
+          onCreated={() => {
+            setBookingDraft(null);
+          }}
+        />
+      )}
+
+      {/* Booking detail drawer */}
+      {openBookingId && (
+        <BookingDetailDrawer
+          bookingId={openBookingId}
+          canSell={!!employee.permissions["pos.sell"]}
+          canCancel={!!employee.permissions["bookings.cancel"]}
+          canEdit={!!employee.permissions["bookings.edit"]}
+          onClose={() => setOpenBookingId(null)}
+          onChanged={async () => {
+            // Trigger calendar reload by toggling mode
+            setCenterMode("calendar");
+          }}
+          onEncaisser={(booking) => {
+            // Prefill cart from the booking's items.
+            const newLines: CartLine[] = booking.items.map((it) => ({
+              uid: uuid(),
+              kind: "SERVICE",
+              offerId: it.offer ? (offers.find((o) => o.title === it.offer.title)?.id) : undefined,
+              nameSnapshot: it.offer.title,
+              priceSnapshot:
+                offers.find((o) => o.title === it.offer.title)?.discountPrice
+                  ? String(offers.find((o) => o.title === it.offer.title)!.discountPrice)
+                  : "0.000",
+              taxRateSnapshot:
+                offers.find((o) => o.title === it.offer.title)?.taxRate
+                  ? String(offers.find((o) => o.title === it.offer.title)!.taxRate)
+                  : "19",
+              quantity: 1,
+              assignedEmployeeId: employee.id,
+            }));
+            setCart(newLines);
+            // Snap customer.
+            const c = catalog?.customers.find(
+              (c) => c.phone === booking.customer?.phone,
+            );
+            setSelectedCustomer(c ?? (booking.customer ? {
+              id: "__from-booking__",
+              phone: booking.customer.phone,
+              firstName: booking.customer.firstName,
+              lastName: booking.customer.lastName,
+              email: null,
+            } : null));
+            const customerLabel = booking.customer
+              ? [booking.customer.firstName, booking.customer.lastName].filter(Boolean).join(" ") ||
+                booking.customer.phone
+              : "Walk-in";
+            const when = booking.items[0]?.slot
+              ? new Date(booking.items[0].slot.startTime).toLocaleString("fr-FR")
+              : new Date(booking.createdAt).toLocaleString("fr-FR");
+            setConvertingFromBooking({ id: booking.id, customerLabel, when });
+            setCenterMode("cart");
+            setOpenBookingId(null);
+          }}
         />
       )}
 

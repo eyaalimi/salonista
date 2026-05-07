@@ -242,6 +242,20 @@ What it does:
 
 Re-running it is a no-op once the data is in place.
 
+### `prisma/backfill-phase3.ts` (Phase 3)
+
+Run once, after `prisma migrate deploy` on the Phase 3 deploy:
+
+```bash
+cd /home/ubuntu/salonista
+npx tsx prisma/backfill-phase3.ts
+```
+
+What it does:
+- For every paid `Sale` with no `bookingId`, creates a phantom `Booking` (`phantom: true, walkIn: true, status: COMPLETED`) and links it back via `Sale.bookingId`. Makes the analytics dashboard count Phase 2 sales correctly.
+
+Idempotent — re-runs are no-ops.
+
 ---
 
 ## Notes
