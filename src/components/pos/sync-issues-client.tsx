@@ -19,6 +19,7 @@ const CONFLICT_LABELS: Record<string, string> = {
   offer_deleted: "Service retiré du catalogue",
   price_drift: "Prix divergent (snapshot offline vs catalogue actuel)",
   stock_negative: "Stock négatif après synchronisation",
+  phantom_booking_skipped: "Aucune réservation phantôme créée — vente absente du calendrier",
 };
 
 export function SyncIssuesClient() {

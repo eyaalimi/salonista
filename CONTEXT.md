@@ -256,6 +256,7 @@ REQUIRE_EMAIL_VERIFICATION=true
 - **`localPatterns` in `next.config.ts`** must include any new public path that goes through the optimizer (currently `/uploads/**`, `/images/**`).
 - **PWA service worker caches aggressively in production**. After deploying changes that affect `/salon-pin` or `/pos`, users may need to close and reopen the installed app for `skipWaiting/clientsClaim` to take effect. Bump `SW_VERSION` in `public/sw.js` if a hard refresh is needed.
 - **Stock can go negative** when offline POS sales sync. This is intentional Tier B graceful degradation — `StockMovement.requiresReview = true` flags those movements, and the conflict surfaces at `/pos/sync-issues`.
+- **Phantom bookings**: every paid POS sale auto-creates a `Booking` if none exists (`Booking.phantom = true`). Filter `phantom = false` when displaying public-facing booking lists (e.g., `/cliente`); include phantoms in analytics and the POS calendar.
 
 ---
 
@@ -347,6 +348,35 @@ Routes added:
 Helpers: `computeTotals()` + `totalsEqual()` (sale-totals.ts, run client- and server-side), `nextReceiptNumber()` (atomic via SaleSequence), `formatDT()` / `ttcToHt()` / `htToTtc()` / `taxFromTtc()` / `applyDiscount()` (money.ts, ints-in-millimes math), `pos-offline-db` IndexedDB layer (`refreshCatalog`, `queueSale`, `attemptSync`, `findCachedProductByBarcode`, etc.).
 
 **Note on Serwist**: The Phase 2 plan called for `@serwist/next`; we kept Phase 1's static `public/sw.js` and added Workbox 7 via `importScripts` from CDN instead. Reason: `@serwist/next` injects a webpack config but Next 16 defaults to Turbopack, which conflicts. Workbox-from-CDN gives the same caching strategies without a build-step dependency.
+
+---
+
+## Phase 3 additions (POS reservations, cash drawer, analytics)
+
+- **POS center-panel mode toggle**: Cart ↔ Calendrier in `pos-client.tsx`. The cart state survives mode switches so the cashier can flip back to a half-built cart from the calendar. `<PosCalendar>` is a dedicated component (not extending `<MultiServiceCalendar>` — see top-of-file comment for the decision rationale).
+- **Walk-ins**: every paid POS sale without a `bookingId` auto-creates a phantom `Booking` (`phantom: true, walkIn: true, createdViaPos: true, status: COMPLETED`). The phantom carries no `BookingItem`/`TimeSlot` rows. Sale↔Booking link is bidirectional from then on. Backfill: `prisma/backfill-phase3.ts` retroactively does the same for Phase 2 sales.
+- **POS bookings API** under `/api/pos/bookings/*` — separate from public `/api/bookings` because POS path bypasses payment requirements, supports walk-ins, and gates on `bookings.{create,edit,cancel}` permissions. Reuses slot allocation primitives (`regenerateOfferSlots` etc.) — no duplication.
+- **Convert booking to sale** (Encaisser): cashier taps Encaisser on a calendar block → cart prefills with the booking's services + customer → banner shows the reference → on charge, `Sale.bookingId` is set and `Booking.status` flips to `COMPLETED`.
+- **CashDrawerSession** model. Cashier opens with float, every cash `Payment` during the session links via `Payment.cashDrawerSessionId`, close-out captures variance = `closingCount - expectedCash`. `OWNER`/`MANAGER` can mark `RECONCILED`. One open session per employee at a time (enforced server-side). Offline syncs of cash sales attempt to retroactively link to whichever session was open at the sale's `createdAt` — unlinked ones land in `/pos/sync-issues`.
+- **Analytics page** `/pos/analytics` (gated by `analytics.view`). KPI tiles: revenu net, ventes payées, ticket moyen, nouveaux clients (each with previous-period delta). Recharts for the line/bar charts. 7×24 heatmap (Lun→Dim, 0h→23h). Low-stock list with inline restock CTA. CSV export for sales/refunds/drawer with Tunisian comma decimals + UTF-8 BOM so Excel opens cleanly.
+
+KPI definitions (locked):
+- **Revenu net** = sum(Sale.total of paid sales) − sum(Refund.totalAmount) in range
+- **Ventes payées** = count of sales with status PAID/PARTIALLY_REFUNDED/REFUNDED, closedAt in range
+- **Ticket moyen** = revenu net / ventes payées (— if 0 sales)
+- **Nouveaux clients** = count of customers with firstSalonId = providerId AND createdAt in range
+
+Routes added:
+- `/pos/cash-drawer`, `/pos/cash-drawer/[id]`, `/pos/analytics`
+- `/api/pos/bookings`, `/api/pos/bookings/[id]`, `/api/pos/bookings/[id]/cancel`, `/api/pos/bookings/[id]/move`
+- `/api/pos/cash-drawer/{current,open,/,[id],[id]/summary,[id]/close,[id]/reconcile}`
+- `/api/pos/analytics/{summary,revenue,top-services,top-products,by-employee,heatmap,low-stock,export.csv}`
+
+POS top bar gained nav items: Caisse, Ventes, Produits, Sessions (cash drawer), Analytique, Conflits (sync) — each gated by the matching permission. Cash drawer indicator (red/green dot + running expected cash) sits next to the online-status badge.
+
+One-time backfill: `npx tsx prisma/backfill-phase3.ts` (idempotent — see deploy README).
+
+**Performance note**: All analytics queries are live aggregates against `Sale`/`SaleItem`/`Payment`. Each route handler has a top-of-file TODO: "If query latency >500ms in production, materialize a daily aggregates table." A single salon's volume is small enough that this is unnecessary today.
 
 ---
 

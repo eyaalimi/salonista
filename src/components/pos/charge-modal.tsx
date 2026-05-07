@@ -33,6 +33,7 @@ export function ChargeModal({
   provider,
   employee,
   online,
+  bookingId,
   onClose,
   onCompleted,
   queueOffline,
@@ -48,6 +49,7 @@ export function ChargeModal({
   provider: CachedCatalogProvider | null;
   employee: EmployeePerm;
   online: boolean;
+  bookingId?: string | null;
   onClose: () => void;
   onCompleted: (receipt: ReceiptData, shouldPrint: boolean) => void;
   queueOffline: (payload: import("@/lib/pos-sale-create").SalePayload & { clientTotal?: string }) => Promise<void>;
@@ -126,6 +128,7 @@ export function ChargeModal({
       const payload = {
         offlineId,
         customerId: customerId ?? null,
+        bookingId: bookingId ?? null,
         lines: cart.map((l) => ({
           kind: l.kind,
           offerId: l.offerId,

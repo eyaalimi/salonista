@@ -22,6 +22,7 @@ async function main() {
   console.log("🌱 Seeding database...");
 
   // Clean existing data
+  await prisma.cashDrawerSession.deleteMany();
   await prisma.refundItem.deleteMany();
   await prisma.refund.deleteMany();
   await prisma.tipAllocation.deleteMany();
@@ -869,11 +870,157 @@ async function main() {
   // Quiet helper to avoid the "randomUUID unused" lint complaint.
   void randomUUID;
 
+  // ----- PHASE 3: future bookings + cash drawer sessions -----
+  // Prereqs: provider1Owner, provider1Cashier already located above.
+  if (provider1Owner && provider1Cashier) {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    // 8 future bookings for provider1 across the next 7 days.
+    const futurePlan: Array<{ offerIdx: number; dayOffset: number; hour: number; client: typeof clients[number]; createdViaPos: boolean }> = [
+      { offerIdx: 0, dayOffset: 1, hour: 10, client: clients[0], createdViaPos: false },
+      { offerIdx: 1, dayOffset: 1, hour: 14, client: clients[1], createdViaPos: false },
+      { offerIdx: 0, dayOffset: 2, hour: 11, client: clients[2], createdViaPos: true },
+      { offerIdx: 1, dayOffset: 2, hour: 16, client: clients[0], createdViaPos: true },
+      { offerIdx: 0, dayOffset: 3, hour: 9, client: clients[1], createdViaPos: false },
+      { offerIdx: 1, dayOffset: 4, hour: 13, client: clients[2], createdViaPos: false },
+      { offerIdx: 0, dayOffset: 5, hour: 15, client: clients[0], createdViaPos: true },
+      { offerIdx: 1, dayOffset: 6, hour: 10, client: clients[1], createdViaPos: false },
+    ];
+
+    for (const p of futurePlan) {
+      const offer = offers[p.offerIdx];
+      const date = new Date(today);
+      date.setDate(date.getDate() + p.dayOffset);
+      date.setHours(p.hour, 0, 0, 0);
+      const slot = await prisma.timeSlot.create({
+        data: {
+          offerId: offer.id,
+          startTime: date,
+          endTime: new Date(date.getTime() + offer.durationMinutes * 60_000),
+          capacity: 1,
+          bookedCount: 1,
+        },
+      });
+      await prisma.booking.create({
+        data: {
+          clientId: p.client.id,
+          customerId: clientCustomers[p.client.id] ?? null,
+          assignedEmployeeId: provider1Owner.id,
+          createdViaPos: p.createdViaPos,
+          phantom: false,
+          status: BookingStatus.CONFIRMED,
+          totalPrice: Number(offer.discountPrice),
+          items: {
+            create: [{ offerId: offer.id, slotId: slot.id, unitPrice: Number(offer.discountPrice) }],
+          },
+        },
+      });
+    }
+
+    // 1 closed cash drawer session from yesterday (with -2.5 DT variance).
+    const yStart = new Date(today.getTime() - 24 * 60 * 60 * 1000);
+    yStart.setHours(9, 0, 0, 0);
+    const yEnd = new Date(today.getTime() - 24 * 60 * 60 * 1000);
+    yEnd.setHours(19, 0, 0, 0);
+    await prisma.cashDrawerSession.create({
+      data: {
+        providerId: provider1.providerProfile!.id,
+        employeeId: provider1Cashier.id,
+        status: "CLOSED",
+        openedAt: yStart,
+        closedAt: yEnd,
+        openingFloat: 50.0,
+        closingCount: 197.5,
+        expectedCash: 200.0,
+        variance: -2.5,
+        openingNotes: "Fond fourni par Nour",
+        closingNotes: "Petit écart probable (rendu de monnaie)",
+      },
+    });
+
+    // 1 currently-open session for the cashier.
+    await prisma.cashDrawerSession.create({
+      data: {
+        providerId: provider1.providerProfile!.id,
+        employeeId: provider1Cashier.id,
+        status: "OPEN",
+        openingFloat: 50.0,
+        openingNotes: "Fond du jour",
+      },
+    });
+  }
+
+  // Provider 2: 4 future bookings + 1 closed session with zero variance.
+  const provider2Owner = await prisma.salonEmployee.findFirst({
+    where: { providerId: provider2.providerProfile!.id, role: "OWNER" },
+  });
+  const provider2Cashier = await prisma.salonEmployee.findFirst({
+    where: { providerId: provider2.providerProfile!.id, role: "CASHIER" },
+  });
+  if (provider2Owner && provider2Cashier) {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const p2Plan: Array<{ offerIdx: number; dayOffset: number; hour: number; client: typeof clients[number] }> = [
+      { offerIdx: 2, dayOffset: 1, hour: 11, client: clients[0] },
+      { offerIdx: 3, dayOffset: 2, hour: 14, client: clients[1] },
+      { offerIdx: 2, dayOffset: 3, hour: 16, client: clients[2] },
+      { offerIdx: 3, dayOffset: 5, hour: 10, client: clients[0] },
+    ];
+    for (const p of p2Plan) {
+      const offer = offers[p.offerIdx];
+      const date = new Date(today);
+      date.setDate(date.getDate() + p.dayOffset);
+      date.setHours(p.hour, 0, 0, 0);
+      const slot = await prisma.timeSlot.create({
+        data: {
+          offerId: offer.id,
+          startTime: date,
+          endTime: new Date(date.getTime() + offer.durationMinutes * 60_000),
+          capacity: 1,
+          bookedCount: 1,
+        },
+      });
+      await prisma.booking.create({
+        data: {
+          clientId: p.client.id,
+          customerId: clientCustomers[p.client.id] ?? null,
+          assignedEmployeeId: provider2Owner.id,
+          createdViaPos: false,
+          status: BookingStatus.CONFIRMED,
+          totalPrice: Number(offer.discountPrice),
+          items: {
+            create: [{ offerId: offer.id, slotId: slot.id, unitPrice: Number(offer.discountPrice) }],
+          },
+        },
+      });
+    }
+
+    const yStart2 = new Date(today.getTime() - 24 * 60 * 60 * 1000);
+    yStart2.setHours(10, 0, 0, 0);
+    const yEnd2 = new Date(today.getTime() - 24 * 60 * 60 * 1000);
+    yEnd2.setHours(18, 0, 0, 0);
+    await prisma.cashDrawerSession.create({
+      data: {
+        providerId: provider2.providerProfile!.id,
+        employeeId: provider2Cashier.id,
+        status: "CLOSED",
+        openedAt: yStart2,
+        closedAt: yEnd2,
+        openingFloat: 30.0,
+        closingCount: 30.0,
+        expectedCash: 30.0,
+        variance: 0,
+      },
+    });
+  }
+
   console.log("✅ Seed complete!");
   console.log("   3 prestataires, 5 offres, 2 influenceuses, 3 clientes, 1 admin");
   console.log("   10 réservations avec commissions");
   console.log("   9 produits POS + 2 ventes seedées (provider1)");
-  console.log("   Tous les mots de passe: password123");
+  console.log("   12 réservations futures + 3 sessions de caisse seedées");
+  console.log("   Tous les mots de passe: password123 · PIN cashier: 1234");
 }
 
 main()

@@ -111,6 +111,12 @@ enum StockMovementReason {
   SYNC_NEGATIVE
 }
 
+enum CashDrawerStatus {
+  OPEN
+  CLOSED
+  RECONCILED
+}
+
 model User {
   id            String    @id @default(cuid())
   email         String    @unique
@@ -197,6 +203,7 @@ model ProviderProfile {
   subscriptions         SalonSubscription[]
   products              Product[]
   sales                 Sale[]
+  cashDrawerSessions    CashDrawerSession[]
 }
 
 model InfluencerProfile {
@@ -290,6 +297,7 @@ model Booking {
   customerId         String?
   walkIn             Boolean       @default(false)
   createdViaPos      Boolean       @default(false)
+  phantom            Boolean       @default(false)
   assignedEmployeeId String?
   status             BookingStatus @default(PENDING)
   paymentStatus      PaymentStatus @default(UNPAID)
@@ -437,15 +445,16 @@ model SalonEmployee {
   createdAt   DateTime     @default(now())
   updatedAt   DateTime     @updatedAt
 
-  provider          ProviderProfile @relation(fields: [providerId], references: [id], onDelete: Cascade)
-  user              User?           @relation(fields: [userId], references: [id], onDelete: SetNull)
-  bookingsLed       Booking[]       @relation("BookingAssignedEmployee")
-  itemsLed          BookingItem[]   @relation("BookingItemAssignedEmployee")
-  salesRung         Sale[]
-  saleItemsAssigned SaleItem[]      @relation("SaleItemAssignedEmployee")
-  tipAllocations    TipAllocation[] @relation("TipAllocationEmployee")
-  refundsIssued     Refund[]        @relation("RefundEmployee")
-  stockMovements    StockMovement[]
+  provider           ProviderProfile     @relation(fields: [providerId], references: [id], onDelete: Cascade)
+  user               User?               @relation(fields: [userId], references: [id], onDelete: SetNull)
+  bookingsLed        Booking[]           @relation("BookingAssignedEmployee")
+  itemsLed           BookingItem[]       @relation("BookingItemAssignedEmployee")
+  salesRung          Sale[]
+  saleItemsAssigned  SaleItem[]          @relation("SaleItemAssignedEmployee")
+  tipAllocations     TipAllocation[]     @relation("TipAllocationEmployee")
+  refundsIssued      Refund[]            @relation("RefundEmployee")
+  stockMovements     StockMovement[]
+  cashDrawerSessions CashDrawerSession[] @relation("CashDrawerEmployee")
 
   @@index([providerId, active])
   @@index([userId])
@@ -599,16 +608,19 @@ model SaleItem {
 }
 
 model Payment {
-  id        String        @id @default(cuid())
-  saleId    String
-  method    PaymentMethod
-  amount    Decimal       @db.Decimal(10, 3)
-  reference String?
-  createdAt DateTime      @default(now())
+  id                   String        @id @default(cuid())
+  saleId               String
+  method               PaymentMethod
+  amount               Decimal       @db.Decimal(10, 3)
+  reference            String?
+  cashDrawerSessionId  String?
+  createdAt            DateTime      @default(now())
 
-  sale Sale @relation(fields: [saleId], references: [id], onDelete: Cascade)
+  sale              Sale               @relation(fields: [saleId], references: [id], onDelete: Cascade)
+  cashDrawerSession CashDrawerSession? @relation(fields: [cashDrawerSessionId], references: [id], onDelete: SetNull)
 
   @@index([saleId])
+  @@index([cashDrawerSessionId])
 }
 
 model TipAllocation {
@@ -668,4 +680,34 @@ model SaleSequence {
   counter    Int      @default(0)
 
   @@id([providerId, date])
+}
+
+model CashDrawerSession {
+  id           String           @id @default(cuid())
+  providerId   String
+  employeeId   String
+  status       CashDrawerStatus @default(OPEN)
+
+  openedAt     DateTime  @default(now())
+  closedAt     DateTime?
+  reconciledAt DateTime?
+
+  openingFloat Decimal  @db.Decimal(10, 3)
+  closingCount Decimal? @db.Decimal(10, 3)
+  expectedCash Decimal? @db.Decimal(10, 3)
+  variance     Decimal? @db.Decimal(10, 3)
+
+  openingNotes String?
+  closingNotes String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  provider ProviderProfile @relation(fields: [providerId], references: [id], onDelete: Cascade)
+  employee SalonEmployee   @relation("CashDrawerEmployee", fields: [employeeId], references: [id])
+  payments Payment[]
+
+  @@index([providerId, status])
+  @@index([employeeId, status])
+  @@index([openedAt])
 }
