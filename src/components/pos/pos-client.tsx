@@ -763,20 +763,17 @@ export function PosClient({ employee }: { employee: EmployeeProp }) {
             setCenterMode("calendar");
           }}
           onEncaisser={(booking) => {
-            // Prefill cart from the booking's items.
+            // Prefill cart from the booking's items. Match by offerId
+            // (not title) so renamed offers still resolve correctly and
+            // collisions on duplicate titles can't substitute the wrong
+            // offer.
             const newLines: CartLine[] = booking.items.map((it) => ({
               uid: uuid(),
               kind: "SERVICE",
-              offerId: it.offer ? (offers.find((o) => o.title === it.offer.title)?.id) : undefined,
+              offerId: it.offer.id,
               nameSnapshot: it.offer.title,
-              priceSnapshot:
-                offers.find((o) => o.title === it.offer.title)?.discountPrice
-                  ? String(offers.find((o) => o.title === it.offer.title)!.discountPrice)
-                  : "0.000",
-              taxRateSnapshot:
-                offers.find((o) => o.title === it.offer.title)?.taxRate
-                  ? String(offers.find((o) => o.title === it.offer.title)!.taxRate)
-                  : "19",
+              priceSnapshot: String(it.offer.discountPrice),
+              taxRateSnapshot: String(it.offer.taxRate),
               quantity: 1,
               assignedEmployeeId: employee.id,
             }));

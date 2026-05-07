@@ -422,8 +422,25 @@ export async function createSaleFromPayload(args: {
           }
         }
 
-        if (phantomClientId) {
-          const phantom = await tx.booking.create({
+        if (!phantomClientId) {
+          // No clientId resolvable (deleted user + provider with no
+          // userId — extremely rare). The sale persists, but it won't
+          // appear in the calendar or analytics. Flag the sale row so
+          // /pos/sync-issues surfaces it for an owner to investigate.
+          await tx.sale.update({
+            where: { id: sale.id },
+            data: {
+              syncConflicts: [
+                ...(conflicts as object[]),
+                { type: "phantom_booking_skipped" },
+              ] as Prisma.InputJsonValue,
+            },
+          });
+          console.warn(
+            `[pos-sale-create] phantom booking skipped for sale ${sale.id}: no clientId resolvable`,
+          );
+        } else {
+          const phantomBooking = await tx.booking.create({
             data: {
               clientId: phantomClientId,
               customerId: customerId,
@@ -438,7 +455,7 @@ export async function createSaleFromPayload(args: {
           });
           await tx.sale.update({
             where: { id: sale.id },
-            data: { bookingId: phantom.id },
+            data: { bookingId: phantomBooking.id },
           });
         }
       }

@@ -1,8 +1,7 @@
 import { NextRequest } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requirePermission, toResponse } from "@/lib/employee-session";
-import { computeSummary } from "@/lib/cash-drawer";
-import { subMoney } from "@/lib/money";
+import { addMoney, subMoney } from "@/lib/money";
 
 type Body = {
   closingCount?: string | number;
@@ -25,16 +24,19 @@ export async function POST(req: NextRequest, ctx: { params: Promise<{ id: string
     return Response.json({ error: "Comptage invalide" }, { status: 400 });
   }
 
-  const session = await prisma.cashDrawerSession.findUnique({ where: { id } });
-  if (!session || session.providerId !== employee.providerId) {
+  // Status + ownership pre-check (cheap, no lock yet).
+  const head = await prisma.cashDrawerSession.findUnique({
+    where: { id },
+    select: { providerId: true, status: true, employeeId: true },
+  });
+  if (!head || head.providerId !== employee.providerId) {
     return Response.json({ error: "Session introuvable" }, { status: 404 });
   }
-  if (session.status !== "OPEN") {
+  if (head.status !== "OPEN") {
     return Response.json({ error: "Session déjà fermée" }, { status: 409 });
   }
-  // Only the opener (or OWNER/MANAGER) may close.
   if (
-    session.employeeId !== employee.id &&
+    head.employeeId !== employee.id &&
     employee.role !== "OWNER" &&
     employee.role !== "MANAGER"
   ) {
@@ -44,24 +46,81 @@ export async function POST(req: NextRequest, ctx: { params: Promise<{ id: string
     );
   }
 
-  const summary = await computeSummary(id);
-  if (!summary) {
-    return Response.json({ error: "Session introuvable" }, { status: 404 });
-  }
   const closingStr = closing.toFixed(3);
-  const variance = subMoney(closingStr, summary.expectedCash);
 
-  const updated = await prisma.cashDrawerSession.update({
-    where: { id },
-    data: {
-      status: "CLOSED",
-      closedAt: new Date(),
-      closingCount: closingStr,
-      expectedCash: summary.expectedCash,
-      variance,
-      closingNotes: body?.closingNotes ?? null,
-    },
-  });
+  // The expected-cash computation and the session update MUST happen in
+  // the same transaction. Otherwise a CASH payment landing between the
+  // computation and the update would inflate the real drawer without
+  // being counted, leaving a phantom variance baked into the closed row.
+  try {
+    const result = await prisma.$transaction(async (tx) => {
+      const session = await tx.cashDrawerSession.findUnique({
+        where: { id },
+        select: { openingFloat: true, openedAt: true, employeeId: true, status: true },
+      });
+      if (!session) throw new Error("NOT_FOUND");
+      if (session.status !== "OPEN") throw new Error("ALREADY_CLOSED");
 
-  return Response.json({ session: updated, summary: { ...summary, closingCount: closingStr, variance } });
+      const cashPayments = await tx.payment.findMany({
+        where: { cashDrawerSessionId: id, method: "CASH" },
+        select: { amount: true },
+      });
+      const cashSalesTotal = cashPayments.reduce(
+        (s, p) => addMoney(s, String(p.amount)),
+        "0.000",
+      );
+
+      const refunds = await tx.refund.findMany({
+        where: {
+          refundMethod: "CASH",
+          employeeId: session.employeeId,
+          createdAt: { gte: session.openedAt },
+        },
+        select: { totalAmount: true },
+      });
+      const cashRefundsTotal = refunds.reduce(
+        (s, r) => addMoney(s, String(r.totalAmount)),
+        "0.000",
+      );
+
+      const expectedCash = subMoney(
+        addMoney(String(session.openingFloat), cashSalesTotal),
+        cashRefundsTotal,
+      );
+      const variance = subMoney(closingStr, expectedCash);
+
+      const updated = await tx.cashDrawerSession.update({
+        where: { id },
+        data: {
+          status: "CLOSED",
+          closedAt: new Date(),
+          closingCount: closingStr,
+          expectedCash,
+          variance,
+          closingNotes: body?.closingNotes ?? null,
+        },
+      });
+
+      return {
+        session: updated,
+        summary: {
+          openingFloat: String(session.openingFloat),
+          cashSalesCount: cashPayments.length,
+          cashSalesTotal,
+          cashRefundsCount: refunds.length,
+          cashRefundsTotal,
+          expectedCash,
+          closingCount: closingStr,
+          variance,
+        },
+      };
+    });
+    return Response.json(result);
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : "Erreur";
+    if (msg === "NOT_FOUND") return Response.json({ error: "Session introuvable" }, { status: 404 });
+    if (msg === "ALREADY_CLOSED")
+      return Response.json({ error: "Session déjà fermée" }, { status: 409 });
+    return Response.json({ error: msg }, { status: 500 });
+  }
 }

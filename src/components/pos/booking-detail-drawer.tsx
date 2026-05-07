@@ -15,7 +15,13 @@ type Booking = {
   assignedEmployee: { displayName: string } | null;
   items: Array<{
     id: string;
-    offer: { title: string; durationMinutes: number };
+    offer: {
+      id: string;
+      title: string;
+      durationMinutes: number;
+      discountPrice: string;
+      taxRate: string;
+    };
     slot: { startTime: string; endTime: string } | null;
   }>;
   sale: { id: string; receiptNumber: string; status: string } | null;
