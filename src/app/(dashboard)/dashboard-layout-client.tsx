@@ -13,6 +13,7 @@ const navItems: Record<string, NavItem[]> = {
   PROVIDER: [
     { label: "Dashboard", href: "/prestataire" },
     { label: "Caisse", href: "/pos", module: "POS" },
+    { label: "Fidélité", href: "/prestataire/fidelite", module: "REWARDS" },
     { label: "Mes offres", href: "/prestataire/offres" },
     { label: "Réservations", href: "/prestataire/reservations" },
     { label: "Collaborations", href: "/prestataire/collaborations" },
@@ -26,6 +27,7 @@ const navItems: Record<string, NavItem[]> = {
   ],
   CLIENT: [
     { label: "Mes réservations", href: "/cliente" },
+    { label: "Fidélité", href: "/cliente/fidelite" },
     { label: "Mon profil", href: "/cliente/profil" },
   ],
   ADMIN: [

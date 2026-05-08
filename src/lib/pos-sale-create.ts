@@ -19,6 +19,8 @@ import { computeTotals, type CartInput } from "@/lib/sale-totals";
 import { toMillimes, fromMillimes } from "@/lib/money";
 import { nextReceiptNumber } from "@/lib/receipt-number";
 import { findOpenSession } from "@/lib/cash-drawer";
+import { applySaleEarnings } from "@/lib/rewards/earn";
+import { applySaleRedemption, validateRedemption, RedemptionError } from "@/lib/rewards/redeem";
 import type { PaymentMethod, SaleStatus } from "@/generated/prisma/enums";
 import type { Prisma } from "@/generated/prisma/client";
 
@@ -35,6 +37,10 @@ export type SalePayloadPayment = {
   method: PaymentMethod;
   amount: string;
   reference?: string | null;
+  /** Required when method = LOYALTY_POINTS. */
+  pointsRedeemed?: number;
+  /** Required when method = LOYALTY_POINTS. */
+  walletId?: string;
 };
 
 export type SalePayloadTipAllocation = {
@@ -64,7 +70,13 @@ export type SaleConflict =
   | { type: "stock_negative"; productId: string; quantity: number };
 
 export type SaleCreateResult =
-  | { kind: "ok"; saleId: string; receiptNumber: string; status: SaleStatus }
+  | {
+      kind: "ok";
+      saleId: string;
+      receiptNumber: string;
+      status: SaleStatus;
+      rewards?: { earned: number; redeemed: number; welcomeBonus: number; birthdayBonus: number };
+    }
   | { kind: "duplicate"; saleId: string; receiptNumber: string }
   | { kind: "validation"; error: string; conflicts?: SaleConflict[] };
 
@@ -228,6 +240,46 @@ export async function createSaleFromPayload(args: {
     };
   }
 
+  // Validate any loyalty redemption payments up-front so we fail fast with a
+  // clear French error rather than rolling back the transaction.
+  const loyaltyPayments = payload.payments.filter((p) => p.method === "LOYALTY_POINTS");
+  if (loyaltyPayments.length > 0) {
+    if (!customerId) {
+      return { kind: "validation", error: "Identifiez un client pour utiliser des points fidélité" };
+    }
+    for (const p of loyaltyPayments) {
+      if (!p.walletId || !p.pointsRedeemed || p.pointsRedeemed <= 0) {
+        return { kind: "validation", error: "Paiement par points incomplet (walletId/pointsRedeemed)" };
+      }
+      const wallet = await prisma.rewardWallet.findUnique({
+        where: { id: p.walletId },
+        include: { program: true },
+      });
+      if (!wallet || wallet.providerId !== providerId || wallet.customerId !== customerId) {
+        return { kind: "validation", error: "Portefeuille fidélité introuvable" };
+      }
+      try {
+        const { redemptionValue } = validateRedemption({
+          walletBalance: wallet.balance,
+          pointsToRedeem: p.pointsRedeemed,
+          saleTotal: totals.total,
+          program: wallet.program,
+        });
+        if (Math.abs(toMillimes(redemptionValue) - toMillimes(p.amount)) > TOTAL_TOLERANCE_MILLIMES) {
+          return {
+            kind: "validation",
+            error: `Valeur des points (${redemptionValue}) différente du montant payé (${p.amount})`,
+          };
+        }
+      } catch (err) {
+        if (err instanceof RedemptionError) {
+          return { kind: "validation", error: err.message };
+        }
+        throw err;
+      }
+    }
+  }
+
   // Cash-payment sessions: link CASH payments to the cashier's currently-open
   // drawer session, if any. Offline syncs do their own resolution further
   // down (the original session may have closed before the sync happened).
@@ -261,7 +313,12 @@ export async function createSaleFromPayload(args: {
           select: { id: true, receiptNumber: true },
         });
         if (existing) {
-          return { saleId: existing.id, receiptNumber: existing.receiptNumber, duplicate: true };
+          return {
+            saleId: existing.id,
+            receiptNumber: existing.receiptNumber,
+            duplicate: true,
+            rewards: { earned: 0, redeemed: 0, welcomeBonus: 0, birthdayBonus: 0 },
+          };
         }
       }
 
@@ -460,6 +517,31 @@ export async function createSaleFromPayload(args: {
         }
       }
 
+      // ----- Reward Points -----
+      // Apply redemption(s) first (decrements wallet, creates REDEEM_PURCHASE),
+      // then earnings (computeEarnedPoints already excludes the loyalty-paid
+      // share so points don't beget points).
+      let rewardsResult: {
+        earned: number;
+        redeemed: number;
+        welcomeBonus: number;
+        birthdayBonus: number;
+      } = { earned: 0, redeemed: 0, welcomeBonus: 0, birthdayBonus: 0 };
+      if (customerId) {
+        for (const p of loyaltyPayments) {
+          if (!p.walletId || !p.pointsRedeemed) continue;
+          await applySaleRedemption(tx, sale.id, p.walletId, p.pointsRedeemed);
+          rewardsResult.redeemed += p.pointsRedeemed;
+        }
+        const earnings = await applySaleEarnings(tx, sale.id);
+        rewardsResult = {
+          ...rewardsResult,
+          earned: earnings.earned,
+          welcomeBonus: earnings.welcomeBonus,
+          birthdayBonus: earnings.birthdayBonus,
+        };
+      }
+
       // Create stock movements pointing back at this sale.
       // SYNC_NEGATIVE is reserved for offline syncs that drove stock below
       // zero. Online sales that go negative are still flagged for review,
@@ -478,7 +560,7 @@ export async function createSaleFromPayload(args: {
         });
       }
 
-      return { saleId: sale.id, receiptNumber, duplicate: false };
+      return { saleId: sale.id, receiptNumber, duplicate: false, rewards: rewardsResult };
     });
 
     return result.duplicate
@@ -488,6 +570,7 @@ export async function createSaleFromPayload(args: {
           saleId: result.saleId,
           receiptNumber: result.receiptNumber,
           status: "PAID",
+          rewards: result.rewards,
         };
   } catch (err) {
     return {

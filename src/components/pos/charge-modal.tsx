@@ -10,16 +10,31 @@ import type { CachedCatalogProvider } from "@/lib/pos-offline-db";
 type EmployeeLite = { id: string; displayName: string; role: string };
 type EmployeePerm = { id: string; displayName: string; role: string; permissions: Record<string, boolean> };
 
-type Method = "CASH" | "CARD" | "TRANSFER" | "OTHER";
+type Method = "CASH" | "CARD" | "TRANSFER" | "OTHER" | "LOYALTY_POINTS";
 
 const METHOD_LABELS: Record<Method, string> = {
   CASH: "Espèces",
   CARD: "Carte",
   TRANSFER: "Virement",
   OTHER: "Autre",
+  LOYALTY_POINTS: "Points fidélité",
 };
 
-type Payment = { method: Method; amount: string; reference?: string };
+type Payment = {
+  method: Method;
+  amount: string;
+  reference?: string;
+  pointsRedeemed?: number;
+  walletId?: string;
+};
+
+export type WalletForCharge = {
+  walletId: string;
+  balance: number;
+  minPointsToRedeem: number;
+  maxRedemptionPctPerSale: number;
+  dinarPerPoint: string;
+};
 
 export function ChargeModal({
   cart,
@@ -34,6 +49,7 @@ export function ChargeModal({
   employee,
   online,
   bookingId,
+  wallet,
   onClose,
   onCompleted,
   queueOffline,
@@ -50,12 +66,15 @@ export function ChargeModal({
   employee: EmployeePerm;
   online: boolean;
   bookingId?: string | null;
+  wallet?: WalletForCharge | null;
   onClose: () => void;
   onCompleted: (receipt: ReceiptData, shouldPrint: boolean) => void;
   queueOffline: (payload: import("@/lib/pos-sale-create").SalePayload & { clientTotal?: string }) => Promise<void>;
 }) {
   const [step, setStep] = useState<"payment" | "tips" | "receipt">("payment");
   const [payments, setPayments] = useState<Payment[]>([]);
+  const [showLoyaltyExpansion, setShowLoyaltyExpansion] = useState(false);
+  const [loyaltyPoints, setLoyaltyPoints] = useState(0);
   const [tipAllocs, setTipAllocs] = useState<Array<{ employeeId: string; amount: string }>>([]);
   const [printOnSave, setPrintOnSave] = useState(true);
   const [emailReceipt, setEmailReceipt] = useState(!!customerEmail);
@@ -70,12 +89,48 @@ export function ChargeModal({
   const change = paidM > totalM ? fromMillimes(paidM - totalM) : "0.000";
   const canContinue = paidM >= totalM;
 
+  // Loyalty redemption helpers — math mirrors the server (rewards/redeem.ts):
+  //   maxM_DT_in_millimes = floor(totalM × maxPct / 100)
+  //   maxPts              = floor(maxM / (dpp × 1000))
+  // Doing it this way avoids a one-point divergence with custom dpp values
+  // that would otherwise cause the server to reject at submit time.
+  const dpp = wallet ? Number(wallet.dinarPerPoint) : 0.01;
+  const loyaltyValueM = wallet ? Math.round(loyaltyPoints * dpp * 1000) : 0;
+  const loyaltyValue = fromMillimes(loyaltyValueM);
+  const maxByPctPts = wallet
+    ? Math.floor(Math.floor((totalM * wallet.maxRedemptionPctPerSale) / 100) / (dpp * 1000))
+    : 0;
+  const loyaltyMax = wallet ? Math.min(wallet.balance, maxByPctPts) : 0;
+  const loyaltyAlreadyApplied = payments.some((p) => p.method === "LOYALTY_POINTS");
+  const loyaltyTileEligible =
+    !!wallet && wallet.balance >= wallet.minPointsToRedeem && !loyaltyAlreadyApplied && online;
+
   function addPayment(method: Method) {
     if (!online && method === "CARD") return;
+    if (method === "LOYALTY_POINTS") {
+      if (!loyaltyTileEligible || !wallet) return;
+      setLoyaltyPoints(Math.min(loyaltyMax, wallet.minPointsToRedeem));
+      setShowLoyaltyExpansion(true);
+      return;
+    }
     setPayments((ps) => [
       ...ps,
       { method, amount: remainingM > 0 ? remaining : "0.000" },
     ]);
+  }
+
+  function applyLoyaltyRedemption() {
+    if (!wallet || loyaltyPoints <= 0) return;
+    setPayments((ps) => [
+      ...ps,
+      {
+        method: "LOYALTY_POINTS",
+        amount: loyaltyValue,
+        pointsRedeemed: loyaltyPoints,
+        walletId: wallet.walletId,
+      },
+    ]);
+    setShowLoyaltyExpansion(false);
   }
 
   function updatePayment(idx: number, patch: Partial<Payment>) {
@@ -142,6 +197,8 @@ export function ChargeModal({
           method: p.method,
           amount: p.amount,
           reference: p.reference ?? null,
+          pointsRedeemed: p.pointsRedeemed,
+          walletId: p.walletId,
         })),
         tipTotal,
         tipAllocations: tipAllocs.length > 0 ? tipAllocs : undefined,
@@ -151,6 +208,9 @@ export function ChargeModal({
 
       let saleId: string | null = null;
       let receiptNumber: string;
+      let rewardsResp:
+        | { earned: number; redeemed: number; welcomeBonus: number; birthdayBonus: number; newBalance?: number }
+        | undefined;
 
       if (online) {
         const res = await fetch("/api/pos/sales", {
@@ -167,6 +227,7 @@ export function ChargeModal({
         const data = await res.json();
         saleId = data.sale.id;
         receiptNumber = data.sale.receiptNumber;
+        if (data.rewards) rewardsResp = data.rewards;
 
         if (emailReceipt && saleId) {
           fetch(`/api/pos/sales/${saleId}/email`, {
@@ -198,9 +259,14 @@ export function ChargeModal({
         taxBreakdown: totals.taxBreakdown,
         tipTotal: totals.tipTotal,
         total: totals.total,
-        payments: payments.map((p) => ({ method: p.method, amount: p.amount })),
+        payments: payments.map((p) => ({
+          method: p.method,
+          amount: p.amount,
+          pointsRedeemed: p.pointsRedeemed,
+        })),
         date: new Date().toISOString(),
         offline: !online,
+        rewards: rewardsResp,
       };
 
       onCompleted(receipt, printOnSave);
@@ -289,6 +355,95 @@ export function ChargeModal({
                 );
               })}
             </div>
+
+            {wallet && (
+              <button
+                type="button"
+                disabled={!loyaltyTileEligible}
+                onClick={() => addPayment("LOYALTY_POINTS")}
+                title={
+                  !online
+                    ? "Indisponible hors ligne — utilisez les points lors de la prochaine connexion"
+                    : wallet.balance < wallet.minPointsToRedeem
+                      ? `Minimum ${wallet.minPointsToRedeem} pts requis`
+                      : loyaltyAlreadyApplied
+                        ? "Déjà appliqué"
+                        : ""
+                }
+                className="w-full mb-6 rounded-2xl border-2 border-brand-gold bg-brand-gold-soft/30 py-4 px-4 text-left text-brand-ink hover:bg-brand-gold-soft/50 disabled:opacity-40 disabled:cursor-not-allowed"
+              >
+                <p className="text-xs uppercase tracking-[0.18em] mb-1">★ Points fidélité</p>
+                <p className="text-sm">
+                  Solde: <span className="font-semibold">{wallet.balance} pts</span>
+                  <span className="text-brand-ink-soft"> (≈ {formatDT(fromMillimes(Math.round(wallet.balance * dpp * 1000)))})</span>
+                </p>
+              </button>
+            )}
+
+            {showLoyaltyExpansion && wallet && (
+              <div className="rounded-2xl border-2 border-brand-gold bg-brand-cream p-4 mb-6">
+                <p className="luxury-badge mb-2">Utiliser des points</p>
+                <p className="text-sm text-brand-ink-soft mb-4">
+                  Solde disponible: {wallet.balance} pts (≈ {formatDT(fromMillimes(Math.round(wallet.balance * dpp * 1000)))})
+                </p>
+                <div className="flex items-center gap-2 mb-3">
+                  <button
+                    type="button"
+                    onClick={() => setLoyaltyPoints((p) => Math.max(wallet.minPointsToRedeem, p - 10))}
+                    className="rounded border border-brand-line bg-white px-3 py-2"
+                  >
+                    −
+                  </button>
+                  <input
+                    type="number"
+                    min={wallet.minPointsToRedeem}
+                    max={loyaltyMax}
+                    step={1}
+                    value={loyaltyPoints}
+                    onChange={(e) =>
+                      setLoyaltyPoints(
+                        Math.max(
+                          wallet.minPointsToRedeem,
+                          Math.min(loyaltyMax, Math.floor(Number(e.target.value) || 0)),
+                        ),
+                      )
+                    }
+                    className="flex-1 rounded border border-brand-line bg-white px-2 py-2 text-center"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setLoyaltyPoints((p) => Math.min(loyaltyMax, p + 10))}
+                    className="rounded border border-brand-line bg-white px-3 py-2"
+                  >
+                    +
+                  </button>
+                  <span className="text-xs text-brand-ink-soft">pts</span>
+                </div>
+                <p className="text-sm mb-1">
+                  Valeur: <span className="font-semibold">{formatDT(loyaltyValue)}</span>
+                </p>
+                <p className="text-xs text-brand-ink-soft mb-4">
+                  Maximum sur cette vente: {loyaltyMax} pts ({wallet.maxRedemptionPctPerSale}%)
+                </p>
+                <div className="flex justify-end gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setShowLoyaltyExpansion(false)}
+                    className="text-xs uppercase tracking-[0.18em] text-brand-ink-soft hover:text-brand-ink px-4"
+                  >
+                    Annuler
+                  </button>
+                  <button
+                    type="button"
+                    onClick={applyLoyaltyRedemption}
+                    disabled={loyaltyPoints < wallet.minPointsToRedeem || loyaltyPoints > loyaltyMax}
+                    className="rounded-lg bg-brand-gold px-6 py-2 text-xs uppercase tracking-[0.18em] text-brand-ink hover:bg-brand-gold-soft disabled:opacity-40"
+                  >
+                    Appliquer
+                  </button>
+                </div>
+              </div>
+            )}
 
             <div className="flex justify-end">
               <button

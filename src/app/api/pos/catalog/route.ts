@@ -1,6 +1,7 @@
 import { prisma } from "@/lib/prisma";
-import { requireModule } from "@/lib/modules";
+import { hasModule, requireModule } from "@/lib/modules";
 import { requireEmployee, toResponse } from "@/lib/employee-session";
+import { getOrCreateProgram } from "@/lib/rewards/program";
 
 /**
  * Single payload primer for the offline POS shell.
@@ -93,12 +94,50 @@ export async function GET() {
     }),
   ]);
 
+  // Attach wallet summary for own-scope customers when REWARDS is active.
+  let customersWithWallets: Array<
+    (typeof customers)[number] & {
+      wallet?: {
+        walletId: string;
+        balance: number;
+        minPointsToRedeem: number;
+        maxRedemptionPctPerSale: number;
+        dinarPerPoint: string;
+      };
+    }
+  > = customers;
+  if (await hasModule(providerId, "REWARDS")) {
+    const program = await getOrCreateProgram(providerId);
+    if (program.active && customers.length > 0) {
+      const wallets = await prisma.rewardWallet.findMany({
+        where: { providerId, customerId: { in: customers.map((c) => c.id) } },
+        select: { id: true, customerId: true, balance: true },
+      });
+      const byCustomer = new Map(wallets.map((w) => [w.customerId, w]));
+      customersWithWallets = customers.map((c) => {
+        const w = byCustomer.get(c.id);
+        return w
+          ? {
+              ...c,
+              wallet: {
+                walletId: w.id,
+                balance: w.balance,
+                minPointsToRedeem: program.minPointsToRedeem,
+                maxRedemptionPctPerSale: program.maxRedemptionPctPerSale,
+                dinarPerPoint: program.dinarPerPoint.toString(),
+              },
+            }
+          : c;
+      });
+    }
+  }
+
   return Response.json({
     refreshedAt: new Date().toISOString(),
     provider,
     offers,
     products,
-    customers,
+    customers: customersWithWallets,
     employees,
   });
 }

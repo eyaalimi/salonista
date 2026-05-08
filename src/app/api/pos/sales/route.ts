@@ -102,8 +102,26 @@ export async function POST(req: NextRequest) {
       employee: { select: { id: true, displayName: true } },
     },
   });
+
+  let rewards:
+    | {
+        earned: number;
+        redeemed: number;
+        welcomeBonus: number;
+        birthdayBonus: number;
+        newBalance?: number;
+      }
+    | undefined;
+  if (result.kind === "ok" && result.rewards && sale?.customerId) {
+    const wallet = await prisma.rewardWallet.findUnique({
+      where: { providerId_customerId: { providerId: employee.providerId, customerId: sale.customerId } },
+      select: { balance: true },
+    });
+    rewards = { ...result.rewards, newBalance: wallet?.balance };
+  }
+
   return Response.json(
-    { sale, duplicate: result.kind === "duplicate" },
+    { sale, duplicate: result.kind === "duplicate", rewards },
     { status: result.kind === "duplicate" ? 200 : 201 },
   );
 }
