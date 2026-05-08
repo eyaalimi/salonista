@@ -24,7 +24,59 @@
   --color-brand-nude: #F4EFE8;
   --color-brand-peach: #F4EFE8;
   --color-brand-gold-light: #E8D2B5;
+
+  /* Phase 2 Design 2 — POS-only theme tokens. Activated via [data-pos-theme]. */
+  --color-pos-bg: #FAFAF7;
+  --color-pos-surface: #FFFFFF;
+  --color-pos-rail: #F2F1EC;
+  --color-pos-border: #E4E2DC;
+  --color-pos-border-strong: #C9C5BB;
+  --color-pos-ink: #0F0E0F;
+  --color-pos-ink-2: #3D3A3C;
+  --color-pos-ink-3: #6E6A66;
+  --color-pos-ink-4: #9F9B95;
+  --color-pos-accent: #1FB077;
+  --color-pos-accent-soft: #E5F5EE;
+  --color-pos-highlight: #FFF7D6;
+  --color-pos-yellow: #FACC15;
+  --color-pos-warn: #D97706;
+  --color-pos-danger: #C73838;
+  --color-pos-danger-soft: #FEE5E5;
+
+  --font-pos-sans: var(--font-pos-sans);
+  --font-pos-mono: var(--font-pos-mono);
 }
+
+/* Apply POS surfaces / fonts when [data-pos-theme] is set on a wrapper. */
+[data-pos-theme] {
+  background: var(--color-pos-bg);
+  color: var(--color-pos-ink);
+  font-family: var(--font-pos-sans), system-ui, -apple-system, sans-serif;
+}
+[data-pos-theme] .pos-mono {
+  font-family: var(--font-pos-mono), ui-monospace, "SF Mono", monospace;
+  font-variant-numeric: tabular-nums;
+}
+[data-pos-theme] kbd {
+  font-family: var(--font-pos-mono), ui-monospace, monospace;
+  font-size: 10px;
+  padding: 1px 5px;
+  border: 1px solid var(--color-pos-border-strong);
+  border-bottom-width: 2px;
+  border-radius: 4px;
+  background: var(--color-pos-surface);
+  color: var(--color-pos-ink-2);
+  letter-spacing: 0.02em;
+}
+[data-pos-theme] *:focus-visible {
+  outline: 2px solid var(--color-pos-yellow);
+  outline-offset: 2px;
+}
+@keyframes pos-flash {
+  0% { background-color: var(--color-pos-accent-soft); }
+  100% { background-color: transparent; }
+}
+.pos-flash { animation: pos-flash 250ms ease-out; }
 
 :root {
   --background: #FBFAF7;

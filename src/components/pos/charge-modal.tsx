@@ -3,7 +3,7 @@
 import { useMemo, useState } from "react";
 import { formatDT, toMillimes, fromMillimes, addMoney } from "@/lib/money";
 import type { ComputedTotals } from "@/lib/sale-totals";
-import type { CartLine } from "./pos-client";
+import type { CartLine } from "@/lib/pos-store";
 import type { ReceiptData } from "./receipt";
 import type { CachedCatalogProvider } from "@/lib/pos-offline-db";
 

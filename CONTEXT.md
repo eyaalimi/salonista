@@ -423,6 +423,42 @@ Subscription expiry: existing wallets and transactions are preserved when REWARD
 
 ---
 
+## Phase 2 (revised) — Design 2 "Comptoir Pro" UI rework
+
+The POS UI was rebuilt around a 4-panel command-palette layout: 60px rail | search results | 380px cart | 320px side panel. Marketplace pages keep `brand-*` tokens; the POS gets its own `--pos-*` tokens activated via `[data-pos-theme]`. Fonts: IBM Plex Sans (UI) + IBM Plex Mono (numbers, codes, kbd).
+
+- **Universal search** (`/api/pos/search`) — single endpoint returning services + products mixed with relevance ranking. Empty query returns "frequently used" (top 20 by 30-day sales volume, cached 60s in-memory). Accent-insensitive via Postgres `unaccent` extension (migration `20260508120000_unaccent_extension`); the actual ranking happens in JS over the full active catalog (single salons stay well under the threshold where SQL ranking would matter). Same scorer in `src/lib/pos-search.ts` is reused offline against the cached catalog via `searchCachedCatalog()`.
+- **Zustand store** at `src/lib/pos-store.ts` holds search query/results/selection, cart lines + discounts + tip + note, customer, attached booking, charge-modal flag, help-overlay flag. Replaced the bulk of the old `pos-client.tsx` local state.
+- **Keyboard shortcuts** registered via `usePOSShortcut(id, handler)` in `src/lib/use-pos-shortcuts.ts`; the registry is `src/lib/pos-shortcuts.ts` (`search.focus` ⌘K, `cart.charge` ⌘Enter, `cart.clear` ⌘⌫, `customer.search` ⌘F, `results.sort` ⇧S, `help.toggle` ?, etc.). `getShortcutLabel()` swaps ⌘ vs Ctrl based on `navigator.platform`. Help overlay (`?`) lists every shortcut grouped by section.
+- **Topbar** (`src/components/pos/topbar.tsx`) — black 48px bar: brand "salonista." with yellow dot, salon name + city, centered universal-search input (`src/components/pos/universal-search.tsx`), online pill, mono clock, cash-drawer indicator (Phase 3, kept active), employee initials avatar.
+- **Rail** (`src/components/pos/rail.tsx`) — 60px vertical strip with Lucide icons: Caisse / RDV / Clients / Produits / [separator] / Ventes / Caisse-fond / Analytique. Cash-drawer + Analytique stay **active** since Phase 3 shipped (the original Design 2 prompt was written assuming Phase 3 hadn't happened yet).
+- **Results panel** (`src/components/pos/results.tsx`) — dense table with kind badge (S/P), name + subtitle, mono code, stock pill (ok/low/out), price. Filter chips Tout/Services/Produits, sort dropdown (relevance / prix↑↓ / nom A→Z, ⇧S to cycle). Arrow-keys + Enter add to cart; click adds and re-focuses search.
+- **Barcode prompt** (`src/components/pos/barcode-prompt.tsx`) — black bar pinned to the bottom of the results panel. Re-focuses on every `document` click so the cashier never loses scanner focus. Validates digits 6-14, looks up in cached catalog, flashes red on miss.
+- **Cart panel** (`src/components/pos/cart.tsx`) — header with article count + receipt-number preview (`/api/pos/sales/preview-receipt-number`), booking strip when one's attached, items with qty stepper + stylist `<select>`, totals block (mono), full-width Encaisser button. Phase 4 loyalty tile is preserved via the existing `<ChargeModal>` (re-themed implicitly through inheritance — explicit re-theme is a follow-up).
+- **Side panel** (`src/components/pos/side-panel.tsx`) — three blocks stacked: Customer (phone search → loyalty card if wallet present), RDV aujourd'hui (`/api/pos/bookings/today`, refreshes every 60s, click pre-fills cart from booking items + sets customer + flags `attachedBookingId`), Dernières ventes (today only, top 5).
+- **Booking strip** appears at the top of the cart when a booking is attached. The X button confirms before removing if user has added retail items beyond the booking; otherwise detaches silently. Only the booking-prefilled cart lines are removed.
+- **Calendar moved** to `/pos/calendar` (the Phase 3 `<PosCalendar>` is preserved verbatim there). The original Design 2 prompt suggested deferring calendar entirely; we kept it accessible via the rail's RDV icon → `/pos/calendar`.
+- **Conflicts route** still at `/pos/sync-issues` (Phase 2 unchanged). Sales detail / refunds / products / cash drawer / analytics — all unchanged in this rework, just inherit the new `[data-pos-theme]` styling.
+- **What was deleted**: `src/components/pos/pos-client.tsx` (the 1k-line orchestrator from the original Phase 2). Functionality is split into Zustand + the new panels.
+
+Why JS ranking over a SQL `unaccent` ILIKE join: ranking has six tiers, ties break on `recentSalesVolume` which would require an extra GROUP BY, and offline mode needs the same algorithm against IndexedDB. Keeping it in `src/lib/pos-search.ts` means one source of truth.
+
+New API routes:
+- `/api/pos/search` (GET, ranking + frequently-used)
+- `/api/pos/bookings/today` (GET)
+- `/api/pos/sales/preview-receipt-number` (GET, read-only — does NOT bump `SaleSequence`)
+
+New libs / dependencies: `zustand`, `lucide-react`, `next/font` (IBM Plex Sans + Mono).
+
+Migration: `20260508120000_unaccent_extension` runs `CREATE EXTENSION IF NOT EXISTS unaccent;` — safe to re-apply.
+
+**Known follow-ups**:
+- Charge modal hasn't been explicitly re-themed; it works correctly (Phase 4 loyalty tile + offline gating preserved) but visually still uses the marketplace `brand-*` tokens. Re-styling is cosmetic-only.
+- Discount / tip / note popovers (⌘D / ⌘T / ⌘N) — registry has the IDs, but the popover UIs haven't been built yet. Cart still respects `pos.discount` and tips at the charge step.
+- Sale detail / refund / products / sales pages still use marketplace tokens — they sit under `[data-pos-theme]` so the variables resolve, but Tailwind utility names like `bg-brand-cream` don't auto-swap. They render fine just visually inconsistent.
+
+---
+
 ## Contacts
 
 - **Owner / dev**: alimieyaa@gmail.com

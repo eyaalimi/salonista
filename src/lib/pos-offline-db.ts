@@ -182,6 +182,67 @@ export async function searchCachedCustomers(prefix: string): Promise<CachedCusto
   });
 }
 
+/**
+ * Phase 2 Design 2 — universal-search fallback for offline mode.
+ * Mirrors the server's ranking algorithm against the cached catalog.
+ */
+export async function searchCachedCatalog(q: string, limit: number) {
+  const cat = await getCachedCatalog();
+  if (!cat) return { query: q, results: [] };
+  const search = await import("@/lib/pos-search");
+  const candidates: import("@/lib/pos-search").ScoredCandidate[] = [
+    ...cat.offers.map((o) => ({
+      kind: "SERVICE" as const,
+      id: o.id,
+      name: o.title,
+      description: o.description ?? null,
+      category: o.category ?? null,
+      code: search.synthesizeServiceCode(o.title, o.durationMinutes),
+      salePrice: o.discountPrice,
+      taxRate: o.taxRate,
+      duration: o.durationMinutes,
+      photo: o.photos?.[0] ?? null,
+    })),
+    ...cat.products.map((p) => ({
+      kind: "PRODUCT" as const,
+      id: p.id,
+      name: p.name,
+      description: p.description ?? null,
+      category: p.category ?? null,
+      code: p.barcode ?? p.sku,
+      salePrice: p.salePrice,
+      taxRate: p.taxRate,
+      stock: { quantity: p.stockQuantity, threshold: p.lowStockThreshold },
+      photo: p.photo ?? null,
+    })),
+  ];
+  const scored = search.rankAndTake(candidates, q, limit);
+  return {
+    query: q,
+    results: scored.map((s) => ({
+      kind: s.kind,
+      id: s.id,
+      name: s.name,
+      category: s.category,
+      subtitle: s.kind === "SERVICE" ? `${s.duration} min` : null,
+      code: s.code,
+      salePrice: s.salePrice,
+      taxRate: s.taxRate,
+      duration: s.duration,
+      stock: s.stock
+        ? {
+            quantity: s.stock.quantity,
+            threshold: s.stock.threshold,
+            status:
+              s.stock.quantity <= 0 ? "out" : s.stock.quantity <= s.stock.threshold ? "low" : "ok",
+          }
+        : undefined,
+      photo: s.photo,
+      score: s.score,
+    })),
+  };
+}
+
 // ---------- Pending sales ----------
 
 export async function queueSale(payload: SalePayload & { clientTotal?: string }): Promise<void> {
