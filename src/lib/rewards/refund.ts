@@ -10,6 +10,11 @@ type Tx = Prisma.TransactionClient;
 
 /**
  * Idempotent on refundId — re-running for the same refund is a no-op.
+ *
+ * Note: Only the EARN_PURCHASE delta is clawed back. WELCOME_BONUS and
+ * BIRTHDAY_BONUS rows are NOT reversed on refund — the customer kept the
+ * "first visit" / "birthday month" milestone and we don't punish them for
+ * a returning a single line. This is intentional per the Phase 4 spec.
  */
 export async function clawbackOnRefund(
   tx: Tx,

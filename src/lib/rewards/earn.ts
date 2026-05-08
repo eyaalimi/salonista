@@ -136,6 +136,29 @@ export async function applySaleEarnings(
     }
   }
 
+  // Atomic claim of the welcome / birthday flags so concurrent first sales can't
+  // double-apply. updateMany returns the row count; if it's 0, another tx
+  // already won the race — skip that bonus.
+  if (welcomeBonus > 0) {
+    const claimed = await tx.rewardWallet.updateMany({
+      where: { id: wallet.id, welcomeBonusApplied: false },
+      data: { welcomeBonusApplied: true },
+    });
+    if (claimed.count === 0) welcomeBonus = 0;
+  }
+
+  if (birthdayBonus > 0) {
+    const thisYear = new Date().getFullYear();
+    const claimed = await tx.rewardWallet.updateMany({
+      where: {
+        id: wallet.id,
+        OR: [{ lastBirthdayBonusYear: null }, { lastBirthdayBonusYear: { not: thisYear } }],
+      },
+      data: { lastBirthdayBonusYear: thisYear },
+    });
+    if (claimed.count === 0) birthdayBonus = 0;
+  }
+
   // Apply transactions sequentially so balanceAfter snapshots are accurate.
   let runningBalance = wallet.balance;
 
@@ -184,9 +207,6 @@ export async function applySaleEarnings(
       data: {
         balance: runningBalance,
         lifetimeEarned: { increment: earned + welcomeBonus + birthdayBonus },
-        welcomeBonusApplied: welcomeBonus > 0 ? true : undefined,
-        lastBirthdayBonusYear:
-          birthdayBonus > 0 ? new Date().getFullYear() : undefined,
         lastActivityAt: new Date(),
       },
     });

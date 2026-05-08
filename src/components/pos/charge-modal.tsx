@@ -89,12 +89,16 @@ export function ChargeModal({
   const change = paidM > totalM ? fromMillimes(paidM - totalM) : "0.000";
   const canContinue = paidM >= totalM;
 
-  // Loyalty redemption helpers.
+  // Loyalty redemption helpers — math mirrors the server (rewards/redeem.ts):
+  //   maxM_DT_in_millimes = floor(totalM × maxPct / 100)
+  //   maxPts              = floor(maxM / (dpp × 1000))
+  // Doing it this way avoids a one-point divergence with custom dpp values
+  // that would otherwise cause the server to reject at submit time.
   const dpp = wallet ? Number(wallet.dinarPerPoint) : 0.01;
   const loyaltyValueM = wallet ? Math.round(loyaltyPoints * dpp * 1000) : 0;
   const loyaltyValue = fromMillimes(loyaltyValueM);
   const maxByPctPts = wallet
-    ? Math.floor((totalM * wallet.maxRedemptionPctPerSale) / 100 / 1000 / dpp)
+    ? Math.floor(Math.floor((totalM * wallet.maxRedemptionPctPerSale) / 100) / (dpp * 1000))
     : 0;
   const loyaltyMax = wallet ? Math.min(wallet.balance, maxByPctPts) : 0;
   const loyaltyAlreadyApplied = payments.some((p) => p.method === "LOYALTY_POINTS");

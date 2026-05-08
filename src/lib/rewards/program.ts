@@ -23,11 +23,22 @@ export type RewardProgramInput = {
   displayName?: string | null;
 };
 
-/** Get the program for a salon, lazily creating it with defaults. */
+/**
+ * Get the program for a salon, lazily creating it with defaults.
+ * Race-safe: concurrent first-time accesses (e.g. multiple cashiers loading
+ * /api/pos/catalog at once after REWARDS gets activated) collapse to a single
+ * row via the @unique constraint on providerId.
+ */
 export async function getOrCreateProgram(providerId: string): Promise<RewardProgram> {
   const existing = await prisma.rewardProgram.findUnique({ where: { providerId } });
   if (existing) return existing;
-  return prisma.rewardProgram.create({ data: { providerId } });
+  try {
+    return await prisma.rewardProgram.create({ data: { providerId } });
+  } catch {
+    const refetch = await prisma.rewardProgram.findUnique({ where: { providerId } });
+    if (refetch) return refetch;
+    throw new Error("Impossible de créer le programme de fidélité");
+  }
 }
 
 export class ProgramValidationError extends Error {

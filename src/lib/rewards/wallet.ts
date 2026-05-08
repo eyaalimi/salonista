@@ -97,6 +97,9 @@ export async function getWalletForPos(
     },
   });
 
+  // walletId is empty when the customer has no wallet row yet. Callers must
+  // gate redemption on `balance >= minPointsToRedeem` (which can't be true
+  // with a 0 balance), and only treat walletId as a real id after that gate.
   return {
     walletId: wallet?.id ?? "",
     balance: wallet?.balance ?? 0,
