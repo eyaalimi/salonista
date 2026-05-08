@@ -40,13 +40,24 @@ type CachedProduct = {
   photo: string | null;
 };
 
+export type CachedCustomerWallet = {
+  walletId: string;
+  balance: number;
+  minPointsToRedeem: number;
+  maxRedemptionPctPerSale: number;
+  dinarPerPoint: string;
+};
+
 type CachedCustomer = {
   id: string;
   phone: string;
   firstName: string | null;
   lastName: string | null;
   email: string | null;
+  wallet?: CachedCustomerWallet;
 };
+
+export type { CachedCustomer };
 
 export type CachedCatalogProvider = {
   id: string;

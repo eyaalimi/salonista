@@ -1015,11 +1015,118 @@ async function main() {
     });
   }
 
+  // --- PHASE 4: REWARDS (provider1 only — REWARDS active per Phase 1 seed) ---
+  // Cashback 3% (1 DT spent = 3 pts; 100 pts = 1 DT). Welcome 100, birthday 50,
+  // inactivity 12 months. Wallets seeded for 3 customers with mixed histories.
+  const program = await prisma.rewardProgram.create({
+    data: {
+      providerId: provider1.providerProfile!.id,
+      pointsPerDinar: "3.000",
+      dinarPerPoint: "0.010",
+      minPointsToRedeem: 100,
+      maxRedemptionPctPerSale: 50,
+      eligibleOn: "BOTH",
+      welcomeBonusPoints: 100,
+      birthdayBonusPoints: 50,
+      inactivityExpireMonths: 12,
+      active: true,
+      displayName: `${provider1.providerProfile!.salonName} Fidélité`,
+    },
+  });
+
+  const seedCustomers = await prisma.customer.findMany({
+    where: { firstSalonId: provider1.providerProfile!.id },
+    select: { id: true },
+    take: 3,
+  });
+
+  for (let i = 0; i < seedCustomers.length; i++) {
+    const c = seedCustomers[i];
+    const wallet = await prisma.rewardWallet.create({
+      data: {
+        programId: program.id,
+        providerId: provider1.providerProfile!.id,
+        customerId: c.id,
+        balance: 0,
+        welcomeBonusApplied: true,
+      },
+    });
+
+    // History: welcome bonus + a couple of EARN_PURCHASE rows.
+    let bal = 0;
+    bal += 100;
+    await prisma.rewardTransaction.create({
+      data: {
+        walletId: wallet.id,
+        delta: 100,
+        balanceAfter: bal,
+        reason: "WELCOME_BONUS",
+        createdAt: new Date(Date.now() - 60 * 24 * 3600 * 1000),
+      },
+    });
+    bal += 180;
+    await prisma.rewardTransaction.create({
+      data: {
+        walletId: wallet.id,
+        delta: 180,
+        balanceAfter: bal,
+        reason: "EARN_PURCHASE",
+        createdAt: new Date(Date.now() - 30 * 24 * 3600 * 1000),
+      },
+    });
+    if (i === 0) {
+      // Customer 1 has a redemption.
+      bal -= 100;
+      await prisma.rewardTransaction.create({
+        data: {
+          walletId: wallet.id,
+          delta: -100,
+          balanceAfter: bal,
+          reason: "REDEEM_PURCHASE",
+          createdAt: new Date(Date.now() - 20 * 24 * 3600 * 1000),
+        },
+      });
+    }
+    if (i === 1) {
+      // Customer 2 has a refund clawback.
+      bal -= 30;
+      await prisma.rewardTransaction.create({
+        data: {
+          walletId: wallet.id,
+          delta: -30,
+          balanceAfter: bal,
+          reason: "REFUND_REVERSAL",
+          createdAt: new Date(Date.now() - 10 * 24 * 3600 * 1000),
+        },
+      });
+    }
+    bal += 90;
+    await prisma.rewardTransaction.create({
+      data: {
+        walletId: wallet.id,
+        delta: 90,
+        balanceAfter: bal,
+        reason: "EARN_PURCHASE",
+        createdAt: new Date(Date.now() - 3 * 24 * 3600 * 1000),
+      },
+    });
+
+    await prisma.rewardWallet.update({
+      where: { id: wallet.id },
+      data: {
+        balance: bal,
+        lifetimeEarned: 370,
+        lifetimeRedeemed: i === 0 ? 100 : 0,
+      },
+    });
+  }
+
   console.log("✅ Seed complete!");
   console.log("   3 prestataires, 5 offres, 2 influenceuses, 3 clientes, 1 admin");
   console.log("   10 réservations avec commissions");
   console.log("   9 produits POS + 2 ventes seedées (provider1)");
   console.log("   12 réservations futures + 3 sessions de caisse seedées");
+  console.log("   Phase 4: programme fidélité provider1 (3% cashback) + 3 portefeuilles");
   console.log("   Tous les mots de passe: password123 · PIN cashier: 1234");
 }
 

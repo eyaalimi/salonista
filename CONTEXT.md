@@ -380,6 +380,49 @@ One-time backfill: `npx tsx prisma/backfill-phase3.ts` (idempotent — see deplo
 
 ---
 
+## Phase 4 additions (Reward Points module)
+
+- New models: `RewardProgram` (one per salon, lazy-created on first read), `RewardWallet` (one per customer per salon, lazy on first earn or POS lookup), `RewardTransaction` (immutable ledger with `balanceAfter` snapshot for audit). New enums: `RewardEligibility` (SERVICES_ONLY/PRODUCTS_ONLY/BOTH), `RewardTransactionReason`. `PaymentMethod` gained `LOYALTY_POINTS`.
+- **Cashback math**: owner-facing UI exposes a single percentage. Internally that's `pointsPerDinar = pct` and `dinarPerPoint = 0.010` (so 100 pts = 1 DT). The "Avancé" toggle exposes the two ratios for unusual programs (e.g. loyalty stamps).
+- **Earning**: `computeEarnedPoints()` is pure — eligible lineTotal sum (filtered by `eligibleOn`) minus the loyalty-paid portion *proportional* to eligible/total share, × `pointsPerDinar`, floored. Tips never earn. `applySaleEarnings()` runs inside the sale transaction, idempotent on `saleId`, and emits EARN_PURCHASE + WELCOME_BONUS (first-ever) + BIRTHDAY_BONUS (once per year, customer's birthday month).
+- **Redemption**: `validateRedemption()` checks min/balance/max-pct/inactive; throws `RedemptionError` with French messages. Inside the sale transaction `applySaleRedemption()` decrements the wallet and creates the REDEEM_PURCHASE row. The sale handler in `pos-sale-create.ts` validates loyalty payments up-front (walletId/pointsRedeemed required, customer must be set, redemption value must match payment amount) before opening the transaction.
+- **Refund clawback**: `clawbackOnRefund()` runs inside the refund transaction — proportional to the refund's share of the original sale total, × the original EARN_PURCHASE's delta, floored. Wallet balance can go negative. Redeemed points are NOT restored on refund.
+- **Manual adjustments**: `adjustWallet()` with required note + `rewards.adjust` permission (OWNER + MANAGER per defaults).
+- **Expiration**: `expireInactiveWallets()` zeroes wallets where `lastActivityAt` is older than `program.inactivityExpireMonths`. Cron not scheduled in this phase — admins trigger via `POST /api/admin/rewards/expire-inactive`.
+- **Negative wallet balances are intentional** when refund clawbacks exceed remaining balance. Don't add a `balance >= 0` check anywhere — it's a feature.
+- **`PaymentMethod.LOYALTY_POINTS` is server-only.** The cashier never picks it from a free-form list; it's always introduced via the redemption flow in the charge modal. Don't expose it in admin payment-method dropdowns.
+
+POS integration:
+- Charge modal renders a gold-bordered "Points fidélité" tile when a wallet is present + REWARDS active + balance ≥ min + online. Tapping opens an inline expansion (not a separate modal) with +/− points input, live DT-equivalent, max-by-pct cap. On confirm, a `LOYALTY_POINTS` payment row is added carrying `walletId` + `pointsRedeemed`.
+- `/api/pos/catalog` extends own-scope customers with a `wallet` summary (walletId/balance/min/maxPct/dinarPerPoint) when REWARDS is active.
+- Receipt: when sale earned or redeemed points, a "Fidélité" section appears with points used, points earned, bonuses, and new balance. Same in the print frame.
+- **Offline behavior**: redemption blocked offline (the loyalty tile shows `cursor-not-allowed` with a French hover hint). Earning happens at sync time on the server — `pos-sale-create.ts` is the single path for both online and offline sales, so syncs trigger `applySaleEarnings` automatically.
+
+Owner UI (`/prestataire/fidelite`, gated by `<ModuleGate module="REWARDS">`):
+- 3 tabs: Paramètres / Cartes clients / Statistiques.
+- Settings exposes the cashback %, eligibility, redemption rules, bonuses, expiration. Live preview card. "Avancé" toggle for raw ratios. `rewards.settings` permission required (OWNER only).
+- Wallets tab is searchable + sortable; the per-row drawer shows balance + lifetime stats + transaction history + an Ajuster modal (gated by `rewards.adjust`).
+- Stats tab shows liability (points in circulation, valueDT, active cards), 30-day engagement (earned/redeemed/redemption rate), lifetime bonus distribution, and top-10 earners.
+
+Customer UI (`/cliente/fidelite`, always visible):
+- List of all the user's wallets across salons (joined via `Customer.userId`).
+- Per-wallet detail at `/cliente/fidelite/[walletId]` with balance, program rules summary, and paginated transaction history. Server checks `wallet.customer.userId === session.user.id` before returning.
+
+Routes added:
+- `/prestataire/fidelite`, `/cliente/fidelite`, `/cliente/fidelite/[walletId]`
+- `/api/rewards/program` (GET/PUT)
+- `/api/rewards/wallets` (GET), `/api/rewards/wallets/[id]` (GET), `/api/rewards/wallets/[id]/adjust` (POST)
+- `/api/rewards/stats` (GET)
+- `/api/pos/customer/[customerId]/wallet` (GET)
+- `/api/cliente/fidelite`, `/api/cliente/fidelite/[walletId]`
+- `/api/admin/rewards/expire-inactive` (POST, ADMIN only)
+
+Helpers (`src/lib/rewards/*`): `getOrCreateProgram`, `updateProgram`, `programToCashbackPct`, `cashbackPctToProgram`, `getOrCreateWallet`, `getWalletForPos`, `computeEarnedPoints`, `applySaleEarnings`, `validateRedemption`, `applySaleRedemption`, `clawbackOnRefund`, `adjustWallet`, `expireInactiveWallets`. 17 unit tests cover the pure functions (earn under each eligibility, loyalty-no-infinite-loop, redemption validation, cashback bridge).
+
+Subscription expiry: existing wallets and transactions are preserved when REWARDS lapses. The `<ModuleGate>` blocks `/prestataire/fidelite` and the POS loyalty tile, but customers can still read their wallet at `/cliente/fidelite/[walletId]`. Reactivation resumes earning seamlessly.
+
+---
+
 ## Contacts
 
 - **Owner / dev**: alimieyaa@gmail.com

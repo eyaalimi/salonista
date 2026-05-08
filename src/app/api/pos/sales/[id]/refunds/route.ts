@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { requireModule } from "@/lib/modules";
 import { requirePermission, toResponse } from "@/lib/employee-session";
 import { addMoney, fromMillimes, toMillimes } from "@/lib/money";
+import { clawbackOnRefund } from "@/lib/rewards/refund";
 import type { PaymentMethod, RefundReason } from "@/generated/prisma/enums";
 
 type RefundLineInput = {
@@ -169,10 +170,15 @@ export async function POST(req: NextRequest, ctx: { params: Promise<{ id: string
         },
       });
 
-      return refund;
+      const clawback = await clawbackOnRefund(tx, refund.id);
+
+      return { refund, clawback };
     });
 
-    return Response.json(result, { status: 201 });
+    return Response.json(
+      { ...result.refund, rewardsClawback: result.clawback.clawedBack },
+      { status: 201 },
+    );
   } catch (err) {
     const msg = err instanceof Error ? err.message : "Erreur";
     const status = msg === "ALREADY_FULLY_REFUNDED" ? 409 : 400;

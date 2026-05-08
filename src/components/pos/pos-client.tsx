@@ -728,6 +728,11 @@ export function PosClient({ employee }: { employee: EmployeeProp }) {
           employee={employee}
           online={online}
           bookingId={convertingFromBooking?.id ?? null}
+          wallet={
+            selectedCustomer && "wallet" in selectedCustomer && selectedCustomer.wallet
+              ? selectedCustomer.wallet
+              : null
+          }
           onClose={() => setChargeOpen(false)}
           onCompleted={(receipt, shouldPrint) => {
             handleSold(receipt, shouldPrint);

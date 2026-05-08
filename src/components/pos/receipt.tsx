@@ -8,6 +8,7 @@ const METHOD_LABELS: Record<string, string> = {
   CARD: "Carte",
   TRANSFER: "Virement",
   OTHER: "Autre",
+  LOYALTY_POINTS: "Points fidélité",
 };
 
 export type ReceiptData = {
@@ -27,9 +28,16 @@ export type ReceiptData = {
   taxBreakdown: Array<{ rate: string; base: string; tax: string }>;
   tipTotal: string;
   total: string;
-  payments: Array<{ method: string; amount: string }>;
+  payments: Array<{ method: string; amount: string; pointsRedeemed?: number }>;
   date: string;
   offline: boolean;
+  rewards?: {
+    earned: number;
+    redeemed: number;
+    welcomeBonus: number;
+    birthdayBonus: number;
+    newBalance?: number;
+  };
 };
 
 /**
@@ -143,10 +151,53 @@ export function ReceiptPrintFrame({ data }: { data: ReceiptData }) {
         <hr />
         {data.payments.map((p, i) => (
           <div className="row" key={i}>
-            <span>{METHOD_LABELS[p.method] ?? p.method}</span>
+            <span>
+              {METHOD_LABELS[p.method] ?? p.method}
+              {p.pointsRedeemed ? ` (${p.pointsRedeemed} pts)` : ""}
+            </span>
             <span>{formatDT(p.amount)}</span>
           </div>
         ))}
+        {data.rewards &&
+          (data.rewards.earned > 0 ||
+            data.rewards.redeemed > 0 ||
+            data.rewards.welcomeBonus > 0 ||
+            data.rewards.birthdayBonus > 0) && (
+            <>
+              <hr />
+              <div className="center" style={{ fontWeight: "bold" }}>Fidélité</div>
+              {data.rewards.redeemed > 0 && (
+                <div className="row">
+                  <span>Points utilisés</span>
+                  <span>-{data.rewards.redeemed} pts</span>
+                </div>
+              )}
+              {data.rewards.earned > 0 && (
+                <div className="row">
+                  <span>Points gagnés</span>
+                  <span>+{data.rewards.earned} pts</span>
+                </div>
+              )}
+              {data.rewards.welcomeBonus > 0 && (
+                <div className="row">
+                  <span>Bonus de bienvenue</span>
+                  <span>+{data.rewards.welcomeBonus} pts</span>
+                </div>
+              )}
+              {data.rewards.birthdayBonus > 0 && (
+                <div className="row">
+                  <span>Bonus anniversaire</span>
+                  <span>+{data.rewards.birthdayBonus} pts</span>
+                </div>
+              )}
+              {data.rewards.newBalance !== undefined && (
+                <div className="row" style={{ fontWeight: "bold" }}>
+                  <span>Nouveau solde</span>
+                  <span>{data.rewards.newBalance} pts</span>
+                </div>
+              )}
+            </>
+          )}
         {data.provider?.receiptFooter && (
           <>
             <hr />

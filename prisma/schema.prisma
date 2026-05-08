@@ -92,6 +92,23 @@ enum PaymentMethod {
   CARD
   TRANSFER
   OTHER
+  LOYALTY_POINTS
+}
+
+enum RewardEligibility {
+  SERVICES_ONLY
+  PRODUCTS_ONLY
+  BOTH
+}
+
+enum RewardTransactionReason {
+  EARN_PURCHASE
+  REDEEM_PURCHASE
+  WELCOME_BONUS
+  BIRTHDAY_BONUS
+  MANUAL_ADJUSTMENT
+  EXPIRATION
+  REFUND_REVERSAL
 }
 
 enum RefundReason {
@@ -204,6 +221,8 @@ model ProviderProfile {
   products              Product[]
   sales                 Sale[]
   cashDrawerSessions    CashDrawerSession[]
+  rewardProgram         RewardProgram?
+  rewardWallets         RewardWallet[]
 }
 
 model InfluencerProfile {
@@ -422,9 +441,10 @@ model Customer {
   createdAt    DateTime  @default(now())
   updatedAt    DateTime  @updatedAt
 
-  user     User?     @relation(fields: [userId], references: [id], onDelete: SetNull)
-  bookings Booking[]
-  sales    Sale[]
+  user           User?           @relation(fields: [userId], references: [id], onDelete: SetNull)
+  bookings       Booking[]
+  sales          Sale[]
+  rewardWallets  RewardWallet[]
 
   @@index([phone])
   @@index([firstSalonId])
@@ -455,6 +475,7 @@ model SalonEmployee {
   refundsIssued      Refund[]            @relation("RefundEmployee")
   stockMovements     StockMovement[]
   cashDrawerSessions CashDrawerSession[] @relation("CashDrawerEmployee")
+  rewardAdjustments  RewardTransaction[] @relation("RewardTransactionEmployee")
 
   @@index([providerId, active])
   @@index([userId])
@@ -557,15 +578,16 @@ model Sale {
   closedAt  DateTime?
   updatedAt DateTime  @updatedAt
 
-  provider       ProviderProfile @relation(fields: [providerId], references: [id], onDelete: Cascade)
-  customer       Customer?       @relation(fields: [customerId], references: [id], onDelete: SetNull)
-  employee       SalonEmployee   @relation(fields: [employeeId], references: [id])
-  booking        Booking?        @relation(fields: [bookingId], references: [id], onDelete: SetNull)
-  items          SaleItem[]
-  payments       Payment[]
-  tipAllocations TipAllocation[]
-  refunds        Refund[]
-  stockMovements StockMovement[]
+  provider           ProviderProfile     @relation(fields: [providerId], references: [id], onDelete: Cascade)
+  customer           Customer?           @relation(fields: [customerId], references: [id], onDelete: SetNull)
+  employee           SalonEmployee       @relation(fields: [employeeId], references: [id])
+  booking            Booking?            @relation(fields: [bookingId], references: [id], onDelete: SetNull)
+  items              SaleItem[]
+  payments           Payment[]
+  tipAllocations     TipAllocation[]
+  refunds            Refund[]
+  stockMovements     StockMovement[]
+  rewardTransactions RewardTransaction[]
 
   @@unique([providerId, receiptNumber])
   @@index([providerId, status, createdAt])
@@ -648,10 +670,11 @@ model Refund {
   reference    String?
   createdAt    DateTime      @default(now())
 
-  sale           Sale            @relation(fields: [saleId], references: [id], onDelete: Cascade)
-  employee       SalonEmployee   @relation("RefundEmployee", fields: [employeeId], references: [id])
-  items          RefundItem[]
-  stockMovements StockMovement[]
+  sale               Sale                @relation(fields: [saleId], references: [id], onDelete: Cascade)
+  employee           SalonEmployee       @relation("RefundEmployee", fields: [employeeId], references: [id])
+  items              RefundItem[]
+  stockMovements     StockMovement[]
+  rewardTransactions RewardTransaction[]
 
   @@index([saleId])
 }
@@ -710,4 +733,86 @@ model CashDrawerSession {
   @@index([providerId, status])
   @@index([employeeId, status])
   @@index([openedAt])
+}
+
+model RewardProgram {
+  id                      String            @id @default(cuid())
+  providerId              String            @unique
+
+  pointsPerDinar          Decimal           @default(1.000) @db.Decimal(10, 3)
+  dinarPerPoint           Decimal           @default(0.010) @db.Decimal(10, 3)
+
+  minPointsToRedeem       Int               @default(100)
+  maxRedemptionPctPerSale Int               @default(50)
+
+  eligibleOn              RewardEligibility @default(BOTH)
+
+  inactivityExpireMonths  Int?
+
+  welcomeBonusPoints      Int               @default(0)
+  birthdayBonusPoints     Int               @default(0)
+
+  active                  Boolean           @default(true)
+  displayName             String?
+
+  createdAt               DateTime          @default(now())
+  updatedAt               DateTime          @updatedAt
+
+  provider ProviderProfile @relation(fields: [providerId], references: [id], onDelete: Cascade)
+  wallets  RewardWallet[]
+
+  @@index([active])
+}
+
+model RewardWallet {
+  id                    String   @id @default(cuid())
+  programId             String
+  providerId            String
+  customerId            String
+
+  balance               Int      @default(0)
+  lifetimeEarned        Int      @default(0)
+  lifetimeRedeemed      Int      @default(0)
+
+  welcomeBonusApplied   Boolean  @default(false)
+  lastBirthdayBonusYear Int?
+  lastActivityAt        DateTime @default(now())
+
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+
+  program      RewardProgram       @relation(fields: [programId], references: [id], onDelete: Cascade)
+  provider     ProviderProfile     @relation(fields: [providerId], references: [id], onDelete: Cascade)
+  customer     Customer            @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  transactions RewardTransaction[]
+
+  @@unique([providerId, customerId])
+  @@index([providerId, lastActivityAt])
+  @@index([customerId])
+}
+
+model RewardTransaction {
+  id                   String                  @id @default(cuid())
+  walletId             String
+  delta                Int
+  balanceAfter         Int
+  reason               RewardTransactionReason
+
+  saleId               String?
+  refundId             String?
+  adjustedByEmployeeId String?
+
+  note                 String?
+
+  createdAt            DateTime @default(now())
+
+  wallet     RewardWallet   @relation(fields: [walletId], references: [id], onDelete: Cascade)
+  sale       Sale?          @relation(fields: [saleId], references: [id], onDelete: SetNull)
+  refund     Refund?        @relation(fields: [refundId], references: [id], onDelete: SetNull)
+  adjustedBy SalonEmployee? @relation("RewardTransactionEmployee", fields: [adjustedByEmployeeId], references: [id], onDelete: SetNull)
+
+  @@index([walletId, createdAt])
+  @@index([saleId])
+  @@index([refundId])
+  @@index([reason])
 }
