@@ -2,7 +2,7 @@
 // Uses Workbox via importScripts (no build-time integration; static file).
 // Bump SW_VERSION when shipping a change that needs clients to refresh.
 
-const SW_VERSION = "phase2-1";
+const SW_VERSION = "phase2-d2-1";
 
 // Workbox 7.x via Google CDN. Pin the version so the file is hashed/cacheable.
 importScripts("https://storage.googleapis.com/workbox-cdn/releases/7.0.0/workbox-sw.js");
