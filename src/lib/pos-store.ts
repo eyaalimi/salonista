@@ -7,7 +7,6 @@
  */
 
 import { create } from "zustand";
-import { computeTotals, type ComputedTotals } from "@/lib/sale-totals";
 
 export type SearchResult = {
   kind: "SERVICE" | "PRODUCT";
@@ -227,21 +226,9 @@ export const usePosStore = create<State & Actions>()((set, get) => ({
   setChargeOpen: (b) => set({ chargeOpen: b }),
 }));
 
-/** Derived: computed totals for the current cart. */
-export function selectComputedTotals(s: State): ComputedTotals {
-  return computeTotals({
-    lines: s.cart.map((l) => ({
-      kind: l.kind,
-      offerId: l.offerId,
-      productId: l.productId,
-      nameSnapshot: l.nameSnapshot,
-      priceSnapshot: l.priceSnapshot,
-      taxRateSnapshot: l.taxRateSnapshot,
-      quantity: l.quantity,
-      discount: l.discount,
-      assignedEmployeeId: l.assignedEmployeeId,
-    })),
-    saleDiscount: s.saleDiscount ?? undefined,
-    tipTotal: s.tipTotal,
-  });
-}
+// Intentionally NOT exporting a `selectComputedTotals` selector: any selector
+// passed to `usePosStore(...)` must return a stable reference for snapshots
+// where state is unchanged (React 18's useSyncExternalStore contract). A
+// selector that calls `computeTotals(...)` returns a fresh object each time
+// → infinite re-render (React error #185). Components subscribe to the raw
+// cart fields and call `computeTotals` inside a `useMemo`.

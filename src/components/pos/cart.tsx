@@ -1,8 +1,9 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useMemo } from "react";
 import { Plus, Minus, Trash2 } from "lucide-react";
-import { usePosStore, selectComputedTotals } from "@/lib/pos-store";
+import { usePosStore } from "@/lib/pos-store";
+import { computeTotals } from "@/lib/sale-totals";
 import { formatDT, toMillimes } from "@/lib/money";
 import { usePOSShortcut } from "@/lib/use-pos-shortcuts";
 import { getShortcutLabel } from "@/lib/pos-shortcuts";
@@ -21,13 +22,35 @@ export function Cart({
   onCharge: () => void;
 }) {
   const cart = usePosStore((s) => s.cart);
-  const totals = usePosStore(selectComputedTotals);
+  const saleDiscount = usePosStore((s) => s.saleDiscount);
+  const tipTotal = usePosStore((s) => s.tipTotal);
   const removeLine = usePosStore((s) => s.removeLine);
   const updateQty = usePosStore((s) => s.updateQty);
   const setLineEmployee = usePosStore((s) => s.setLineEmployee);
   const clearCart = usePosStore((s) => s.clearCart);
   const receiptPreview = usePosStore((s) => s.receiptNumberPreview);
   const setReceiptPreview = usePosStore((s) => s.setReceiptNumberPreview);
+
+  // Compute totals locally — see comment in pos-shell-client.tsx.
+  const totals = useMemo(
+    () =>
+      computeTotals({
+        lines: cart.map((l) => ({
+          kind: l.kind,
+          offerId: l.offerId,
+          productId: l.productId,
+          nameSnapshot: l.nameSnapshot,
+          priceSnapshot: l.priceSnapshot,
+          taxRateSnapshot: l.taxRateSnapshot,
+          quantity: l.quantity,
+          discount: l.discount,
+          assignedEmployeeId: l.assignedEmployeeId,
+        })),
+        saleDiscount: saleDiscount ?? undefined,
+        tipTotal,
+      }),
+    [cart, saleDiscount, tipTotal],
+  );
 
   // Fetch the receipt-number preview once on mount.
   useEffect(() => {

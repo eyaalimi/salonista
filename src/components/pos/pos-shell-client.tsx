@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useOnlineStatus } from "@/components/pos/online-status";
 import { ChargeModal } from "@/components/pos/charge-modal";
 import { ReceiptPrintFrame, type ReceiptData } from "@/components/pos/receipt";
@@ -14,7 +14,8 @@ import {
   queueSale,
   type CachedCatalog,
 } from "@/lib/pos-offline-db";
-import { usePosStore, selectComputedTotals } from "@/lib/pos-store";
+import { usePosStore } from "@/lib/pos-store";
+import { computeTotals } from "@/lib/sale-totals";
 
 type Permission = string;
 type EmployeeProp = {
@@ -37,7 +38,6 @@ export function PosShellClient({ employee }: { employee: EmployeeProp }) {
 
   const cart = usePosStore((s) => s.cart);
   const customer = usePosStore((s) => s.customer);
-  const totals = usePosStore(selectComputedTotals);
   const tipTotal = usePosStore((s) => s.tipTotal);
   const cartNote = usePosStore((s) => s.cartNote);
   const saleDiscount = usePosStore((s) => s.saleDiscount);
@@ -45,6 +45,29 @@ export function PosShellClient({ employee }: { employee: EmployeeProp }) {
   const chargeOpen = usePosStore((s) => s.chargeOpen);
   const setChargeOpen = usePosStore((s) => s.setChargeOpen);
   const clearCart = usePosStore((s) => s.clearCart);
+
+  // computeTotals returns a new object each call — keep it out of the
+  // Zustand selector chain (would violate getSnapshot stability and
+  // infinitely re-render). useMemo here is safe.
+  const totals = useMemo(
+    () =>
+      computeTotals({
+        lines: cart.map((l) => ({
+          kind: l.kind,
+          offerId: l.offerId,
+          productId: l.productId,
+          nameSnapshot: l.nameSnapshot,
+          priceSnapshot: l.priceSnapshot,
+          taxRateSnapshot: l.taxRateSnapshot,
+          quantity: l.quantity,
+          discount: l.discount,
+          assignedEmployeeId: l.assignedEmployeeId,
+        })),
+        saleDiscount: saleDiscount ?? undefined,
+        tipTotal,
+      }),
+    [cart, saleDiscount, tipTotal],
+  );
 
   // Load catalog (refresh online, fall back to cache).
   useEffect(() => {
