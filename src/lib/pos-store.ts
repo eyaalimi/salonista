@@ -203,6 +203,10 @@ export const usePosStore = create<State & Actions>()((set, get) => ({
       cartNote: "",
       attachedBookingId: null,
       bookingPrefilledLineUids: [],
+      // Drop the customer too — keeping a stale customer on the next
+      // sale risks debiting their loyalty wallet for someone else's
+      // transaction. Cashiers re-pick the customer per sale.
+      customer: null,
     }),
   setReceiptNumberPreview: (n) => set({ receiptNumberPreview: n }),
 

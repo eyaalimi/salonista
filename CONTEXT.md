@@ -427,7 +427,7 @@ Subscription expiry: existing wallets and transactions are preserved when REWARD
 
 The POS UI was rebuilt around a 4-panel command-palette layout: 60px rail | search results | 380px cart | 320px side panel. Marketplace pages keep `brand-*` tokens; the POS gets its own `--pos-*` tokens activated via `[data-pos-theme]`. Fonts: IBM Plex Sans (UI) + IBM Plex Mono (numbers, codes, kbd).
 
-- **Universal search** (`/api/pos/search`) — single endpoint returning services + products mixed with relevance ranking. Empty query returns "frequently used" (top 20 by 30-day sales volume, cached 60s in-memory). Accent-insensitive via Postgres `unaccent` extension (migration `20260508120000_unaccent_extension`); the actual ranking happens in JS over the full active catalog (single salons stay well under the threshold where SQL ranking would matter). Same scorer in `src/lib/pos-search.ts` is reused offline against the cached catalog via `searchCachedCatalog()`.
+- **Universal search** (`/api/pos/search`) — single endpoint returning services + products mixed with relevance ranking. Empty query returns "frequently used" (top 20 by 30-day sales volume, cached 60s in-memory). Accent-insensitive via JS-only `deburr()` (NFD normalization in `src/lib/pos-search.ts`). The same scorer is reused offline against the cached catalog via `searchCachedCatalog()`. **No Postgres `unaccent` extension is required** — keeps the Lightsail deploy permission-free.
 - **Zustand store** at `src/lib/pos-store.ts` holds search query/results/selection, cart lines + discounts + tip + note, customer, attached booking, charge-modal flag, help-overlay flag. Replaced the bulk of the old `pos-client.tsx` local state.
 - **Keyboard shortcuts** registered via `usePOSShortcut(id, handler)` in `src/lib/use-pos-shortcuts.ts`; the registry is `src/lib/pos-shortcuts.ts` (`search.focus` ⌘K, `cart.charge` ⌘Enter, `cart.clear` ⌘⌫, `customer.search` ⌘F, `results.sort` ⇧S, `help.toggle` ?, etc.). `getShortcutLabel()` swaps ⌘ vs Ctrl based on `navigator.platform`. Help overlay (`?`) lists every shortcut grouped by section.
 - **Topbar** (`src/components/pos/topbar.tsx`) — black 48px bar: brand "salonista." with yellow dot, salon name + city, centered universal-search input (`src/components/pos/universal-search.tsx`), online pill, mono clock, cash-drawer indicator (Phase 3, kept active), employee initials avatar.
@@ -450,7 +450,7 @@ New API routes:
 
 New libs / dependencies: `zustand`, `lucide-react`, `next/font` (IBM Plex Sans + Mono).
 
-Migration: `20260508120000_unaccent_extension` runs `CREATE EXTENSION IF NOT EXISTS unaccent;` — safe to re-apply.
+Migration: none. (Universal search is JS-only; no Postgres extension needed.)
 
 **Known follow-ups**:
 - Charge modal hasn't been explicitly re-themed; it works correctly (Phase 4 loyalty tile + offline gating preserved) but visually still uses the marketplace `brand-*` tokens. Re-styling is cosmetic-only.

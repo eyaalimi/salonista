@@ -208,6 +208,13 @@ function BookingsTodayBlock({ defaultEmployeeId }: { defaultEmployeeId: string }
   }, []);
 
   function handlePick(b: Booking) {
+    // Guard against double-click attaching the same booking twice — the
+    // second attach would orphan the first set of pre-filled lines (their
+    // UIDs are no longer in bookingPrefilledLineUids and detachBooking
+    // would never be able to remove them).
+    const { attachedBookingId } = usePosStore.getState();
+    if (attachedBookingId === b.id) return;
+
     if (b.customer && customer?.id !== b.customer.id) {
       setCustomer({
         id: b.customer.id,

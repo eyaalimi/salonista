@@ -54,7 +54,8 @@ export function scoreCandidate(c: ScoredCandidate, q: string): number {
 
   // Name starts with q
   if (dn.startsWith(dq)) {
-    const wholeWord = new RegExp(`(^|\\s)${dq.replace(/[.*+?^${}()|[\\]\\\\]/g, "\\$&")}\\b`).test(dn);
+    const escaped = dq.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+    const wholeWord = new RegExp(`(^|\\s)${escaped}\\b`).test(dn);
     return 500 + (wholeWord ? 50 : 0);
   }
 

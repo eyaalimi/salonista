@@ -36,6 +36,9 @@ export function Results({ defaultEmployeeId }: { defaultEmployeeId: string }) {
         e.preventDefault();
         moveSelection(-1);
       } else if (e.key === "Enter") {
+        // Plain Enter adds the highlighted result. ⌘Enter / Ctrl-Enter is
+        // the cart-charge shortcut — let it through.
+        if (e.metaKey || e.ctrlKey || e.altKey) return;
         const r = visible[selectedIndex];
         if (r) {
           e.preventDefault();

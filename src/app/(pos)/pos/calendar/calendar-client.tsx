@@ -4,8 +4,10 @@ import { useState } from "react";
 import { PosCalendar } from "@/components/pos/pos-calendar";
 import { BookingCreateDrawer } from "@/components/pos/booking-create-drawer";
 import { BookingDetailDrawer } from "@/components/pos/booking-detail-drawer";
+import { useOnlineStatus } from "@/components/pos/online-status";
 
 export function PosCalendarClient({ defaultEmployeeId }: { defaultEmployeeId: string }) {
+  const { online } = useOnlineStatus();
   const [draftStart, setDraftStart] = useState<Date | null>(null);
   const [openBookingId, setOpenBookingId] = useState<string | null>(null);
   const [reloadKey, setReloadKey] = useState(0);
@@ -20,7 +22,7 @@ export function PosCalendarClient({ defaultEmployeeId }: { defaultEmployeeId: st
       {draftStart && (
         <BookingCreateDrawer
           initialStart={draftStart}
-          online={true}
+          online={online}
           defaultEmployeeId={defaultEmployeeId}
           onClose={() => setDraftStart(null)}
           onCreated={() => {

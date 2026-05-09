@@ -25,10 +25,14 @@ export function BarcodePrompt({ defaultEmployeeId }: { defaultEmployeeId: string
     function onClick(e: MouseEvent) {
       const target = e.target as HTMLElement | null;
       if (!target) return;
+      // Don't steal focus from controls that need it themselves.
       if (
         target.tagName === "INPUT" ||
         target.tagName === "TEXTAREA" ||
-        target.tagName === "BUTTON"
+        target.tagName === "BUTTON" ||
+        target.tagName === "SELECT" ||
+        target.tagName === "OPTION" ||
+        target.closest("select") !== null
       )
         return;
       inputRef.current?.focus();
