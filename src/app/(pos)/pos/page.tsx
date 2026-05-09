@@ -1,12 +1,12 @@
 import { getCurrentEmployee } from "@/lib/employee-session";
 import { redirect } from "next/navigation";
-import { PosClient } from "@/components/pos/pos-client";
+import { PosShellClient } from "@/components/pos/pos-shell-client";
 
 export default async function PosPage() {
   const employee = await getCurrentEmployee();
   if (!employee) redirect("/salon-pin");
   return (
-    <PosClient
+    <PosShellClient
       employee={{
         id: employee.id,
         displayName: employee.displayName,
