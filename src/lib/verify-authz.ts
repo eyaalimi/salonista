@@ -1,5 +1,4 @@
 import type { Session } from "next-auth";
-import { prisma } from "@/lib/prisma";
 
 /**
  * Resolved identity of a caller verifying a QR code.
@@ -55,6 +54,7 @@ export function classifySession(session: Session | null): ClassifiedSession {
 export async function resolveVerifier(session: Session | null): Promise<Verifier> {
   const c = classifySession(session);
   if (c.kind !== "owner-pending-lookup") return c;
+  const { prisma } = await import("@/lib/prisma");
   const profile = await prisma.providerProfile.findUnique({
     where: { userId: c.userId },
     select: { id: true },
