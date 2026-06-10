@@ -57,6 +57,7 @@ function VerificationPageInner() {
       return;
     }
     setData(await r.json());
+    setError(""); // clear any stale POST error from a previous attempt
     setLoading(false);
   }, [code]);
 
@@ -99,7 +100,9 @@ function VerificationPageInner() {
     return (
       <div className="min-h-screen bg-brand-cream flex items-center justify-center px-6">
         <div className="bg-white p-12 max-w-md w-full text-center border border-red-300">
-          <h1 className="luxury-heading text-xl text-brand-ink mb-2">Code invalide</h1>
+          <h1 className="luxury-heading text-xl text-brand-ink mb-2">
+            {code ? "Code invalide" : "Code manquant"}
+          </h1>
           <p className="text-sm text-brand-ink-soft">{error || "Erreur inconnue"}</p>
           <Link href="/" className="inline-block mt-6 text-xs tracking-[0.2em] uppercase text-brand-gold hover:text-brand-ink transition-colors">
             Retour à l&apos;accueil
@@ -171,6 +174,7 @@ function VerificationPageInner() {
           <div className="mt-8">
             {sessionStatus === "loading" ? null : isSalonSession ? (
               <button
+                type="button"
                 onClick={handleConfirm}
                 disabled={confirming}
                 className="w-full rounded-2xl bg-brand-ink py-4 text-base font-semibold text-white hover:bg-brand-gold transition-colors disabled:opacity-50"
@@ -179,6 +183,7 @@ function VerificationPageInner() {
               </button>
             ) : (
               <button
+                type="button"
                 onClick={() => router.push(`/salon-pin?next=${encodeURIComponent(`/verification?code=${code}`)}`)}
                 className="w-full rounded-2xl border border-brand-line py-4 text-base font-semibold text-brand-ink hover:border-brand-gold transition-colors"
               >
