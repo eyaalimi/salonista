@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useCallback } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { signIn } from "next-auth/react";
 import { Logo } from "@/components/logo";
 import { PwaInstallPrompt } from "@/components/pwa-install-prompt";
@@ -27,8 +27,21 @@ const ROLE_LABELS: Record<Employee["role"], string> = {
   STYLIST: "Coiffeur·euse",
 };
 
+// Only accept path-only redirects. An attacker who plants a salon-pin link
+// with `?next=https://evil/` must not be able to bounce a freshly-signed-in
+// employee to an external site.
+function sanitizeNext(raw: string | null): string {
+  if (!raw) return "/pos";
+  if (!raw.startsWith("/")) return "/pos";
+  if (raw.startsWith("//")) return "/pos"; // protocol-relative
+  if (raw.includes("://")) return "/pos";
+  return raw;
+}
+
 export default function SalonPinClient() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const next = sanitizeNext(searchParams.get("next"));
   const [step, setStep] = useState<"identify" | "pin">("identify");
   const [identifier, setIdentifier] = useState("");
   const [salon, setSalon] = useState<ResolvedSalon | null>(null);
@@ -79,13 +92,13 @@ export default function SalonPinClient() {
           setError("PIN incorrect");
           setPin("");
         } else if (result?.ok) {
-          router.push("/pos");
+          router.push(next);
         }
       } finally {
         setLoading(false);
       }
     },
-    [employee, router],
+    [employee, router, next],
   );
 
   function selectEmployee(emp: Employee) {
