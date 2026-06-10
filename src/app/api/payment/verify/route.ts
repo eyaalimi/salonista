@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { resolveVerifier } from "@/lib/verify-authz";
 
 export async function GET(req: NextRequest) {
   const code = req.nextUrl.searchParams.get("code");
@@ -25,10 +26,21 @@ export async function GET(req: NextRequest) {
   }
 
   const firstItem = booking.items[0];
+
+  let verifiedByDisplayName: string | undefined;
+  if (booking.qrVerified && (booking as { qrVerifiedByEmployeeId?: string | null }).qrVerifiedByEmployeeId) {
+    const emp = await (prisma as any).salonEmployee.findUnique({
+      where: { id: (booking as unknown as { qrVerifiedByEmployeeId: string }).qrVerifiedByEmployeeId },
+      select: { displayName: true },
+    });
+    verifiedByDisplayName = emp?.displayName;
+  }
+
   return NextResponse.json({
     valid: true,
     verified: booking.qrVerified,
     verifiedAt: booking.qrVerifiedAt,
+    verifiedBy: verifiedByDisplayName ? { displayName: verifiedByDisplayName } : undefined,
     booking: {
       id: booking.id,
       offerTitle: booking.items.map((i) => i.offer.title).join(", "),
@@ -46,12 +58,21 @@ export async function GET(req: NextRequest) {
 
 export async function POST(req: NextRequest) {
   const session = await getServerSession(authOptions);
-  if (!session) {
+  const verifier = await resolveVerifier(session);
+
+  if (verifier.kind === "none") {
     return NextResponse.json({ error: "Connexion requise" }, { status: 401 });
   }
 
-  if (session.user.role !== "PROVIDER" && session.user.role !== "ADMIN") {
-    return NextResponse.json({ error: "Non autorise" }, { status: 403 });
+  // PIN-employee callers must have the bookings.edit permission
+  if (verifier.kind === "employee") {
+    const perms = session?.employee?.permissions;
+    if (!perms || !perms["bookings.edit"]) {
+      return NextResponse.json(
+        { error: "Vous n'avez pas la permission de valider les arrivées" },
+        { status: 403 },
+      );
+    }
   }
 
   const { code } = await req.json();
@@ -69,31 +90,40 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ valid: false, error: "Code invalide" }, { status: 404 });
   }
 
-  if (session.user.role === "PROVIDER") {
-    const providerProfile = await prisma.providerProfile.findUnique({
-      where: { userId: session.user.id },
-    });
-    const owns = booking.items.some((it) => it.offer.providerId === providerProfile?.id);
-    if (!providerProfile || !owns) {
+  // Ownership check (admin bypasses)
+  if (verifier.kind !== "admin") {
+    const owns = booking.items.some((it) => it.offer.providerId === verifier.providerId);
+    if (!owns) {
       return NextResponse.json(
-        { error: "Cette reservation ne vous appartient pas" },
-        { status: 403 }
+        { error: "Cette réservation n'appartient pas à votre salon" },
+        { status: 403 },
       );
     }
   }
 
-  if (booking.paymentStatus !== "PAID")
-    return NextResponse.json({ error: "Reservation non payee" }, { status: 400 });
+  if (booking.paymentStatus !== "PAID") {
+    return NextResponse.json({ error: "Réservation non payée" }, { status: 400 });
+  }
 
   const firstItem = booking.items[0];
   const offerTitle = booking.items.map((i) => i.offer.title).join(", ");
 
+  let verifiedByDisplayName: string | undefined;
+
   if (booking.qrVerified) {
+    if ((booking as { qrVerifiedByEmployeeId?: string | null }).qrVerifiedByEmployeeId) {
+      const emp = await (prisma as any).salonEmployee.findUnique({
+        where: { id: (booking as unknown as { qrVerifiedByEmployeeId: string }).qrVerifiedByEmployeeId },
+        select: { displayName: true },
+      });
+      verifiedByDisplayName = emp?.displayName;
+    }
     return NextResponse.json({
       valid: true,
       alreadyVerified: true,
       verifiedAt: booking.qrVerifiedAt,
-      message: "Ce QR code a deja ete verifie",
+      verifiedBy: verifiedByDisplayName ? { displayName: verifiedByDisplayName } : undefined,
+      message: "Ce QR code a déjà été vérifié",
       booking: {
         id: booking.id,
         offerTitle,
@@ -110,14 +140,24 @@ export async function POST(req: NextRequest) {
     data: {
       qrVerified: true,
       qrVerifiedAt: new Date(),
+      qrVerifiedByEmployeeId: verifier.kind === "employee" ? verifier.employeeId : null,
       status: "COMPLETED",
-    },
+    } as never, // prisma generate is broken locally; new field
   });
+
+  if (verifier.kind === "employee") {
+    const emp = await (prisma as any).salonEmployee.findUnique({
+      where: { id: verifier.employeeId },
+      select: { displayName: true },
+    });
+    verifiedByDisplayName = emp?.displayName;
+  }
 
   return NextResponse.json({
     valid: true,
     verified: true,
-    message: "Client verifie avec succes",
+    verifiedBy: verifiedByDisplayName ? { displayName: verifiedByDisplayName } : undefined,
+    message: "Client vérifié avec succès",
     booking: {
       id: updated.id,
       offerTitle,
