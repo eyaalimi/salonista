@@ -23,11 +23,26 @@ export type ClassifiedSession =
  *
  * PIN employee path wins: a tablet session always reads as the employee,
  * not the underlying owner User the JWT might also carry.
+ *
+ * `requiredPermission`: when set, a PIN-employee session lacking that
+ * permission is downgraded to `{ kind: "none" }`. The check lives in the
+ * classifier so callers cannot bypass it — there is no path through
+ * `classifySession` that yields `kind: "employee"` without the permission.
+ * Owner and admin verifiers bypass permission checks by design.
  */
-export function classifySession(session: Session | null): ClassifiedSession {
+export function classifySession(
+  session: Session | null,
+  requiredPermission?: string,
+): ClassifiedSession {
   if (!session) return { kind: "none" };
 
   if (session.employee) {
+    if (requiredPermission) {
+      const perms = session.employee.permissions;
+      if (!perms || !perms[requiredPermission as keyof typeof perms]) {
+        return { kind: "none" };
+      }
+    }
     return {
       kind: "employee",
       employeeId: session.employee.id,
@@ -52,9 +67,16 @@ export function classifySession(session: Session | null): ClassifiedSession {
 /**
  * Async wrapper around classifySession. Resolves the owner-pending-lookup
  * case by querying providerProfile.
+ *
+ * `requiredPermission` is forwarded to classifySession — a PIN employee
+ * lacking the permission is reported as `kind: "none"`, indistinguishable
+ * from an unauthenticated caller from the route's perspective.
  */
-export async function resolveVerifier(session: Session | null): Promise<Verifier> {
-  const c = classifySession(session);
+export async function resolveVerifier(
+  session: Session | null,
+  requiredPermission?: string,
+): Promise<Verifier> {
+  const c = classifySession(session, requiredPermission);
   if (c.kind !== "owner-pending-lookup") return c;
   // Deferred import: Prisma 7 runs module-level init on import, which
   // breaks vitest when imported at the top of a pure-helper file.

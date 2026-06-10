@@ -66,4 +66,47 @@ describe("classifySession", () => {
     const session = { user: { id: "u1", role: "INFLUENCER" }, employee: null } as never;
     expect(classifySession(session)).toEqual({ kind: "none" });
   });
+
+  it("downgrades employee to 'none' when requiredPermission is missing", () => {
+    const session = {
+      user: { id: "u1", role: "PROVIDER" },
+      employee: {
+        id: "emp1",
+        providerId: "prov1",
+        role: "CASHIER",
+        displayName: "Amira",
+        permissions: { "sales.read": true },
+      },
+    } as never;
+    expect(classifySession(session, "bookings.edit")).toEqual({ kind: "none" });
+  });
+
+  it("keeps employee classification when requiredPermission is granted", () => {
+    const session = {
+      user: { id: "u1", role: "PROVIDER" },
+      employee: {
+        id: "emp1",
+        providerId: "prov1",
+        role: "CASHIER",
+        displayName: "Amira",
+        permissions: { "bookings.edit": true },
+      },
+    } as never;
+    expect(classifySession(session, "bookings.edit")).toEqual({
+      kind: "employee",
+      employeeId: "emp1",
+      providerId: "prov1",
+    });
+  });
+
+  it("requiredPermission does not affect admin or owner kinds", () => {
+    const admin = { user: { id: "u1", role: "ADMIN" }, employee: null } as never;
+    expect(classifySession(admin, "bookings.edit")).toEqual({ kind: "admin" });
+
+    const owner = { user: { id: "u1", role: "PROVIDER" }, employee: null } as never;
+    expect(classifySession(owner, "bookings.edit")).toEqual({
+      kind: "owner-pending-lookup",
+      userId: "u1",
+    });
+  });
 });

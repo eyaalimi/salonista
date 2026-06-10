@@ -59,21 +59,27 @@ export async function GET(req: NextRequest) {
 
 export async function POST(req: NextRequest) {
   const session = await getServerSession(authOptions);
-  const verifier = await resolveVerifier(session);
 
-  if (verifier.kind === "none") {
-    return NextResponse.json({ error: "Connexion requise" }, { status: 401 });
-  }
-
-  // PIN-employee callers must have the bookings.edit permission
-  if (verifier.kind === "employee") {
-    const perms = session?.employee?.permissions;
+  // PIN-employee permission gate (403 with explicit French message).
+  // We check this BEFORE resolveVerifier so a logged-in cashier who is
+  // missing the permission gets a clear 403, not the generic 401.
+  if (session?.employee) {
+    const perms = session.employee.permissions;
     if (!perms || !perms["bookings.edit"]) {
       return NextResponse.json(
         { error: "Vous n'avez pas la permission de valider les arrivées" },
         { status: 403 },
       );
     }
+  }
+
+  // Defense in depth: resolveVerifier also enforces "bookings.edit" on
+  // PIN sessions. If both gates are ever to disagree, the verifier wins
+  // and the caller silently becomes `kind: "none"` → 401.
+  const verifier = await resolveVerifier(session, "bookings.edit");
+
+  if (verifier.kind === "none") {
+    return NextResponse.json({ error: "Connexion requise" }, { status: 401 });
   }
 
   const { code } = await req.json();
