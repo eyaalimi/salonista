@@ -128,6 +128,17 @@ sudo rm -f /etc/nginx/sites-enabled/default
 sudo nginx -t
 sudo systemctl reload nginx
 
+
+# --- Backups ---
+echo "[setup] installing backup cron entry"
+sudo mkdir -p /home/ubuntu/backups/db /home/ubuntu/backups/uploads
+sudo chown -R ubuntu:ubuntu /home/ubuntu/backups
+sudo tee /etc/cron.d/salonista-backup >/dev/null <<'CRON'
+# Salonista nightly backup — 03:30 UTC daily
+30 3 * * * ubuntu cd /home/ubuntu/salonista && bash scripts/deploy/backup.sh >> /home/ubuntu/backups/backup.log 2>&1
+CRON
+sudo chmod 0644 /etc/cron.d/salonista-backup
+
 # --------------------------------------------------------------------
 # Done
 # --------------------------------------------------------------------
