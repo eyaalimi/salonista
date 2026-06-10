@@ -35,6 +35,8 @@ export function classifySession(session: Session | null): ClassifiedSession {
     };
   }
 
+  // next-auth v4 types Session.user as { name?, email?, image? } only.
+  // We extend the JWT with id/role in auth.ts; widen the cast here.
   const user = session.user as { id?: string; role?: string } | null | undefined;
   const role = user?.role;
   if (role === "ADMIN") return { kind: "admin" };
@@ -54,6 +56,9 @@ export function classifySession(session: Session | null): ClassifiedSession {
 export async function resolveVerifier(session: Session | null): Promise<Verifier> {
   const c = classifySession(session);
   if (c.kind !== "owner-pending-lookup") return c;
+  // Deferred import: Prisma 7 runs module-level init on import, which
+  // breaks vitest when imported at the top of a pure-helper file.
+  // Keep classifySession's import path Prisma-free.
   const { prisma } = await import("@/lib/prisma");
   const profile = await prisma.providerProfile.findUnique({
     where: { userId: c.userId },
