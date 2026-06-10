@@ -28,9 +28,10 @@ export async function GET(req: NextRequest) {
   const firstItem = booking.items[0];
 
   let verifiedByDisplayName: string | undefined;
-  if (booking.qrVerified && (booking as { qrVerifiedByEmployeeId?: string | null }).qrVerifiedByEmployeeId) {
-    const emp = await (prisma as any).salonEmployee.findUnique({
-      where: { id: (booking as unknown as { qrVerifiedByEmployeeId: string }).qrVerifiedByEmployeeId },
+  const verifiedById = (booking as { qrVerifiedByEmployeeId?: string | null }).qrVerifiedByEmployeeId;
+  if (booking.qrVerified && verifiedById) {
+    const emp = await prisma.salonEmployee.findUnique({
+      where: { id: verifiedById },
       select: { displayName: true },
     });
     verifiedByDisplayName = emp?.displayName;
@@ -111,9 +112,10 @@ export async function POST(req: NextRequest) {
   let verifiedByDisplayName: string | undefined;
 
   if (booking.qrVerified) {
-    if ((booking as { qrVerifiedByEmployeeId?: string | null }).qrVerifiedByEmployeeId) {
-      const emp = await (prisma as any).salonEmployee.findUnique({
-        where: { id: (booking as unknown as { qrVerifiedByEmployeeId: string }).qrVerifiedByEmployeeId },
+    const verifiedById = (booking as { qrVerifiedByEmployeeId?: string | null }).qrVerifiedByEmployeeId;
+    if (verifiedById) {
+      const emp = await prisma.salonEmployee.findUnique({
+        where: { id: verifiedById },
         select: { displayName: true },
       });
       verifiedByDisplayName = emp?.displayName;
@@ -146,7 +148,7 @@ export async function POST(req: NextRequest) {
   });
 
   if (verifier.kind === "employee") {
-    const emp = await (prisma as any).salonEmployee.findUnique({
+    const emp = await prisma.salonEmployee.findUnique({
       where: { id: verifier.employeeId },
       select: { displayName: true },
     });
