@@ -265,3 +265,70 @@ Idempotent — re-runs are no-ops.
 - **PWA icons** in `public/icons/` are generated from `src/app/icon.svg` via `npm run icons:pwa` (one-time, then committed). Re-run only if the brand mark changes.
 - **POS service worker (`public/sw.js`)** loads Workbox 7 via `importScripts` from `storage.googleapis.com/workbox-cdn`. Outbound CDN must be reachable from the salon's network for the first SW install on each device — afterwards the SW is cached. If your CSP restricts external scripts, allow `storage.googleapis.com` in `script-src` for `/sw.js`.
 - **Cache busting on POS deploys**: bump `SW_VERSION` constant in `public/sw.js` if a release affects the POS shell and you need clients to pick it up immediately. Otherwise the existing SW will swap on the next page load thanks to `skipWaiting` + `clientsClaim`.
+
+## Optional: S3 offsite backups
+
+The nightly `backup.sh` job writes locally to `/home/ubuntu/backups/`. To replicate to S3, configure these env vars in `/home/ubuntu/salonista/.env`:
+
+```
+BACKUP_S3_BUCKET=salonista-backups-<account>
+AWS_ACCESS_KEY_ID=…
+AWS_SECRET_ACCESS_KEY=…
+AWS_REGION=eu-west-1
+```
+
+If the variables are absent, `backup.sh` runs local-only and the `/admin` banner shows an amber warning until you configure them.
+
+### One-time AWS provisioning
+
+1. **Create a private S3 bucket** `salonista-backups-<account>` in `eu-west-1`. Block all public access. SSE-S3 (default) is sufficient.
+
+2. **Apply a lifecycle policy** (S3 console → Management → Lifecycle rules):
+   ```json
+   {
+     "Rules": [{
+       "ID": "salonista-backup-lifecycle",
+       "Status": "Enabled",
+       "Filter": { "Prefix": "" },
+       "Transitions": [{ "Days": 30, "StorageClass": "GLACIER_IR" }],
+       "Expiration": { "Days": 365 },
+       "NoncurrentVersionExpiration": { "NoncurrentDays": 7 }
+     }]
+   }
+   ```
+
+3. **Create an IAM user** `salonista-backup-writer` with programmatic access only (no console).
+
+4. **Attach this inline policy** (least privilege):
+   ```json
+   {
+     "Version": "2012-10-17",
+     "Statement": [{
+       "Effect": "Allow",
+       "Action": ["s3:PutObject", "s3:ListBucket", "s3:GetObject", "s3:DeleteObject"],
+       "Resource": [
+         "arn:aws:s3:::salonista-backups-<account>",
+         "arn:aws:s3:::salonista-backups-<account>/*"
+       ]
+     }]
+   }
+   ```
+
+5. **Generate access keys** for the user, paste into the server's `/home/ubuntu/salonista/.env`.
+
+6. **Install the AWS CLI** on the server: `sudo apt-get install -y awscli`.
+
+7. **Smoke test**:
+   ```bash
+   aws s3 ls "s3://$BACKUP_S3_BUCKET/"
+   bash /home/ubuntu/salonista/scripts/deploy/backup.sh
+   aws s3 ls "s3://$BACKUP_S3_BUCKET/$(hostname)/db/"
+   ```
+   The last command should list today's dump.
+
+### Restore
+
+```bash
+bash scripts/deploy/restore.sh /home/ubuntu/backups/db/salonista_YYYY-MM-DD_HHMM.dump
+```
+Type `restore` to confirm. Uploads are restored separately: `tar xzf /home/ubuntu/backups/uploads/uploads_*.tar.gz -C /home/ubuntu/salonista/public/`.
