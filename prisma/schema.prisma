@@ -325,12 +325,14 @@ model Booking {
   qrCode             String?       @unique
   qrVerified         Boolean       @default(false)
   qrVerifiedAt       DateTime?
+  qrVerifiedByEmployeeId String?
   paidAt             DateTime?
   createdAt          DateTime      @default(now())
 
   client             User           @relation(fields: [clientId], references: [id], onDelete: Cascade)
   customer           Customer?      @relation(fields: [customerId], references: [id], onDelete: SetNull)
   assignedEmployee   SalonEmployee? @relation("BookingAssignedEmployee", fields: [assignedEmployeeId], references: [id], onDelete: SetNull)
+  qrVerifiedByEmployee SalonEmployee? @relation("VerifiedBookings", fields: [qrVerifiedByEmployeeId], references: [id], onDelete: SetNull)
   items              BookingItem[]
   click              Click?
   commission         Commission?
@@ -468,6 +470,7 @@ model SalonEmployee {
   provider           ProviderProfile     @relation(fields: [providerId], references: [id], onDelete: Cascade)
   user               User?               @relation(fields: [userId], references: [id], onDelete: SetNull)
   bookingsLed        Booking[]           @relation("BookingAssignedEmployee")
+  verifiedBookings   Booking[]           @relation("VerifiedBookings")
   itemsLed           BookingItem[]       @relation("BookingItemAssignedEmployee")
   salesRung          Sale[]
   saleItemsAssigned  SaleItem[]          @relation("SaleItemAssignedEmployee")
