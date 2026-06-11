@@ -1,13 +1,31 @@
-import { readBackupStatus } from "@/lib/backup-status";
+import { BACKUP_STALE_MS, readBackupStatus } from "@/lib/backup-status";
 
+// The banner is rendered inside the parent dashboard's <main> content area
+// (padding: p-6 md:p-10). To look intentional there we render it as a
+// rounded card pinned to the top of the page, not a full-bleed stripe.
+// Reading status via fs.stat surfaces an admin-page error if the backup
+// directory is unreadable — that is intentional: silent misreporting of
+// "stale" because of EACCES would waste real debugging time.
 async function BackupBanner() {
-  const status = await readBackupStatus();
-  const now = Date.now();
-  const STALE_MS = 36 * 60 * 60 * 1000;
+  let status;
+  try {
+    status = await readBackupStatus();
+  } catch {
+    return (
+      <div
+        role="alert"
+        className="mb-6 rounded-2xl border border-red-300 bg-red-50 px-4 py-3 text-sm text-red-900"
+      >
+        ⚠️ Impossible de lire l&apos;état des sauvegardes — vérifier les
+        permissions de <code>/home/ubuntu/backups</code>.
+      </div>
+    );
+  }
 
+  const now = Date.now();
   const stale =
     !status.lastBackupAt ||
-    now - status.lastBackupAt.getTime() > STALE_MS;
+    now - status.lastBackupAt.getTime() > BACKUP_STALE_MS;
   const s3Failed =
     status.lastS3Error &&
     status.lastBackupAt &&
@@ -16,21 +34,30 @@ async function BackupBanner() {
 
   if (stale) {
     return (
-      <div className="bg-red-50 border-b border-red-300 px-6 py-3 text-sm text-red-900">
+      <div
+        role="alert"
+        className="mb-6 rounded-2xl border border-red-300 bg-red-50 px-4 py-3 text-sm text-red-900"
+      >
         ⚠️ Sauvegardes manquantes ou anciennes — vérifier <code>backup.sh</code>.
       </div>
     );
   }
   if (s3Failed) {
     return (
-      <div className="bg-amber-50 border-b border-amber-300 px-6 py-3 text-sm text-amber-900">
+      <div
+        role="alert"
+        className="mb-6 rounded-2xl border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-900"
+      >
         ⚠️ Dernière synchro S3 en échec — voir <code>backup.log</code>.
       </div>
     );
   }
   if (noS3) {
     return (
-      <div className="bg-amber-50 border-b border-amber-300 px-6 py-3 text-sm text-amber-900">
+      <div
+        role="status"
+        className="mb-6 rounded-2xl border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-900"
+      >
         ⚠️ Sauvegardes locales uniquement — pas d&apos;offsite configuré. Voir <code>scripts/deploy/README.md</code>.
       </div>
     );
