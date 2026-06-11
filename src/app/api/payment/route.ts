@@ -4,6 +4,7 @@ import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { nanoid } from "nanoid";
 import { sendPaymentConfirmationEmail } from "@/lib/mail";
+import { publicOrigin } from "@/lib/public-origin";
 
 async function generateQR(text: string): Promise<string> {
   const QRCode = (await import("qrcode")).default;
@@ -49,7 +50,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Reservation annulee" }, { status: 400 });
 
   const qrToken = `BT-${nanoid(16)}`;
-  const verificationUrl = `${req.nextUrl.origin}/api/payment/verify?code=${qrToken}`;
+  const verificationUrl = `${publicOrigin(req)}/verification?code=${qrToken}`;
   const qrDataUrl = await generateQR(verificationUrl);
 
   const updated = await prisma.booking.update({
@@ -117,7 +118,7 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: "Non autorise" }, { status: 403 });
   if (!booking.qrCode) return NextResponse.json({ error: "Pas de QR code" }, { status: 404 });
 
-  const verificationUrl = `${req.nextUrl.origin}/api/payment/verify?code=${booking.qrCode}`;
+  const verificationUrl = `${publicOrigin(req)}/verification?code=${booking.qrCode}`;
   const qrDataUrl = await generateQR(verificationUrl);
 
   const firstItem = booking.items[0];

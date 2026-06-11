@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { publicOrigin } from "@/lib/public-origin";
 
 // Rate limit store (in-memory, resets on server restart — fine for MVP)
 const clickCounts = new Map<string, { count: number; resetAt: number }>();
@@ -14,16 +15,6 @@ function isRateLimited(key: string, max: number): boolean {
   if (entry.count >= max) return true;
   entry.count++;
   return false;
-}
-
-// Derive the public origin: prefer forwarded headers (when behind Nginx),
-// then NEXTAUTH_URL, then fall back to the request URL.
-function publicOrigin(req: NextRequest): string {
-  const proto = req.headers.get("x-forwarded-proto");
-  const host = req.headers.get("x-forwarded-host") || req.headers.get("host");
-  if (proto && host) return `${proto}://${host}`;
-  if (process.env.NEXTAUTH_URL) return process.env.NEXTAUTH_URL;
-  return new URL(req.url).origin;
 }
 
 // GET: register a click and redirect to offer page
