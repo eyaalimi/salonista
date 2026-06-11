@@ -45,3 +45,5 @@ next-env.d.ts
 # User uploads (kept on the server, not in git)
 /public/uploads/*
 !/public/uploads/.gitkeep
+
+.superpowers/
