@@ -459,6 +459,45 @@ Migration: none. (Universal search is JS-only; no Postgres extension needed.)
 
 ---
 
+## Hardening pass — Sections 1 + 2 (2026-06-11)
+
+Two surfaces of the five-section hardening pass shipped (see `docs/superpowers/specs/2026-05-06-hardening-pass-design.md` for the full plan). Sections 3 (PIN lockout + idle lock + IDB wipe), 4 (money-path tests), and 5 (calendar→POS one-click) remain TODO.
+
+### Section 1 — QR verification hardening
+
+- **`POST /api/payment/verify`** now accepts three caller identities, resolved by `resolveVerifier(session)` in `src/lib/verify-authz.ts`:
+  - PIN-employee with `bookings.edit` permission (gated by `classifySession`; defense-in-depth check also in the route).
+  - Owner User with `role === "PROVIDER"`.
+  - Admin.
+  PIN employees missing `bookings.edit` get HTTP 403 with French message.
+- **`GET /api/payment/verify`** stays read-only. Both GET and POST grow a `verifiedBy?: { displayName }` field populated from the new audit column.
+- **New column** `Booking.qrVerifiedByEmployeeId` (nullable FK → `SalonEmployee.id` ON DELETE SET NULL). Set only when the verifier is an employee; null for owner / admin verifications. Migration: `prisma/migrations/20260611120000_booking_qr_verified_by_employee/`.
+- **`/verification` page** no longer auto-verifies on page load. It does GET on mount, then renders an explicit `"Confirmer l'arrivée"` button. Unauthenticated visitors get `"S'identifier au salon"` → `/salon-pin?next=...` so the flow returns them to the verification page after PIN entry.
+- **`/salon-pin`** honors `?next=` with path-only sanitization (rejects `://`, `//`, anything not starting with `/`). Falls back to `/pos`.
+- Pure helper `classifySession(session, requiredPermission?)` is unit-tested (`src/lib/verify-authz.test.ts`, 11 tests). The async `resolveVerifier` wrapper defers `import("@/lib/prisma")` inside the function body to keep the import path Prisma-free (vitest cannot mock `@/lib/prisma` because Prisma 7 runs module-level init — codebase convention is no Prisma mocking).
+
+### Section 2 — Automated backups
+
+- **`scripts/deploy/backup.sh`** — nightly `pg_dump -Fc` + `tar.gz` of `public/uploads/` to `/home/ubuntu/backups/{db,uploads}/`. Verifies the dump via `pg_restore --list`. Prunes to 14 daily + 8 weekly Sunday backups per directory. Optionally syncs to S3 via `aws s3 sync` when `BACKUP_S3_BUCKET` is set; missing S3 config logs a warning but does not fail the run. Writes `.last-backup` / `.last-s3-error` touchfiles for the `/admin` banner. Set executable bit committed.
+- **`scripts/deploy/restore.sh`** — interactive restore with `pg_restore --clean --if-exists`. Requires typing `restore` to confirm. Does NOT restore uploads (operator runs `tar xzf` manually after spot-check).
+- **Cron entry** installed by `setup-server.sh`: `30 3 * * * ubuntu cd /home/ubuntu/salonista && bash scripts/deploy/backup.sh`. Idempotent (re-running setup overwrites the file via `tee`).
+- **`/admin` banner** (`src/app/(dashboard)/admin/layout.tsx`) — reads `/home/ubuntu/backups/.last-backup` and `.last-s3-error` mtimes via `src/lib/backup-status.ts`:
+  - Red `role="alert"`: backup file missing or older than `BACKUP_STALE_MS` (36 h).
+  - Amber `role="alert"`: last S3 sync failed (touchfile newer than success file).
+  - Amber `role="status"`: no `BACKUP_S3_BUCKET` env var configured.
+  - All-green → no banner.
+  Banner styled as a rounded card (sits inside the dashboard's `<main>` padding). `mtime()` distinguishes `ENOENT` (return null) from other errors (rethrow + show "Impossible de lire l'état des sauvegardes" banner).
+- **AWS S3 runbook** appended to `scripts/deploy/README.md`: bucket creation, lifecycle policy (Glacier IR at 30d, expire at 365d), IAM user with least-privilege inline policy, env var wiring, smoke test.
+
+### What is NOT yet shipped
+
+Sections 3, 4, 5 remain pending — see `docs/superpowers/plans/2026-05-06-hardening-pass.md`:
+- **Section 3**: PIN brute-force lockout (5 fails / 5 min, DB-persisted), DB-backed rate limit on `/salon-pin/resolve`, POS idle-lock overlay (4 min) with re-PIN, IndexedDB wipe on sign-out / salon-switch with pending-sales gating.
+- **Section 4**: Vitest coverage for `sale-totals`, `refund` (pure extraction), `permissions`, `receipt-number` formatting.
+- **Section 5**: Convert calendar booking → POS sale in one click with 3-button merge confirm.
+
+---
+
 ## Contacts
 
 - **Owner / dev**: alimieyaa@gmail.com
