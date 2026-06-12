@@ -134,6 +134,14 @@ enum CashDrawerStatus {
   RECONCILED
 }
 
+enum ExpenseCategory {
+  FOURNISSEUR
+  LIVRAISON
+  AVANCE_SALAIRE
+  ENTRETIEN
+  AUTRE
+}
+
 model User {
   id            String    @id @default(cuid())
   email         String    @unique
@@ -481,6 +489,7 @@ model SalonEmployee {
   stockMovements     StockMovement[]
   cashDrawerSessions CashDrawerSession[] @relation("CashDrawerEmployee")
   rewardAdjustments  RewardTransaction[] @relation("RewardTransactionEmployee")
+  expensesRecorded   CashDrawerExpense[] @relation("CashDrawerExpenseEmployee")
 
   @@index([providerId, active])
   @@index([userId])
@@ -734,10 +743,27 @@ model CashDrawerSession {
   provider ProviderProfile @relation(fields: [providerId], references: [id], onDelete: Cascade)
   employee SalonEmployee   @relation("CashDrawerEmployee", fields: [employeeId], references: [id])
   payments Payment[]
+  expenses CashDrawerExpense[]
 
   @@index([providerId, status])
   @@index([employeeId, status])
   @@index([openedAt])
+}
+
+model CashDrawerExpense {
+  id                    String           @id @default(cuid())
+  cashDrawerSessionId   String
+  employeeId            String
+  amount                Decimal          @db.Decimal(10, 3)
+  reason                String
+  category              ExpenseCategory  @default(AUTRE)
+  createdAt             DateTime         @default(now())
+
+  cashDrawerSession CashDrawerSession @relation(fields: [cashDrawerSessionId], references: [id], onDelete: Restrict)
+  employee          SalonEmployee     @relation("CashDrawerExpenseEmployee", fields: [employeeId], references: [id])
+
+  @@index([cashDrawerSessionId])
+  @@index([employeeId])
 }
 
 model RewardProgram {
