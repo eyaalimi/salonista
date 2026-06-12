@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
 import { useOnlineStatus } from "@/components/pos/online-status";
 import { ChargeModal } from "@/components/pos/charge-modal";
 import { ReceiptPrintFrame, type ReceiptData } from "@/components/pos/receipt";
@@ -32,6 +33,7 @@ type EmployeeProp = {
  */
 export function PosShellClient({ employee }: { employee: EmployeeProp }) {
   const { online } = useOnlineStatus();
+  const router = useRouter();
   const [catalog, setCatalog] = useState<CachedCatalog | null>(null);
   const [lastReceipt, setLastReceipt] = useState<ReceiptData | null>(null);
   const [printNow, setPrintNow] = useState(false);
@@ -85,6 +87,24 @@ export function PosShellClient({ employee }: { employee: EmployeeProp }) {
       cancelled = true;
     };
   }, []);
+
+  // Redirect fresh OWNER providers to the onboarding welcome page.
+  useEffect(() => {
+    if (!catalog) return;
+    const onboarding = (catalog as { onboarding?: {
+      dismissedAt: Date | string | null;
+      offersCount: number;
+      productsCount: number;
+      salesCount: number;
+    } | null }).onboarding;
+    if (!onboarding) return;
+    if (employee.role !== "OWNER") return;
+    if (onboarding.dismissedAt) return;
+    if (onboarding.offersCount > 0) return;
+    if (onboarding.productsCount > 0) return;
+    if (onboarding.salesCount > 0) return;
+    router.replace("/pos/bienvenue");
+  }, [catalog, employee.role, router]);
 
   // Trigger window.print() after a receipt is staged + flagged.
   useEffect(() => {
