@@ -9,6 +9,9 @@ import { getOrCreateProgram } from "@/lib/rewards/program";
  * Returns active offers + active products + own-scope customers for the
  * current salon. The shell calls this on POS load and any time the
  * StaleWhileRevalidate worker invalidates the cache.
+ *
+ * The response also includes an `onboarding` object with dismissedAt, offersCount,
+ * productsCount, and salesCount — null when the provider row is missing.
  */
 export async function GET() {
   let employee;
@@ -28,15 +31,7 @@ export async function GET() {
 
   const providerId = employee.providerId;
 
-  const onboardingCountsP = prisma.providerProfile.findUnique({
-    where: { id: providerId },
-    select: {
-      onboardingDismissedAt: true,
-      _count: { select: { offers: true, products: true, sales: true } },
-    } as never,
-  });
-
-  const [offers, products, customers, employees, provider, onboardingCounts] = await Promise.all([
+  const [offers, products, customers, employees, provider] = await Promise.all([
     prisma.offer.findMany({
       where: { providerId, active: true },
       orderBy: { title: "asc" },
@@ -98,9 +93,10 @@ export async function GET() {
         phone: true,
         matriculeFiscal: true,
         receiptFooter: true,
-      },
+        onboardingDismissedAt: true,
+        _count: { select: { offers: true, products: true, sales: true } },
+      } as never,
     }),
-    onboardingCountsP,
   ]);
 
   // Attach wallet summary for own-scope customers when REWARDS is active.
@@ -144,17 +140,17 @@ export async function GET() {
   return Response.json({
     refreshedAt: new Date().toISOString(),
     provider,
+    onboarding: provider
+      ? {
+          dismissedAt: (provider as { onboardingDismissedAt?: Date | null }).onboardingDismissedAt ?? null,
+          offersCount: (provider as { _count: { offers: number } })._count.offers,
+          productsCount: (provider as { _count: { products: number } })._count.products,
+          salesCount: (provider as { _count: { sales: number } })._count.sales,
+        }
+      : null,
     offers,
     products,
     customers: customersWithWallets,
     employees,
-    onboarding: onboardingCounts
-      ? {
-          dismissedAt: (onboardingCounts as { onboardingDismissedAt: Date | null }).onboardingDismissedAt,
-          offersCount: (onboardingCounts as { _count: { offers: number } })._count.offers,
-          productsCount: (onboardingCounts as { _count: { products: number } })._count.products,
-          salesCount: (onboardingCounts as { _count: { sales: number } })._count.sales,
-        }
-      : null,
   });
 }
