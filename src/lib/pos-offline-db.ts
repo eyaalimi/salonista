@@ -69,6 +69,13 @@ export type CachedCatalogProvider = {
   receiptFooter: string | null;
 };
 
+export type CatalogOnboarding = {
+  dismissedAt: Date | string | null;
+  offersCount: number;
+  productsCount: number;
+  salesCount: number;
+};
+
 type CachedEmployee = {
   id: string;
   displayName: string;
@@ -78,6 +85,7 @@ type CachedEmployee = {
 export type CachedCatalog = {
   refreshedAt: string;
   provider: CachedCatalogProvider | null;
+  onboarding?: CatalogOnboarding | null;
   offers: CachedOffer[];
   products: CachedProduct[];
   customers: CachedCustomer[];

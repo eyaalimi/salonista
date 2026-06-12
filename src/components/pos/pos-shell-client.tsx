@@ -91,12 +91,7 @@ export function PosShellClient({ employee }: { employee: EmployeeProp }) {
   // Redirect fresh OWNER providers to the onboarding welcome page.
   useEffect(() => {
     if (!catalog) return;
-    const onboarding = (catalog as { onboarding?: {
-      dismissedAt: Date | string | null;
-      offersCount: number;
-      productsCount: number;
-      salesCount: number;
-    } | null }).onboarding;
+    const onboarding = catalog.onboarding;
     if (!onboarding) return;
     if (employee.role !== "OWNER") return;
     if (onboarding.dismissedAt) return;
