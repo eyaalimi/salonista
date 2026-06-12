@@ -248,13 +248,14 @@ model Offer {
   providerId      String
   title           String
   description     String?
-  originalPrice   Decimal   @db.Decimal(10, 3)
+  originalPrice   Decimal?  @db.Decimal(10, 3)
   discountPrice   Decimal   @db.Decimal(10, 3)
   category        Category
   photos          String[]
   durationMinutes Int       @default(60)
   taxRate         Decimal   @default(19.00) @db.Decimal(5, 2)
   active          Boolean   @default(true)
+  publishedToMarketplace Boolean @default(false)
   createdAt       DateTime  @default(now())
 
   provider              ProviderProfile             @relation(fields: [providerId], references: [id], onDelete: Cascade)
