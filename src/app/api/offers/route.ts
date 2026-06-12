@@ -63,17 +63,56 @@ export async function POST(req: NextRequest) {
   }
 
   const body = await req.json();
-  const { title, description, originalPrice, discountPrice, category, photos, durationMinutes, taxRate } = body;
+  const {
+    title,
+    description,
+    originalPrice,
+    discountPrice,
+    category,
+    photos,
+    durationMinutes,
+    taxRate,
+    publishedToMarketplace = false,
+  } = body as {
+    title?: string;
+    description?: string | null;
+    originalPrice?: string | number | null;
+    discountPrice?: string | number;
+    category?: string | null;
+    photos?: string[];
+    durationMinutes?: number;
+    taxRate?: number;
+    publishedToMarketplace?: boolean;
+  };
 
-  if (!title || !originalPrice || !discountPrice || !category) {
-    return NextResponse.json({ error: "Champs requis manquants" }, { status: 400 });
+  const missing: string[] = [];
+  if (!title || !String(title).trim()) missing.push("titre");
+  if (discountPrice === undefined || discountPrice === null || Number(discountPrice) <= 0) {
+    missing.push("prix");
+  }
+  const duration = Number(durationMinutes);
+  if (!ALLOWED_DURATIONS.includes(duration)) missing.push("durée");
+
+  const finalCategory = publishedToMarketplace
+    ? category
+    : (category ?? "AUTRE");
+
+  if (publishedToMarketplace) {
+    if (!category) missing.push("catégorie");
+    if (
+      originalPrice === undefined ||
+      originalPrice === null ||
+      Number(originalPrice) < Number(discountPrice)
+    ) {
+      missing.push("prix barré (≥ prix actuel)");
+    }
+    if (!photos || photos.length === 0) missing.push("au moins une photo");
   }
 
-  const duration = Number(durationMinutes);
-  if (!ALLOWED_DURATIONS.includes(duration)) {
+  if (missing.length > 0) {
     return NextResponse.json(
-      { error: `Durée invalide. Valeurs autorisées : ${ALLOWED_DURATIONS.join(", ")} minutes` },
-      { status: 400 }
+      { error: `Champs requis manquants : ${missing.join(", ")}` },
+      { status: 400 },
     );
   }
 
@@ -85,19 +124,22 @@ export async function POST(req: NextRequest) {
   const offer = await prisma.offer.create({
     data: {
       providerId: profile.id,
-      title,
+      title: String(title).trim(),
       description: description || null,
-      originalPrice,
+      originalPrice: publishedToMarketplace ? originalPrice : (originalPrice ?? null),
       discountPrice,
-      category,
+      category: finalCategory as never,
       photos: photos || [],
       durationMinutes: duration,
       taxRate: tax,
-    },
+      publishedToMarketplace,
+    } as never,
   });
 
   // Auto-generate slots based on opening hours and duration
-  await regenerateOfferSlots(offer.id);
+  if (publishedToMarketplace) {
+    await regenerateOfferSlots(offer.id);
+  }
 
   return NextResponse.json(offer, { status: 201 });
 }
