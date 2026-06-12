@@ -33,7 +33,7 @@ export async function GET(req: NextRequest) {
   }
 
   // Public: active offers
-  const where: Record<string, unknown> = { active: true };
+  const where: Record<string, unknown> = { active: true, publishedToMarketplace: true };
   if (category) where.category = category;
 
   const offers = await prisma.offer.findMany({

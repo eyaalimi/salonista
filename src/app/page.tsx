@@ -27,7 +27,7 @@ const categoryEmoji: Record<string, string> = {
 export default async function Home() {
   const [offers, topSalons, categories] = await Promise.all([
     prisma.offer.findMany({
-      where: { active: true },
+      where: { active: true, publishedToMarketplace: true } as never,
       orderBy: { createdAt: "desc" },
       take: 12,
       include: {

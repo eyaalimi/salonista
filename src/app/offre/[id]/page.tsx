@@ -16,7 +16,9 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     include: { provider: { select: { salonName: true, city: true } } },
   });
 
-  if (!offer) return { title: "Offre introuvable" };
+  if (!offer || !(offer as { publishedToMarketplace?: boolean }).publishedToMarketplace) {
+    return { title: "Offre introuvable" };
+  }
 
   const discount = Math.round(
     ((Number(offer.originalPrice) - Number(offer.discountPrice)) / Number(offer.originalPrice)) * 100
@@ -50,7 +52,7 @@ export default async function OffrePage({ params, searchParams }: Props) {
     },
   });
 
-  if (!offer) notFound();
+  if (!offer || !(offer as { publishedToMarketplace?: boolean }).publishedToMarketplace) notFound();
 
   // Tracking cookie is set by /api/tracking/click (Server Components cannot set cookies).
   // If a ?ref= is present (e.g. direct link), validate it; otherwise read the stored cookie.

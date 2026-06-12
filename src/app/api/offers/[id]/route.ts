@@ -22,6 +22,26 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
     return NextResponse.json({ error: "Offre introuvable" }, { status: 404 });
   }
 
+  // Check if unpublished — if so, only allow provider-owner or admin
+  const isPublished = (offer as { publishedToMarketplace?: boolean }).publishedToMarketplace ?? false;
+  if (!isPublished) {
+    const session = await getServerSession(authOptions);
+    let allowed = false;
+    if (session?.user?.role === "ADMIN") {
+      allowed = true;
+    } else if (session?.user?.role === "PROVIDER") {
+      const profile = await prisma.providerProfile.findUnique({
+        where: { userId: session.user.id },
+      });
+      if (profile?.id === offer.providerId) {
+        allowed = true;
+      }
+    }
+    if (!allowed) {
+      return NextResponse.json({ error: "Offre introuvable" }, { status: 404 });
+    }
+  }
+
   return NextResponse.json(offer);
 }
 
