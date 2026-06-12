@@ -44,6 +44,32 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
 
   const body = await req.json();
 
+  const existingPublished = (offer as { publishedToMarketplace?: boolean }).publishedToMarketplace ?? false;
+  const willBePublished = body.publishedToMarketplace ?? existingPublished;
+
+  if (willBePublished) {
+    const missing: string[] = [];
+    const effCategory = body.category ?? offer.category;
+    if (!effCategory) missing.push("catégorie");
+    const effOriginal = body.originalPrice ?? offer.originalPrice;
+    const effDiscount = body.discountPrice ?? offer.discountPrice;
+    if (
+      effOriginal === null ||
+      effOriginal === undefined ||
+      Number(effOriginal) < Number(effDiscount)
+    ) {
+      missing.push("prix barré (≥ prix actuel)");
+    }
+    const effPhotos = body.photos ?? offer.photos;
+    if (!effPhotos || effPhotos.length === 0) missing.push("au moins une photo");
+    if (missing.length > 0) {
+      return NextResponse.json(
+        { error: `Publication impossible — champs manquants : ${missing.join(", ")}` },
+        { status: 400 },
+      );
+    }
+  }
+
   let nextDuration = offer.durationMinutes;
   if (body.durationMinutes !== undefined) {
     const d = Number(body.durationMinutes);
@@ -77,11 +103,13 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
       active: body.active ?? offer.active,
       durationMinutes: nextDuration,
       ...(nextTaxRate !== undefined ? { taxRate: nextTaxRate } : {}),
-    },
+      publishedToMarketplace: willBePublished,
+    } as never,
   });
 
-  // If duration changed, regenerate the slot grid
-  if (nextDuration !== offer.durationMinutes) {
+  // Regenerate slot grid when publishing or when duration changes on a published offer
+  const becamePublished = willBePublished && !existingPublished;
+  if (willBePublished && (nextDuration !== offer.durationMinutes || becamePublished)) {
     await regenerateOfferSlots(id);
   }
 
