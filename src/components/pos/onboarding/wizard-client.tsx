@@ -74,11 +74,15 @@ export function WizardClient({
   }, [provider, productsSkipped, testTicketPrintedAt, forcedStep]);
 
   async function dismiss() {
-    await fetch("/api/provider/profile", {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ onboardingDismissedAt: new Date().toISOString() }),
-    });
+    try {
+      await fetch("/api/provider/profile", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ onboardingDismissedAt: new Date().toISOString() }),
+      });
+    } catch {
+      // Échec réseau — on navigue quand même pour ne pas bloquer l'utilisateur.
+    }
     router.replace("/pos");
   }
 
