@@ -53,7 +53,7 @@ export function Step2Services({
   const [error, setError] = useState<string | null>(null);
 
   async function addOne() {
-    if (!title.trim() || !price || busy) return;
+    if (!title.trim() || Number(price) <= 0 || busy) return;
     setBusy(true);
     setError(null);
     try {
@@ -119,6 +119,7 @@ export function Step2Services({
         <input
           className="col-span-5 px-2 py-1 rounded border border-pos-border bg-white"
           placeholder="Nom du service"
+          aria-label="Nom du service"
           value={title}
           onChange={(e) => setTitle(e.target.value)}
           onKeyDown={(e) => {
@@ -129,7 +130,9 @@ export function Step2Services({
           className="col-span-3 px-2 py-1 rounded border border-pos-border bg-white"
           type="number"
           step="0.001"
+          min="0.001"
           placeholder="Prix DT"
+          aria-label="Prix en DT"
           value={price}
           onChange={(e) => setPrice(e.target.value)}
           onKeyDown={(e) => {
@@ -138,6 +141,7 @@ export function Step2Services({
         />
         <select
           className="col-span-2 px-2 py-1 rounded border border-pos-border bg-white"
+          aria-label="Durée en minutes"
           value={duration}
           onChange={(e) => setDuration(Number(e.target.value))}
         >
@@ -149,7 +153,7 @@ export function Step2Services({
         </select>
         <button
           type="button"
-          disabled={busy || !title.trim() || !price}
+          disabled={busy || !title.trim() || Number(price) <= 0}
           onClick={addOne}
           className="col-span-2 px-3 py-1 rounded bg-pos-ink text-pos-bg disabled:opacity-50"
         >
