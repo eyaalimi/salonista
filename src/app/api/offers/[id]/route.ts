@@ -107,9 +107,12 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
     } as never,
   });
 
-  // Regenerate slot grid when publishing or when duration changes on a published offer
+  // Duration changes always require regen (slots may exist for POS-only offers
+  // from earlier states; keeping them aligned with durationMinutes is the
+  // safe default). Newly-published offers also need their initial slot grid.
+  const durationChanged = nextDuration !== offer.durationMinutes;
   const becamePublished = willBePublished && !existingPublished;
-  if (willBePublished && (nextDuration !== offer.durationMinutes || becamePublished)) {
+  if (durationChanged || becamePublished) {
     await regenerateOfferSlots(id);
   }
 
