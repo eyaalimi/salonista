@@ -91,7 +91,9 @@ export async function POST(req: NextRequest) {
     missing.push("prix");
   }
   const duration = Number(durationMinutes);
-  if (!ALLOWED_DURATIONS.includes(duration)) missing.push("durée");
+  if (!ALLOWED_DURATIONS.includes(duration)) {
+    missing.push(`durée (valeurs : ${ALLOWED_DURATIONS.join(", ")} min)`);
+  }
 
   const finalCategory = publishedToMarketplace
     ? category
