@@ -28,7 +28,15 @@ export async function GET() {
 
   const providerId = employee.providerId;
 
-  const [offers, products, customers, employees, provider] = await Promise.all([
+  const onboardingCountsP = prisma.providerProfile.findUnique({
+    where: { id: providerId },
+    select: {
+      onboardingDismissedAt: true,
+      _count: { select: { offers: true, products: true, sales: true } },
+    } as never,
+  });
+
+  const [offers, products, customers, employees, provider, onboardingCounts] = await Promise.all([
     prisma.offer.findMany({
       where: { providerId, active: true },
       orderBy: { title: "asc" },
@@ -92,6 +100,7 @@ export async function GET() {
         receiptFooter: true,
       },
     }),
+    onboardingCountsP,
   ]);
 
   // Attach wallet summary for own-scope customers when REWARDS is active.
@@ -139,5 +148,13 @@ export async function GET() {
     products,
     customers: customersWithWallets,
     employees,
+    onboarding: onboardingCounts
+      ? {
+          dismissedAt: (onboardingCounts as { onboardingDismissedAt: Date | null }).onboardingDismissedAt,
+          offersCount: (onboardingCounts as { _count: { offers: number } })._count.offers,
+          productsCount: (onboardingCounts as { _count: { products: number } })._count.products,
+          salesCount: (onboardingCounts as { _count: { sales: number } })._count.sales,
+        }
+      : null,
   });
 }
