@@ -19,6 +19,7 @@ export function ServicesListClient({ initialOffers }: { initialOffers: Offer[] }
   const [offers, setOffers] = useState<Offer[]>(initialOffers);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const [toggling, setToggling] = useState<string | null>(null);
   const newNameRef = useRef<HTMLInputElement>(null);
 
   // Quick-add form state.
@@ -65,7 +66,7 @@ export function ServicesListClient({ initialOffers }: { initialOffers: Offer[] }
         return;
       }
       setOffers((o) =>
-        [...o, json].sort((a, b) => a.title.localeCompare(b.title))
+        [...o, json].sort((a, b) => a.title.localeCompare(b.title, "fr"))
       );
       setQaTitle("");
       setQaPrice("");
@@ -76,7 +77,8 @@ export function ServicesListClient({ initialOffers }: { initialOffers: Offer[] }
   }, [qaTitle, qaPrice, qaDuration, qaTax, busy]);
 
   async function toggleActive(o: Offer) {
-    setBusy(true);
+    setToggling(o.id);
+    setError(null);
     try {
       const res = await fetch(`/api/offers/${o.id}`, {
         method: "PUT",
@@ -87,9 +89,12 @@ export function ServicesListClient({ initialOffers }: { initialOffers: Offer[] }
         setOffers((arr) =>
           arr.map((x) => (x.id === o.id ? { ...x, active: !o.active } : x))
         );
+      } else {
+        const j = await res.json().catch(() => null);
+        setError(j?.error ?? "Impossible de modifier le statut");
       }
     } finally {
-      setBusy(false);
+      setToggling(null);
     }
   }
 
@@ -154,6 +159,7 @@ export function ServicesListClient({ initialOffers }: { initialOffers: Offer[] }
           className="col-span-1 px-2 py-1 rounded border border-pos-border bg-white"
           type="number"
           step="0.01"
+          placeholder="TVA %"
           value={qaTax}
           onChange={(e) => setQaTax(Number(e.target.value))}
         />
@@ -197,6 +203,8 @@ export function ServicesListClient({ initialOffers }: { initialOffers: Offer[] }
                   type="checkbox"
                   checked={o.active}
                   onChange={() => toggleActive(o)}
+                  disabled={toggling === o.id}
+                  aria-label={`Actif — ${o.title}`}
                 />
               </td>
               <td className="px-3 py-2">
