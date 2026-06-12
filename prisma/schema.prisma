@@ -210,6 +210,7 @@ model ProviderProfile {
   openingHours    Json?
   matriculeFiscal String?
   receiptFooter   String?
+  onboardingDismissedAt DateTime?
   verified        Boolean  @default(false)
   createdAt       DateTime @default(now())
 
