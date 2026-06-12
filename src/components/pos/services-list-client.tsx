@@ -133,6 +133,10 @@ export function ServicesListClient({ initialOffers }: { initialOffers: Offer[] }
           onChange={(e) => setQaPrice(e.target.value)}
           onKeyDown={(e) => {
             if (e.key === "Enter") saveNew();
+            if (e.key === "Escape") {
+              setQaTitle("");
+              setQaPrice("");
+            }
           }}
         />
         <select
