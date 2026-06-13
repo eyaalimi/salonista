@@ -34,6 +34,7 @@ export default async function EditProductPage({
         sku: product.sku,
         barcode: product.barcode,
         purchasePrice: String(product.purchasePrice),
+        costPrice: product.costPrice != null ? String(product.costPrice) : "",
         salePrice: String(product.salePrice),
         taxRate: String(product.taxRate),
         stockQuantity: product.stockQuantity,

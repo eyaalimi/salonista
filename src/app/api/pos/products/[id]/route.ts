@@ -26,6 +26,7 @@ type UpdateBody = {
   sku?: string;
   barcode?: string | null;
   purchasePrice?: string | number;
+  costPrice?: string | number | null;
   salePrice?: string | number;
   taxRate?: string | number;
   lowStockThreshold?: number;
@@ -66,6 +67,16 @@ export async function PUT(req: NextRequest, ctx: { params: Promise<{ id: string 
     if (!Number.isFinite(n) || n < 0)
       return Response.json({ error: "Prix d'achat invalide" }, { status: 400 });
     data.purchasePrice = n;
+  }
+  if (body.costPrice !== undefined) {
+    if (body.costPrice === null) {
+      data.costPrice = null;
+    } else {
+      const n = Number(body.costPrice);
+      if (!Number.isFinite(n) || n < 0)
+        return Response.json({ error: "Prix d'achat de référence invalide" }, { status: 400 });
+      data.costPrice = n;
+    }
   }
   if (body.salePrice !== undefined) {
     const n = Number(body.salePrice);

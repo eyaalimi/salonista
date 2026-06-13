@@ -2,7 +2,9 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { formatDT } from "@/lib/money";
+import { ReceptionModal } from "./reception-modal";
 
 type Product = {
   id: string;
@@ -10,6 +12,7 @@ type Product = {
   sku: string;
   barcode: string | null;
   salePrice: string;
+  costPrice: string | null;
   taxRate: string;
   stockQuantity: number;
   lowStockThreshold: number;
@@ -19,10 +22,12 @@ type Product = {
 };
 
 export function ProductsListClient({ canManage }: { canManage: boolean }) {
+  const router = useRouter();
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [showInactive, setShowInactive] = useState(false);
+  const [receptionFor, setReceptionFor] = useState<{ id: string; name: string; costPrice: string | null } | null>(null);
 
   async function load() {
     setLoading(true);
@@ -131,7 +136,17 @@ export function ProductsListClient({ canManage }: { canManage: boolean }) {
                     </td>
                     <td className="px-4 py-3 text-xs font-mono">{p.sku}</td>
                     <td className="px-4 py-3 text-xs font-mono">{p.barcode ?? "—"}</td>
-                    <td className="px-4 py-3 text-right">{formatDT(p.salePrice)}</td>
+                    <td className="px-4 py-3 text-right">
+                      <div className="flex flex-col items-end gap-1">
+                        {formatDT(p.salePrice)}
+                        {p.costPrice && Number(p.costPrice) > 0 && (
+                          <span className="text-xs px-2 py-0.5 rounded bg-green-50 text-green-800">
+                            Marge {(Number(p.salePrice) - Number(p.costPrice)).toFixed(3)} DT
+                            ({Number(p.salePrice) > 0 ? (((Number(p.salePrice) - Number(p.costPrice)) / Number(p.salePrice)) * 100).toFixed(0) : "0"}%)
+                          </span>
+                        )}
+                      </div>
+                    </td>
                     <td className={`px-4 py-3 text-right ${stockColor}`}>{p.stockQuantity}</td>
                     <td className="px-4 py-3 text-xs">
                       {p.active ? (
@@ -142,21 +157,30 @@ export function ProductsListClient({ canManage }: { canManage: boolean }) {
                     </td>
                     {canManage && (
                       <td className="px-4 py-3 text-right">
-                        <Link
-                          href={`/pos/products/${p.id}/edit`}
-                          className="text-xs text-brand-gold hover:underline mr-3"
-                        >
-                          Modifier
-                        </Link>
-                        {p.active && (
+                        <div className="flex items-center justify-end gap-3">
                           <button
                             type="button"
-                            onClick={() => deactivate(p.id)}
-                            className="text-xs text-red-600 hover:underline"
+                            onClick={() => setReceptionFor({ id: p.id, name: p.name, costPrice: p.costPrice })}
+                            className="text-xs px-2 py-0.5 rounded border border-brand-line hover:bg-brand-cream"
                           >
-                            Désactiver
+                            Réception
                           </button>
-                        )}
+                          <Link
+                            href={`/pos/products/${p.id}/edit`}
+                            className="text-xs text-brand-gold hover:underline"
+                          >
+                            Modifier
+                          </Link>
+                          {p.active && (
+                            <button
+                              type="button"
+                              onClick={() => deactivate(p.id)}
+                              className="text-xs text-red-600 hover:underline"
+                            >
+                              Désactiver
+                            </button>
+                          )}
+                        </div>
                       </td>
                     )}
                   </tr>
@@ -172,6 +196,18 @@ export function ProductsListClient({ canManage }: { canManage: boolean }) {
             </tbody>
           </table>
         </div>
+      )}
+
+      {receptionFor && (
+        <ReceptionModal
+          productId={receptionFor.id}
+          productName={receptionFor.name}
+          currentCost={receptionFor.costPrice}
+          onClose={() => setReceptionFor(null)}
+          onDone={() => {
+            router.refresh();
+          }}
+        />
       )}
     </div>
   );
