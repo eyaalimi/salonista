@@ -31,7 +31,7 @@ export async function GET() {
 
   const providerId = employee.providerId;
 
-  const [offers, products, customers, employees, provider] = await Promise.all([
+  const [offers, products, customers, employees, provider, openDrawer] = await Promise.all([
     prisma.offer.findMany({
       where: { providerId, active: true },
       orderBy: { title: "asc" },
@@ -97,6 +97,12 @@ export async function GET() {
         _count: { select: { offers: true, products: true, sales: true } },
       } as never,
     }),
+    (prisma as never as {
+      cashDrawerSession: { findFirst: (args: unknown) => Promise<{ id: string } | null> };
+    }).cashDrawerSession.findFirst({
+      where: { providerId, status: "OPEN" },
+      select: { id: true },
+    }),
   ]);
 
   // Attach wallet summary for own-scope customers when REWARDS is active.
@@ -152,5 +158,6 @@ export async function GET() {
     products,
     customers: customersWithWallets,
     employees,
+    cashDrawer: { openSessionId: openDrawer?.id ?? null },
   });
 }

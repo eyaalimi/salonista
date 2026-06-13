@@ -90,6 +90,7 @@ export type CachedCatalog = {
   products: CachedProduct[];
   customers: CachedCustomer[];
   employees: CachedEmployee[];
+  cashDrawer?: { openSessionId: string | null };
 };
 
 export type PendingSale = {

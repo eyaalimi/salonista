@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { signIn } from "next-auth/react";
 import { Logo } from "@/components/logo";
@@ -49,6 +49,38 @@ export default function SalonPinClient() {
   const [pin, setPin] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [bootstrapping, setBootstrapping] = useState(true);
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await fetch("/api/salon-pin/resolve", { method: "GET" });
+        if (!cancelled && res.ok) {
+          const data = await res.json();
+          setSalon(data);
+        }
+      } catch {
+        // pas de salon mémorisé — on tombe sur le flow email
+      } finally {
+        if (!cancelled) setBootstrapping(false);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  async function forgetSalon() {
+    try {
+      await fetch("/api/salon-pin/resolve", { method: "DELETE" });
+    } catch {
+      // ignore
+    }
+    setSalon(null);
+    setIdentifier("");
+    setError(null);
+  }
 
   const handleResolve = useCallback(
     async (e: React.FormEvent) => {
@@ -135,7 +167,11 @@ export default function SalonPinClient() {
 
       <PwaInstallPrompt />
 
-      {step === "identify" && (
+      {bootstrapping && (
+        <p className="text-sm text-brand-ink-soft">Chargement…</p>
+      )}
+
+      {step === "identify" && !bootstrapping && !salon && (
         <section className="w-full max-w-md rounded-3xl border border-brand-line bg-brand-sand p-10 shadow-sm">
           <p className="luxury-badge mb-3">Caisse</p>
           <h1 className="luxury-heading text-3xl text-brand-ink">Connexion salon</h1>
@@ -164,10 +200,21 @@ export default function SalonPinClient() {
         </section>
       )}
 
-      {step === "identify" && salon && (
+      {step === "identify" && salon && !bootstrapping && (
         <section className="mt-8 w-full max-w-2xl rounded-3xl border border-brand-line bg-brand-sand p-8">
-          <p className="luxury-badge mb-2">{salon.salonName}</p>
-          <h2 className="luxury-heading text-2xl text-brand-ink">Choisissez votre profil</h2>
+          <div className="flex items-start justify-between gap-4">
+            <div>
+              <p className="luxury-badge mb-2">{salon.salonName}</p>
+              <h2 className="luxury-heading text-2xl text-brand-ink">Sélectionnez votre profil pour commencer</h2>
+            </div>
+            <button
+              type="button"
+              onClick={forgetSalon}
+              className="text-xs uppercase tracking-[0.18em] text-brand-ink-soft hover:text-brand-ink"
+            >
+              Changer de salon
+            </button>
+          </div>
           <ul className="mt-6 grid grid-cols-2 sm:grid-cols-3 gap-4">
             {salon.employees.map((emp) => (
               <li key={emp.id}>

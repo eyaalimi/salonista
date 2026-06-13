@@ -84,55 +84,90 @@ export function Results({ defaultEmployeeId }: { defaultEmployeeId: string }) {
         </button>
       </div>
 
-      <div ref={rowsRef} className="flex-1 overflow-y-auto">
-        <div className="grid grid-cols-[24px_1fr_110px_72px_90px] gap-3 px-4 py-2 border-b border-pos-border text-[10px] uppercase tracking-[0.08em] text-pos-ink-3 sticky top-0 bg-pos-bg">
-          <span />
-          <span>Article</span>
-          <span>Code</span>
-          <span>Stock</span>
-          <span className="text-right">Prix</span>
-        </div>
+      <div ref={rowsRef} className="flex-1 overflow-y-auto p-4">
         {visible.length === 0 ? (
           <p className="p-8 text-center text-sm text-pos-ink-3">
             Aucun résultat.
           </p>
         ) : (
-          visible.map((r, idx) => {
-            const selected = idx === selectedIndex;
-            return (
-              <button
-                key={`${r.kind}-${r.id}`}
-                type="button"
-                onClick={() => {
-                  setSelectedIndex(idx);
-                  addResultToCart(r, defaultEmployeeId);
-                }}
-                className={`w-full text-left grid grid-cols-[24px_1fr_110px_72px_90px] gap-3 px-4 py-2 border-b border-pos-border text-sm ${
-                  selected
-                    ? "bg-pos-accent-soft border-l-2 border-l-pos-accent"
-                    : "hover:bg-pos-highlight"
-                }`}
-              >
-                <KindBadge kind={r.kind} />
-                <div className="min-w-0">
-                  <div className="font-medium truncate">{r.name}</div>
-                  {r.subtitle && (
-                    <div className="text-[11px] text-pos-ink-3 truncate">{r.subtitle}</div>
-                  )}
-                </div>
-                <span className="pos-mono text-xs text-pos-ink-2 self-center truncate">{r.code}</span>
-                <span className="self-center">
-                  {r.stock ? <StockPill stock={r.stock} /> : <span className="text-pos-ink-4">—</span>}
-                </span>
-                <span className="pos-mono text-right self-center">
-                  {formatDT(r.salePrice)}
-                </span>
-              </button>
-            );
-          })
+          <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
+            {visible.map((r, idx) => {
+              const selected = idx === selectedIndex;
+              return (
+                <button
+                  key={`${r.kind}-${r.id}`}
+                  type="button"
+                  onClick={() => {
+                    setSelectedIndex(idx);
+                    addResultToCart(r, defaultEmployeeId);
+                  }}
+                  className={`group text-left rounded-xl border bg-white overflow-hidden transition shadow-sm hover:shadow-md ${
+                    selected
+                      ? "border-pos-accent ring-2 ring-pos-accent/30"
+                      : "border-pos-border hover:border-pos-accent/50"
+                  }`}
+                >
+                  <ResultMedia r={r} />
+                  <div className="p-3 flex flex-col gap-1">
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="font-medium text-pos-ink truncate flex-1">{r.name}</div>
+                      <KindBadge kind={r.kind} />
+                    </div>
+                    <div className="flex items-center justify-between text-xs text-pos-ink-3">
+                      <span className="truncate">
+                        {r.kind === "SERVICE" && r.duration ? `${r.duration} min` : r.subtitle ?? ""}
+                      </span>
+                      {r.stock && <StockPill stock={r.stock} />}
+                    </div>
+                    <div className="pos-mono text-right text-pos-accent font-semibold mt-1">
+                      {formatDT(r.salePrice)}
+                    </div>
+                  </div>
+                </button>
+              );
+            })}
+          </div>
         )}
       </div>
       <BarcodePrompt defaultEmployeeId={defaultEmployeeId} />
+    </div>
+  );
+}
+
+const PLACEHOLDER_COLORS = [
+  "#D4A574", "#E8D2B5", "#A88565", "#8B6F47",
+  "#6F8E78", "#A6B89A", "#9C7B8C", "#7B9CA6",
+];
+function colorFor(seed: string): string {
+  let h = 0;
+  for (let i = 0; i < seed.length; i++) h = (h * 31 + seed.charCodeAt(i)) | 0;
+  return PLACEHOLDER_COLORS[Math.abs(h) % PLACEHOLDER_COLORS.length];
+}
+
+function ResultMedia({ r }: { r: SearchResult }) {
+  if (r.photo) {
+    // /uploads/ paths must go through <UploadedImage> (Next image optimizer
+    // doesn't see runtime files). We use a plain <img> here because the
+    // results grid renders many small thumbnails and we want them unoptimized.
+    return (
+      <div className="aspect-square w-full bg-pos-bg overflow-hidden">
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          src={r.photo}
+          alt=""
+          className="w-full h-full object-cover"
+          loading="lazy"
+        />
+      </div>
+    );
+  }
+  const initial = r.name.trim().charAt(0).toUpperCase() || "?";
+  return (
+    <div
+      className="aspect-square w-full flex items-center justify-center text-3xl font-semibold text-white/95"
+      style={{ backgroundColor: colorFor(r.id) }}
+    >
+      {initial}
     </div>
   );
 }

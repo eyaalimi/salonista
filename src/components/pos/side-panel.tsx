@@ -56,7 +56,29 @@ function CustomerBlock() {
   const setCustomer = usePosStore((s) => s.setCustomer);
   const [phone, setPhone] = useState("");
   const [searching, setSearching] = useState(false);
+  const [walkInOpen, setWalkInOpen] = useState(false);
+  const [walkInName, setWalkInName] = useState("");
+  const [walkInBusy, setWalkInBusy] = useState(false);
   const inputRef = useRef<HTMLInputElement | null>(null);
+
+  async function createWalkIn() {
+    setWalkInBusy(true);
+    try {
+      const res = await fetch("/api/customers/walk-in", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ firstName: walkInName.trim() || undefined }),
+      });
+      if (res.ok) {
+        const c = (await res.json()) as CustomerLite;
+        setCustomer(c);
+        setWalkInOpen(false);
+        setWalkInName("");
+      }
+    } finally {
+      setWalkInBusy(false);
+    }
+  }
 
   usePOSShortcut("customer.search", () => {
     inputRef.current?.focus();
@@ -142,6 +164,50 @@ function CustomerBlock() {
           phone={phone}
           onPick={(c) => setCustomer(c)}
         />
+      )}
+
+      {!customer && !walkInOpen && (
+        <button
+          type="button"
+          onClick={() => setWalkInOpen(true)}
+          className="mt-3 w-full text-xs text-pos-ink-2 border border-dashed border-pos-border rounded py-2 hover:border-pos-accent hover:text-pos-ink"
+        >
+          + Client passager
+        </button>
+      )}
+
+      {!customer && walkInOpen && (
+        <div className="mt-3 space-y-2">
+          <input
+            type="text"
+            autoFocus
+            value={walkInName}
+            onChange={(e) => setWalkInName(e.target.value)}
+            onKeyDown={(e) => e.key === "Enter" && (void createWalkIn())}
+            placeholder="Nom (facultatif)"
+            className="w-full text-sm bg-pos-bg border border-pos-border rounded px-2 py-1.5"
+          />
+          <div className="flex gap-2">
+            <button
+              type="button"
+              onClick={createWalkIn}
+              disabled={walkInBusy}
+              className="flex-1 text-xs bg-pos-ink text-pos-bg rounded py-1.5 disabled:opacity-50"
+            >
+              {walkInBusy ? "…" : "Ajouter"}
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                setWalkInOpen(false);
+                setWalkInName("");
+              }}
+              className="text-xs text-pos-ink-3 px-2"
+            >
+              Annuler
+            </button>
+          </div>
+        </div>
       )}
     </section>
   );

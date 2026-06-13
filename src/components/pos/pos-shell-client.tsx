@@ -101,6 +101,17 @@ export function PosShellClient({ employee }: { employee: EmployeeProp }) {
     router.replace("/pos/bienvenue");
   }, [catalog, employee.role, router]);
 
+  // OWNER login → if no drawer is open, send them to open one first.
+  useEffect(() => {
+    if (!catalog) return;
+    if (employee.role !== "OWNER") return;
+    // Don't preempt the onboarding redirect above.
+    const onboarding = catalog.onboarding;
+    if (onboarding && !onboarding.dismissedAt && onboarding.offersCount === 0 && onboarding.productsCount === 0 && onboarding.salesCount === 0) return;
+    if (catalog.cashDrawer?.openSessionId) return;
+    router.replace("/pos/cash-drawer");
+  }, [catalog, employee.role, router]);
+
   // Trigger window.print() after a receipt is staged + flagged.
   useEffect(() => {
     if (lastReceipt && printNow) {
