@@ -206,6 +206,17 @@ export function CashDrawerDetailClient({
         )}
       </div>
 
+      {session.status !== "OPEN" && (
+        <a
+          href={`/pos/cash-drawer/${session.id}/rapport`}
+          target="_blank"
+          rel="noreferrer"
+          className="inline-block mb-6 rounded-lg bg-brand-ink px-4 py-2 text-xs uppercase tracking-[0.18em] text-brand-cream hover:bg-brand-ink-soft"
+        >
+          Imprimer le rapport Z
+        </a>
+      )}
+
       {error && <p className="mb-4 text-sm text-red-600">{error}</p>}
 
       {canReconcile && session.status === "CLOSED" && (
