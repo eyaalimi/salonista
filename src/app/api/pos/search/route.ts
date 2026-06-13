@@ -26,13 +26,17 @@ export async function GET(req: NextRequest) {
   const q = (url.searchParams.get("q") ?? "").trim();
   const limit = Math.min(50, Math.max(1, Number(url.searchParams.get("limit") ?? 20)));
 
-  // Empty query → frequently used (cached 60s per provider).
+  // Empty query → return the full active catalog (sorted alphabetically),
+  // so the POS grid always shows every service/product on first load.
+  // Frequently-used ranking only kicks in when we have enough sales data
+  // to make it useful; for now, showing everything is more useful than
+  // showing 1 line because only 1 service has been sold.
   if (q.length === 0) {
     const cached = FREQUENTLY_USED_CACHE.get(employee.providerId);
     if (cached && Date.now() - cached.at < CACHE_TTL_MS) {
       return Response.json(cached.data);
     }
-    const data = await frequentlyUsed(employee.providerId, limit);
+    const data = await fullCatalog(employee.providerId, limit);
     FREQUENTLY_USED_CACHE.set(employee.providerId, { at: Date.now(), data });
     return Response.json(data);
   }
@@ -127,7 +131,89 @@ export async function GET(req: NextRequest) {
   });
 }
 
-async function frequentlyUsed(providerId: string, limit: number) {
+async function fullCatalog(providerId: string, _limit: number) {
+  // Cap defensively in case a salon has thousands of items; UI scrolls.
+  const TAKE = 200;
+  const [offers, products] = await Promise.all([
+    prisma.offer.findMany({
+      where: { providerId, active: true },
+      orderBy: { title: "asc" },
+      take: TAKE,
+      select: {
+        id: true,
+        title: true,
+        category: true,
+        discountPrice: true,
+        taxRate: true,
+        durationMinutes: true,
+        photos: true,
+      },
+    }),
+    prisma.product.findMany({
+      where: { providerId, active: true },
+      orderBy: { name: "asc" },
+      take: TAKE,
+      select: {
+        id: true,
+        name: true,
+        category: true,
+        sku: true,
+        barcode: true,
+        salePrice: true,
+        taxRate: true,
+        stockQuantity: true,
+        lowStockThreshold: true,
+        photo: true,
+      },
+    }),
+  ]);
+
+  const results = [
+    ...offers.map((o) => ({
+      kind: "SERVICE" as const,
+      id: o.id,
+      name: o.title,
+      category: o.category ?? null,
+      subtitle: `${o.durationMinutes} min`,
+      code: synthesizeServiceCode(o.title, o.durationMinutes),
+      salePrice: String(o.discountPrice),
+      taxRate: String(o.taxRate),
+      duration: o.durationMinutes,
+      photo: o.photos?.[0] ?? null,
+      score: 0,
+    })),
+    ...products.map((p) => ({
+      kind: "PRODUCT" as const,
+      id: p.id,
+      name: p.name,
+      category: p.category ?? null,
+      subtitle: null,
+      code: p.barcode ?? p.sku,
+      salePrice: String(p.salePrice),
+      taxRate: String(p.taxRate),
+      duration: undefined as number | undefined,
+      stock: {
+        quantity: p.stockQuantity,
+        threshold: p.lowStockThreshold,
+        status:
+          p.stockQuantity <= 0
+            ? ("out" as const)
+            : p.stockQuantity <= p.lowStockThreshold
+              ? ("low" as const)
+              : ("ok" as const),
+      },
+      photo: p.photo ?? null,
+      score: 0,
+    })),
+  ];
+
+  return { query: "", results };
+}
+
+// Kept for future "recommended" mode but not currently wired — empty query
+// returns the full catalog instead (see fullCatalog above). Prefixed with _
+// so eslint/tsc don't flag it.
+async function _frequentlyUsed(providerId: string, limit: number) {
   // Top by 30-day SaleItem volume, mixed services/products.
   const since = new Date(Date.now() - 30 * 24 * 3600 * 1000);
   const items = await prisma.saleItem.findMany({
