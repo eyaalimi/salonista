@@ -389,6 +389,52 @@ npm run lint
 
 ---
 
+## POS launch readiness additions (2026-06-13)
+
+### New schema fields/models
+
+- `Offer.publishedToMarketplace` (Boolean, default false; backfilled true for existing rows)
+- `Offer.originalPrice` is now nullable
+- `ProviderProfile.onboardingDismissedAt` (DateTime?)
+- `Product.costPrice` (Decimal?, nullable; new canonical cost source, `purchasePrice` deprecated)
+- `StockMovement.unitCost` (Decimal?, snapshotted at PURCHASE time)
+- `CashDrawerExpense` model + `ExpenseCategory` enum
+- `Booking.qrVerifiedByEmployeeId` (set in earlier hardening pass)
+
+### New routes
+
+- `/pos/services` — quick-add table for POS-only services (perm `products.manage`)
+- `/pos/bienvenue` — onboarding wizard for fresh OWNER providers
+- `/pos/bienvenue/test-print` — auto-prints a test ticket
+- `/pos/products/reception` — bulk stock reception with costed PURCHASE
+- `/pos/cash-drawer/[id]/rapport` — Z report (server-aggregated, auto-prints)
+- `/api/pos/drawer/expenses` (POST/GET), `/api/pos/drawer/expenses/[id]` (DELETE)
+- `/api/pos/products/reception-bulk` (POST)
+- `/api/pos/analytics/product-margin` (GET)
+
+### Permission reuse
+
+- `/pos/services` reuses `products.manage` (no new permission).
+- Bulk reception uses `products.manage`; single-product stock keeps `inventory.edit`.
+- Expense DELETE uses `pos.refund` (manager-level money operation).
+
+### Shared print layout
+
+- `src/components/pos/thermal/thermal-layout.tsx` — `<ThermalLayout>` + primitives (Header/Row/Total/Separator/Section/Footer). Single 80mm CSS source.
+- Three consumers: receipt (`thermal/receipt-content.tsx`), test ticket (`thermal/test-ticket-content.tsx`), Z report (`thermal/z-report-content.tsx`).
+
+### Deprecated
+
+- `Product.purchasePrice` — not read in business logic; kept for migration safety. New cost flows write `costPrice`.
+
+### Known follow-ups (not in this PR)
+
+- FIFO/weighted-average inventory costing.
+- ESC/POS direct printing via Web Bluetooth.
+- `POST /api/pos/employees` (wizard step 4 currently shows a placeholder card).
+
+---
+
 ## Contacts
 
 - **Owner / dev**: alimieyaa@gmail.com
