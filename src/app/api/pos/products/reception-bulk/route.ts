@@ -24,8 +24,12 @@ export async function POST(req: NextRequest) {
   if (items.length === 0) return Response.json({ error: "Aucun item" }, { status: 400 });
 
   for (const it of items) {
-    if (!it.productId || !Number.isFinite(it.quantity) || it.quantity <= 0) {
-      return Response.json({ error: "Item invalide" }, { status: 400 });
+    if (
+      !it.productId ||
+      !Number.isInteger(it.quantity) ||
+      it.quantity <= 0
+    ) {
+      return Response.json({ error: "Item invalide (quantité entière requise)" }, { status: 400 });
     }
     if (it.unitCost !== undefined && it.unitCost !== null) {
       const parsed = Number(it.unitCost);

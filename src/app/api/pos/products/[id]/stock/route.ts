@@ -37,6 +37,9 @@ export async function POST(req: NextRequest, ctx: { params: Promise<{ id: string
   if (!body || typeof body.delta !== "number" || !body.reason) {
     return Response.json({ error: "delta et raison requis" }, { status: 400 });
   }
+  if (!Number.isInteger(body.delta)) {
+    return Response.json({ error: "delta doit être un entier" }, { status: 400 });
+  }
   if (!ALLOWED_REASONS.includes(body.reason)) {
     return Response.json({ error: "Raison invalide" }, { status: 400 });
   }
