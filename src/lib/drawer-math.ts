@@ -1,5 +1,11 @@
 import { Decimal } from "@prisma/client/runtime/client";
 
+/**
+ * Inputs for the drawer expected-cash calculation.
+ *
+ * Callers must coalesce Prisma `_sum` aggregates to `new Decimal("0")` —
+ * `_sum` returns `Decimal | null` when no rows match the where clause.
+ */
 export type DrawerInputs = {
   openingFloat: Decimal;
   cashSales: Decimal;
