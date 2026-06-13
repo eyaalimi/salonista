@@ -134,7 +134,12 @@ export default function SalonPinClient() {
   );
 
   function selectEmployee(emp: Employee) {
-    if (!emp.hasPin) return;
+    if (!emp.hasPin) {
+      // No PIN set yet — fall back to the email/password login. After
+      // logging in the owner can set a PIN from their dashboard.
+      router.push(`/login?callbackUrl=${encodeURIComponent(next)}`);
+      return;
+    }
     setEmployee(emp);
     setPin("");
     setError(null);
@@ -221,8 +226,7 @@ export default function SalonPinClient() {
                 <button
                   type="button"
                   onClick={() => selectEmployee(emp)}
-                  disabled={!emp.hasPin}
-                  className="group flex w-full flex-col items-center gap-3 rounded-2xl border border-brand-line bg-white p-5 text-center transition hover:border-brand-gold disabled:opacity-50 disabled:hover:border-brand-line"
+                  className="group flex w-full flex-col items-center gap-3 rounded-2xl border border-brand-line bg-white p-5 text-center transition hover:border-brand-gold"
                 >
                   <span
                     className="flex h-16 w-16 items-center justify-center rounded-full text-xl font-semibold text-brand-cream"
