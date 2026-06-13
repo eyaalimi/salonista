@@ -94,16 +94,15 @@ export function CashDrawerDetailClient({
     return () => { cancelled = true; };
   }, [session]);
 
-  async function removeExpense(id: string) {
+  // TODO: surface delete button when client receives pos.refund permission.
+  async function _removeExpense(id: string) {
     if (!confirm("Supprimer cette dépense ?")) return;
     const r = await fetch(`/api/pos/drawer/expenses/${id}`, { method: "DELETE" });
     if (r.ok) {
-      setExpenses((arr) => arr.filter((x) => x.id !== id));
-      const r2 = await fetch("/api/pos/drawer/expenses", { cache: "no-store" });
-      if (r2.ok) {
-        const j = await r2.json();
-        setExpensesTotal(j.total ?? "0.000");
-      }
+      const remaining = expenses.filter((x) => x.id !== id);
+      setExpenses(remaining);
+      const newTotal = remaining.reduce((sum, e) => sum + Number(e.amount), 0).toFixed(3);
+      setExpensesTotal(newTotal);
     }
   }
 

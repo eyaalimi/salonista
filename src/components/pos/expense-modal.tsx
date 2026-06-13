@@ -1,5 +1,5 @@
 "use client";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 const CATEGORIES = [
   { value: "FOURNISSEUR", label: "Fournisseur" },
@@ -18,13 +18,21 @@ export function ExpenseModal({
 }: {
   employeeName: string;
   onClose: () => void;
-  onCreated: () => void;
+  onCreated: () => void | Promise<void>;
 }) {
   const [amount, setAmount] = useState("");
   const [category, setCategory] = useState<Category>("AUTRE");
   const [reason, setReason] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    function onKey(e: KeyboardEvent) {
+      if (e.key === "Escape") onClose();
+    }
+    document.addEventListener("keydown", onKey);
+    return () => document.removeEventListener("keydown", onKey);
+  }, [onClose]);
 
   async function save() {
     setBusy(true);
@@ -40,7 +48,7 @@ export function ExpenseModal({
         setError(j?.error ?? "Erreur");
         return;
       }
-      onCreated();
+      await onCreated();
       onClose();
     } finally {
       setBusy(false);
@@ -55,6 +63,9 @@ export function ExpenseModal({
       <div
         className="w-full max-w-sm rounded-2xl bg-brand-cream p-6"
         onClick={(e) => e.stopPropagation()}
+        role="dialog"
+        aria-modal="true"
+        aria-label="Nouvelle dépense"
       >
         <header className="flex items-center justify-between mb-4">
           <p className="luxury-badge">Nouvelle dépense</p>
