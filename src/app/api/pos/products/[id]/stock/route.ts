@@ -40,6 +40,12 @@ export async function POST(req: NextRequest, ctx: { params: Promise<{ id: string
   if (!ALLOWED_REASONS.includes(body.reason)) {
     return Response.json({ error: "Raison invalide" }, { status: 400 });
   }
+  if (body.unitCost !== undefined && body.unitCost !== null) {
+    const parsed = Number(body.unitCost);
+    if (!Number.isFinite(parsed) || parsed < 0) {
+      return Response.json({ error: "Prix d'achat invalide" }, { status: 400 });
+    }
+  }
 
   const updated = await prisma.$transaction(async (tx) => {
     const newStock = product.stockQuantity + body.delta!;
