@@ -134,14 +134,14 @@ export function WizardClient({
       {currentStep === 0 && (
         <Step1Info
           provider={provider}
-          onSaved={setProvider}
+          onSaved={(p) => setProvider((prev) => ({ ...prev, ...p }))}
           onNext={() => setForcedStep(1)}
         />
       )}
       {currentStep === 1 && (
         <Step2Services
           provider={provider}
-          onAdded={setProvider}
+          onAdded={(p) => setProvider((prev) => ({ ...prev, ...p }))}
           onNext={() => setForcedStep(2)}
           onBack={() => setForcedStep(0)}
         />
@@ -149,7 +149,7 @@ export function WizardClient({
       {currentStep === 2 && (
         <Step3Products
           provider={provider}
-          onAdded={setProvider}
+          onAdded={(p) => setProvider((prev) => ({ ...prev, ...p }))}
           onNext={() => setForcedStep(3)}
           onSkip={() => setForcedStep(3)}
           onBack={() => setForcedStep(1)}
@@ -158,7 +158,7 @@ export function WizardClient({
       {currentStep === 3 && (
         <Step4Team
           provider={provider}
-          onAdded={setProvider}
+          onAdded={(p) => setProvider((prev) => ({ ...prev, ...p }))}
           onNext={() => setForcedStep(4)}
           onBack={() => setForcedStep(2)}
         />
