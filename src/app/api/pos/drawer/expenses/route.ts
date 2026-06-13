@@ -1,4 +1,5 @@
 import { NextRequest } from "next/server";
+import { Decimal } from "@prisma/client/runtime/client";
 import { prisma } from "@/lib/prisma";
 import { requirePermission, toResponse } from "@/lib/employee-session";
 
@@ -95,6 +96,8 @@ export async function GET() {
     orderBy: { createdAt: "asc" },
     include: { employee: { select: { displayName: true } } },
   });
-  const total = expenses.reduce((s, e) => s + Number(e.amount), 0).toFixed(3);
+  const total = expenses
+    .reduce((s, e) => s.add(new Decimal(String(e.amount))), new Decimal(0))
+    .toFixed(3);
   return Response.json({ sessionId: session.id, expenses, total });
 }
