@@ -1,6 +1,7 @@
 import { getCurrentEmployee } from "@/lib/employee-session";
 import { prisma } from "@/lib/prisma";
 import { notFound, redirect } from "next/navigation";
+import { Decimal } from "@prisma/client/runtime/client";
 import { ZReportPrintFrame } from "@/components/pos/thermal/z-report-content";
 
 export const dynamic = "force-dynamic";
@@ -94,7 +95,9 @@ export default async function ZReportPage({ params }: { params: Promise<{ id: st
       reason: e.reason,
       category: e.category,
     })),
-    expensesTotal: expenses.reduce((s, e) => s + Number(e.amount), 0).toFixed(3),
+    expensesTotal: expenses
+      .reduce((s, e) => s.add(new Decimal(String(e.amount))), new Decimal(0))
+      .toFixed(3),
     openingFloat: String(session.openingFloat),
     expectedCash: session.expectedCash ? String(session.expectedCash) : null,
     closingCount: session.closingCount ? String(session.closingCount) : null,
