@@ -1,4 +1,13 @@
 "use client";
+import { useEffect } from "react";
+import {
+  ThermalLayout,
+  ThermalHeader,
+  ThermalSeparator,
+  ThermalRow,
+  ThermalTotal,
+} from "./thermal-layout";
+import { formatDT } from "@/lib/money";
 
 type ZReportData = {
   provider: {
@@ -29,77 +38,117 @@ type ZReportData = {
   variance: string | null;
 };
 
-/**
- * Temporary plain-HTML Z report frame.
- *
- * T5.4 will replace this with the 80mm thermal layout sharing
- * `<ThermalLayout>` primitives. Until then this renders the same data
- * in a basic HTML table so the page is reviewable end-to-end.
- */
+const METHOD_LABELS: Record<string, string> = {
+  CASH: "Espèces",
+  CARD: "Carte",
+  TRANSFER: "Virement",
+  OTHER: "Autre",
+  LOYALTY_POINTS: "Points",
+};
+
+const CATEGORY_LABELS: Record<string, string> = {
+  FOURNISSEUR: "Fournisseur",
+  LIVRAISON: "Livraison",
+  AVANCE_SALAIRE: "Avance",
+  ENTRETIEN: "Entretien",
+  AUTRE: "Autre",
+};
+
 export function ZReportPrintFrame({ data }: { data: ZReportData }) {
+  useEffect(() => {
+    const id = setTimeout(() => {
+      window.print();
+    }, 200);
+    return () => clearTimeout(id);
+  }, []);
+
+  const openedAtDate = new Date(data.openedAt);
+  const closedAtDate = data.closedAt ? new Date(data.closedAt) : null;
+
   return (
-    <div style={{ padding: 24, fontFamily: "monospace", maxWidth: 600 }}>
-      <h1 style={{ fontSize: 18, marginBottom: 4 }}>
-        {data.provider?.salonName ?? "Salon"} — Rapport Z
-      </h1>
-      <p style={{ fontSize: 12, color: "#666" }}>
-        Session #{data.sessionNumber} · Ouverte par {data.openedBy}
-      </p>
-      <p style={{ fontSize: 12, color: "#666" }}>
-        {new Date(data.openedAt).toLocaleString("fr-FR")}
-        {data.closedAt ? ` → ${new Date(data.closedAt).toLocaleString("fr-FR")}` : " (en cours)"}
-      </p>
-
-      <h2 style={{ fontSize: 14, marginTop: 16 }}>Ventes</h2>
-      <ul style={{ fontSize: 13 }}>
-        <li>Nombre : {data.salesCount}</li>
-        <li>Brut TTC : {data.grossTotal} DT</li>
-        <li>Remises : {data.discountsTotal} DT</li>
-        <li>Pourboires : {data.tipsTotal} DT</li>
-        <li>Remboursements (tous) : {data.refundsTotal} DT</li>
-        <li>Remboursements cash : {data.refundsCashTotal} DT</li>
-      </ul>
-
-      <h2 style={{ fontSize: 14, marginTop: 16 }}>Paiements par méthode</h2>
-      <ul style={{ fontSize: 13 }}>
-        {data.paymentsByMethod.length === 0 && <li>Aucun paiement</li>}
-        {data.paymentsByMethod.map((p, i) => (
-          <li key={i}>{p.method} : {p.amount} DT</li>
-        ))}
-      </ul>
-
-      <h2 style={{ fontSize: 14, marginTop: 16 }}>TVA par taux</h2>
-      <ul style={{ fontSize: 13 }}>
-        {data.taxBreakdown.length === 0 && <li>Aucune ligne</li>}
-        {data.taxBreakdown.map((t, i) => (
-          <li key={i}>{t.rate}% — base {t.base} DT, TVA {t.tax} DT</li>
-        ))}
-      </ul>
-
-      <h2 style={{ fontSize: 14, marginTop: 16 }}>Dépenses</h2>
-      <p style={{ fontSize: 13 }}>Total : {data.expensesTotal} DT</p>
-      <ul style={{ fontSize: 13 }}>
-        {data.expenses.length === 0 && <li>Aucune dépense</li>}
-        {data.expenses.map((e) => (
-          <li key={e.id}>
-            {e.category} · {e.amount} DT · {e.reason}
-          </li>
-        ))}
-      </ul>
-
-      <h2 style={{ fontSize: 14, marginTop: 16 }}>Caisse</h2>
-      <ul style={{ fontSize: 13 }}>
-        <li>Fond initial : {data.openingFloat} DT</li>
-        <li>Attendu : {data.expectedCash ?? "—"} DT</li>
-        <li>Compté : {data.closingCount ?? "—"} DT</li>
-        <li>Variance : {data.variance ?? "—"} DT</li>
-      </ul>
-
-      {data.provider?.receiptFooter && (
-        <p style={{ marginTop: 16, fontSize: 12, fontStyle: "italic", textAlign: "center" }}>
-          {data.provider.receiptFooter}
-        </p>
+    <ThermalLayout>
+      <ThermalHeader provider={data.provider} title="RAPPORT Z" />
+      <ThermalSeparator />
+      <div>
+        {openedAtDate.toLocaleDateString("fr-FR")} — Session #{data.sessionNumber}
+      </div>
+      <div>
+        Ouverte {openedAtDate.toLocaleTimeString("fr-FR")} par {data.openedBy}
+      </div>
+      {closedAtDate && (
+        <div>
+          Fermée {closedAtDate.toLocaleTimeString("fr-FR")} par {data.openedBy}
+        </div>
       )}
-    </div>
+      <ThermalSeparator />
+
+      <ThermalRow label="Ventes" value={String(data.salesCount)} />
+      <ThermalRow label="Brut TTC" value={formatDT(data.grossTotal)} />
+      {Number(data.discountsTotal) > 0 && (
+        <ThermalRow label="Remises" value={`-${formatDT(data.discountsTotal)}`} />
+      )}
+      {Number(data.tipsTotal) > 0 && (
+        <ThermalRow label="Pourboires" value={`+${formatDT(data.tipsTotal)}`} />
+      )}
+      {Number(data.refundsTotal) > 0 && (
+        <ThermalRow label="Remboursements" value={`-${formatDT(data.refundsTotal)}`} />
+      )}
+      <ThermalSeparator />
+
+      <div style={{ fontWeight: "bold" }}>Paiements</div>
+      {data.paymentsByMethod.length === 0 ? (
+        <div>—</div>
+      ) : (
+        data.paymentsByMethod.map((p, i) => (
+          <ThermalRow
+            key={i}
+            label={METHOD_LABELS[p.method] ?? p.method}
+            value={formatDT(p.amount)}
+          />
+        ))
+      )}
+      <ThermalSeparator />
+
+      <div style={{ fontWeight: "bold" }}>TVA</div>
+      {data.taxBreakdown.length === 0 ? (
+        <div>—</div>
+      ) : (
+        data.taxBreakdown.map((t, i) => (
+          <ThermalRow
+            key={i}
+            label={`${Number(t.rate).toFixed(0)}% sur ${formatDT(t.base)}`}
+            value={formatDT(t.tax)}
+          />
+        ))
+      )}
+      <ThermalSeparator />
+
+      <div style={{ fontWeight: "bold" }}>Tiroir espèces</div>
+      <ThermalRow label="Fond ouverture" value={formatDT(data.openingFloat)} />
+      {Number(data.expensesTotal) > 0 && (
+        <>
+          <ThermalRow label="− Dépenses" value={formatDT(data.expensesTotal)} />
+          {data.expenses.map((e) => (
+            <div key={e.id} style={{ paddingLeft: "4mm", fontSize: 9 }}>
+              {CATEGORY_LABELS[e.category] ?? e.category} {formatDT(e.amount)} — {e.reason}
+            </div>
+          ))}
+        </>
+      )}
+      {data.expectedCash && (
+        <ThermalRow label="Attendu" value={formatDT(data.expectedCash)} />
+      )}
+      {data.closingCount && (
+        <ThermalRow label="Compté" value={formatDT(data.closingCount)} />
+      )}
+      {data.variance && (
+        <ThermalTotal label="ÉCART" value={formatDT(data.variance)} />
+      )}
+      <ThermalSeparator />
+
+      <div style={{ textAlign: "center", fontSize: 9 }}>
+        Rapport Z — Salonista
+      </div>
+    </ThermalLayout>
   );
 }
