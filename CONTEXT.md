@@ -498,6 +498,30 @@ Sections 3, 4, 5 remain pending — see `docs/superpowers/plans/2026-05-06-harde
 
 ---
 
+## POS launch readiness — 2026-06-13
+
+This is the door-to-door-deployment readiness pass. The POS is offered free to salons; the founder walks into a salon, opens `/pos/bienvenue`, and configures the salon end-to-end in <30 min.
+
+### Rationale for non-obvious choices
+
+**Why `products.manage` for `/pos/services` (not a new `services.manage`):** services and products are both "things the catalog sells". Splitting the permission would force every salon to grant two permissions where one captures the intent. The reuse note is in CLAUDE.md so future contributors don't add `services.manage` by reflex.
+
+**Why `pos.refund` for DELETE expense:** an expense modifies the cash variance at the end of the day. Letting any cashier delete an expense lets them mask a missing-cash situation. `pos.refund` is the existing "manager-level money op" permission — reusing it keeps the policy surface small.
+
+**Why `Offer.originalPrice` is now nullable:** POS-only services have no "barred price" because they're never shown publicly. Forcing `originalPrice == discountPrice` would be a lie in the data. Nullable is the cleanest signal of "this concept doesn't apply here".
+
+**Why FIFO is out of scope:** salon owners rarely track per-batch costs. The simpler `Product.costPrice` snapshot at PURCHASE time captures 90% of the margin-estimation value with 10% of the complexity. `StockMovement.unitCost` captures the per-purchase value too — if FIFO becomes a requirement later, the data is already there.
+
+**Why `Product.purchasePrice` is kept (not dropped):** removing it would require a destructive migration on existing rows that may still carry meaningful values. The deprecation lives in CLAUDE.md; new code writes `costPrice` instead.
+
+**Why the onboarding wizard step 4 (Équipe) is a placeholder card:** `POST /api/pos/employees` doesn't exist yet. The wizard doesn't block — owners can advance with just themselves as the OWNER employee. When that endpoint ships, step 4 becomes a real PIN-creation form.
+
+### Inline delete on expense list
+
+Currently omitted from `cash-drawer-detail-client.tsx` because that component doesn't yet receive `permissions` from its parent. The API still enforces `pos.refund` server-side. When the parent passes permissions, surface the delete button with `_removeExpense` (already implemented, prefixed with `_` to silence the linter).
+
+---
+
 ## Contacts
 
 - **Owner / dev**: alimieyaa@gmail.com

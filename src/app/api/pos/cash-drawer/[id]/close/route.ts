@@ -1,7 +1,9 @@
 import { NextRequest } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requirePermission, toResponse } from "@/lib/employee-session";
-import { addMoney, subMoney } from "@/lib/money";
+import { addMoney } from "@/lib/money";
+import { Decimal } from "@prisma/client/runtime/client";
+import { expectedCash, variance } from "@/lib/drawer-math";
 
 type Body = {
   closingCount?: string | number;
@@ -83,11 +85,23 @@ export async function POST(req: NextRequest, ctx: { params: Promise<{ id: string
         "0.000",
       );
 
-      const expectedCash = subMoney(
-        addMoney(String(session.openingFloat), cashSalesTotal),
-        cashRefundsTotal,
-      );
-      const variance = subMoney(closingStr, expectedCash);
+      const expensesAgg = await (tx as never as {
+        cashDrawerExpense: {
+          aggregate: (a: unknown) => Promise<{ _sum: { amount: { toString: () => string } | null } }>;
+        };
+      }).cashDrawerExpense.aggregate({
+        where: { cashDrawerSessionId: id },
+        _sum: { amount: true },
+      });
+      const expensesTotal = expensesAgg._sum.amount ? String(expensesAgg._sum.amount) : "0.000";
+
+      const expected = expectedCash({
+        openingFloat: new Decimal(String(session.openingFloat)),
+        cashSales: new Decimal(cashSalesTotal),
+        cashRefunds: new Decimal(cashRefundsTotal),
+        expenses: new Decimal(expensesTotal),
+      });
+      const varianceVal = variance(expected, new Decimal(closingStr));
 
       const updated = await tx.cashDrawerSession.update({
         where: { id },
@@ -95,8 +109,8 @@ export async function POST(req: NextRequest, ctx: { params: Promise<{ id: string
           status: "CLOSED",
           closedAt: new Date(),
           closingCount: closingStr,
-          expectedCash,
-          variance,
+          expectedCash: expected.toFixed(3),
+          variance: varianceVal.toFixed(3),
           closingNotes: body?.closingNotes ?? null,
         },
       });
@@ -109,9 +123,10 @@ export async function POST(req: NextRequest, ctx: { params: Promise<{ id: string
           cashSalesTotal,
           cashRefundsCount: refunds.length,
           cashRefundsTotal,
-          expectedCash,
+          expensesTotal,
+          expectedCash: expected.toFixed(3),
           closingCount: closingStr,
-          variance,
+          variance: varianceVal.toFixed(3),
         },
       };
     });

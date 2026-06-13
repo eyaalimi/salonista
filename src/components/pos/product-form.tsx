@@ -19,6 +19,7 @@ type ProductInput = {
   sku: string;
   barcode: string | null;
   purchasePrice: string;
+  costPrice: string;
   salePrice: string;
   taxRate: string;
   stockQuantity: number;
@@ -43,6 +44,7 @@ export function ProductForm(props: Props) {
           sku: "",
           barcode: null,
           purchasePrice: "0.000",
+          costPrice: "",
           salePrice: "0.000",
           taxRate: "19",
           stockQuantity: 0,
@@ -79,6 +81,7 @@ export function ProductForm(props: Props) {
         sku: form.sku,
         barcode: form.barcode || null,
         purchasePrice: form.purchasePrice,
+        costPrice: form.costPrice || null,
         salePrice: form.salePrice,
         taxRate,
         lowStockThreshold: form.lowStockThreshold,
@@ -178,6 +181,19 @@ export function ProductForm(props: Props) {
               min="0"
               value={form.purchasePrice}
               onChange={(e) => set("purchasePrice", e.target.value)}
+              className="w-full rounded border border-brand-line bg-white px-3 py-2 text-sm"
+            />
+          </div>
+          <div>
+            <label className="block text-[10px] uppercase tracking-[0.18em] text-brand-ink-soft mb-1">
+              Prix d&apos;achat HT de référence (facultatif)
+            </label>
+            <input
+              type="number"
+              step="0.001"
+              min="0"
+              value={form.costPrice}
+              onChange={(e) => set("costPrice", e.target.value)}
               className="w-full rounded border border-brand-line bg-white px-3 py-2 text-sm"
             />
           </div>

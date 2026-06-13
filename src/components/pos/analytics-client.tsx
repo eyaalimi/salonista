@@ -96,6 +96,7 @@ export function AnalyticsClient() {
   const [byEmployee, setByEmployee] = useState<EmployeeRow[]>([]);
   const [heatmap, setHeatmap] = useState<HeatmapCell[]>([]);
   const [lowStock, setLowStock] = useState<LowStockRow[]>([]);
+  const [margin, setMargin] = useState<{ total: string; excludedCount: number } | null>(null);
   const [loading, setLoading] = useState(true);
 
   const setPreset = (v: string) => {
@@ -113,7 +114,7 @@ export function AnalyticsClient() {
     router.replace(`/pos/analytics?${params.toString()}`, { scroll: false });
 
     try {
-      const [s, r, ts, tp, be, hm, ls] = await Promise.all([
+      const [s, r, ts, tp, be, hm, ls, mg] = await Promise.all([
         fetch(`/api/pos/analytics/summary?${params}`).then((r) => r.json()),
         fetch(`/api/pos/analytics/revenue?${params}`).then((r) => r.json()),
         fetch(`/api/pos/analytics/top-services?${params}`).then((r) => r.json()),
@@ -121,6 +122,7 @@ export function AnalyticsClient() {
         fetch(`/api/pos/analytics/by-employee?${params}`).then((r) => r.json()),
         fetch(`/api/pos/analytics/heatmap?${params}`).then((r) => r.json()),
         fetch(`/api/pos/analytics/low-stock`).then((r) => r.json()),
+        fetch(`/api/pos/analytics/product-margin?${params}`).then((r) => r.ok ? r.json() : null).catch(() => null),
       ]);
       setSummary(s);
       setRevenue(r.points ?? []);
@@ -129,6 +131,7 @@ export function AnalyticsClient() {
       setByEmployee(be.rows ?? []);
       setHeatmap(hm.cells?.flat() ?? []);
       setLowStock(ls.products ?? []);
+      setMargin(mg ?? null);
     } finally {
       setLoading(false);
     }
@@ -205,6 +208,23 @@ export function AnalyticsClient() {
             value={String(summary.current.newCustomers)}
             delta={deltaPct(summary.current.newCustomers, summary.previous.newCustomers)}
           />
+        </div>
+      )}
+
+      {/* Product margin estimation card */}
+      {margin && (
+        <div className="rounded-2xl border border-brand-line bg-white p-5 mb-6">
+          <p className="text-[10px] uppercase tracking-[0.18em] text-brand-ink-soft">
+            Marge produits — estimation
+          </p>
+          <p className="luxury-heading text-2xl text-brand-ink mt-1">
+            {Number(margin.total).toFixed(3)} DT
+          </p>
+          {margin.excludedCount > 0 && (
+            <p className="mt-1 text-[10px] uppercase tracking-[0.18em] text-brand-ink-soft">
+              {margin.excludedCount} produit·s sans coût exclu·s du calcul
+            </p>
+          )}
         </div>
       )}
 

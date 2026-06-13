@@ -9,6 +9,9 @@ import { getOrCreateProgram } from "@/lib/rewards/program";
  * Returns active offers + active products + own-scope customers for the
  * current salon. The shell calls this on POS load and any time the
  * StaleWhileRevalidate worker invalidates the cache.
+ *
+ * The response also includes an `onboarding` object with dismissedAt, offersCount,
+ * productsCount, and salesCount — null when the provider row is missing.
  */
 export async function GET() {
   let employee;
@@ -90,7 +93,9 @@ export async function GET() {
         phone: true,
         matriculeFiscal: true,
         receiptFooter: true,
-      },
+        onboardingDismissedAt: true,
+        _count: { select: { offers: true, products: true, sales: true } },
+      } as never,
     }),
   ]);
 
@@ -135,6 +140,14 @@ export async function GET() {
   return Response.json({
     refreshedAt: new Date().toISOString(),
     provider,
+    onboarding: provider
+      ? {
+          dismissedAt: (provider as { onboardingDismissedAt?: Date | null }).onboardingDismissedAt ?? null,
+          offersCount: (provider as { _count: { offers: number } })._count.offers,
+          productsCount: (provider as { _count: { products: number } })._count.products,
+          salesCount: (provider as { _count: { sales: number } })._count.sales,
+        }
+      : null,
     offers,
     products,
     customers: customersWithWallets,

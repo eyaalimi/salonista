@@ -22,6 +22,26 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
     return NextResponse.json({ error: "Offre introuvable" }, { status: 404 });
   }
 
+  // Check if unpublished — if so, only allow provider-owner or admin
+  const isPublished = (offer as { publishedToMarketplace?: boolean }).publishedToMarketplace ?? false;
+  if (!isPublished) {
+    const session = await getServerSession(authOptions);
+    let allowed = false;
+    if (session?.user?.role === "ADMIN") {
+      allowed = true;
+    } else if (session?.user?.role === "PROVIDER") {
+      const profile = await prisma.providerProfile.findUnique({
+        where: { userId: session.user.id },
+      });
+      if (profile?.id === offer.providerId) {
+        allowed = true;
+      }
+    }
+    if (!allowed) {
+      return NextResponse.json({ error: "Offre introuvable" }, { status: 404 });
+    }
+  }
+
   return NextResponse.json(offer);
 }
 
@@ -43,6 +63,32 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
   }
 
   const body = await req.json();
+
+  const existingPublished = (offer as { publishedToMarketplace?: boolean }).publishedToMarketplace ?? false;
+  const willBePublished = body.publishedToMarketplace ?? existingPublished;
+
+  if (willBePublished) {
+    const missing: string[] = [];
+    const effCategory = body.category ?? offer.category;
+    if (!effCategory) missing.push("catégorie");
+    const effOriginal = body.originalPrice ?? offer.originalPrice;
+    const effDiscount = body.discountPrice ?? offer.discountPrice;
+    if (
+      effOriginal === null ||
+      effOriginal === undefined ||
+      Number(effOriginal) < Number(effDiscount)
+    ) {
+      missing.push("prix barré (≥ prix actuel)");
+    }
+    const effPhotos = body.photos ?? offer.photos;
+    if (!effPhotos || effPhotos.length === 0) missing.push("au moins une photo");
+    if (missing.length > 0) {
+      return NextResponse.json(
+        { error: `Publication impossible — champs manquants : ${missing.join(", ")}` },
+        { status: 400 },
+      );
+    }
+  }
 
   let nextDuration = offer.durationMinutes;
   if (body.durationMinutes !== undefined) {
@@ -77,11 +123,16 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
       active: body.active ?? offer.active,
       durationMinutes: nextDuration,
       ...(nextTaxRate !== undefined ? { taxRate: nextTaxRate } : {}),
-    },
+      publishedToMarketplace: willBePublished,
+    } as never,
   });
 
-  // If duration changed, regenerate the slot grid
-  if (nextDuration !== offer.durationMinutes) {
+  // Duration changes always require regen (slots may exist for POS-only offers
+  // from earlier states; keeping them aligned with durationMinutes is the
+  // safe default). Newly-published offers also need their initial slot grid.
+  const durationChanged = nextDuration !== offer.durationMinutes;
+  const becamePublished = willBePublished && !existingPublished;
+  if (durationChanged || becamePublished) {
     await regenerateOfferSlots(id);
   }
 

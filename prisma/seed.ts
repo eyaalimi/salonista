@@ -1121,6 +1121,112 @@ async function main() {
     });
   }
 
+  // ----- TASK 6.1: POS-only offers -----
+  const posOnlyOffers = [
+    { title: "Brushing express", discountPrice: "25.000", durationMinutes: 30 },
+    { title: "Coupe homme", discountPrice: "15.000", durationMinutes: 20 },
+    { title: "Massage du cuir chevelu", discountPrice: "35.000", durationMinutes: 30 },
+    { title: "Démêlage long", discountPrice: "18.000", durationMinutes: 20 },
+  ];
+  for (const o of posOnlyOffers) {
+    await prisma.offer.create({
+      data: {
+        providerId: provider1.providerProfile!.id,
+        title: o.title,
+        discountPrice: o.discountPrice,
+        durationMinutes: o.durationMinutes,
+        category: "AUTRE",
+        taxRate: "19.00",
+        photos: [],
+        publishedToMarketplace: false,
+      } as never,
+    });
+  }
+
+  // ----- TASK 6.1: costed products + PURCHASE movement -----
+  const shampoo = await prisma.product.create({
+    data: {
+      providerId: provider1.providerProfile!.id,
+      name: "Shampoing Schwarzkopf 250ml",
+      sku: "SCH-250",
+      salePrice: "28.000",
+      purchasePrice: "15.500",
+      costPrice: "15.500",
+      stockQuantity: 12,
+    } as never,
+  });
+  await prisma.product.create({
+    data: {
+      providerId: provider1.providerProfile!.id,
+      name: "Masque hydratant L'Oréal",
+      sku: "LOR-100",
+      salePrice: "22.000",
+      purchasePrice: "11.000",
+      costPrice: "11.000",
+      stockQuantity: 8,
+    } as never,
+  });
+  await prisma.stockMovement.create({
+    data: {
+      productId: shampoo.id,
+      delta: 6,
+      reason: "PURCHASE",
+      unitCost: "15.500",
+      createdAt: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000),
+    } as never,
+  });
+
+  // ----- TASK 6.1: closed drawer session with 2 expenses -----
+  const ownerEmployee = await prisma.salonEmployee.findFirst({
+    where: { providerId: provider1.providerProfile!.id, role: "OWNER" },
+  });
+  if (ownerEmployee) {
+    const yesterdayOpen = new Date();
+    yesterdayOpen.setDate(yesterdayOpen.getDate() - 1);
+    yesterdayOpen.setHours(9, 0, 0, 0);
+    const yesterdayClose = new Date(yesterdayOpen);
+    yesterdayClose.setHours(19, 45, 0, 0);
+
+    const closedSession = await prisma.cashDrawerSession.create({
+      data: {
+        providerId: provider1.providerProfile!.id,
+        employeeId: ownerEmployee.id,
+        openedAt: yesterdayOpen,
+        closedAt: yesterdayClose,
+        status: "CLOSED",
+        openingFloat: "100.000",
+        closingCount: "245.000",
+        expectedCash: "245.000",
+        variance: "0.000",
+      } as never,
+    });
+
+    await (prisma as never as {
+      cashDrawerExpense: {
+        createMany: (a: unknown) => Promise<unknown>;
+      };
+    }).cashDrawerExpense.createMany({
+      data: [
+        {
+          cashDrawerSessionId: closedSession.id,
+          employeeId: ownerEmployee.id,
+          amount: "22.000",
+          category: "LIVRAISON",
+          reason: "Schwarzkopf",
+          createdAt: new Date(yesterdayOpen.getTime() + 60 * 60 * 1000),
+        },
+        {
+          cashDrawerSessionId: closedSession.id,
+          employeeId: ownerEmployee.id,
+          amount: "8.000",
+          category: "ENTRETIEN",
+          reason: "Café équipe",
+          createdAt: new Date(yesterdayOpen.getTime() + 4 * 60 * 60 * 1000),
+        },
+      ],
+    });
+  }
+
   console.log("✅ Seed complete!");
   console.log("   3 prestataires, 5 offres, 2 influenceuses, 3 clientes, 1 admin");
   console.log("   10 réservations avec commissions");

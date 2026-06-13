@@ -58,7 +58,7 @@ export function PosTopbar({ provider, employee }: { provider: Provider | null; e
       <div className="flex items-center gap-3 shrink-0">
         <OnlineStatusBadge />
         <span className="pos-mono text-xs text-pos-ink-4 hidden md:inline">{now}</span>
-        {employee.permissions["pos.cash_drawer"] && <CashDrawerIndicator canOpen={true} />}
+        {employee.permissions["pos.cash_drawer"] && <CashDrawerIndicator canOpen={true} employeeName={employee.displayName} />}
         <div
           className="w-8 h-8 rounded-full flex items-center justify-center text-pos-ink text-xs font-semibold"
           style={{ backgroundColor: "var(--color-pos-yellow)" }}

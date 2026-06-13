@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useCallback } from "react";
 import { formatDT } from "@/lib/money";
+import { ExpenseModal } from "./expense-modal";
 
 type Summary = {
   sessionId: string;
@@ -13,12 +14,13 @@ type Summary = {
 
 type Session = { id: string; status: string; openedAt: string } | null;
 
-export function CashDrawerIndicator({ canOpen }: { canOpen: boolean }) {
+export function CashDrawerIndicator({ canOpen, employeeName }: { canOpen: boolean; employeeName?: string }) {
   const [session, setSession] = useState<Session>(null);
   const [summary, setSummary] = useState<Summary | null>(null);
   const [open, setOpen] = useState(false);
   const [openingModal, setOpeningModal] = useState(false);
   const [closingModal, setClosingModal] = useState(false);
+  const [expenseModalOpen, setExpenseModalOpen] = useState(false);
 
   const refresh = useCallback(async () => {
     const res = await fetch("/api/pos/cash-drawer/current", { cache: "no-store" });
@@ -87,6 +89,16 @@ export function CashDrawerIndicator({ canOpen }: { canOpen: boolean }) {
               type="button"
               onClick={() => {
                 setOpen(false);
+                setExpenseModalOpen(true);
+              }}
+              className="mb-3 w-full rounded-lg border border-brand-line py-3 text-xs uppercase tracking-[0.18em] text-brand-ink hover:bg-brand-cream"
+            >
+              + Dépense
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                setOpen(false);
                 setClosingModal(true);
               }}
               className="w-full rounded-lg bg-brand-ink py-3 text-xs uppercase tracking-[0.18em] text-brand-cream"
@@ -102,6 +114,16 @@ export function CashDrawerIndicator({ canOpen }: { canOpen: boolean }) {
           onClose={() => setOpeningModal(false)}
           onOpened={async () => {
             setOpeningModal(false);
+            await refresh();
+          }}
+        />
+      )}
+
+      {expenseModalOpen && (
+        <ExpenseModal
+          employeeName={employeeName ?? "Employé"}
+          onClose={() => setExpenseModalOpen(false)}
+          onCreated={async () => {
             await refresh();
           }}
         />

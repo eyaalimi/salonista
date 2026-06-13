@@ -34,6 +34,7 @@ export default async function OffresPage({
   const offers = await prisma.offer.findMany({
     where: {
       active: true,
+      publishedToMarketplace: true,
       ...(category ? { category: category as never } : {}),
       ...(q
         ? {
@@ -45,7 +46,7 @@ export default async function OffresPage({
             ],
           }
         : {}),
-    },
+    } as never,
     orderBy: { createdAt: "desc" },
     include: {
       provider: { select: { salonName: true, city: true } },

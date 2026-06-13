@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import {
   LayoutGrid,
   Calendar,
+  Scissors,
   Users,
   Package,
   Receipt,
@@ -28,6 +29,7 @@ export function Rail({ permissions }: { permissions: Record<Permission, boolean>
   const items: RailItem[] = [
     { href: "/pos", label: "Caisse", shortcut: "1", icon: <LayoutGrid size={16} />, perm: "pos.sell" },
     { href: "/pos/calendar", label: "RDV du jour", shortcut: "B", icon: <Calendar size={16} />, perm: "bookings.view" },
+    { href: "/pos/services", label: "Services", shortcut: "S", icon: <Scissors size={16} />, perm: "products.manage" },
     { href: "/pos/customers", label: "Clients", shortcut: "C", icon: <Users size={16} />, perm: "customers.view" },
     { href: "/pos/products", label: "Produits", shortcut: "P", icon: <Package size={16} />, perm: "inventory.view" },
   ];

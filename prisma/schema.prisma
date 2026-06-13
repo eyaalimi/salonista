@@ -134,6 +134,14 @@ enum CashDrawerStatus {
   RECONCILED
 }
 
+enum ExpenseCategory {
+  FOURNISSEUR
+  LIVRAISON
+  AVANCE_SALAIRE
+  ENTRETIEN
+  AUTRE
+}
+
 model User {
   id            String    @id @default(cuid())
   email         String    @unique
@@ -210,6 +218,7 @@ model ProviderProfile {
   openingHours    Json?
   matriculeFiscal String?
   receiptFooter   String?
+  onboardingDismissedAt DateTime?
   verified        Boolean  @default(false)
   createdAt       DateTime @default(now())
 
@@ -248,13 +257,14 @@ model Offer {
   providerId      String
   title           String
   description     String?
-  originalPrice   Decimal   @db.Decimal(10, 3)
+  originalPrice   Decimal?  @db.Decimal(10, 3)
   discountPrice   Decimal   @db.Decimal(10, 3)
   category        Category
   photos          String[]
   durationMinutes Int       @default(60)
   taxRate         Decimal   @default(19.00) @db.Decimal(5, 2)
   active          Boolean   @default(true)
+  publishedToMarketplace Boolean @default(false)
   createdAt       DateTime  @default(now())
 
   provider              ProviderProfile             @relation(fields: [providerId], references: [id], onDelete: Cascade)
@@ -479,6 +489,7 @@ model SalonEmployee {
   stockMovements     StockMovement[]
   cashDrawerSessions CashDrawerSession[] @relation("CashDrawerEmployee")
   rewardAdjustments  RewardTransaction[] @relation("RewardTransactionEmployee")
+  expensesRecorded   CashDrawerExpense[] @relation("CashDrawerExpenseEmployee")
 
   @@index([providerId, active])
   @@index([userId])
@@ -513,6 +524,7 @@ model Product {
   barcode           String?
   purchasePrice     Decimal  @db.Decimal(10, 3)
   salePrice         Decimal  @db.Decimal(10, 3)
+  costPrice         Decimal? @db.Decimal(10, 3)
   taxRate           Decimal  @default(19.00) @db.Decimal(5, 2)
   stockQuantity     Int      @default(0)
   lowStockThreshold Int      @default(5)
@@ -536,6 +548,7 @@ model StockMovement {
   id             String              @id @default(cuid())
   productId      String
   delta          Int
+  unitCost       Decimal?            @db.Decimal(10, 3)
   reason         StockMovementReason
   saleId         String?
   refundId       String?
@@ -732,10 +745,27 @@ model CashDrawerSession {
   provider ProviderProfile @relation(fields: [providerId], references: [id], onDelete: Cascade)
   employee SalonEmployee   @relation("CashDrawerEmployee", fields: [employeeId], references: [id])
   payments Payment[]
+  expenses CashDrawerExpense[]
 
   @@index([providerId, status])
   @@index([employeeId, status])
   @@index([openedAt])
+}
+
+model CashDrawerExpense {
+  id                    String           @id @default(cuid())
+  cashDrawerSessionId   String
+  employeeId            String
+  amount                Decimal          @db.Decimal(10, 3)
+  reason                String
+  category              ExpenseCategory  @default(AUTRE)
+  createdAt             DateTime         @default(now())
+
+  cashDrawerSession CashDrawerSession @relation(fields: [cashDrawerSessionId], references: [id], onDelete: Restrict)
+  employee          SalonEmployee     @relation("CashDrawerExpenseEmployee", fields: [employeeId], references: [id])
+
+  @@index([cashDrawerSessionId])
+  @@index([employeeId])
 }
 
 model RewardProgram {
