@@ -4,6 +4,15 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { formatDT } from "@/lib/money";
 
+type Expense = {
+  id: string;
+  amount: string | number;
+  reason: string;
+  category: string;
+  createdAt: string;
+  employee: { displayName: string };
+};
+
 type Session = {
   id: string;
   status: string;
@@ -53,6 +62,8 @@ export function CashDrawerDetailClient({
   const [summary, setSummary] = useState<Summary | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [expenses, setExpenses] = useState<Expense[]>([]);
+  const [expensesTotal, setExpensesTotal] = useState<string>("0.000");
 
   async function load() {
     setLoading(true);
@@ -69,6 +80,32 @@ export function CashDrawerDetailClient({
     load();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [sessionId]);
+
+  useEffect(() => {
+    if (!session || session.status !== "OPEN") return;
+    let cancelled = false;
+    (async () => {
+      const r = await fetch("/api/pos/drawer/expenses", { cache: "no-store" });
+      if (!r.ok || cancelled) return;
+      const j = await r.json();
+      setExpenses(j.expenses ?? []);
+      setExpensesTotal(j.total ?? "0.000");
+    })();
+    return () => { cancelled = true; };
+  }, [session]);
+
+  async function removeExpense(id: string) {
+    if (!confirm("Supprimer cette dépense ?")) return;
+    const r = await fetch(`/api/pos/drawer/expenses/${id}`, { method: "DELETE" });
+    if (r.ok) {
+      setExpenses((arr) => arr.filter((x) => x.id !== id));
+      const r2 = await fetch("/api/pos/drawer/expenses", { cache: "no-store" });
+      if (r2.ok) {
+        const j = await r2.json();
+        setExpensesTotal(j.total ?? "0.000");
+      }
+    }
+  }
 
   async function reconcile() {
     if (!confirm("Marquer cette session comme rapprochée ?")) return;
@@ -208,6 +245,31 @@ export function CashDrawerDetailClient({
           </ul>
         )}
       </div>
+
+      {expenses.length > 0 && (
+        <div className="rounded-2xl border border-brand-line bg-white p-6 mt-6">
+          <h2 className="luxury-heading text-lg text-brand-ink mb-3">
+            Dépenses ({expenses.length}) — Total {Number(expensesTotal).toFixed(3)} DT
+          </h2>
+          <ul className="space-y-2">
+            {expenses.map((e) => (
+              <li
+                key={e.id}
+                className="flex items-center justify-between border border-brand-line rounded px-3 py-2 text-sm"
+              >
+                <div>
+                  <p className="text-brand-ink">
+                    {e.category} — {Number(e.amount).toFixed(3)} DT
+                  </p>
+                  <p className="text-xs text-brand-ink-soft">
+                    {e.reason} · {new Date(e.createdAt).toLocaleTimeString("fr-FR")} · {e.employee.displayName}
+                  </p>
+                </div>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
     </div>
   );
 }
