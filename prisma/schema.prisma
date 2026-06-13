@@ -524,6 +524,7 @@ model Product {
   barcode           String?
   purchasePrice     Decimal  @db.Decimal(10, 3)
   salePrice         Decimal  @db.Decimal(10, 3)
+  costPrice         Decimal? @db.Decimal(10, 3)
   taxRate           Decimal  @default(19.00) @db.Decimal(5, 2)
   stockQuantity     Int      @default(0)
   lowStockThreshold Int      @default(5)
@@ -547,6 +548,7 @@ model StockMovement {
   id             String              @id @default(cuid())
   productId      String
   delta          Int
+  unitCost       Decimal?            @db.Decimal(10, 3)
   reason         StockMovementReason
   saleId         String?
   refundId       String?
