@@ -72,7 +72,7 @@ export default async function PosLayout({ children }: { children: React.ReactNod
           />
           <div
             className="grid h-full overflow-hidden"
-            style={{ gridTemplateColumns: "60px 1fr" }}
+            style={{ gridTemplateColumns: "80px 1fr" }}
           >
             <Rail permissions={employee.permissions} />
             <main className="overflow-hidden">{children}</main>

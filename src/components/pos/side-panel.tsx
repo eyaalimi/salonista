@@ -54,8 +54,9 @@ export function SidePanel({
 function CustomerBlock() {
   const customer = usePosStore((s) => s.customer);
   const setCustomer = usePosStore((s) => s.setCustomer);
-  const [phone, setPhone] = useState("");
+  const [query, setQuery] = useState("");
   const [searching, setSearching] = useState(false);
+  const [serverHits, setServerHits] = useState<CustomerLite[]>([]);
   const [walkInOpen, setWalkInOpen] = useState(false);
   const [walkInName, setWalkInName] = useState("");
   const [walkInBusy, setWalkInBusy] = useState(false);
@@ -84,24 +85,51 @@ function CustomerBlock() {
     inputRef.current?.focus();
   });
 
-  async function lookup() {
-    const norm = tryNormalizePhone(phone);
-    if (!norm) return;
-    setSearching(true);
-    try {
-      const res = await fetch(`/api/customers/lookup?phone=${encodeURIComponent(norm)}`);
-      if (res.ok) {
-        const c = (await res.json()) as CustomerLite | null;
-        if (c) {
-          setCustomer(c);
-          return;
+  // Debounced live search (phone OR name) — hits the POS-scoped search API
+  // and falls back to the offline cache if the network is down.
+  useEffect(() => {
+    if (query.trim().length < 2) {
+      setServerHits([]);
+      return;
+    }
+    const id = setTimeout(async () => {
+      setSearching(true);
+      try {
+        const res = await fetch(
+          `/api/pos/customers/search?q=${encodeURIComponent(query.trim())}`,
+        );
+        if (res.ok) {
+          const data = (await res.json()) as { customers: CustomerLite[] };
+          setServerHits(data.customers ?? []);
+        } else {
+          setServerHits([]);
         }
+      } catch {
+        setServerHits([]);
+      } finally {
+        setSearching(false);
       }
-      // Online lookup miss → try offline cache
+    }, 200);
+    return () => clearTimeout(id);
+  }, [query]);
+
+  // Enter on the input picks the top suggestion, OR if the query looks like
+  // a phone number, falls back to the legacy phone-lookup endpoint (offline-safe).
+  async function onSubmit() {
+    if (serverHits.length > 0) {
+      setCustomer(serverHits[0]);
+      setQuery("");
+      setServerHits([]);
+      return;
+    }
+    // Phone fallback (offline cache)
+    const norm = tryNormalizePhone(query);
+    if (norm) {
       const cached = await findCachedCustomerByPhone(norm);
-      setCustomer(cached);
-    } finally {
-      setSearching(false);
+      if (cached) {
+        setCustomer(cached);
+        setQuery("");
+      }
     }
   }
 
@@ -115,14 +143,42 @@ function CustomerBlock() {
         <Search size={14} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-pos-ink-4" />
         <input
           ref={inputRef}
-          type="tel"
-          value={phone}
-          onChange={(e) => setPhone(e.target.value)}
-          onKeyDown={(e) => e.key === "Enter" && (void lookup())}
-          placeholder="Téléphone…"
+          type="text"
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+          onKeyDown={(e) => e.key === "Enter" && (void onSubmit())}
+          placeholder="Nom ou téléphone…"
           className="w-full text-sm bg-pos-bg border border-pos-border rounded pl-8 pr-2 py-1.5"
         />
       </div>
+
+      {!customer && serverHits.length > 0 && (
+        <ul className="mb-3 space-y-1 bg-pos-bg border border-pos-border rounded p-1">
+          {serverHits.map((c) => {
+            const name = `${c.firstName ?? ""} ${c.lastName ?? ""}`.trim();
+            return (
+              <li key={c.id}>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setCustomer(c);
+                    setQuery("");
+                    setServerHits([]);
+                  }}
+                  className="w-full text-left px-2 py-1.5 rounded text-xs hover:bg-pos-highlight"
+                >
+                  <div className="font-medium text-pos-ink">{name || "Sans nom"}</div>
+                  {c.phone && (
+                    <div className="pos-mono text-pos-ink-3 text-[10px]">
+                      {formatPhoneDisplay(c.phone)}
+                    </div>
+                  )}
+                </button>
+              </li>
+            );
+          })}
+        </ul>
+      )}
 
       {customer ? (
         <div>
@@ -156,13 +212,16 @@ function CustomerBlock() {
         </div>
       ) : (
         <p className="text-xs text-pos-ink-3">
-          Aucun client sélectionné. {searching ? "Recherche…" : "Cherchez par téléphone."}
+          Aucun client sélectionné. {searching ? "Recherche…" : "Cherchez par nom ou téléphone."}
         </p>
       )}
-      {!customer && (
+      {!customer && serverHits.length === 0 && query.length >= 2 && !searching && (
         <CustomerCachedSuggestions
-          phone={phone}
-          onPick={(c) => setCustomer(c)}
+          phone={query}
+          onPick={(c) => {
+            setCustomer(c);
+            setQuery("");
+          }}
         />
       )}
 
