@@ -17,6 +17,9 @@ jobs:
           username: ${{ secrets.SSH_USER }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           script_stop: true
+          # Lightsail 1GB RAM swaps heavily during next build with Turbopack.
+          # Default 10 min timeout is not enough — bumped to 30 min.
+          command_timeout: 30m
           script: |
             set -e
             cd /home/ubuntu/salonista
