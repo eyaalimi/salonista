@@ -91,6 +91,14 @@ export async function GET(
     0,
   );
 
+  // Loyalty wallet for this customer (provider-scoped)
+  const wallet = (await (prisma as never as {
+    rewardWallet: { findFirst: (args: unknown) => Promise<{ balance: number; lifetimeEarned: number; lifetimeRedeemed: number } | null> };
+  }).rewardWallet.findFirst({
+    where: { providerId, customerId: id },
+    select: { balance: true, lifetimeEarned: true, lifetimeRedeemed: true },
+  })) as { balance: number; lifetimeEarned: number; lifetimeRedeemed: number } | null;
+
   return Response.json({
     customer: {
       id: customer.id,
@@ -107,6 +115,13 @@ export async function GET(
       totalVisits: sales.length,
       totalSpent: totalSpent.toFixed(3),
     },
+    loyalty: wallet
+      ? {
+          balance: wallet.balance,
+          lifetimeEarned: wallet.lifetimeEarned,
+          lifetimeRedeemed: wallet.lifetimeRedeemed,
+        }
+      : null,
     sales: sales.map((s) => ({
       id: s.id,
       receiptNumber: s.receiptNumber,

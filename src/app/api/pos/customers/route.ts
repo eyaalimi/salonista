@@ -67,6 +67,15 @@ export async function GET(_req: NextRequest) {
     aggregates.map((a) => [a.customerId, { count: a._count._all, sum: a._sum.total }]),
   );
 
+  // Loyalty wallets keyed by customerId
+  const wallets = (await (prisma as never as {
+    rewardWallet: { findMany: (args: unknown) => Promise<unknown[]> };
+  }).rewardWallet.findMany({
+    where: { providerId, customerId: { in: customers.map((c) => c.id) } },
+    select: { customerId: true, balance: true },
+  })) as Array<{ customerId: string; balance: number }>;
+  const walletBy = new Map(wallets.map((w) => [w.customerId, w.balance]));
+
   return Response.json({
     customers: customers.map((c) => {
       const agg = byCustomer.get(c.id);
@@ -79,6 +88,7 @@ export async function GET(_req: NextRequest) {
         email: c.email,
         totalVisits: agg?.count ?? 0,
         totalSpent: agg?.sum ? String(agg.sum) : "0",
+        loyaltyPoints: walletBy.get(c.id) ?? 0,
       };
     }),
   });

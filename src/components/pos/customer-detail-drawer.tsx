@@ -18,6 +18,11 @@ type Detail = {
     createdAt: string;
   };
   stats: { totalVisits: number; totalSpent: string };
+  loyalty: {
+    balance: number;
+    lifetimeEarned: number;
+    lifetimeRedeemed: number;
+  } | null;
   sales: Array<{
     id: string;
     receiptNumber: string;
@@ -316,7 +321,7 @@ export function CustomerDetailDrawer({
               )}
 
               {/* Stats cards */}
-              <div className="grid grid-cols-2 gap-3 mb-6">
+              <div className="grid grid-cols-2 gap-3 mb-3">
                 <div className="border border-pos-border rounded-lg p-4">
                   <p className="text-xs text-pos-ink-3">Visites</p>
                   <p className="text-2xl font-semibold text-pos-ink pos-mono">
@@ -330,6 +335,36 @@ export function CustomerDetailDrawer({
                   </p>
                 </div>
               </div>
+
+              {/* Loyalty card */}
+              {data.loyalty && data.loyalty.lifetimeEarned > 0 && (
+                <div className="border border-amber-200 bg-amber-50/50 rounded-lg p-4 mb-6">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-xs text-amber-800 uppercase tracking-wider font-medium">
+                        ★ Points fidélité
+                      </p>
+                      <p className="text-2xl font-semibold text-amber-700 pos-mono mt-1">
+                        {data.loyalty.balance} pts
+                      </p>
+                    </div>
+                    <div className="text-right text-xs text-amber-800">
+                      <p>
+                        Gagnés (vie) :{" "}
+                        <span className="pos-mono font-semibold">
+                          {data.loyalty.lifetimeEarned}
+                        </span>
+                      </p>
+                      <p className="mt-1">
+                        Utilisés (vie) :{" "}
+                        <span className="pos-mono font-semibold">
+                          {data.loyalty.lifetimeRedeemed}
+                        </span>
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              )}
 
               {/* Sales history */}
               <h3 className="text-sm font-semibold text-pos-ink mb-3">

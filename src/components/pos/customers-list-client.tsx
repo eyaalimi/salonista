@@ -15,6 +15,7 @@ type Row = {
   email: string | null;
   totalVisits: number;
   totalSpent: string;
+  loyaltyPoints: number;
 };
 
 export function CustomersListClient({ canEdit }: { canEdit: boolean }) {
@@ -122,6 +123,7 @@ export function CustomersListClient({ canEdit }: { canEdit: boolean }) {
                 <th className="px-4 py-3 font-medium">E-mail</th>
                 <th className="px-4 py-3 font-medium text-right">Visites</th>
                 <th className="px-4 py-3 font-medium text-right">Total dépensé</th>
+                <th className="px-4 py-3 font-medium text-right">Fidélité</th>
               </tr>
             </thead>
             <tbody>
@@ -155,6 +157,15 @@ export function CustomersListClient({ canEdit }: { canEdit: boolean }) {
                     </td>
                     <td className="px-4 py-3 text-right pos-mono font-medium">
                       {formatDT(c.totalSpent)}
+                    </td>
+                    <td className="px-4 py-3 text-right">
+                      {c.loyaltyPoints > 0 ? (
+                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-amber-50 text-amber-700 text-xs font-semibold pos-mono">
+                          ★ {c.loyaltyPoints}
+                        </span>
+                      ) : (
+                        <span className="text-pos-ink-4 text-xs">—</span>
+                      )}
                     </td>
                   </tr>
                 );
