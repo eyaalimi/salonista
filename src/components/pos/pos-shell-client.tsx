@@ -39,6 +39,7 @@ export function PosShellClient({ employee }: { employee: EmployeeProp }) {
   const [lastReceipt, setLastReceipt] = useState<ReceiptData | null>(null);
   const [printNow, setPrintNow] = useState(false);
   const [sideOpen, setSideOpen] = useState(false);
+  const [bookingsTodayCount, setBookingsTodayCount] = useState(0);
 
   const cart = usePosStore((s) => s.cart);
   const customer = usePosStore((s) => s.customer);
@@ -114,6 +115,34 @@ export function PosShellClient({ employee }: { employee: EmployeeProp }) {
     router.replace("/pos/cash-drawer");
   }, [catalog, employee.role, router]);
 
+  // Poll today's bookings count for the cart header pill.
+  useEffect(() => {
+    if (!employee.permissions["bookings.view"]) return;
+    let cancelled = false;
+    async function load() {
+      try {
+        const res = await fetch("/api/pos/bookings/today");
+        if (!res.ok || cancelled) return;
+        const data = (await res.json()) as {
+          bookings: Array<{ saleId: string | null }>;
+        };
+        if (!cancelled) {
+          // Count only un-encaissé bookings (no saleId yet)
+          const open = data.bookings.filter((b) => !b.saleId).length;
+          setBookingsTodayCount(open);
+        }
+      } catch {
+        // ignore
+      }
+    }
+    void load();
+    const id = setInterval(load, 60_000);
+    return () => {
+      cancelled = true;
+      clearInterval(id);
+    };
+  }, [employee.permissions]);
+
   // Trigger window.print() after a receipt is staged + flagged.
   useEffect(() => {
     if (lastReceipt && printNow) {
@@ -148,10 +177,6 @@ export function PosShellClient({ employee }: { employee: EmployeeProp }) {
     setSideOpen(true);
   });
 
-  const sideIndicator = customer
-    ? (customer.firstName?.[0]?.toUpperCase() ?? customer.lastName?.[0]?.toUpperCase() ?? "✓")
-    : null;
-
   return (
     <div
       className="h-full grid relative"
@@ -166,7 +191,7 @@ export function PosShellClient({ employee }: { employee: EmployeeProp }) {
         permissions={employee.permissions}
         onCharge={() => setChargeOpen(true)}
         onOpenSide={() => setSideOpen(true)}
-        sideIndicator={sideIndicator}
+        bookingsTodayCount={bookingsTodayCount}
       />
 
       {/* Side drawer (Client / RDV / Recent sales) */}

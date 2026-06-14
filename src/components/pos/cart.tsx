@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo } from "react";
-import { Plus, Minus, Trash2, UserRound } from "lucide-react";
+import { Plus, Minus, Trash2, UserPlus, Calendar } from "lucide-react";
 import { usePosStore } from "@/lib/pos-store";
 import { computeTotals } from "@/lib/sale-totals";
 import { formatDT, toMillimes } from "@/lib/money";
@@ -17,15 +17,17 @@ export function Cart({
   permissions,
   onCharge,
   onOpenSide,
-  sideIndicator,
+  bookingsTodayCount = 0,
 }: {
   employees: Employee[];
   permissions: Record<Permission, boolean>;
   onCharge: () => void;
   onOpenSide?: () => void;
-  sideIndicator?: string | null;
+  bookingsTodayCount?: number;
 }) {
   const cart = usePosStore((s) => s.cart);
+  const customer = usePosStore((s) => s.customer);
+  const setCustomer = usePosStore((s) => s.setCustomer);
   const saleDiscount = usePosStore((s) => s.saleDiscount);
   const tipTotal = usePosStore((s) => s.tipTotal);
   const removeLine = usePosStore((s) => s.removeLine);
@@ -73,32 +75,28 @@ export function Cart({
 
   const itemsLabel = `${cart.length} article${cart.length !== 1 ? "s" : ""}`;
 
+  const customerName =
+    customer && (`${customer.firstName ?? ""} ${customer.lastName ?? ""}`.trim() || "Client passager");
+
   return (
     <div className="bg-pos-surface border-l border-pos-border flex flex-col h-full">
+      {/* Header: title + Vider + RDV pill */}
       <div className="flex items-center justify-between px-4 h-11 border-b border-pos-border gap-2">
         <div className="flex items-center gap-2 text-xs min-w-0">
-          <span className="font-semibold text-sm">Panier</span>
+          <span className="font-semibold text-base">Panier</span>
           <span className="text-pos-ink-3">·</span>
           <span className="text-pos-ink-3 truncate">{itemsLabel}</span>
-          {receiptPreview && (
-            <span className="pos-mono text-[10px] text-pos-ink-3 truncate">{receiptPreview}</span>
-          )}
         </div>
         <div className="flex items-center gap-2 shrink-0">
-          {onOpenSide && (
+          {onOpenSide && bookingsTodayCount > 0 && (
             <button
               type="button"
               onClick={onOpenSide}
-              title="Client / RDV / Ventes récentes"
-              className="relative inline-flex items-center gap-1 px-2 py-1 rounded border border-pos-border text-[11px] text-pos-ink-2 hover:bg-pos-highlight"
+              title="Voir les RDV du jour"
+              className="inline-flex items-center gap-1 px-2 py-1 rounded-full bg-amber-50 text-amber-700 border border-amber-200 text-[11px] font-semibold hover:bg-amber-100"
             >
-              <UserRound size={12} />
-              <span className="hidden sm:inline">Client / RDV</span>
-              {sideIndicator && (
-                <span className="ml-1 inline-flex items-center justify-center min-w-[16px] h-4 px-1 rounded-full bg-pos-accent text-white text-[9px] font-semibold">
-                  {sideIndicator}
-                </span>
-              )}
+              <Calendar size={11} />
+              RDV {bookingsTodayCount}
             </button>
           )}
           <button
@@ -110,6 +108,42 @@ export function Cart({
             Vider <kbd>{getShortcutLabel("cart.clear")}</kbd>
           </button>
         </div>
+      </div>
+
+      {/* Customer card / add-customer button */}
+      <div className="px-4 pt-4 pb-2">
+        {customer ? (
+          <div className="flex items-center justify-between gap-2 px-3 py-2.5 rounded-lg border border-pos-border bg-pos-bg">
+            <div className="flex items-center gap-2 min-w-0">
+              <span className="inline-flex items-center justify-center w-7 h-7 rounded-full bg-pos-accent/15 text-pos-accent text-xs font-semibold shrink-0">
+                {(customerName ?? "?").charAt(0).toUpperCase()}
+              </span>
+              <div className="min-w-0">
+                <div className="text-sm font-medium text-pos-ink truncate">{customerName}</div>
+                {customer.phone && !customer.phone.startsWith("walk-in-") && (
+                  <div className="text-[10px] text-pos-ink-3 pos-mono truncate">{customer.phone}</div>
+                )}
+              </div>
+            </div>
+            <button
+              type="button"
+              onClick={() => setCustomer(null)}
+              aria-label="Retirer la cliente"
+              className="text-pos-ink-3 hover:text-pos-danger shrink-0"
+            >
+              <Trash2 size={14} />
+            </button>
+          </div>
+        ) : (
+          <button
+            type="button"
+            onClick={onOpenSide}
+            className="w-full inline-flex items-center justify-center gap-2 px-3 py-2.5 rounded-lg bg-pos-accent/10 text-pos-accent text-sm font-medium hover:bg-pos-accent/20"
+          >
+            <UserPlus size={16} />
+            Ajouter une cliente
+          </button>
+        )}
       </div>
 
       <BookingStrip />
