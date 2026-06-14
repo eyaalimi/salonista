@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
 import { Search, UserPlus } from "lucide-react";
 import { formatDT } from "@/lib/money";
 import { formatPhoneDisplay } from "@/lib/phone";
@@ -17,6 +18,7 @@ type Row = {
 };
 
 export function CustomersListClient({ canEdit }: { canEdit: boolean }) {
+  const router = useRouter();
   const [rows, setRows] = useState<Row[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -129,7 +131,8 @@ export function CustomersListClient({ canEdit }: { canEdit: boolean }) {
                 return (
                   <tr
                     key={c.id}
-                    className="border-b border-pos-border last:border-0 hover:bg-pos-highlight/50"
+                    onClick={() => router.push(`/pos/customers/${c.id}`)}
+                    className="border-b border-pos-border last:border-0 hover:bg-pos-highlight/50 cursor-pointer"
                   >
                     <td className="px-4 py-3 font-medium text-pos-ink">
                       {name}
