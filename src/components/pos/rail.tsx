@@ -11,6 +11,8 @@ import {
   Receipt,
   Wallet,
   BarChart3,
+  UserCog,
+  Star,
 } from "lucide-react";
 
 type Permission = string;
@@ -37,6 +39,8 @@ export function Rail({ permissions }: { permissions: Record<Permission, boolean>
   const items2: RailItem[] = [
     { href: "/pos/sales", label: "Ventes", shortcut: "V", icon: <Receipt size={16} />, perm: "pos.sell" },
     { href: "/pos/cash-drawer", label: "Caisse-fond", shortcut: "F", icon: <Wallet size={16} />, perm: "pos.cash_drawer" },
+    { href: "/pos/loyalty", label: "Fidélité", shortcut: "L", icon: <Star size={16} />, perm: "rewards.adjust" },
+    { href: "/pos/employees", label: "Équipe", shortcut: "E", icon: <UserCog size={16} />, perm: "employees.manage" },
     { href: "/pos/analytics", label: "Analytique", shortcut: "A", icon: <BarChart3 size={16} />, perm: "analytics.view" },
   ];
 
