@@ -458,6 +458,60 @@ function escapeHtml(s: string): string {
     .replace(/'/g, "&#39;");
 }
 
+// ─── Loyalty points earned notification ───
+
+export async function sendLoyaltyEarnedEmail(
+  to: string,
+  customerName: string,
+  salonName: string,
+  earned: number,
+  newBalance: number,
+  bonusBreakdown?: { welcome?: number; birthday?: number },
+) {
+  const greeting = customerName.trim() ? `Bonjour ${escapeHtml(customerName)},` : "Bonjour,";
+  const bonusBits: string[] = [];
+  if (bonusBreakdown?.welcome && bonusBreakdown.welcome > 0) {
+    bonusBits.push(`<li><strong>+${bonusBreakdown.welcome} pts</strong> — bonus de bienvenue 🎁</li>`);
+  }
+  if (bonusBreakdown?.birthday && bonusBreakdown.birthday > 0) {
+    bonusBits.push(`<li><strong>+${bonusBreakdown.birthday} pts</strong> — bonus d'anniversaire 🎂</li>`);
+  }
+  const bonusList = bonusBits.length
+    ? `<ul style="margin:16px 0;padding-left:20px;color:#2D0A0A;font-size:13px;">${bonusBits.join("")}</ul>`
+    : "";
+
+  const html = layout(`
+    <h2 style="margin:0 0 8px;font-family:Georgia,'Times New Roman',serif;font-size:22px;color:#2D0A0A;font-weight:normal;">
+      Merci pour votre visite ✦
+    </h2>
+    <p style="margin:0 0 16px;font-size:14px;color:#2D0A0A;opacity:0.6;">
+      ${greeting}
+    </p>
+    <p style="margin:0 0 16px;font-size:14px;color:#2D0A0A;opacity:0.7;line-height:1.6;">
+      Vous venez de gagner <strong>${earned} points</strong> de fidélité chez <strong>${escapeHtml(salonName)}</strong>.
+    </p>
+    ${bonusList}
+    <div style="background:#FBF8F4;border:1px solid rgba(212,165,116,0.3);padding:20px;text-align:center;margin:20px 0;">
+      <p style="margin:0 0 4px;font-size:11px;color:#2D0A0A;opacity:0.5;text-transform:uppercase;letter-spacing:0.2em;">
+        Votre solde
+      </p>
+      <p style="margin:0;font-family:Georgia,serif;font-size:32px;color:#D4A574;">
+        ★ ${newBalance} pts
+      </p>
+    </div>
+    <p style="margin:0 0 8px;font-size:12px;color:#2D0A0A;opacity:0.5;line-height:1.6;">
+      Présentez-vous au salon pour utiliser vos points lors d'une prochaine visite.
+    </p>
+  `);
+
+  await transporter.sendMail({
+    from,
+    to,
+    subject: `+${earned} pts de fidélité — ${salonName}`,
+    html,
+  });
+}
+
 // ─── Cash drawer report ───
 
 export async function sendCashDrawerReport(

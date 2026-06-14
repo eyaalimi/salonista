@@ -21,6 +21,7 @@ import { nextReceiptNumber } from "@/lib/receipt-number";
 import { findOpenSession } from "@/lib/cash-drawer";
 import { applySaleEarnings } from "@/lib/rewards/earn";
 import { applySaleRedemption, validateRedemption, RedemptionError } from "@/lib/rewards/redeem";
+import { sendLoyaltyEarnedEmail } from "@/lib/mail";
 import type { PaymentMethod, SaleStatus } from "@/generated/prisma/enums";
 import type { Prisma } from "@/generated/prisma/client";
 
@@ -562,6 +563,47 @@ export async function createSaleFromPayload(args: {
 
       return { saleId: sale.id, receiptNumber, duplicate: false, rewards: rewardsResult };
     });
+
+    // Fire-and-forget loyalty notification email. We do this AFTER the
+    // transaction so SMTP latency doesn't slow down the sale, and any
+    // failure just logs to the console without rolling back the sale.
+    if (!result.duplicate && result.rewards.earned + result.rewards.welcomeBonus + result.rewards.birthdayBonus > 0 && customerId) {
+      void (async () => {
+        try {
+          const [customer, provider, wallet] = await Promise.all([
+            prisma.customer.findUnique({
+              where: { id: customerId },
+              select: { email: true, firstName: true, lastName: true },
+            }),
+            prisma.providerProfile.findUnique({
+              where: { id: providerId },
+              select: { salonName: true },
+            }),
+            (prisma as never as {
+              rewardWallet: { findFirst: (args: unknown) => Promise<{ balance: number } | null> };
+            }).rewardWallet.findFirst({
+              where: { providerId, customerId },
+              select: { balance: true },
+            }) as Promise<{ balance: number } | null>,
+          ]);
+          if (!customer?.email || !provider) return;
+          const fullName = `${customer.firstName ?? ""} ${customer.lastName ?? ""}`.trim();
+          await sendLoyaltyEarnedEmail(
+            customer.email,
+            fullName,
+            provider.salonName,
+            result.rewards.earned + result.rewards.welcomeBonus + result.rewards.birthdayBonus,
+            wallet?.balance ?? 0,
+            {
+              welcome: result.rewards.welcomeBonus,
+              birthday: result.rewards.birthdayBonus,
+            },
+          );
+        } catch (err) {
+          console.error("[loyalty-email] failed:", err);
+        }
+      })();
+    }
 
     return result.duplicate
       ? { kind: "duplicate", saleId: result.saleId, receiptNumber: result.receiptNumber }
