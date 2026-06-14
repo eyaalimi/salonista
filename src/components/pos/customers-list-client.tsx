@@ -65,7 +65,7 @@ export function CustomersListClient({ canEdit }: { canEdit: boolean }) {
   }, [rows, query]);
 
   return (
-    <div className="p-6 max-w-7xl mx-auto">
+    <div className="h-full overflow-y-auto p-6 max-w-7xl mx-auto">
       <div className="flex items-center justify-between gap-4 mb-6">
         <div className="relative flex-1 max-w-md">
           <Search

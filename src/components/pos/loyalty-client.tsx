@@ -88,7 +88,7 @@ export function LoyaltyClient({ canEditSettings }: { canEditSettings: boolean })
 
   if (!moduleActive) {
     return (
-      <div className="p-6 max-w-2xl mx-auto">
+      <div className="h-full overflow-y-auto p-6 max-w-2xl mx-auto">
         <h1 className="text-2xl font-semibold text-pos-ink mb-2">Fidélité</h1>
         <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 text-sm text-amber-900">
           Le module Fidélité n&apos;est pas activé pour votre salon. Contactez Salonista pour
@@ -99,7 +99,7 @@ export function LoyaltyClient({ canEditSettings }: { canEditSettings: boolean })
   }
 
   return (
-    <div className="p-6 max-w-6xl mx-auto">
+    <div className="h-full overflow-y-auto p-6 max-w-6xl mx-auto">
       <div className="mb-6">
         <h1 className="text-2xl font-semibold text-pos-ink">Programme de fidélité</h1>
         <p className="text-sm text-pos-ink-3 mt-1">
