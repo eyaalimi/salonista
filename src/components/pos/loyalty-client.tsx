@@ -54,9 +54,14 @@ export function LoyaltyClient({ canEditSettings }: { canEditSettings: boolean })
       search ? `&search=${encodeURIComponent(search)}` : ""
     }`;
     const res = await fetch(url);
+    if (res.status === 403) {
+      setModuleActive(false);
+      return;
+    }
     if (res.ok) {
-      const data = (await res.json()) as { wallets: Wallet[] };
-      setWallets(data.wallets);
+      const data = (await res.json()) as { items?: Wallet[]; wallets?: Wallet[] };
+      // API returns { items: [...] }; older code expected { wallets: [...] }.
+      setWallets(data.items ?? data.wallets ?? []);
     }
   }
 
