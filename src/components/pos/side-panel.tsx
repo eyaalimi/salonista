@@ -39,15 +39,13 @@ export function SidePanel({
   permissions: Record<Permission, boolean>;
 }) {
   return (
-    <aside className="bg-pos-surface border-l border-pos-border w-[320px] flex flex-col h-full overflow-hidden">
-      <div className="overflow-y-auto h-full">
-        {permissions["customers.view"] && <CustomerBlock />}
-        {permissions["bookings.view"] && (
-          <BookingsTodayBlock defaultEmployeeId={defaultEmployeeId} />
-        )}
-        {permissions["pos.sell"] && <RecentSalesBlock />}
-      </div>
-    </aside>
+    <div className="bg-pos-surface flex flex-col h-full">
+      {permissions["customers.view"] && <CustomerBlock />}
+      {permissions["bookings.view"] && (
+        <BookingsTodayBlock defaultEmployeeId={defaultEmployeeId} />
+      )}
+      {permissions["pos.sell"] && <RecentSalesBlock />}
+    </div>
   );
 }
 

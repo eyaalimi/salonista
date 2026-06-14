@@ -9,6 +9,7 @@ import { Results } from "@/components/pos/results";
 import { Cart } from "@/components/pos/cart";
 import { SidePanel } from "@/components/pos/side-panel";
 import { ShortcutHelpOverlay } from "@/components/pos/shortcut-help-overlay";
+import { usePOSShortcut } from "@/lib/use-pos-shortcuts";
 import {
   refreshCatalog,
   getCachedCatalog,
@@ -37,6 +38,7 @@ export function PosShellClient({ employee }: { employee: EmployeeProp }) {
   const [catalog, setCatalog] = useState<CachedCatalog | null>(null);
   const [lastReceipt, setLastReceipt] = useState<ReceiptData | null>(null);
   const [printNow, setPrintNow] = useState(false);
+  const [sideOpen, setSideOpen] = useState(false);
 
   const cart = usePosStore((s) => s.cart);
   const customer = usePosStore((s) => s.customer);
@@ -130,10 +132,30 @@ export function PosShellClient({ employee }: { employee: EmployeeProp }) {
     clearCart();
   }
 
+  // ESC closes the side drawer.
+  useEffect(() => {
+    if (!sideOpen) return;
+    function onKey(e: KeyboardEvent) {
+      if (e.key === "Escape") setSideOpen(false);
+    }
+    document.addEventListener("keydown", onKey);
+    return () => document.removeEventListener("keydown", onKey);
+  }, [sideOpen]);
+
+  // Ctrl+F (customer search) now opens the side drawer first; the
+  // CustomerBlock's own focus shortcut handles the input focus once mounted.
+  usePOSShortcut("customer.search", () => {
+    setSideOpen(true);
+  });
+
+  const sideIndicator = customer
+    ? (customer.firstName?.[0]?.toUpperCase() ?? customer.lastName?.[0]?.toUpperCase() ?? "✓")
+    : null;
+
   return (
     <div
-      className="h-full grid"
-      style={{ gridTemplateColumns: "1fr 380px 320px" }}
+      className="h-full grid relative"
+      style={{ gridTemplateColumns: "1fr 420px" }}
     >
       <section className="overflow-hidden bg-pos-bg flex flex-col">
         <Results defaultEmployeeId={employee.id} />
@@ -143,12 +165,43 @@ export function PosShellClient({ employee }: { employee: EmployeeProp }) {
         employees={catalog?.employees ?? []}
         permissions={employee.permissions}
         onCharge={() => setChargeOpen(true)}
+        onOpenSide={() => setSideOpen(true)}
+        sideIndicator={sideIndicator}
       />
 
-      <SidePanel
-        defaultEmployeeId={employee.id}
-        permissions={employee.permissions}
-      />
+      {/* Side drawer (Client / RDV / Recent sales) */}
+      {sideOpen && (
+        <>
+          <div
+            className="absolute inset-0 z-30 bg-black/30"
+            onClick={() => setSideOpen(false)}
+            aria-hidden="true"
+          />
+          <aside
+            role="dialog"
+            aria-modal="true"
+            className="absolute top-0 right-0 z-40 h-full w-[360px] bg-pos-surface border-l border-pos-border shadow-2xl flex flex-col"
+          >
+            <div className="flex items-center justify-between px-4 h-11 border-b border-pos-border">
+              <span className="text-sm font-semibold">Client / RDV / Ventes</span>
+              <button
+                type="button"
+                onClick={() => setSideOpen(false)}
+                aria-label="Fermer"
+                className="text-pos-ink-3 hover:text-pos-ink text-lg leading-none"
+              >
+                ✕
+              </button>
+            </div>
+            <div className="flex-1 overflow-y-auto">
+              <SidePanel
+                defaultEmployeeId={employee.id}
+                permissions={employee.permissions}
+              />
+            </div>
+          </aside>
+        </>
+      )}
 
       {chargeOpen && (
         <ChargeModal

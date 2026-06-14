@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo } from "react";
-import { Plus, Minus, Trash2 } from "lucide-react";
+import { Plus, Minus, Trash2, UserRound } from "lucide-react";
 import { usePosStore } from "@/lib/pos-store";
 import { computeTotals } from "@/lib/sale-totals";
 import { formatDT, toMillimes } from "@/lib/money";
@@ -16,10 +16,14 @@ export function Cart({
   employees,
   permissions,
   onCharge,
+  onOpenSide,
+  sideIndicator,
 }: {
   employees: Employee[];
   permissions: Record<Permission, boolean>;
   onCharge: () => void;
+  onOpenSide?: () => void;
+  sideIndicator?: string | null;
 }) {
   const cart = usePosStore((s) => s.cart);
   const saleDiscount = usePosStore((s) => s.saleDiscount);
@@ -70,24 +74,42 @@ export function Cart({
   const itemsLabel = `${cart.length} article${cart.length !== 1 ? "s" : ""}`;
 
   return (
-    <div className="bg-pos-surface border-l border-r border-pos-border w-[380px] flex flex-col h-full">
-      <div className="flex items-center justify-between px-4 h-11 border-b border-pos-border">
-        <div className="flex items-center gap-2 text-xs">
+    <div className="bg-pos-surface border-l border-pos-border flex flex-col h-full">
+      <div className="flex items-center justify-between px-4 h-11 border-b border-pos-border gap-2">
+        <div className="flex items-center gap-2 text-xs min-w-0">
           <span className="font-semibold text-sm">Panier</span>
           <span className="text-pos-ink-3">·</span>
-          <span className="text-pos-ink-3">{itemsLabel}</span>
+          <span className="text-pos-ink-3 truncate">{itemsLabel}</span>
           {receiptPreview && (
-            <span className="pos-mono text-[10px] text-pos-ink-3">{receiptPreview}</span>
+            <span className="pos-mono text-[10px] text-pos-ink-3 truncate">{receiptPreview}</span>
           )}
         </div>
-        <button
-          type="button"
-          onClick={clearCart}
-          disabled={cart.length === 0}
-          className="text-[10px] uppercase tracking-[0.18em] text-pos-ink-3 hover:text-pos-danger disabled:opacity-30"
-        >
-          Vider <kbd>{getShortcutLabel("cart.clear")}</kbd>
-        </button>
+        <div className="flex items-center gap-2 shrink-0">
+          {onOpenSide && (
+            <button
+              type="button"
+              onClick={onOpenSide}
+              title="Client / RDV / Ventes récentes"
+              className="relative inline-flex items-center gap-1 px-2 py-1 rounded border border-pos-border text-[11px] text-pos-ink-2 hover:bg-pos-highlight"
+            >
+              <UserRound size={12} />
+              <span className="hidden sm:inline">Client / RDV</span>
+              {sideIndicator && (
+                <span className="ml-1 inline-flex items-center justify-center min-w-[16px] h-4 px-1 rounded-full bg-pos-accent text-white text-[9px] font-semibold">
+                  {sideIndicator}
+                </span>
+              )}
+            </button>
+          )}
+          <button
+            type="button"
+            onClick={clearCart}
+            disabled={cart.length === 0}
+            className="text-[10px] uppercase tracking-[0.18em] text-pos-ink-3 hover:text-pos-danger disabled:opacity-30"
+          >
+            Vider <kbd>{getShortcutLabel("cart.clear")}</kbd>
+          </button>
+        </div>
       </div>
 
       <BookingStrip />
