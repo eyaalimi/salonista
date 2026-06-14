@@ -16,30 +16,33 @@ type Row = {
   totalSpent: string;
 };
 
-export function CustomersListClient({ canEdit: _canEdit }: { canEdit: boolean }) {
+export function CustomersListClient({ canEdit }: { canEdit: boolean }) {
   const [rows, setRows] = useState<Row[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [query, setQuery] = useState("");
+  const [createOpen, setCreateOpen] = useState(false);
+
+  async function refresh() {
+    try {
+      const res = await fetch("/api/pos/customers");
+      if (res.ok) {
+        const data = (await res.json()) as { customers: Row[] };
+        setRows(data.customers);
+      } else {
+        setError("Impossible de charger la liste des clients.");
+      }
+    } catch {
+      setError("Erreur réseau.");
+    } finally {
+      setLoading(false);
+    }
+  }
 
   useEffect(() => {
     let cancelled = false;
     (async () => {
-      try {
-        const res = await fetch("/api/pos/customers");
-        if (!cancelled) {
-          if (res.ok) {
-            const data = (await res.json()) as { customers: Row[] };
-            setRows(data.customers);
-          } else {
-            setError("Impossible de charger la liste des clients.");
-          }
-        }
-      } catch {
-        if (!cancelled) setError("Erreur réseau.");
-      } finally {
-        if (!cancelled) setLoading(false);
-      }
+      if (!cancelled) await refresh();
     })();
     return () => {
       cancelled = true;
@@ -75,16 +78,27 @@ export function CustomersListClient({ canEdit: _canEdit }: { canEdit: boolean })
             className="w-full pl-10 pr-3 py-2.5 bg-white border border-pos-border rounded-lg text-sm focus:border-pos-accent focus:outline-none"
           />
         </div>
-        <button
-          type="button"
-          disabled
-          title="Créez une cliente depuis la caisse (panel droit)"
-          className="inline-flex items-center gap-2 px-4 py-2.5 bg-pos-accent text-white rounded-lg text-sm font-medium disabled:opacity-60"
-        >
-          <UserPlus size={16} />
-          Nouvelle cliente
-        </button>
+        {canEdit && (
+          <button
+            type="button"
+            onClick={() => setCreateOpen(true)}
+            className="inline-flex items-center gap-2 px-4 py-2.5 bg-pos-accent text-white rounded-lg text-sm font-medium hover:bg-pos-accent/90"
+          >
+            <UserPlus size={16} />
+            Nouvelle cliente
+          </button>
+        )}
       </div>
+
+      {createOpen && (
+        <NewCustomerModal
+          onClose={() => setCreateOpen(false)}
+          onCreated={async () => {
+            setCreateOpen(false);
+            await refresh();
+          }}
+        />
+      )}
 
       {loading ? (
         <p className="text-sm text-pos-ink-3">Chargement…</p>
@@ -144,6 +158,154 @@ export function CustomersListClient({ canEdit: _canEdit }: { canEdit: boolean })
           </table>
         </div>
       )}
+    </div>
+  );
+}
+
+function NewCustomerModal({
+  onClose,
+  onCreated,
+}: {
+  onClose: () => void;
+  onCreated: () => void | Promise<void>;
+}) {
+  const [firstName, setFirstName] = useState("");
+  const [lastName, setLastName] = useState("");
+  const [phone, setPhone] = useState("");
+  const [email, setEmail] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    function onKey(e: KeyboardEvent) {
+      if (e.key === "Escape") onClose();
+    }
+    document.addEventListener("keydown", onKey);
+    return () => document.removeEventListener("keydown", onKey);
+  }, [onClose]);
+
+  async function submit() {
+    setError(null);
+    if (!phone.trim()) {
+      setError("Le numéro de téléphone est requis.");
+      return;
+    }
+    setBusy(true);
+    try {
+      const res = await fetch("/api/customers", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          phone: phone.trim(),
+          firstName: firstName.trim() || undefined,
+          lastName: lastName.trim() || undefined,
+          email: email.trim() || undefined,
+        }),
+      });
+      if (res.ok) {
+        await onCreated();
+        return;
+      }
+      if (res.status === 409) {
+        setError("Une cliente existe déjà avec ce numéro.");
+      } else {
+        const data = await res.json().catch(() => ({}));
+        setError(data?.error ?? "Création impossible.");
+      }
+    } catch {
+      setError("Erreur réseau.");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <div
+      role="dialog"
+      aria-modal="true"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4"
+      onClick={(e) => {
+        if (e.target === e.currentTarget) onClose();
+      }}
+    >
+      <div className="bg-white rounded-2xl shadow-xl w-full max-w-md p-6">
+        <h2 className="text-lg font-semibold text-pos-ink mb-4">Nouvelle cliente</h2>
+
+        <div className="space-y-3">
+          <div className="grid grid-cols-2 gap-3">
+            <label className="block">
+              <span className="text-xs text-pos-ink-2">Prénom</span>
+              <input
+                type="text"
+                autoFocus
+                value={firstName}
+                onChange={(e) => setFirstName(e.target.value)}
+                className="mt-1 w-full px-3 py-2 border border-pos-border rounded text-sm"
+              />
+            </label>
+            <label className="block">
+              <span className="text-xs text-pos-ink-2">Nom</span>
+              <input
+                type="text"
+                value={lastName}
+                onChange={(e) => setLastName(e.target.value)}
+                className="mt-1 w-full px-3 py-2 border border-pos-border rounded text-sm"
+              />
+            </label>
+          </div>
+
+          <label className="block">
+            <span className="text-xs text-pos-ink-2">
+              Téléphone <span className="text-red-500">*</span>
+            </span>
+            <input
+              type="tel"
+              value={phone}
+              onChange={(e) => setPhone(e.target.value)}
+              onKeyDown={(e) => e.key === "Enter" && (void submit())}
+              placeholder="+216 22 345 678 ou 22 345 678"
+              className="mt-1 w-full px-3 py-2 border border-pos-border rounded text-sm pos-mono"
+            />
+          </label>
+
+          <label className="block">
+            <span className="text-xs text-pos-ink-2">
+              E-mail <span className="text-pos-ink-3">(facultatif)</span>
+            </span>
+            <input
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              placeholder="cliente@example.tn"
+              className="mt-1 w-full px-3 py-2 border border-pos-border rounded text-sm"
+            />
+          </label>
+
+          {error && (
+            <p className="text-sm text-red-600 bg-red-50 px-3 py-2 rounded">
+              {error}
+            </p>
+          )}
+        </div>
+
+        <div className="mt-6 flex justify-end gap-2">
+          <button
+            type="button"
+            onClick={onClose}
+            className="px-4 py-2 text-sm text-pos-ink-2 hover:text-pos-ink"
+          >
+            Annuler
+          </button>
+          <button
+            type="button"
+            onClick={submit}
+            disabled={busy}
+            className="px-4 py-2 bg-pos-accent text-white rounded text-sm font-medium disabled:opacity-50"
+          >
+            {busy ? "Création…" : "Créer"}
+          </button>
+        </div>
+      </div>
     </div>
   );
 }
