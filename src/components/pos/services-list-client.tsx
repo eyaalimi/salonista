@@ -26,7 +26,8 @@ export function ServicesListClient({ initialOffers }: { initialOffers: Offer[] }
   const [qaTitle, setQaTitle] = useState("");
   const [qaPrice, setQaPrice] = useState("");
   const [qaDuration, setQaDuration] = useState(30);
-  const [qaTax, setQaTax] = useState(19);
+  const [qaTaxOn, setQaTaxOn] = useState(true);
+  const [qaTaxRate, setQaTaxRate] = useState(19);
 
   // N global shortcut focuses the quick-add Name field.
   useEffect(() => {
@@ -56,7 +57,7 @@ export function ServicesListClient({ initialOffers }: { initialOffers: Offer[] }
           title: qaTitle.trim(),
           discountPrice: qaPrice,
           durationMinutes: qaDuration,
-          taxRate: qaTax,
+          taxRate: qaTaxOn ? qaTaxRate : 0,
           publishedToMarketplace: false,
         }),
       });
@@ -74,7 +75,31 @@ export function ServicesListClient({ initialOffers }: { initialOffers: Offer[] }
     } finally {
       setBusy(false);
     }
-  }, [qaTitle, qaPrice, qaDuration, qaTax, busy]);
+  }, [qaTitle, qaPrice, qaDuration, qaTaxOn, qaTaxRate, busy]);
+
+  async function toggleTax(o: Offer) {
+    const isOn = Number(o.taxRate) > 0;
+    const newRate = isOn ? 0 : 19;
+    setToggling(o.id);
+    setError(null);
+    try {
+      const res = await fetch(`/api/offers/${o.id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ taxRate: newRate }),
+      });
+      if (res.ok) {
+        setOffers((arr) =>
+          arr.map((x) => (x.id === o.id ? { ...x, taxRate: String(newRate) } : x))
+        );
+      } else {
+        const j = await res.json().catch(() => null);
+        setError(j?.error ?? "Impossible de modifier la TVA");
+      }
+    } finally {
+      setToggling(null);
+    }
+  }
 
   async function toggleActive(o: Offer) {
     setToggling(o.id);
@@ -155,16 +180,30 @@ export function ServicesListClient({ initialOffers }: { initialOffers: Offer[] }
             </option>
           ))}
         </select>
-        <input
-          className="col-span-1 px-2 py-1 rounded border border-pos-border bg-white"
-          type="number"
-          step="0.01"
-          placeholder="TVA %"
-          value={qaTax}
-          onChange={(e) => setQaTax(Number(e.target.value))}
-        />
+        <label className="col-span-2 flex items-center gap-2 px-2 py-1 rounded border border-pos-border bg-white">
+          <input
+            type="checkbox"
+            checked={qaTaxOn}
+            onChange={(e) => setQaTaxOn(e.target.checked)}
+          />
+          <span className="text-xs whitespace-nowrap">
+            TVA{" "}
+            {qaTaxOn ? (
+              <input
+                type="number"
+                step="0.01"
+                className="w-12 px-1 border-b border-pos-border outline-none"
+                value={qaTaxRate}
+                onChange={(e) => setQaTaxRate(Number(e.target.value))}
+              />
+            ) : (
+              "désactivée"
+            )}
+            {qaTaxOn ? " %" : ""}
+          </span>
+        </label>
         <button
-          className="col-span-3 px-3 py-1 rounded bg-pos-ink text-pos-bg disabled:opacity-50"
+          className="col-span-2 px-3 py-1 rounded bg-pos-ink text-pos-bg disabled:opacity-50"
           disabled={busy || !qaTitle.trim() || !qaPrice}
           onClick={saveNew}
         >
@@ -196,7 +235,21 @@ export function ServicesListClient({ initialOffers }: { initialOffers: Offer[] }
               </td>
               <td className="px-3 py-2 text-right">{o.durationMinutes} min</td>
               <td className="px-3 py-2 text-right">
-                {Number(o.taxRate).toFixed(2)}%
+                <button
+                  type="button"
+                  onClick={() => toggleTax(o)}
+                  disabled={toggling === o.id}
+                  title="Cliquer pour activer/désactiver la TVA"
+                  className={`px-2 py-0.5 rounded text-xs font-semibold ${
+                    Number(o.taxRate) > 0
+                      ? "bg-emerald-50 text-emerald-700 hover:bg-emerald-100"
+                      : "bg-pos-bg text-pos-ink-3 hover:bg-pos-border/40"
+                  }`}
+                >
+                  {Number(o.taxRate) > 0
+                    ? `${Number(o.taxRate).toFixed(2)}%`
+                    : "Sans TVA"}
+                </button>
               </td>
               <td className="px-3 py-2 text-center">
                 <input
