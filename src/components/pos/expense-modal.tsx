@@ -1,10 +1,11 @@
 "use client";
 import { useEffect, useState } from "react";
+import { X, Delete } from "lucide-react";
 
 const CATEGORIES = [
   { value: "FOURNISSEUR", label: "Fournisseur" },
   { value: "LIVRAISON", label: "Livraison" },
-  { value: "AVANCE_SALAIRE", label: "Avance" },
+  { value: "AVANCE_SALAIRE", label: "Avance salaire" },
   { value: "ENTRETIEN", label: "Entretien" },
   { value: "AUTRE", label: "Autre" },
 ] as const;
@@ -12,7 +13,7 @@ const CATEGORIES = [
 type Category = typeof CATEGORIES[number]["value"];
 
 export function ExpenseModal({
-  employeeName,
+  employeeName: _employeeName,
   onClose,
   onCreated,
 }: {
@@ -20,8 +21,10 @@ export function ExpenseModal({
   onClose: () => void;
   onCreated: () => void | Promise<void>;
 }) {
+  // Amount stored as a raw string ("123.45") so the numeric pad can build it
+  // one keystroke at a time. We display it formatted to 3 decimals.
   const [amount, setAmount] = useState("");
-  const [category, setCategory] = useState<Category>("AUTRE");
+  const [category, setCategory] = useState<Category>("FOURNISSEUR");
   const [reason, setReason] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -34,6 +37,24 @@ export function ExpenseModal({
     return () => document.removeEventListener("keydown", onKey);
   }, [onClose]);
 
+  function pressKey(k: string) {
+    setAmount((prev) => {
+      if (k === "." ) {
+        if (prev.includes(".")) return prev;
+        return prev === "" ? "0." : prev + ".";
+      }
+      // Don't allow more than 3 decimals
+      if (prev.includes(".") && prev.split(".")[1].length >= 3) return prev;
+      // Avoid leading zeros like "007"
+      if (prev === "0") return k;
+      return prev + k;
+    });
+  }
+
+  function backspace() {
+    setAmount((prev) => prev.slice(0, -1));
+  }
+
   async function save() {
     setBusy(true);
     setError(null);
@@ -41,7 +62,11 @@ export function ExpenseModal({
       const res = await fetch("/api/pos/drawer/expenses", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ amount: Number(amount), category, reason: reason.trim() }),
+        body: JSON.stringify({
+          amount: Number(amount),
+          category,
+          reason: reason.trim(),
+        }),
       });
       if (!res.ok) {
         const j = await res.json().catch(() => null);
@@ -55,99 +80,148 @@ export function ExpenseModal({
     }
   }
 
+  const amountNum = Number(amount);
+  const canSave = amountNum > 0 && !Number.isNaN(amountNum) && !busy;
+
+  // Display value: amount with 3 decimals if "complete", otherwise the raw input
+  const displayAmount = amount === "" ? "0.000" : amount;
+
   return (
     <div
-      className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4"
+      role="dialog"
+      aria-modal="true"
+      aria-label="Nouvelle dépense"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
       onClick={onClose}
     >
       <div
-        className="w-full max-w-sm rounded-2xl bg-brand-cream p-6"
+        className="w-full max-w-md rounded-2xl bg-white shadow-xl"
         onClick={(e) => e.stopPropagation()}
-        role="dialog"
-        aria-modal="true"
-        aria-label="Nouvelle dépense"
       >
-        <header className="flex items-center justify-between mb-4">
-          <p className="luxury-badge">Nouvelle dépense</p>
+        {/* Header */}
+        <div className="flex items-center justify-between px-6 pt-5 pb-3">
+          <h2 className="text-xl font-semibold text-pos-ink">Nouvelle dépense</h2>
           <button
             type="button"
             onClick={onClose}
             aria-label="Fermer"
-            className="text-brand-ink-soft hover:text-brand-ink"
+            className="text-pos-ink-3 hover:text-pos-ink"
           >
-            ✕
+            <X size={18} />
           </button>
-        </header>
+        </div>
 
-        {error && <p className="text-xs text-red-600 mb-3">{error}</p>}
+        <div className="px-6 pb-5 space-y-5">
+          {/* Amount display */}
+          <div>
+            <label className="block text-sm font-medium text-pos-ink mb-2">
+              Montant
+            </label>
+            <div className="w-full px-4 py-3 border-2 border-pos-accent rounded-lg bg-white text-right text-2xl font-semibold pos-mono text-pos-ink">
+              {displayAmount}
+            </div>
+          </div>
 
-        <label className="block mb-3">
-          <span className="text-[10px] uppercase tracking-[0.18em] text-brand-ink-soft">
-            Montant (DT)
-          </span>
-          <input
-            type="number"
-            step="0.001"
-            min="0"
-            value={amount}
-            onChange={(e) => setAmount(e.target.value)}
-            autoFocus
-            className="mt-1 w-full rounded border border-brand-line bg-white px-3 py-2 text-sm"
-            aria-label="Montant en DT"
-          />
-        </label>
-
-        <fieldset className="mb-3">
-          <legend className="text-[10px] uppercase tracking-[0.18em] text-brand-ink-soft mb-2">
-            Catégorie
-          </legend>
-          <div className="flex flex-wrap gap-2">
-            {CATEGORIES.map((c) => (
+          {/* Numeric pad */}
+          <div className="grid grid-cols-3 gap-2">
+            {["1", "2", "3", "4", "5", "6", "7", "8", "9"].map((k) => (
               <button
-                key={c.value}
+                key={k}
                 type="button"
-                onClick={() => setCategory(c.value)}
-                className={`px-3 py-1 rounded-full text-xs border ${
-                  category === c.value
-                    ? "bg-brand-ink text-brand-cream border-brand-ink"
-                    : "border-brand-line text-brand-ink"
-                }`}
+                onClick={() => pressKey(k)}
+                className="py-3 rounded-lg border border-pos-border bg-white text-lg font-medium text-pos-ink hover:bg-pos-highlight"
               >
-                {c.label}
+                {k}
               </button>
             ))}
+            <button
+              type="button"
+              onClick={() => pressKey(".")}
+              className="py-3 rounded-lg border border-pos-border bg-white text-lg font-medium text-pos-ink hover:bg-pos-highlight"
+            >
+              .
+            </button>
+            <button
+              type="button"
+              onClick={() => pressKey("0")}
+              className="py-3 rounded-lg border border-pos-border bg-white text-lg font-medium text-pos-ink hover:bg-pos-highlight"
+            >
+              0
+            </button>
+            <button
+              type="button"
+              onClick={backspace}
+              aria-label="Effacer"
+              className="py-3 rounded-lg border border-pos-border bg-white text-pos-ink hover:bg-pos-highlight flex items-center justify-center"
+            >
+              <Delete size={18} />
+            </button>
           </div>
-        </fieldset>
 
-        <label className="block mb-3">
-          <span className="text-[10px] uppercase tracking-[0.18em] text-brand-ink-soft">Motif</span>
-          <input
-            type="text"
-            value={reason}
-            onChange={(e) => setReason(e.target.value)}
-            className="mt-1 w-full rounded border border-brand-line bg-white px-3 py-2 text-sm"
-            aria-label="Motif"
-          />
-        </label>
+          {/* Categories */}
+          <div>
+            <label className="block text-sm font-medium text-pos-ink mb-2">
+              Catégorie
+            </label>
+            <div className="flex flex-wrap gap-2">
+              {CATEGORIES.map((c) => {
+                const active = category === c.value;
+                return (
+                  <button
+                    key={c.value}
+                    type="button"
+                    onClick={() => setCategory(c.value)}
+                    className={`px-4 py-1.5 rounded-full text-sm border transition ${
+                      active
+                        ? "bg-pos-accent border-pos-accent text-white"
+                        : "bg-white border-pos-border text-pos-ink-2 hover:border-pos-accent"
+                    }`}
+                  >
+                    {c.label}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
 
-        <p className="text-xs text-brand-ink-soft mb-4">Employé : {employeeName}</p>
+          {/* Reason */}
+          <div>
+            <label className="block text-sm font-medium text-pos-ink mb-2">
+              Motif <span className="text-pos-ink-3 font-normal">(optionnel)</span>
+            </label>
+            <textarea
+              value={reason}
+              onChange={(e) => setReason(e.target.value)}
+              rows={3}
+              className="w-full px-3 py-2 border border-pos-border rounded-lg bg-white text-sm focus:border-pos-accent focus:outline-none resize-y"
+              aria-label="Motif"
+            />
+          </div>
 
-        <div className="flex gap-2 justify-end">
-          <button
-            type="button"
-            onClick={onClose}
-            className="text-xs uppercase tracking-[0.18em] text-brand-ink-soft"
-          >
-            Annuler
-          </button>
-          <button
-            type="button"
-            onClick={save}
-            disabled={busy || Number(amount) <= 0 || !reason.trim()}
-            className="rounded-lg bg-brand-ink px-6 py-2 text-xs uppercase tracking-[0.18em] text-brand-cream disabled:opacity-50"
-          >
-            Enregistrer
-          </button>
+          {error && (
+            <p className="text-sm text-red-600 bg-red-50 px-3 py-2 rounded">
+              {error}
+            </p>
+          )}
+
+          {/* Actions */}
+          <div className="flex justify-end gap-2 pt-1">
+            <button
+              type="button"
+              onClick={onClose}
+              className="px-5 py-2 rounded-lg border border-pos-border text-pos-ink hover:bg-pos-highlight"
+            >
+              Annuler
+            </button>
+            <button
+              type="button"
+              onClick={save}
+              disabled={!canSave}
+              className="px-6 py-2 rounded-lg bg-pos-accent text-white font-medium hover:bg-pos-accent/90 disabled:opacity-50"
+            >
+              Enregistrer
+            </button>
+          </div>
         </div>
       </div>
     </div>
