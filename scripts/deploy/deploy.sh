@@ -20,6 +20,10 @@ npm install --no-audit --no-fund
 
 echo "[3/6] Apply Prisma migrations"
 npx prisma migrate deploy
+# Clean the generated client dir before regenerating. An interrupted
+# `prisma generate` (e.g. previous build was killed by the SSH timeout)
+# can leave partial subdirs that crash the next run with EEXIST.
+rm -rf src/generated/prisma
 npx prisma generate
 
 echo "[4/6] Build Next.js"
