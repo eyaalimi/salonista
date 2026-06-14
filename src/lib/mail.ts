@@ -457,3 +457,26 @@ function escapeHtml(s: string): string {
     .replace(/"/g, "&quot;")
     .replace(/'/g, "&#39;");
 }
+
+// ─── Cash drawer report ───
+
+export async function sendCashDrawerReport(
+  to: string,
+  salonName: string,
+  sessionNumber: string,
+  reportHtml: string,
+) {
+  await transporter.sendMail({
+    from,
+    to,
+    subject: `Rapport de caisse #${sessionNumber} — ${salonName}`,
+    html: reportHtml,
+    attachments: [
+      {
+        filename: `rapport-caisse-${sessionNumber}.html`,
+        content: reportHtml,
+        contentType: "text/html",
+      },
+    ],
+  });
+}

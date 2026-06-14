@@ -207,14 +207,25 @@ export function CashDrawerDetailClient({
       </div>
 
       {session.status !== "OPEN" && (
-        <a
-          href={`/pos/cash-drawer/${session.id}/rapport`}
-          target="_blank"
-          rel="noreferrer"
-          className="inline-block mb-6 rounded-lg bg-brand-ink px-4 py-2 text-xs uppercase tracking-[0.18em] text-brand-cream hover:bg-brand-ink-soft"
-        >
-          Imprimer le rapport Z
-        </a>
+        <div className="mb-6 flex flex-wrap gap-2">
+          <a
+            href={`/pos/cash-drawer/${session.id}/rapport`}
+            target="_blank"
+            rel="noreferrer"
+            className="inline-block rounded-lg bg-brand-ink px-4 py-2 text-xs uppercase tracking-[0.18em] text-brand-cream hover:bg-brand-ink-soft"
+          >
+            Imprimer ticket thermique
+          </a>
+          <a
+            href={`/pos/cash-drawer/${session.id}/rapport-pdf`}
+            target="_blank"
+            rel="noreferrer"
+            className="inline-block rounded-lg border border-brand-ink px-4 py-2 text-xs uppercase tracking-[0.18em] text-brand-ink hover:bg-brand-sand"
+          >
+            Télécharger PDF (A4)
+          </a>
+          <EmailReportButton sessionId={session.id} />
+        </div>
       )}
 
       {error && <p className="mb-4 text-sm text-red-600">{error}</p>}
@@ -290,5 +301,95 @@ function Field({ label, value }: { label: string; value: string }) {
       <p className="text-[10px] uppercase tracking-[0.18em] text-brand-ink-soft">{label}</p>
       <p>{value}</p>
     </div>
+  );
+}
+
+function EmailReportButton({ sessionId }: { sessionId: string }) {
+  const [open, setOpen] = useState(false);
+  const [to, setTo] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [msg, setMsg] = useState<string | null>(null);
+
+  async function send() {
+    setBusy(true);
+    setMsg(null);
+    try {
+      const res = await fetch(`/api/pos/cash-drawer/${sessionId}/rapport-email`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ to: to.trim() || undefined }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (res.ok) {
+        setMsg(`Envoyé à ${data.to}`);
+        setTimeout(() => {
+          setOpen(false);
+          setMsg(null);
+          setTo("");
+        }, 1500);
+      } else {
+        setMsg(data?.error ?? "Erreur");
+      }
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <>
+      <button
+        type="button"
+        onClick={() => setOpen(true)}
+        className="inline-block rounded-lg border border-brand-ink px-4 py-2 text-xs uppercase tracking-[0.18em] text-brand-ink hover:bg-brand-sand"
+      >
+        Envoyer par email
+      </button>
+      {open && (
+        <div
+          role="dialog"
+          aria-modal="true"
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4"
+          onClick={(e) => e.target === e.currentTarget && setOpen(false)}
+        >
+          <div className="bg-white rounded-2xl shadow-xl w-full max-w-sm p-6">
+            <h2 className="luxury-heading text-lg text-brand-ink mb-2">
+              Envoyer le rapport
+            </h2>
+            <p className="text-xs text-brand-ink-soft mb-3">
+              Laissez vide pour envoyer à l&apos;adresse du propriétaire.
+            </p>
+            <input
+              type="email"
+              autoFocus
+              value={to}
+              onChange={(e) => setTo(e.target.value)}
+              onKeyDown={(e) => e.key === "Enter" && (void send())}
+              placeholder="email@exemple.tn (facultatif)"
+              className="w-full px-3 py-2 border border-brand-line rounded text-sm"
+            />
+            {msg && (
+              <p className="mt-3 text-sm bg-brand-sand px-3 py-2 rounded">{msg}</p>
+            )}
+            <div className="mt-4 flex justify-end gap-2">
+              <button
+                type="button"
+                onClick={() => setOpen(false)}
+                className="px-3 py-2 text-xs uppercase tracking-[0.18em] text-brand-ink-soft hover:text-brand-ink"
+              >
+                Annuler
+              </button>
+              <button
+                type="button"
+                onClick={send}
+                disabled={busy}
+                className="px-4 py-2 bg-brand-ink text-brand-cream rounded text-xs uppercase tracking-[0.18em] disabled:opacity-50"
+              >
+                {busy ? "…" : "Envoyer"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </>
   );
 }
