@@ -72,6 +72,9 @@ export async function GET(
           quantity: true,
         },
       },
+      payments: {
+        select: { method: true },
+      },
     },
   })) as Array<{
     id: string;
@@ -80,6 +83,7 @@ export async function GET(
     status: string;
     closedAt: Date | null;
     items: Array<{ nameSnapshot: string; quantity: number }>;
+    payments: Array<{ method: string }>;
   }>;
 
   const totalSpent = sales.reduce(
@@ -107,6 +111,7 @@ export async function GET(
       id: s.id,
       receiptNumber: s.receiptNumber,
       total: String(s.total),
+      paymentMethods: s.payments,
       status: s.status,
       closedAt: s.closedAt,
       items: s.items,

@@ -1,10 +1,10 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { useRouter } from "next/navigation";
 import { Search, UserPlus } from "lucide-react";
 import { formatDT } from "@/lib/money";
 import { formatPhoneDisplay } from "@/lib/phone";
+import { CustomerDetailDrawer } from "./customer-detail-drawer";
 
 type Row = {
   id: string;
@@ -18,8 +18,8 @@ type Row = {
 };
 
 export function CustomersListClient({ canEdit }: { canEdit: boolean }) {
-  const router = useRouter();
   const [rows, setRows] = useState<Row[]>([]);
+  const [selectedId, setSelectedId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [query, setQuery] = useState("");
@@ -131,8 +131,10 @@ export function CustomersListClient({ canEdit }: { canEdit: boolean }) {
                 return (
                   <tr
                     key={c.id}
-                    onClick={() => router.push(`/pos/customers/${c.id}`)}
-                    className="border-b border-pos-border last:border-0 hover:bg-pos-highlight/50 cursor-pointer"
+                    onClick={() => setSelectedId(c.id)}
+                    className={`border-b border-pos-border last:border-0 hover:bg-pos-highlight/50 cursor-pointer ${
+                      selectedId === c.id ? "bg-pos-highlight/70" : ""
+                    }`}
                   >
                     <td className="px-4 py-3 font-medium text-pos-ink">
                       {name}
@@ -160,6 +162,15 @@ export function CustomersListClient({ canEdit }: { canEdit: boolean }) {
             </tbody>
           </table>
         </div>
+      )}
+
+      {selectedId && (
+        <CustomerDetailDrawer
+          customerId={selectedId}
+          canEdit={canEdit}
+          onClose={() => setSelectedId(null)}
+          onChanged={refresh}
+        />
       )}
     </div>
   );
