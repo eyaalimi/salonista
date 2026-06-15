@@ -6,6 +6,7 @@ import { LogOut } from "lucide-react";
 import { OnlineStatusBadge } from "@/components/pos/online-status-badge";
 import { CashDrawerIndicator } from "@/components/pos/cash-drawer-indicator";
 import { UniversalSearch } from "@/components/pos/universal-search";
+import { NextBookingTicker } from "@/components/pos/next-booking-ticker";
 
 type Provider = { salonName: string; city: string | null };
 type Employee = { id: string; displayName: string; role: string; permissions: Record<string, boolean> };
@@ -85,6 +86,7 @@ export function PosTopbar({ provider, employee }: { provider: Provider | null; e
       </div>
 
       <div className="flex items-center gap-3 shrink-0">
+        <NextBookingTicker />
         <OnlineStatusBadge />
         <span className="pos-mono text-xs text-pos-ink-4 hidden md:inline">{now}</span>
         {employee.permissions["pos.cash_drawer"] && <CashDrawerIndicator canOpen={true} employeeName={employee.displayName} />}

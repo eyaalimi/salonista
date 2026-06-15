@@ -79,7 +79,7 @@ export function UniversalSearch() {
   }
 
   return (
-    <div className="flex-1 max-w-[520px] relative">
+    <div className="flex-1 max-w-[340px] relative">
       <Search
         size={14}
         className="absolute left-3 top-1/2 -translate-y-1/2 text-pos-ink-4 pointer-events-none"
