@@ -19,12 +19,25 @@ export function ThermalLayout({ children }: { children: ReactNode }) {
           size: 80mm auto;
           margin: 0;
         }
+        @media screen {
+          .thermal-print-root {
+            position: absolute;
+            left: -10000px;
+            top: 0;
+            width: 80mm;
+            pointer-events: none;
+            opacity: 0;
+          }
+        }
         @media print {
           body > *:not(.thermal-print-root) {
             display: none !important;
           }
           .thermal-print-root {
             display: block !important;
+            position: static !important;
+            left: auto !important;
+            opacity: 1 !important;
           }
         }
         .thermal-print-root .thermal-doc {
