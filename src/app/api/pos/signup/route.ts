@@ -97,8 +97,6 @@ export async function POST(req: NextRequest) {
         userId: user.id,
         salonName,
         category: "AUTRE",
-        // POS-only flag: no marketplace publishing until the salon opts in.
-        publishedToMarketplace: false,
         onboardingDismissedAt: null,
       },
     });
