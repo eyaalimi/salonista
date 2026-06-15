@@ -209,14 +209,6 @@ export function CashDrawerDetailClient({
       {session.status !== "OPEN" && (
         <div className="mb-6 flex flex-wrap gap-2">
           <a
-            href={`/pos/cash-drawer/${session.id}/rapport`}
-            target="_blank"
-            rel="noreferrer"
-            className="inline-block rounded-lg bg-brand-ink px-4 py-2 text-xs uppercase tracking-[0.18em] text-brand-cream hover:bg-brand-ink-soft"
-          >
-            Imprimer ticket thermique
-          </a>
-          <a
             href={`/pos/cash-drawer/${session.id}/rapport-pdf`}
             target="_blank"
             rel="noreferrer"
