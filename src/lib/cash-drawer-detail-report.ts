@@ -6,11 +6,27 @@ export type DetailReportSale = {
   closedAt: Date | null;
   customerName: string | null;
   customerPhone: string | null;
+  employeeName: string;
   items: Array<{ name: string; quantity: number; price: string }>;
   paymentMethods: Array<{ method: string; amount: string }>;
   subtotal: string;
   taxTotal: string;
   total: string;
+};
+
+export type EmployeeBreakdown = {
+  employeeId: string;
+  employeeName: string;
+  salesCount: number;
+  articlesCount: number;
+  total: string;
+};
+
+export type LoyaltyBreakdown = {
+  pointsEarned: number;
+  pointsRedeemed: number;
+  customersAwarded: number;
+  customersRedeemed: number;
 };
 
 export type DetailReport = {
@@ -45,6 +61,8 @@ export type DetailReport = {
   paymentsByMethod: Array<{ method: string; count: number; amount: string }>;
   taxBreakdown: Array<{ rate: string; base: string; tax: string }>;
   expenses: Array<{ amount: string; reason: string; category: string }>;
+  salesByEmployee: EmployeeBreakdown[];
+  loyalty: LoyaltyBreakdown;
   sales: DetailReportSale[];
 };
 
@@ -76,7 +94,12 @@ export async function buildDetailReport(
   } | null;
 
   const closedAt = session.closedAt ?? new Date();
-  const windowFilter = { gte: session.openedAt, lte: closedAt };
+  // Whole-day window: from start of the day the session was opened up to the
+  // close (or now if still open). Lets the report aggregate ALL employees'
+  // sales for the day, not just sales tied to this single session.
+  const dayStart = new Date(session.openedAt);
+  dayStart.setHours(0, 0, 0, 0);
+  const windowFilter = { gte: dayStart, lte: closedAt };
 
   const [salesAgg, refundsAgg, paymentsByMethod, taxGroups, expenses, sales] =
     await Promise.all([
@@ -122,6 +145,8 @@ export async function buildDetailReport(
           subtotal: true,
           taxTotal: true,
           total: true,
+          employeeId: true,
+          employee: { select: { displayName: true } },
           customer: {
             select: {
               firstName: true,
@@ -146,6 +171,42 @@ export async function buildDetailReport(
       }),
     ]);
 
+  // Loyalty: aggregate reward transactions across the day window.
+  const rewardTxsRaw = await (prisma as never as {
+    rewardTransaction: {
+      findMany: (a: unknown) => Promise<Array<{
+        delta: number;
+        walletId: string;
+        sale: { providerId: string } | null;
+      }>>;
+    };
+  }).rewardTransaction.findMany({
+    where: {
+      createdAt: windowFilter,
+      sale: { providerId },
+    },
+    select: { delta: true, walletId: true, sale: { select: { providerId: true } } },
+  });
+  const earnedWallets = new Set<string>();
+  const redeemedWallets = new Set<string>();
+  let pointsEarned = 0;
+  let pointsRedeemed = 0;
+  for (const tx of rewardTxsRaw) {
+    if (tx.delta > 0) {
+      pointsEarned += tx.delta;
+      earnedWallets.add(tx.walletId);
+    } else if (tx.delta < 0) {
+      pointsRedeemed += -tx.delta;
+      redeemedWallets.add(tx.walletId);
+    }
+  }
+  const loyalty: LoyaltyBreakdown = {
+    pointsEarned,
+    pointsRedeemed,
+    customersAwarded: earnedWallets.size,
+    customersRedeemed: redeemedWallets.size,
+  };
+
   type SaleRow = {
     id: string;
     receiptNumber: string;
@@ -153,6 +214,8 @@ export async function buildDetailReport(
     subtotal: unknown;
     taxTotal: unknown;
     total: unknown;
+    employeeId: string;
+    employee: { displayName: string } | null;
     customer: { firstName: string | null; lastName: string | null; phone: string } | null;
     items: Array<{ nameSnapshot: string; quantity: number; priceSnapshot: unknown }>;
     payments: Array<{ method: string; amount: unknown }>;
@@ -178,6 +241,7 @@ export async function buildDetailReport(
       id: s.id,
       receiptNumber: s.receiptNumber,
       closedAt: s.closedAt,
+      employeeName: s.employee?.displayName ?? "—",
       customerName: s.customer
         ? `${s.customer.firstName ?? ""} ${s.customer.lastName ?? ""}`.trim() ||
           (isWalkIn ? "Client passager" : null)
@@ -197,6 +261,31 @@ export async function buildDetailReport(
       total: String(s.total),
     };
   });
+
+  // Per-employee breakdown.
+  const empMap = new Map<string, EmployeeBreakdown>();
+  for (const s of sales as SaleRow[]) {
+    const key = s.employeeId;
+    const name = s.employee?.displayName ?? "—";
+    const items = s.items.reduce((acc, it) => acc + it.quantity, 0);
+    const cur = empMap.get(key);
+    if (cur) {
+      cur.salesCount += 1;
+      cur.articlesCount += items;
+      cur.total = (Number(cur.total) + Number(String(s.total))).toFixed(3);
+    } else {
+      empMap.set(key, {
+        employeeId: key,
+        employeeName: name,
+        salesCount: 1,
+        articlesCount: items,
+        total: String(s.total),
+      });
+    }
+  }
+  const salesByEmployee = Array.from(empMap.values()).sort(
+    (a, b) => Number(b.total) - Number(a.total),
+  );
 
   return {
     provider,
@@ -236,6 +325,8 @@ export async function buildDetailReport(
       reason: e.reason,
       category: e.category,
     })),
+    salesByEmployee,
+    loyalty,
     sales: detailSales,
   };
 }
@@ -347,11 +438,59 @@ export function renderDetailReportHtml(r: DetailReport): string {
         <td>${fmtTime(s.closedAt)}</td>
         <td class="mono">#${shortId}</td>
         <td>${name}</td>
+        <td>${s.employeeName}</td>
         <td><span class="pill" style="color:${pillColor};border-color:${pillColor};">${short}</span></td>
         <td class="num">${fmtNum(s.total)}</td>
       </tr>`;
     })
     .join("");
+
+  // Per-employee breakdown rows
+  const employeeRows = r.salesByEmployee.length
+    ? r.salesByEmployee
+        .map(
+          (e) => `
+        <tr>
+          <td><strong>${e.employeeName}</strong></td>
+          <td class="num">${fmtInt(e.salesCount)}</td>
+          <td class="num">${fmtInt(e.articlesCount)}</td>
+          <td class="num">${fmtNum(e.total)}</td>
+        </tr>`,
+        )
+        .join("")
+    : `<tr><td colspan="4" class="muted">Aucune vente</td></tr>`;
+
+  // Loyalty section
+  const loyaltyHtml = `
+  <h2>Fidélité</h2>
+  <table>
+    <thead>
+      <tr>
+        <th>Mouvement</th>
+        <th class="num">Clients</th>
+        <th class="num">Points</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>Points gagnés</td>
+        <td class="num">${fmtInt(r.loyalty.customersAwarded)}</td>
+        <td class="num pos">+${fmtInt(r.loyalty.pointsEarned)}</td>
+      </tr>
+      <tr>
+        <td>Points utilisés</td>
+        <td class="num">${fmtInt(r.loyalty.customersRedeemed)}</td>
+        <td class="num neg">−${fmtInt(r.loyalty.pointsRedeemed)}</td>
+      </tr>
+    </tbody>
+    <tfoot>
+      <tr>
+        <td>Solde net</td>
+        <td></td>
+        <td class="num">${r.loyalty.pointsEarned - r.loyalty.pointsRedeemed >= 0 ? "+" : ""}${fmtInt(r.loyalty.pointsEarned - r.loyalty.pointsRedeemed)}</td>
+      </tr>
+    </tfoot>
+  </table>`;
 
   const salonName = (r.provider?.salonName ?? "SALONISTA").toUpperCase();
 
@@ -418,7 +557,7 @@ export function renderDetailReportHtml(r: DetailReport): string {
   <div class="header">
     <div>
       <h1>${salonName}</h1>
-      <div class="subtitle">Rapport de caisse</div>
+      <div class="subtitle">Rapport de journée</div>
     </div>
     <div class="ref">
       <strong>SH${r.session.sessionNumber.padStart(5, "0")}</strong><br>
@@ -521,18 +660,44 @@ export function renderDetailReportHtml(r: DetailReport): string {
       : ""
   }
 
+  <!-- VENTES PAR EMPLOYÉ -->
+  <h2>Ventes par employé</h2>
+  <table>
+    <thead>
+      <tr>
+        <th>Employé</th>
+        <th class="num">Ventes</th>
+        <th class="num">Articles</th>
+        <th class="num">CA TTC</th>
+      </tr>
+    </thead>
+    <tbody>${employeeRows}</tbody>
+    <tfoot>
+      <tr>
+        <td>Total</td>
+        <td class="num">${fmtInt(r.totals.salesCount)}</td>
+        <td class="num">${fmtInt(r.totals.articlesCount)}</td>
+        <td class="num">${fmtNum(r.totals.grossTotal)}</td>
+      </tr>
+    </tfoot>
+  </table>
+
+  <!-- FIDÉLITÉ -->
+  ${loyaltyHtml}
+
   <!-- DÉTAIL DES VENTES -->
   <div class="sales-detail">
     <h2>Détail des ventes</h2>
     ${
       r.sales.length === 0
-        ? `<p class="muted" style="text-align:center;color:#999;padding:20px;">Aucune vente sur cette session.</p>`
+        ? `<p class="muted" style="text-align:center;color:#999;padding:20px;">Aucune vente sur cette journée.</p>`
         : `<table>
             <thead>
               <tr>
                 <th>Heure</th>
                 <th>N°</th>
                 <th>Client</th>
+                <th>Employé</th>
                 <th>Paiement</th>
                 <th class="num">Total</th>
               </tr>

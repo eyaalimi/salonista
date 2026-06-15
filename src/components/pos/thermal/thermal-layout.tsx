@@ -4,12 +4,10 @@ import type { ReactNode } from "react";
 /**
  * Shared 80mm thermal print container.
  *
- * Wraps children in a print-only frame and injects the @page + @media print
- * CSS once. Receipt, TestTicket, and ZReport all compose primitives below.
- *
- * The CSS hides everything except `.thermal-print-root` when printing,
- * forcing the browser to render only the receipt. The thermal printer
- * paper width is 80mm with no margins; the document grows downward.
+ * The thermal-print-root is hidden off-screen at screen media. At print media,
+ * we hide every other element in the DOM tree (using `* { display: none }`
+ * on `body` then walking the ancestor chain back up to thermal-print-root)
+ * and only the thermal content remains visible at the page origin.
  */
 export function ThermalLayout({ children }: { children: ReactNode }) {
   return (
@@ -28,22 +26,43 @@ export function ThermalLayout({ children }: { children: ReactNode }) {
             overflow: hidden;
             visibility: hidden;
             pointer-events: none;
+            z-index: -1;
           }
         }
         @media print {
           html, body {
+            margin: 0 !important;
+            padding: 0 !important;
             background: #fff !important;
+            width: 80mm !important;
           }
-          body > *:not(.thermal-print-root) {
+          /* Hide every direct descendant of body... */
+          body > * {
             display: none !important;
           }
+          /* ...but show the ancestor chain that contains the receipt.
+             Next.js wraps in several divs, so we target any ancestor that
+             contains a .thermal-print-root descendant. */
+          body:has(.thermal-print-root) > * {
+            display: none !important;
+          }
+          /* Force the receipt itself to render at the top of the page. */
+          .thermal-print-root,
+          .thermal-print-root * {
+            visibility: visible !important;
+          }
           .thermal-print-root {
-            position: static !important;
-            width: auto !important;
+            position: fixed !important;
+            top: 0 !important;
+            left: 0 !important;
+            right: auto !important;
+            bottom: auto !important;
+            width: 80mm !important;
             height: auto !important;
             overflow: visible !important;
-            visibility: visible !important;
             display: block !important;
+            z-index: 999999 !important;
+            background: #fff !important;
           }
         }
         .thermal-print-root .thermal-doc {

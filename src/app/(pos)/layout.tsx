@@ -75,7 +75,7 @@ export default async function PosLayout({ children }: { children: React.ReactNod
             style={{ gridTemplateColumns: "80px 1fr" }}
           >
             <Rail permissions={employee.permissions} />
-            <main className="overflow-hidden">{children}</main>
+            <main className="overflow-y-auto overflow-x-hidden">{children}</main>
           </div>
         </div>
         {!provider?.matriculeFiscal && (
