@@ -40,6 +40,7 @@ export function PosShellClient({ employee }: { employee: EmployeeProp }) {
   const [printNow, setPrintNow] = useState(false);
   const [sideOpen, setSideOpen] = useState(false);
   const [bookingsTodayCount, setBookingsTodayCount] = useState(0);
+  const [successToast, setSuccessToast] = useState<{ total: string; receiptNumber: string } | null>(null);
 
   const cart = usePosStore((s) => s.cart);
   const customer = usePosStore((s) => s.customer);
@@ -144,19 +145,33 @@ export function PosShellClient({ employee }: { employee: EmployeeProp }) {
   }, [employee.permissions]);
 
   // Trigger window.print() after a receipt is staged + flagged.
+  // After printing, unmount the receipt so it never lingers in the UI.
   useEffect(() => {
     if (lastReceipt && printNow) {
       const id = setTimeout(() => {
         window.print();
         setPrintNow(false);
+        // Drop the receipt from state after the print dialog opens, so the
+        // hidden frame is unmounted and not visible on screen anymore.
+        setTimeout(() => setLastReceipt(null), 500);
       }, 200);
       return () => clearTimeout(id);
     }
   }, [lastReceipt, printNow]);
 
+  // Auto-dismiss the success toast.
+  useEffect(() => {
+    if (!successToast) return;
+    const id = setTimeout(() => setSuccessToast(null), 2500);
+    return () => clearTimeout(id);
+  }, [successToast]);
+
   function handleCompleted(receipt: ReceiptData, shouldPrint: boolean) {
-    setLastReceipt(receipt);
-    setPrintNow(shouldPrint);
+    if (shouldPrint) {
+      setLastReceipt(receipt);
+      setPrintNow(true);
+    }
+    setSuccessToast({ total: receipt.total, receiptNumber: receipt.receiptNumber });
     setChargeOpen(false);
     clearCart();
   }
@@ -249,7 +264,25 @@ export function PosShellClient({ employee }: { employee: EmployeeProp }) {
         />
       )}
 
-      {lastReceipt && <ReceiptPrintFrame data={lastReceipt} />}
+      {lastReceipt && printNow && <ReceiptPrintFrame data={lastReceipt} />}
+
+      {successToast && (
+        <div
+          role="status"
+          aria-live="polite"
+          className="fixed bottom-6 right-6 z-50 flex items-center gap-3 px-5 py-4 rounded-xl bg-emerald-600 text-white shadow-xl animate-in fade-in slide-in-from-bottom-4"
+        >
+          <span className="inline-flex items-center justify-center w-8 h-8 rounded-full bg-white/20 text-lg">
+            ✓
+          </span>
+          <div>
+            <div className="font-semibold text-sm">Paiement encaissé</div>
+            <div className="text-xs opacity-90 pos-mono">
+              {successToast.receiptNumber} · {successToast.total} DT
+            </div>
+          </div>
+        </div>
+      )}
 
       <ShortcutHelpOverlay />
     </div>
