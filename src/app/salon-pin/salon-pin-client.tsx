@@ -152,14 +152,11 @@ export default function SalonPinClient() {
       setPin((p) => p.slice(0, -1));
       return;
     }
-    if (k === "↵") {
-      submitPin(pin);
-      return;
-    }
-    if (pin.length >= 6) return;
+    if (pin.length >= 4) return;
     const next = pin + k;
     setPin(next);
-    if (next.length === 6) {
+    // Auto-submit dès que 4 chiffres sont saisis — pas besoin de confirmer.
+    if (next.length === 4) {
       submitPin(next);
     }
   }
@@ -266,13 +263,13 @@ export default function SalonPinClient() {
           <h1 className="luxury-heading text-3xl text-brand-ink">{employee.displayName}</h1>
           <p className="mt-2 text-sm text-brand-ink-soft">Entrez votre PIN pour continuer.</p>
 
-          <div className="mt-8 flex justify-center gap-3">
-            {Array.from({ length: 6 }).map((_, i) => (
+          <div className="mt-8 flex justify-center gap-4">
+            {Array.from({ length: 4 }).map((_, i) => (
               <span
                 key={i}
-                className={`h-4 w-4 rounded-full border ${
+                className={`h-5 w-5 rounded-full border-2 transition ${
                   i < pin.length
-                    ? "border-brand-gold bg-brand-gold"
+                    ? "border-brand-gold bg-brand-gold scale-110"
                     : "border-brand-line bg-transparent"
                 }`}
               />
@@ -282,18 +279,22 @@ export default function SalonPinClient() {
           {error && <p className="mt-4 text-center text-sm text-red-600">{error}</p>}
 
           <div className="mt-8 grid grid-cols-3 gap-3">
-            {["1", "2", "3", "4", "5", "6", "7", "8", "9", "←", "0", "↵"].map((k) => (
-              <button
-                key={k}
-                type="button"
-                onClick={() => pressKey(k)}
-                disabled={loading || (k === "↵" && pin.length < 4)}
-                className="aspect-square rounded-2xl border border-brand-line bg-white text-2xl font-semibold text-brand-ink hover:border-brand-gold disabled:opacity-40"
-                style={{ minHeight: 64 }}
-              >
-                {k}
-              </button>
-            ))}
+            {["1", "2", "3", "4", "5", "6", "7", "8", "9", "", "0", "←"].map((k, i) =>
+              k === "" ? (
+                <span key={`empty-${i}`} aria-hidden="true" />
+              ) : (
+                <button
+                  key={k}
+                  type="button"
+                  onClick={() => pressKey(k)}
+                  disabled={loading}
+                  className="aspect-square rounded-2xl border border-brand-line bg-white text-2xl font-semibold text-brand-ink hover:border-brand-gold disabled:opacity-40"
+                  style={{ minHeight: 64 }}
+                >
+                  {k}
+                </button>
+              ),
+            )}
           </div>
         </section>
       )}

@@ -14,8 +14,8 @@ type CreateBody = {
 const VALID_ROLES = new Set(["OWNER", "MANAGER", "CASHIER", "STYLIST"]);
 
 function validatePin(pin: string): string | null {
-  if (!/^\d{4,6}$/.test(pin)) {
-    return "Le PIN doit comporter 4 à 6 chiffres.";
+  if (!/^\d{4}$/.test(pin)) {
+    return "Le PIN doit comporter exactement 4 chiffres.";
   }
   return null;
 }

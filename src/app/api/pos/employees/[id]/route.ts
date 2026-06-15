@@ -78,9 +78,9 @@ export async function PUT(
     if (body.pin === null || body.pin === "") {
       data.pinHash = null;
     } else {
-      if (!/^\d{4,6}$/.test(body.pin)) {
+      if (!/^\d{4}$/.test(body.pin)) {
         return Response.json(
-          { error: "Le PIN doit comporter 4 à 6 chiffres." },
+          { error: "Le PIN doit comporter exactement 4 chiffres." },
           { status: 400 },
         );
       }

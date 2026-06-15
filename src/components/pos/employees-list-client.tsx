@@ -333,7 +333,7 @@ function EmployeeFormModal({
 
           <label className="block">
             <span className="text-xs text-pos-ink-2">
-              PIN (4 à 6 chiffres){" "}
+              PIN (4 chiffres){" "}
               <span className="text-pos-ink-3">
                 {isEdit ? "— laissez vide pour ne pas changer" : "— facultatif"}
               </span>
@@ -341,7 +341,7 @@ function EmployeeFormModal({
             <input
               type="text"
               inputMode="numeric"
-              maxLength={6}
+              maxLength={4}
               value={pin}
               onChange={(e) => setPin(e.target.value.replace(/\D/g, ""))}
               placeholder="••••"
@@ -402,8 +402,8 @@ function PinModal({
 
   async function save(removePin = false) {
     setError(null);
-    if (!removePin && !/^\d{4,6}$/.test(pin)) {
-      setError("Le PIN doit comporter 4 à 6 chiffres.");
+    if (!removePin && !/^\d{4}$/.test(pin)) {
+      setError("Le PIN doit comporter exactement 4 chiffres.");
       return;
     }
     setBusy(true);
@@ -438,7 +438,7 @@ function PinModal({
           PIN de {employee.displayName}
         </h2>
         <p className="text-sm text-pos-ink-3 mb-4">
-          Saisissez un nouveau PIN à 4-6 chiffres. Communiquez-le directement à l&apos;employé.
+          Saisissez un nouveau PIN à 4 chiffres. Communiquez-le directement à l&apos;employé.
         </p>
         <input
           type="text"
