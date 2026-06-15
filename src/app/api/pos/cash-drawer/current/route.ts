@@ -10,7 +10,7 @@ export async function GET() {
     if (r) return r;
     throw err;
   }
-  const session = await findOpenSession(employee.id);
+  const session = await findOpenSession(employee.providerId);
   if (!session) return Response.json({ session: null });
   const summary = await computeSummary(session.id);
   return Response.json({ session, summary });

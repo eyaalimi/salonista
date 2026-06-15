@@ -37,16 +37,9 @@ export async function POST(req: NextRequest, ctx: { params: Promise<{ id: string
   if (head.status !== "OPEN") {
     return Response.json({ error: "Session déjà fermée" }, { status: 409 });
   }
-  if (
-    head.employeeId !== employee.id &&
-    employee.role !== "OWNER" &&
-    employee.role !== "MANAGER"
-  ) {
-    return Response.json(
-      { error: "Seul l'employé qui a ouvert la caisse peut la fermer" },
-      { status: 403 },
-    );
-  }
+  // Sessions are shared across the salon — any employee of the same provider
+  // with the pos.cash_drawer permission can close. Provider ownership is
+  // already enforced above.
 
   const closingStr = closing.toFixed(3);
 
@@ -58,7 +51,7 @@ export async function POST(req: NextRequest, ctx: { params: Promise<{ id: string
     const result = await prisma.$transaction(async (tx) => {
       const session = await tx.cashDrawerSession.findUnique({
         where: { id },
-        select: { openingFloat: true, openedAt: true, employeeId: true, status: true },
+        select: { openingFloat: true, openedAt: true, employeeId: true, providerId: true, status: true },
       });
       if (!session) throw new Error("NOT_FOUND");
       if (session.status !== "OPEN") throw new Error("ALREADY_CLOSED");
@@ -72,10 +65,11 @@ export async function POST(req: NextRequest, ctx: { params: Promise<{ id: string
         "0.000",
       );
 
+      // Shared session: aggregate cash refunds across the whole salon.
       const refunds = await tx.refund.findMany({
         where: {
           refundMethod: "CASH",
-          employeeId: session.employeeId,
+          sale: { providerId: session.providerId },
           createdAt: { gte: session.openedAt },
         },
         select: { totalAmount: true },

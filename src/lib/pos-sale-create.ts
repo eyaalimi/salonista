@@ -281,21 +281,19 @@ export async function createSaleFromPayload(args: {
     }
   }
 
-  // Cash-payment sessions: link CASH payments to the cashier's currently-open
-  // drawer session, if any. Offline syncs do their own resolution further
-  // down (the original session may have closed before the sync happened).
+  // Cash-payment sessions: link CASH payments to the salon's currently-open
+  // drawer session, if any. Sessions are shared across all employees of the
+  // salon — whoever opens first holds it. Offline syncs resolve the session
+  // that was open at the sale's recorded createdAt timestamp.
   let openDrawerId: string | null = null;
   if (!fromSync) {
-    const open = await findOpenSession(employeeId);
+    const open = await findOpenSession(providerId);
     openDrawerId = open?.id ?? null;
   } else {
-    // For offline syncs, find the session that was open at the sale's
-    // createdAt timestamp. If none, leave null and the sync-issues page
-    // will surface it as "Paiement sans session".
     const saleDate = payload.createdAt ? new Date(payload.createdAt) : new Date();
     const session = await prisma.cashDrawerSession.findFirst({
       where: {
-        employeeId,
+        providerId,
         openedAt: { lte: saleDate },
         OR: [{ closedAt: null }, { closedAt: { gte: saleDate } }],
       },

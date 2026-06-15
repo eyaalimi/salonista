@@ -21,10 +21,10 @@ export async function POST(req: NextRequest) {
     return Response.json({ error: "Fond de caisse invalide" }, { status: 400 });
   }
 
-  const existing = await findOpenSession(employee.id);
+  const existing = await findOpenSession(employee.providerId);
   if (existing) {
     return Response.json(
-      { error: "Une session est déjà ouverte", session: existing },
+      { error: "Une session est déjà ouverte pour ce salon", session: existing },
       { status: 409 },
     );
   }

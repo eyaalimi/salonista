@@ -38,6 +38,7 @@ export async function computeSummary(sessionId: string): Promise<DrawerSummary |
       closingCount: true,
       variance: true,
       employeeId: true,
+      providerId: true,
     },
   });
   if (!session) return null;
@@ -81,10 +82,12 @@ export async function computeSummary(sessionId: string): Promise<DrawerSummary |
   });
   const expensesTotal = expensesAgg._sum.amount ? String(expensesAgg._sum.amount) : "0.000";
 
-  // Cash refunds issued by the employee during the session window.
+  // Cash refunds issued anywhere in the salon during the session window.
+  // Sessions are shared across employees, so we attribute every cash refund
+  // for the salon to the open session.
   const refundFilter = {
     refundMethod: "CASH" as const,
-    employeeId: session.employeeId,
+    sale: { providerId: session.providerId },
     createdAt: {
       gte: session.openedAt,
       ...(session.closedAt ? { lte: session.closedAt } : {}),
@@ -123,10 +126,17 @@ export async function computeSummary(sessionId: string): Promise<DrawerSummary |
   };
 }
 
-/** Find the currently-open session for an employee (or null). */
-export async function findOpenSession(employeeId: string) {
+/**
+ * Find the currently-open session for the whole salon (or null).
+ *
+ * A salon has at most one OPEN cash drawer session at a time, shared across
+ * every employee. Whoever opens first holds it; any employee can see it,
+ * encaisser on it, and close it.
+ */
+export async function findOpenSession(providerId: string) {
   return prisma.cashDrawerSession.findFirst({
-    where: { employeeId, status: "OPEN" },
+    where: { providerId, status: "OPEN" },
+    orderBy: { openedAt: "desc" },
     include: { employee: { select: { displayName: true } } },
   });
 }
