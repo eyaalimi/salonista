@@ -58,7 +58,48 @@ function CustomerBlock() {
   const [walkInOpen, setWalkInOpen] = useState(false);
   const [walkInName, setWalkInName] = useState("");
   const [walkInBusy, setWalkInBusy] = useState(false);
+  const [newCustomerOpen, setNewCustomerOpen] = useState(false);
+  const [newPhone, setNewPhone] = useState("");
+  const [newFirstName, setNewFirstName] = useState("");
+  const [newLastName, setNewLastName] = useState("");
+  const [newBusy, setNewBusy] = useState(false);
+  const [newError, setNewError] = useState<string | null>(null);
   const inputRef = useRef<HTMLInputElement | null>(null);
+
+  async function createCustomer() {
+    setNewBusy(true);
+    setNewError(null);
+    try {
+      const res = await fetch("/api/customers", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          phone: newPhone.trim(),
+          firstName: newFirstName.trim() || undefined,
+          lastName: newLastName.trim() || undefined,
+        }),
+      });
+      const data = await res.json().catch(() => null);
+      if (!res.ok) {
+        setNewError(data?.error ?? "Erreur lors de la création");
+        return;
+      }
+      // If 200 (already exists in this salon) or 201 (new), `data` is the customer.
+      setCustomer({
+        id: data.id,
+        phone: data.phone,
+        firstName: data.firstName ?? null,
+        lastName: data.lastName ?? null,
+        email: data.email ?? null,
+      });
+      setNewCustomerOpen(false);
+      setNewPhone("");
+      setNewFirstName("");
+      setNewLastName("");
+    } finally {
+      setNewBusy(false);
+    }
+  }
 
   async function createWalkIn() {
     setWalkInBusy(true);
@@ -223,14 +264,86 @@ function CustomerBlock() {
         />
       )}
 
-      {!customer && !walkInOpen && (
-        <button
-          type="button"
-          onClick={() => setWalkInOpen(true)}
-          className="mt-3 w-full text-xs text-pos-ink-2 border border-dashed border-pos-border rounded py-2 hover:border-pos-accent hover:text-pos-ink"
-        >
-          + Client passager
-        </button>
+      {!customer && !walkInOpen && !newCustomerOpen && (
+        <div className="mt-3 grid grid-cols-2 gap-2">
+          <button
+            type="button"
+            onClick={() => setNewCustomerOpen(true)}
+            className="text-xs font-medium bg-pos-accent text-white border border-pos-accent rounded py-2 hover:bg-pos-accent/90"
+          >
+            + Nouvelle cliente
+          </button>
+          <button
+            type="button"
+            onClick={() => setWalkInOpen(true)}
+            className="text-xs text-pos-ink-2 border border-dashed border-pos-border rounded py-2 hover:border-pos-accent hover:text-pos-ink"
+          >
+            + Client passager
+          </button>
+        </div>
+      )}
+
+      {!customer && newCustomerOpen && (
+        <div className="mt-3 space-y-2 p-3 rounded-md border border-pos-accent/40 bg-pos-accent/5">
+          <div className="text-[10px] uppercase tracking-[0.18em] text-pos-accent font-semibold">
+            Nouvelle cliente
+          </div>
+          <input
+            type="tel"
+            autoFocus
+            value={newPhone}
+            onChange={(e) => setNewPhone(e.target.value)}
+            placeholder="Téléphone (obligatoire) — ex: 22 345 678"
+            className="w-full text-sm bg-white border border-pos-border rounded px-2 py-1.5 pos-mono"
+          />
+          <div className="grid grid-cols-2 gap-2">
+            <input
+              type="text"
+              value={newFirstName}
+              onChange={(e) => setNewFirstName(e.target.value)}
+              placeholder="Prénom"
+              className="w-full text-sm bg-white border border-pos-border rounded px-2 py-1.5"
+            />
+            <input
+              type="text"
+              value={newLastName}
+              onChange={(e) => setNewLastName(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" && newPhone.trim()) void createCustomer();
+              }}
+              placeholder="Nom"
+              className="w-full text-sm bg-white border border-pos-border rounded px-2 py-1.5"
+            />
+          </div>
+          {newError && (
+            <p className="text-[11px] text-red-600 bg-red-50 px-2 py-1 rounded">
+              {newError}
+            </p>
+          )}
+          <div className="flex gap-2">
+            <button
+              type="button"
+              onClick={createCustomer}
+              disabled={newBusy || !newPhone.trim()}
+              className="flex-1 text-xs bg-pos-accent text-white rounded py-1.5 disabled:opacity-50 hover:bg-pos-accent/90 font-medium"
+            >
+              {newBusy ? "…" : "Créer & sélectionner"}
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                setNewCustomerOpen(false);
+                setNewError(null);
+                setNewPhone("");
+                setNewFirstName("");
+                setNewLastName("");
+              }}
+              className="text-xs text-pos-ink-3 px-2 hover:text-pos-ink"
+            >
+              Annuler
+            </button>
+          </div>
+        </div>
       )}
 
       {!customer && walkInOpen && (
