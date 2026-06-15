@@ -21,23 +21,29 @@ export function ThermalLayout({ children }: { children: ReactNode }) {
         }
         @media screen {
           .thermal-print-root {
-            position: absolute;
-            left: -10000px;
-            top: 0;
-            width: 80mm;
+            position: fixed;
+            inset: 0;
+            width: 0;
+            height: 0;
+            overflow: hidden;
+            visibility: hidden;
             pointer-events: none;
-            opacity: 0;
           }
         }
         @media print {
+          html, body {
+            background: #fff !important;
+          }
           body > *:not(.thermal-print-root) {
             display: none !important;
           }
           .thermal-print-root {
-            display: block !important;
             position: static !important;
-            left: auto !important;
-            opacity: 1 !important;
+            width: auto !important;
+            height: auto !important;
+            overflow: visible !important;
+            visibility: visible !important;
+            display: block !important;
           }
         }
         .thermal-print-root .thermal-doc {
