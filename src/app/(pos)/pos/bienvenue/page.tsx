@@ -18,6 +18,7 @@ export default async function BienvenuePage() {
       phone: true,
       address: true,
       city: true,
+      category: true,
       matriculeFiscal: true,
       receiptFooter: true,
       onboardingDismissedAt: true,

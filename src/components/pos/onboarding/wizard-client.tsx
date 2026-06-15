@@ -1,13 +1,12 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Step1Info } from "./step1-info";
 import { Step2Services } from "./step2-services";
 import { Step3Products } from "./step3-products";
-import { Step4Team } from "./step4-team";
-import { Step5Drawer } from "./step5-drawer";
-import { Step6Done } from "./step6-done";
+import { Step4Loyalty } from "./step4-loyalty";
+import { Step5Team } from "./step5-team";
 
 type Provider = {
   id: string;
@@ -15,6 +14,7 @@ type Provider = {
   phone: string | null;
   address: string | null;
   city: string | null;
+  category?: string;
   matriculeFiscal: string | null;
   receiptFooter: string | null;
   onboardingDismissedAt: Date | null;
@@ -28,156 +28,129 @@ type Provider = {
 };
 
 const STEPS = [
-  "Infos salon",
-  "Services",
-  "Produits",
-  "Équipe",
-  "Tiroir & ticket",
-  "Terminé",
+  "Votre salon",
+  "Vos services",
+  "Vos produits",
+  "Fidélité",
+  "Équipe & PIN",
 ];
-
-function localStorageGetSafe(key: string): string | null {
-  if (typeof window === "undefined") return null;
-  try { return window.localStorage.getItem(key); } catch { return null; }
-}
 
 export function WizardClient({
   initialProvider,
-  employeeId,
+  employeeId: _employeeId,
 }: {
   initialProvider: Provider;
   employeeId: string;
 }) {
   const router = useRouter();
   const [provider, setProvider] = useState(initialProvider);
-  const [forcedStep, setForcedStep] = useState<number | null>(null);
+  const [step, setStep] = useState(0);
 
-  const productsSkipped = localStorageGetSafe(
-    `onboarding.productsSkipped.${provider.id}`,
-  );
-  const testTicketPrintedAt = localStorageGetSafe(
-    `onboarding.testTicketPrintedAt.${provider.id}`,
-  );
+  function updateProvider(patch: Partial<Provider>) {
+    setProvider((prev) => ({ ...prev, ...patch }));
+  }
 
-  const currentStep = useMemo(() => {
-    if (forcedStep !== null) return forcedStep;
-    if (!provider.salonName || !provider.phone) return 0;
-    if (provider._count.offers === 0) return 1;
-    if (provider._count.products === 0 && !productsSkipped) return 2;
-    if (provider._count.employees === 0) return 3;
-    if (
-      provider._count.cashDrawerSessions === 0 ||
-      !testTicketPrintedAt
-    )
-      return 4;
-    return 5;
-  }, [provider, productsSkipped, testTicketPrintedAt, forcedStep]);
-
-  async function dismiss() {
+  async function finishWizard() {
     try {
-      await fetch("/api/provider/profile", {
+      await fetch("/api/pos/onboarding", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ onboardingDismissedAt: new Date().toISOString() }),
+        body: JSON.stringify({ finish: true }),
       });
     } catch {
-      // Échec réseau — on navigue quand même pour ne pas bloquer l'utilisateur.
+      // ignore
     }
     router.replace("/pos");
   }
 
+  const progress = ((step + 1) / STEPS.length) * 100;
+
   return (
-    <div className="min-h-screen bg-pos-bg p-6" data-pos-theme>
-      <header className="flex items-center justify-between mb-8">
-        <h1 className="text-2xl font-semibold text-pos-ink">
-          Bienvenue sur Salonista
+    <div className="min-h-screen bg-brand-cream" data-pos-theme>
+      <div className="max-w-2xl mx-auto px-4 sm:px-6 py-8">
+        {/* Progress bar + step indicator */}
+        <div className="mb-8">
+          <div className="flex items-center justify-between mb-2">
+            <p className="text-[10px] uppercase tracking-[0.18em] text-brand-ink-soft">
+              Étape {step + 1} sur {STEPS.length}
+            </p>
+            <button
+              type="button"
+              onClick={() => {
+                if (
+                  confirm(
+                    "Voulez-vous vraiment quitter ? Vous pourrez reprendre plus tard.",
+                  )
+                ) {
+                  router.replace("/pos");
+                }
+              }}
+              className="text-xs text-brand-ink-soft hover:text-brand-ink"
+            >
+              Quitter
+            </button>
+          </div>
+          <div className="h-1.5 bg-brand-line rounded-full overflow-hidden">
+            <div
+              className="h-full bg-pos-accent transition-all duration-300"
+              style={{ width: `${progress}%` }}
+            />
+          </div>
+        </div>
+
+        <h1 className="luxury-heading text-3xl text-brand-ink mb-1">
+          {STEPS[step]}
         </h1>
-        <button
-          onClick={() => {
-            if (
-              confirm(
-                "Vous pourrez revenir plus tard, ou rouvrir le wizard depuis /pos/bienvenue.",
-              )
-            ) {
-              dismiss();
-            }
-          }}
-          className="text-sm text-pos-ink-3 hover:text-pos-ink"
-        >
-          Quitter sans terminer
-        </button>
-      </header>
+        <p className="text-sm text-brand-ink-soft mb-6">
+          {step === 0 && "Commençons par les informations de votre salon."}
+          {step === 1 && "Choisissez les services que vous proposez."}
+          {step === 2 && "Ajoutez vos produits à la vente. Étape facultative."}
+          {step === 3 && "Récompensez la fidélité de vos clients."}
+          {step === 4 && "Créez les comptes de votre équipe avec un code PIN."}
+        </p>
 
-      <div className="mb-8 flex gap-1">
-        {STEPS.map((label, i) => (
-          <div
-            key={label}
-            className={`flex-1 h-1 rounded ${
-              i < currentStep
-                ? "bg-pos-accent"
-                : i === currentStep
-                  ? "bg-pos-ink"
-                  : "bg-pos-border"
-            }`}
-            title={label}
-          />
-        ))}
+        <div className="bg-white rounded-3xl border border-brand-line shadow-sm p-6 sm:p-8">
+          {step === 0 && (
+            <Step1Info
+              provider={provider}
+              onSaved={updateProvider}
+              onNext={() => setStep(1)}
+            />
+          )}
+          {step === 1 && (
+            <Step2Services
+              provider={provider}
+              onAdded={updateProvider}
+              onNext={() => setStep(2)}
+              onBack={() => setStep(0)}
+            />
+          )}
+          {step === 2 && (
+            <Step3Products
+              provider={provider}
+              onAdded={updateProvider}
+              onNext={() => setStep(3)}
+              onSkip={() => setStep(3)}
+              onBack={() => setStep(1)}
+            />
+          )}
+          {step === 3 && (
+            <Step4Loyalty
+              providerId={provider.id}
+              onNext={() => setStep(4)}
+              onBack={() => setStep(2)}
+            />
+          )}
+          {step === 4 && (
+            <Step5Team
+              provider={provider}
+              onAdded={updateProvider}
+              onFinish={finishWizard}
+              onBack={() => setStep(3)}
+            />
+          )}
+        </div>
       </div>
-
-      <p className="text-xs uppercase tracking-wider text-pos-ink-3 mb-2">
-        Étape {currentStep + 1}/6
-      </p>
-      <h2 className="text-xl font-semibold mb-6 text-pos-ink">
-        {STEPS[currentStep]}
-      </h2>
-
-      {currentStep === 0 && (
-        <Step1Info
-          provider={provider}
-          onSaved={(p) => setProvider((prev) => ({ ...prev, ...p }))}
-          onNext={() => setForcedStep(1)}
-        />
-      )}
-      {currentStep === 1 && (
-        <Step2Services
-          provider={provider}
-          onAdded={(p) => setProvider((prev) => ({ ...prev, ...p }))}
-          onNext={() => setForcedStep(2)}
-          onBack={() => setForcedStep(0)}
-        />
-      )}
-      {currentStep === 2 && (
-        <Step3Products
-          provider={provider}
-          onAdded={(p) => setProvider((prev) => ({ ...prev, ...p }))}
-          onNext={() => setForcedStep(3)}
-          onSkip={() => setForcedStep(3)}
-          onBack={() => setForcedStep(1)}
-        />
-      )}
-      {currentStep === 3 && (
-        <Step4Team
-          provider={provider}
-          onAdded={(p) => setProvider((prev) => ({ ...prev, ...p }))}
-          onNext={() => setForcedStep(4)}
-          onBack={() => setForcedStep(2)}
-        />
-      )}
-      {currentStep === 4 && (
-        <Step5Drawer
-          provider={provider}
-          employeeId={employeeId}
-          onDone={() => setForcedStep(5)}
-          onBack={() => setForcedStep(3)}
-        />
-      )}
-      {currentStep === 5 && (
-        <Step6Done
-          provider={provider}
-          onFinish={dismiss}
-          onBack={() => setForcedStep(4)}
-        />
-      )}
     </div>
   );
 }

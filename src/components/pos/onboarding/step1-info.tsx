@@ -1,5 +1,7 @@
 "use client";
+
 import { useState } from "react";
+import { SALON_TYPES } from "@/lib/onboarding-presets";
 
 type Provider = {
   id: string;
@@ -7,8 +9,8 @@ type Provider = {
   phone: string | null;
   address: string | null;
   city: string | null;
+  category?: string;
   matriculeFiscal: string | null;
-  receiptFooter: string | null;
 };
 
 export function Step1Info({
@@ -17,107 +19,201 @@ export function Step1Info({
   onNext,
 }: {
   provider: Provider;
-  onSaved: (p: Provider) => void;
+  onSaved: (p: Partial<Provider>) => void;
   onNext: () => void;
 }) {
-  const [form, setForm] = useState({
-    salonName: provider.salonName ?? "",
-    phone: provider.phone ?? "",
-    address: provider.address ?? "",
-    city: provider.city ?? "",
-    matriculeFiscal: provider.matriculeFiscal ?? "",
-    receiptFooter: provider.receiptFooter ?? "Merci de votre visite !",
-  });
+  const [salonName, setSalonName] = useState(provider.salonName ?? "");
+  const [phone, setPhone] = useState(provider.phone ?? "");
+  const [address, setAddress] = useState(provider.address ?? "");
+  const [city, setCity] = useState(provider.city ?? "");
+  const [category, setCategory] = useState(provider.category ?? "AUTRE");
+  const [matriculeFiscal, setMatriculeFiscal] = useState(
+    provider.matriculeFiscal ?? "",
+  );
+  const [showMF, setShowMF] = useState(!!provider.matriculeFiscal);
   const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const canContinue = salonName.trim().length >= 2 && phone.trim().length >= 6;
 
   async function save() {
     setBusy(true);
+    setError(null);
     try {
-      await fetch("/api/provider/profile", {
+      const res = await fetch("/api/pos/onboarding", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(form),
+        body: JSON.stringify({
+          step1: {
+            salonName: salonName.trim(),
+            phone: phone.trim(),
+            address: address.trim(),
+            city: city.trim(),
+            category,
+            matriculeFiscal: matriculeFiscal.trim() || undefined,
+          },
+        }),
       });
-      onSaved({ ...provider, ...form });
-    } catch {
-      // Échec réseau — l'utilisateur peut réessayer en éditant à nouveau.
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        setError(data?.error ?? "Erreur lors de la sauvegarde");
+        return;
+      }
+      onSaved({
+        salonName: salonName.trim(),
+        phone: phone.trim() || null,
+        address: address.trim() || null,
+        city: city.trim() || null,
+        category,
+        matriculeFiscal: matriculeFiscal.trim() || null,
+      });
+      onNext();
     } finally {
       setBusy(false);
     }
   }
 
-  const canContinue = !!form.salonName.trim() && !!form.phone.trim();
-
   return (
-    <div className="max-w-xl space-y-4">
-      <label className="block">
-        <span className="text-sm text-pos-ink-2">Nom du salon</span>
+    <div className="space-y-5">
+      <div>
+        <Label>Nom du salon *</Label>
         <input
-          className="mt-1 block w-full px-3 py-2 rounded border border-pos-border bg-white"
-          value={form.salonName}
-          onChange={(e) => setForm({ ...form, salonName: e.target.value })}
-          onBlur={save}
+          type="text"
+          value={salonName}
+          onChange={(e) => setSalonName(e.target.value)}
+          placeholder="Ex: Salon Fatma"
+          className={inputCls}
         />
-      </label>
-      <label className="block">
-        <span className="text-sm text-pos-ink-2">Téléphone</span>
-        <input
-          className="mt-1 block w-full px-3 py-2 rounded border border-pos-border bg-white"
-          value={form.phone}
-          onChange={(e) => setForm({ ...form, phone: e.target.value })}
-          onBlur={save}
-        />
-      </label>
-      <label className="block">
-        <span className="text-sm text-pos-ink-2">Adresse</span>
-        <input
-          className="mt-1 block w-full px-3 py-2 rounded border border-pos-border bg-white"
-          value={form.address}
-          onChange={(e) => setForm({ ...form, address: e.target.value })}
-          onBlur={save}
-        />
-      </label>
-      <label className="block">
-        <span className="text-sm text-pos-ink-2">Ville</span>
-        <input
-          className="mt-1 block w-full px-3 py-2 rounded border border-pos-border bg-white"
-          value={form.city}
-          onChange={(e) => setForm({ ...form, city: e.target.value })}
-          onBlur={save}
-        />
-      </label>
-      <label className="block">
-        <span className="text-sm text-pos-ink-2">
-          Matricule fiscal <span className="text-pos-ink-3">(facultatif)</span>
-        </span>
-        <input
-          className="mt-1 block w-full px-3 py-2 rounded border border-pos-border bg-white"
-          value={form.matriculeFiscal}
-          onChange={(e) => setForm({ ...form, matriculeFiscal: e.target.value })}
-          onBlur={save}
-          placeholder="n° d'identification fiscale, optionnel"
-        />
-      </label>
-      <label className="block">
-        <span className="text-sm text-pos-ink-2">Message en bas de ticket</span>
-        <textarea
-          className="mt-1 block w-full px-3 py-2 rounded border border-pos-border bg-white"
-          rows={3}
-          value={form.receiptFooter}
-          onChange={(e) => setForm({ ...form, receiptFooter: e.target.value })}
-          onBlur={save}
-        />
-      </label>
+      </div>
 
-      <div className="pt-4 flex justify-end">
+      <div>
+        <Label>Type de salon *</Label>
+        <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+          {SALON_TYPES.map((t) => (
+            <button
+              key={t.value}
+              type="button"
+              onClick={() => setCategory(t.value)}
+              className={`text-left px-3 py-2.5 rounded-lg border transition ${
+                category === t.value
+                  ? "border-pos-accent bg-pos-accent/10 ring-2 ring-pos-accent/30"
+                  : "border-brand-line bg-white hover:border-pos-accent/50"
+              }`}
+            >
+              <div className="text-sm font-medium text-brand-ink">{t.label}</div>
+              <div className="text-[10px] text-brand-ink-soft mt-0.5 leading-tight">
+                {t.hint}
+              </div>
+            </button>
+          ))}
+        </div>
+      </div>
+
+      <div>
+        <Label>Téléphone *</Label>
+        <input
+          type="tel"
+          value={phone}
+          onChange={(e) => setPhone(e.target.value)}
+          placeholder="22 345 678"
+          className={inputCls + " pos-mono"}
+        />
+      </div>
+
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+        <div>
+          <Label>Adresse</Label>
+          <input
+            type="text"
+            value={address}
+            onChange={(e) => setAddress(e.target.value)}
+            placeholder="Rue, avenue…"
+            className={inputCls}
+          />
+        </div>
+        <div>
+          <Label>Ville</Label>
+          <input
+            type="text"
+            value={city}
+            onChange={(e) => setCity(e.target.value)}
+            placeholder="Tunis, La Marsa…"
+            className={inputCls}
+          />
+        </div>
+      </div>
+
+      {!showMF ? (
         <button
-          disabled={!canContinue || busy}
-          onClick={onNext}
-          className="px-5 py-2 rounded bg-pos-ink text-pos-bg disabled:opacity-50"
+          type="button"
+          onClick={() => setShowMF(true)}
+          className="text-xs text-brand-ink-soft hover:text-brand-ink underline"
         >
-          Suivant →
+          + Ajouter un matricule fiscal (facultatif)
+        </button>
+      ) : (
+        <div>
+          <div className="flex items-center justify-between mb-1.5">
+            <Label className="mb-0">Matricule fiscal (facultatif)</Label>
+            <button
+              type="button"
+              onClick={() => {
+                setShowMF(false);
+                setMatriculeFiscal("");
+              }}
+              className="text-[11px] text-brand-ink-soft hover:text-brand-ink"
+            >
+              Masquer
+            </button>
+          </div>
+          <input
+            type="text"
+            value={matriculeFiscal}
+            onChange={(e) => setMatriculeFiscal(e.target.value)}
+            placeholder="Ex: 1234567/A/B/000"
+            className={inputCls + " pos-mono"}
+          />
+          <p className="text-[11px] text-brand-ink-soft mt-1">
+            Apparaîtra sur vos tickets et factures.
+          </p>
+        </div>
+      )}
+
+      {error && (
+        <div className="text-sm text-red-600 bg-red-50 border border-red-100 rounded-lg px-3 py-2">
+          {error}
+        </div>
+      )}
+
+      <div className="flex justify-end pt-2">
+        <button
+          type="button"
+          onClick={save}
+          disabled={busy || !canContinue}
+          className="px-8 py-3 rounded-xl bg-pos-accent text-white font-semibold hover:bg-pos-accent/90 disabled:opacity-50"
+        >
+          {busy ? "Sauvegarde…" : "Continuer →"}
         </button>
       </div>
     </div>
+  );
+}
+
+const inputCls =
+  "w-full rounded-lg border border-brand-line bg-brand-cream/40 px-3 py-2.5 text-sm text-brand-ink placeholder:text-brand-ink-soft/60 focus:border-pos-accent focus:outline-none";
+
+function Label({
+  children,
+  className = "",
+}: {
+  children: React.ReactNode;
+  className?: string;
+}) {
+  return (
+    <label
+      className={`block text-[10px] uppercase tracking-[0.18em] text-brand-ink-soft mb-1.5 ${className}`}
+    >
+      {children}
+    </label>
   );
 }

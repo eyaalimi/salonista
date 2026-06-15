@@ -1,38 +1,22 @@
 "use client";
-import { useState } from "react";
+
+import { useMemo, useState } from "react";
+import { Plus, Trash2 } from "lucide-react";
+import { SERVICE_PRESETS, type ServicePreset } from "@/lib/onboarding-presets";
 
 type Provider = {
   id: string;
-  _count: {
-    offers: number;
-    products: number;
-    employees: number;
-    sales: number;
-    cashDrawerSessions: number;
-  };
+  category?: string;
+  _count: { offers: number };
 };
 
-type Added = {
-  id: string;
+type Line = {
   title: string;
-  discountPrice: string;
   durationMinutes: number;
+  price: string;
+  selected: boolean;
+  custom: boolean;
 };
-
-const CHIPS: { label: string; duration: number }[] = [
-  { label: "Brushing", duration: 30 },
-  { label: "Coupe femme", duration: 45 },
-  { label: "Coupe homme", duration: 20 },
-  { label: "Couleur", duration: 90 },
-  { label: "Mèches", duration: 120 },
-  { label: "Lissage", duration: 120 },
-  { label: "Soin visage", duration: 60 },
-  { label: "Manucure", duration: 30 },
-  { label: "Pédicure", duration: 45 },
-  { label: "Épilation sourcils", duration: 15 },
-];
-
-const ALLOWED_DURATIONS = [15, 20, 30, 45, 60, 75, 90, 105, 120, 150, 180, 240];
 
 export function Step2Services({
   provider,
@@ -41,148 +25,185 @@ export function Step2Services({
   onBack,
 }: {
   provider: Provider;
-  onAdded: (p: Provider) => void;
+  onAdded: (p: Partial<Provider>) => void;
   onNext: () => void;
   onBack: () => void;
 }) {
-  const [title, setTitle] = useState("");
-  const [price, setPrice] = useState("");
-  const [duration, setDuration] = useState(30);
-  const [added, setAdded] = useState<Added[]>([]);
+  const category = provider.category ?? "AUTRE";
+  const presets: ServicePreset[] =
+    SERVICE_PRESETS[category] ?? SERVICE_PRESETS.AUTRE;
+
+  // Initial state: every preset shown, all selected by default for a fast
+  // happy path. The salon unchecks what they don't offer.
+  const initial: Line[] = useMemo(
+    () =>
+      presets.map((p) => ({
+        title: p.title,
+        durationMinutes: p.durationMinutes,
+        price: p.price,
+        selected: true,
+        custom: false,
+      })),
+    [presets],
+  );
+  const [lines, setLines] = useState<Line[]>(initial);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  async function addOne() {
-    if (!title.trim() || Number(price) <= 0 || busy) return;
+  function update(i: number, patch: Partial<Line>) {
+    setLines((prev) => prev.map((l, idx) => (idx === i ? { ...l, ...patch } : l)));
+  }
+
+  function addCustom() {
+    setLines((prev) => [
+      ...prev,
+      {
+        title: "",
+        durationMinutes: 30,
+        price: "20.000",
+        selected: true,
+        custom: true,
+      },
+    ]);
+  }
+
+  function remove(i: number) {
+    setLines((prev) => prev.filter((_, idx) => idx !== i));
+  }
+
+  const selectedCount = lines.filter((l) => l.selected && l.title.trim()).length;
+
+  async function save() {
     setBusy(true);
     setError(null);
     try {
-      const res = await fetch("/api/offers", {
-        method: "POST",
+      const services = lines
+        .filter((l) => l.selected && l.title.trim())
+        .map((l) => ({
+          title: l.title.trim(),
+          durationMinutes: l.durationMinutes,
+          price: l.price,
+        }));
+      const res = await fetch("/api/pos/onboarding", {
+        method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          title: title.trim(),
-          discountPrice: price,
-          durationMinutes: duration,
-          publishedToMarketplace: false,
-        }),
+        body: JSON.stringify({ step2: { services } }),
       });
-      const json = await res.json().catch(() => null);
       if (!res.ok) {
-        setError(json?.error ?? "Erreur");
+        const data = await res.json().catch(() => ({}));
+        setError(data?.error ?? "Erreur lors de la sauvegarde");
         return;
       }
-      setAdded((arr) => [...arr, json]);
-      onAdded({
-        ...provider,
-        _count: { ...provider._count, offers: provider._count.offers + 1 },
-      });
-      setTitle("");
-      setPrice("");
+      onAdded({ _count: { ...provider._count, offers: services.length } });
+      onNext();
     } finally {
       setBusy(false);
     }
   }
 
-  function applyChip(label: string, dur: number) {
-    setTitle(label);
-    setDuration(dur);
-  }
-
-  const canContinue = added.length > 0 || provider._count.offers > 0;
-
   return (
-    <div className="max-w-2xl">
-      <p className="text-sm text-pos-ink-2 mb-3">
-        Cliquez sur une suggestion ou tapez un nom :
+    <div className="space-y-4">
+      <p className="text-xs text-brand-ink-soft">
+        Voici une liste type pour votre salon. Cochez ce que vous proposez,
+        ajustez les prix, puis continuez.
       </p>
-      <div className="flex flex-wrap gap-2 mb-5">
-        {CHIPS.map((c) => (
-          <button
-            key={c.label}
-            type="button"
-            onClick={() => applyChip(c.label, c.duration)}
-            className="px-3 py-1 rounded-full border border-pos-border text-sm hover:bg-pos-card"
+
+      <div className="space-y-2">
+        {lines.map((l, i) => (
+          <div
+            key={i}
+            className={`flex items-center gap-2 p-2.5 rounded-lg border transition ${
+              l.selected
+                ? "border-pos-accent/30 bg-pos-accent/5"
+                : "border-brand-line bg-white opacity-60"
+            }`}
           >
-            {c.label}
-          </button>
+            <input
+              type="checkbox"
+              checked={l.selected}
+              onChange={(e) => update(i, { selected: e.target.checked })}
+              className="w-4 h-4 accent-pos-accent shrink-0"
+            />
+            <input
+              type="text"
+              value={l.title}
+              onChange={(e) => update(i, { title: e.target.value })}
+              placeholder={l.custom ? "Nom du service…" : ""}
+              disabled={!l.selected}
+              className="flex-1 min-w-0 bg-transparent text-sm font-medium text-brand-ink focus:outline-none disabled:opacity-60"
+            />
+            <input
+              type="number"
+              value={l.durationMinutes}
+              onChange={(e) =>
+                update(i, { durationMinutes: Number(e.target.value) || 0 })
+              }
+              disabled={!l.selected}
+              min={5}
+              max={300}
+              step={5}
+              className="w-14 text-xs text-center bg-white border border-brand-line rounded px-1 py-1 pos-mono disabled:opacity-60"
+            />
+            <span className="text-[10px] text-brand-ink-soft -ml-1">min</span>
+            <input
+              type="text"
+              inputMode="decimal"
+              value={l.price}
+              onChange={(e) => update(i, { price: e.target.value })}
+              disabled={!l.selected}
+              className="w-20 text-xs text-right bg-white border border-brand-line rounded px-2 py-1 pos-mono disabled:opacity-60"
+            />
+            <span className="text-[10px] text-brand-ink-soft -ml-1">DT</span>
+            {l.custom && (
+              <button
+                type="button"
+                onClick={() => remove(i)}
+                className="text-brand-ink-soft hover:text-red-600 shrink-0"
+                aria-label="Supprimer"
+              >
+                <Trash2 size={14} />
+              </button>
+            )}
+          </div>
         ))}
       </div>
 
+      <button
+        type="button"
+        onClick={addCustom}
+        className="inline-flex items-center gap-1.5 text-sm text-pos-accent hover:text-pos-accent/80 font-medium"
+      >
+        <Plus size={14} /> Ajouter un service sur-mesure
+      </button>
+
       {error && (
-        <div className="mb-3 px-3 py-2 rounded bg-red-50 text-red-800 text-sm">
+        <div className="text-sm text-red-600 bg-red-50 border border-red-100 rounded-lg px-3 py-2">
           {error}
         </div>
       )}
 
-      <div className="grid grid-cols-12 gap-2 mb-3 px-3 py-2 rounded border border-pos-border-strong">
-        <input
-          className="col-span-5 px-2 py-1 rounded border border-pos-border bg-white"
-          placeholder="Nom du service"
-          aria-label="Nom du service"
-          value={title}
-          onChange={(e) => setTitle(e.target.value)}
-          onKeyDown={(e) => {
-            if (e.key === "Enter") addOne();
-          }}
-        />
-        <input
-          className="col-span-3 px-2 py-1 rounded border border-pos-border bg-white"
-          type="number"
-          step="0.001"
-          min="0.001"
-          placeholder="Prix DT"
-          aria-label="Prix en DT"
-          value={price}
-          onChange={(e) => setPrice(e.target.value)}
-          onKeyDown={(e) => {
-            if (e.key === "Enter") addOne();
-          }}
-        />
-        <select
-          className="col-span-2 px-2 py-1 rounded border border-pos-border bg-white"
-          aria-label="Durée en minutes"
-          value={duration}
-          onChange={(e) => setDuration(Number(e.target.value))}
-        >
-          {ALLOWED_DURATIONS.map((d) => (
-            <option key={d} value={d}>
-              {d} min
-            </option>
-          ))}
-        </select>
+      <div className="flex items-center justify-between pt-4 border-t border-brand-line">
         <button
           type="button"
-          disabled={busy || !title.trim() || Number(price) <= 0}
-          onClick={addOne}
-          className="col-span-2 px-3 py-1 rounded bg-pos-ink text-pos-bg disabled:opacity-50"
+          onClick={onBack}
+          className="text-sm text-brand-ink-soft hover:text-brand-ink"
         >
-          Ajouter
+          ← Retour
         </button>
-      </div>
-
-      {added.length > 0 && (
-        <ul className="text-sm mb-4">
-          {added.map((a) => (
-            <li key={a.id} className="py-1 border-t border-pos-border">
-              {a.title} — {Number(a.discountPrice).toFixed(3)} DT — {a.durationMinutes} min
-            </li>
-          ))}
-        </ul>
-      )}
-
-      <div className="flex justify-between pt-2">
-        <button type="button" onClick={onBack} className="text-sm text-pos-ink-3">
-          ← Précédent
-        </button>
-        <button
-          type="button"
-          disabled={!canContinue}
-          onClick={onNext}
-          className="px-5 py-2 rounded bg-pos-ink text-pos-bg disabled:opacity-50"
-        >
-          Suivant →
-        </button>
+        <div className="flex items-center gap-3">
+          <span className="text-xs text-brand-ink-soft">
+            {selectedCount} service{selectedCount !== 1 ? "s" : ""} sélectionné
+            {selectedCount !== 1 ? "s" : ""}
+          </span>
+          <button
+            type="button"
+            onClick={save}
+            disabled={busy || selectedCount === 0}
+            className="px-8 py-3 rounded-xl bg-pos-accent text-white font-semibold hover:bg-pos-accent/90 disabled:opacity-50"
+          >
+            {busy ? "Sauvegarde…" : "Continuer →"}
+          </button>
+        </div>
       </div>
     </div>
   );
