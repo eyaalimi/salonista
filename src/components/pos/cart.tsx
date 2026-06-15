@@ -113,17 +113,17 @@ export function Cart({
       </div>
 
       {/* Customer card / add-customer button */}
-      <div className="px-4 pt-4 pb-2">
+      <div className="px-3 pt-2 pb-1.5">
         {customer ? (
-          <div className="flex items-center justify-between gap-2 px-3 py-2.5 rounded-lg border border-pos-border bg-pos-bg">
+          <div className="flex items-center justify-between gap-2 px-2.5 py-1.5 rounded-md border border-pos-border bg-pos-bg">
             <div className="flex items-center gap-2 min-w-0">
-              <span className="inline-flex items-center justify-center w-7 h-7 rounded-full bg-pos-accent/15 text-pos-accent text-xs font-semibold shrink-0">
+              <span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-pos-accent/15 text-pos-accent text-[10px] font-semibold shrink-0">
                 {(customerName ?? "?").charAt(0).toUpperCase()}
               </span>
               <div className="min-w-0">
-                <div className="text-sm font-medium text-pos-ink truncate">{customerName}</div>
+                <div className="text-xs font-medium text-pos-ink truncate capitalize">{customerName}</div>
                 {customer.phone && !customer.phone.startsWith("walk-in-") && (
-                  <div className="text-[10px] text-pos-ink-3 pos-mono truncate">{customer.phone}</div>
+                  <div className="text-[10px] text-pos-ink-3 pos-mono truncate leading-tight">{customer.phone}</div>
                 )}
               </div>
             </div>
@@ -133,16 +133,16 @@ export function Cart({
               aria-label="Retirer la cliente"
               className="text-pos-ink-3 hover:text-pos-danger shrink-0"
             >
-              <Trash2 size={14} />
+              <Trash2 size={13} />
             </button>
           </div>
         ) : (
           <button
             type="button"
             onClick={onOpenSide}
-            className="w-full inline-flex items-center justify-center gap-2 px-3 py-2.5 rounded-lg bg-pos-accent/10 text-pos-accent text-sm font-medium hover:bg-pos-accent/20"
+            className="w-full inline-flex items-center justify-center gap-2 px-3 py-2 rounded-md bg-pos-accent/10 text-pos-accent text-xs font-medium hover:bg-pos-accent/20"
           >
-            <UserPlus size={16} />
+            <UserPlus size={14} />
             Ajouter une cliente
           </button>
         )}
@@ -171,7 +171,7 @@ export function Cart({
             const canDiscount = permissions["pos.discount"];
             const editing = discountEditUid === l.uid;
             return (
-              <li key={l.uid} className="border-b border-pos-border px-4 py-3">
+              <li key={l.uid} className="border-b border-pos-border px-3 py-2">
                 <div className="flex items-start justify-between gap-2 mb-1">
                   <div className="flex items-center gap-2 min-w-0 flex-1">
                     <span
@@ -183,7 +183,7 @@ export function Cart({
                     >
                       {l.kind === "SERVICE" ? "SVC" : "PRD"}
                     </span>
-                    <span className="text-sm font-medium truncate">{l.nameSnapshot}</span>
+                    <span className="text-sm font-medium truncate capitalize">{l.nameSnapshot}</span>
                   </div>
                   <div className="flex flex-col items-end shrink-0">
                     {l.discount && discountAmount > 0 ? (
@@ -286,14 +286,14 @@ export function Cart({
         </ul>
       )}
 
-      <div className="border-t-2 border-pos-ink bg-pos-bg pos-mono px-4 py-3 text-sm">
+      <div className="border-t-2 border-pos-ink bg-pos-bg pos-mono px-3 py-2 text-xs">
         <Row label="Sous-total" value={totals.subtotal} />
         {Number(totals.taxTotal) > 0 && <Row label="TVA" value={totals.taxTotal} />}
         {Number(totals.saleDiscountAmount) > 0 && (
           <Row label="Remise" value={`−${totals.saleDiscountAmount}`} />
         )}
         {Number(totals.tipTotal) > 0 && <Row label="Pourboire" value={totals.tipTotal} />}
-        <div className="border-t border-dashed border-pos-ink-3 mt-2 pt-2 flex justify-between text-base font-semibold">
+        <div className="border-t border-dashed border-pos-ink-3 mt-1.5 pt-1.5 flex justify-between text-sm font-semibold">
           <span>À régler</span>
           <span>{formatDT(totals.total)}</span>
         </div>
@@ -303,12 +303,19 @@ export function Cart({
         type="button"
         onClick={onCharge}
         disabled={cart.length === 0 || toMillimes(totals.total) <= 0}
-        className="bg-pos-ink text-pos-bg flex items-center justify-between px-4 h-12 text-sm hover:bg-pos-accent disabled:opacity-40 disabled:hover:bg-pos-ink"
+        className="bg-emerald-600 text-white flex items-center justify-between px-4 h-14 text-base font-semibold hover:bg-emerald-700 active:bg-emerald-800 disabled:opacity-40 disabled:hover:bg-emerald-600 shadow-md shadow-emerald-600/30 transition"
       >
-        <span className="font-medium">Encaisser</span>
+        <span className="flex items-center gap-2">
+          <span className="inline-flex items-center justify-center w-7 h-7 rounded-full bg-white/20 text-base">
+            ✓
+          </span>
+          Encaisser
+        </span>
         <span className="flex items-center gap-2 pos-mono">
           {formatDT(totals.total)}
-          <kbd>{getShortcutLabel("cart.charge")}</kbd>
+          <kbd className="bg-white/15 text-white border-white/20">
+            {getShortcutLabel("cart.charge")}
+          </kbd>
         </span>
       </button>
 

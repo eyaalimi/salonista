@@ -84,13 +84,13 @@ export function Results({ defaultEmployeeId }: { defaultEmployeeId: string }) {
         </button>
       </div>
 
-      <div ref={rowsRef} className="flex-1 overflow-y-auto p-4">
+      <div ref={rowsRef} className="flex-1 overflow-y-auto p-3">
         {visible.length === 0 ? (
           <p className="p-8 text-center text-sm text-pos-ink-3">
             Aucun résultat.
           </p>
         ) : (
-          <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
+          <div className="grid grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-2">
             {visible.map((r, idx) => {
               const selected = idx === selectedIndex;
               return (
@@ -101,25 +101,30 @@ export function Results({ defaultEmployeeId }: { defaultEmployeeId: string }) {
                     setSelectedIndex(idx);
                     addResultToCart(r, defaultEmployeeId);
                   }}
-                  className={`group text-left rounded-xl border bg-white overflow-hidden transition shadow-sm hover:shadow-md ${
+                  className={`group text-left rounded-lg border bg-white overflow-hidden transition shadow-sm hover:shadow-md ${
                     selected
                       ? "border-pos-accent ring-2 ring-pos-accent/30"
                       : "border-pos-border hover:border-pos-accent/50"
                   }`}
+                  title={r.name}
                 >
                   <ResultMedia r={r} />
-                  <div className="p-3 flex flex-col gap-1">
-                    <div className="flex items-start justify-between gap-2">
-                      <div className="font-medium text-pos-ink truncate flex-1">{r.name}</div>
+                  <div className="p-2 flex flex-col gap-0.5">
+                    <div className="flex items-start justify-between gap-1.5">
+                      <div className="text-[12px] font-medium text-pos-ink truncate flex-1 capitalize leading-tight">
+                        {r.name}
+                      </div>
                       <KindBadge kind={r.kind} />
                     </div>
-                    <div className="flex items-center justify-between text-xs text-pos-ink-3">
-                      <span className="truncate">
-                        {r.kind === "SERVICE" && r.duration ? `${r.duration} min` : r.subtitle ?? ""}
+                    <div className="flex items-center justify-between gap-1">
+                      <span className="text-[10px] text-pos-ink-3 truncate">
+                        {r.kind === "SERVICE" && r.duration
+                          ? `${r.duration} min`
+                          : r.subtitle ?? ""}
                       </span>
                       {r.stock && <StockPill stock={r.stock} />}
                     </div>
-                    <div className="pos-mono text-right text-pos-accent font-semibold mt-1">
+                    <div className="pos-mono text-right text-pos-accent text-[13px] font-semibold leading-tight">
                       {formatDT(r.salePrice)}
                     </div>
                   </div>
@@ -150,7 +155,7 @@ function ResultMedia({ r }: { r: SearchResult }) {
     // doesn't see runtime files). We use a plain <img> here because the
     // results grid renders many small thumbnails and we want them unoptimized.
     return (
-      <div className="aspect-square w-full bg-pos-bg overflow-hidden">
+      <div className="aspect-[4/3] w-full bg-pos-bg overflow-hidden">
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
           src={r.photo}
@@ -164,7 +169,7 @@ function ResultMedia({ r }: { r: SearchResult }) {
   const initial = r.name.trim().charAt(0).toUpperCase() || "?";
   return (
     <div
-      className="aspect-square w-full flex items-center justify-center text-3xl font-semibold text-white/95"
+      className="aspect-[4/3] w-full flex items-center justify-center text-2xl font-semibold text-white/95"
       style={{ backgroundColor: colorFor(r.id) }}
     >
       {initial}
