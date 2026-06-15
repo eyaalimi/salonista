@@ -1,8 +1,19 @@
 "use client";
 
-import { useMemo, useState } from "react";
-import { Plus, Trash2 } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
+import { Plus, Trash2, ImagePlus } from "lucide-react";
 import { PRODUCT_PRESETS, type ProductPreset } from "@/lib/onboarding-presets";
+
+function readSalonTypes(providerId: string, fallback: string): string[] {
+  try {
+    const raw = localStorage.getItem(`onboarding.salonTypes.${providerId}`);
+    if (raw) {
+      const arr = JSON.parse(raw);
+      if (Array.isArray(arr) && arr.length > 0) return arr;
+    }
+  } catch {}
+  return [fallback];
+}
 
 type Provider = {
   id: string;
@@ -15,6 +26,7 @@ type Line = {
   category: string;
   salePrice: string;
   stockQuantity: number;
+  photoUrl: string | null;
   selected: boolean;
   custom: boolean;
 };
@@ -32,9 +44,23 @@ export function Step3Products({
   onSkip: () => void;
   onBack: () => void;
 }) {
-  const category = provider.category ?? "AUTRE";
-  const presets: ProductPreset[] =
-    PRODUCT_PRESETS[category] ?? PRODUCT_PRESETS.AUTRE;
+  // Merge presets across all chosen salon types.
+  const presets: ProductPreset[] = useMemo(() => {
+    const fallback = provider.category ?? "AUTRE";
+    const types = readSalonTypes(provider.id, fallback);
+    const seen = new Set<string>();
+    const out: ProductPreset[] = [];
+    for (const t of types) {
+      const list = PRODUCT_PRESETS[t] ?? [];
+      for (const p of list) {
+        const key = p.name.toLowerCase().trim();
+        if (seen.has(key)) continue;
+        seen.add(key);
+        out.push(p);
+      }
+    }
+    return out;
+  }, [provider.id, provider.category]);
 
   const initial: Line[] = useMemo(
     () =>
@@ -43,6 +69,7 @@ export function Step3Products({
         category: p.category,
         salePrice: p.salePrice,
         stockQuantity: p.defaultStock,
+        photoUrl: null,
         selected: false,
         custom: false,
       })),
@@ -51,6 +78,25 @@ export function Step3Products({
   const [lines, setLines] = useState<Line[]>(initial);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [uploadingFor, setUploadingFor] = useState<number | null>(null);
+
+  // Reset lines when presets change (e.g. multi-type was loaded after first render).
+  useEffect(() => {
+    setLines(initial);
+  }, [initial]);
+
+  async function uploadPhoto(i: number, file: File) {
+    setUploadingFor(i);
+    try {
+      const fd = new FormData();
+      fd.append("file", file);
+      const res = await fetch("/api/upload", { method: "POST", body: fd });
+      const data = await res.json();
+      if (res.ok) update(i, { photoUrl: data.url ?? data.path ?? null });
+    } finally {
+      setUploadingFor(null);
+    }
+  }
 
   function update(i: number, patch: Partial<Line>) {
     setLines((prev) => prev.map((l, idx) => (idx === i ? { ...l, ...patch } : l)));
@@ -63,6 +109,7 @@ export function Step3Products({
         category: "Autre",
         salePrice: "20.000",
         stockQuantity: 5,
+        photoUrl: null,
         selected: true,
         custom: true,
       },
@@ -85,6 +132,7 @@ export function Step3Products({
           category: l.category,
           salePrice: l.salePrice,
           stockQuantity: l.stockQuantity,
+          photoUrl: l.photoUrl,
         }));
       const res = await fetch("/api/pos/onboarding", {
         method: "PATCH",
@@ -106,9 +154,7 @@ export function Step3Products({
   return (
     <div className="space-y-4">
       <p className="text-xs text-brand-ink-soft">
-        Vendez-vous aussi des produits à vos clients ? Cochez ce que vous
-        souhaitez référencer, avec un stock initial. Vous pourrez tout ajouter
-        plus tard.
+        Vos produits à la vente · stock initial · étape facultative
       </p>
 
       {presets.length === 0 && lines.length === 0 ? (
@@ -132,6 +178,13 @@ export function Step3Products({
                 checked={l.selected}
                 onChange={(e) => update(i, { selected: e.target.checked })}
                 className="w-4 h-4 accent-pos-accent shrink-0"
+              />
+              <PhotoCell
+                photoUrl={l.photoUrl}
+                uploading={uploadingFor === i}
+                disabled={!l.selected}
+                onUpload={(file) => uploadPhoto(i, file)}
+                onClear={() => update(i, { photoUrl: null })}
               />
               <input
                 type="text"
@@ -221,5 +274,63 @@ export function Step3Products({
         </div>
       </div>
     </div>
+  );
+}
+
+function PhotoCell({
+  photoUrl,
+  uploading,
+  disabled,
+  onUpload,
+  onClear,
+}: {
+  photoUrl: string | null;
+  uploading: boolean;
+  disabled: boolean;
+  onUpload: (file: File) => void;
+  onClear: () => void;
+}) {
+  return (
+    <label
+      className={`relative w-10 h-10 rounded-lg overflow-hidden border border-brand-line bg-brand-cream/50 flex items-center justify-center shrink-0 ${
+        disabled ? "opacity-40 cursor-not-allowed" : "cursor-pointer hover:border-pos-accent"
+      }`}
+      aria-label="Image du produit"
+    >
+      {photoUrl ? (
+        <>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src={photoUrl} alt="" className="w-full h-full object-cover" />
+          {!disabled && (
+            <button
+              type="button"
+              onClick={(e) => {
+                e.preventDefault();
+                onClear();
+              }}
+              className="absolute top-0 right-0 w-4 h-4 bg-black/60 text-white text-[10px] leading-none flex items-center justify-center"
+              aria-label="Retirer"
+            >
+              ×
+            </button>
+          )}
+        </>
+      ) : uploading ? (
+        <span className="text-[9px] text-brand-ink-soft">…</span>
+      ) : (
+        <ImagePlus size={14} className="text-brand-ink-soft" />
+      )}
+      <input
+        type="file"
+        accept="image/jpeg,image/png,image/webp,image/avif"
+        disabled={disabled}
+        onChange={(e) => {
+          const file = e.target.files?.[0];
+          if (file) onUpload(file);
+          e.target.value = "";
+        }}
+        className="hidden"
+      />
+    </label>
   );
 }

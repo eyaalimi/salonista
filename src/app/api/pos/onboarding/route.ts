@@ -26,6 +26,7 @@ type Step1 = {
   city?: string;
   category?: string;
   matriculeFiscal?: string;
+  logoUrl?: string;
 };
 
 type Step2Service = {
@@ -33,6 +34,7 @@ type Step2Service = {
   durationMinutes: number;
   price: string;
   taxRate?: string;
+  photoUrl?: string | null;
 };
 
 type Step3Product = {
@@ -40,6 +42,7 @@ type Step3Product = {
   category?: string;
   salePrice: string;
   stockQuantity: number;
+  photoUrl?: string | null;
 };
 
 type Step4Loyalty = {
@@ -94,6 +97,10 @@ export async function PATCH(req: NextRequest) {
     if (typeof s.matriculeFiscal === "string") {
       data.matriculeFiscal = s.matriculeFiscal.trim() || null;
     }
+    if (typeof s.logoUrl === "string" && s.logoUrl.trim()) {
+      // photos[0] is conventionally the salon logo. Replace existing logo.
+      data.photos = [s.logoUrl.trim()];
+    }
     if (Object.keys(data).length > 0) {
       await (prisma as never as {
         providerProfile: { update: (a: unknown) => Promise<unknown> };
@@ -127,7 +134,7 @@ export async function PATCH(req: NextRequest) {
         category: "AUTRE" as const,
         description: "",
         publishedToMarketplace: false,
-        photos: [],
+        photos: svc.photoUrl ? [svc.photoUrl] : [],
       };
       if (existing) {
         await (prisma as never as {
@@ -150,7 +157,7 @@ export async function PATCH(req: NextRequest) {
         select: { id: true },
       });
       const sku = `SKU-${p.name.slice(0, 6).toUpperCase().replace(/\s/g, "")}-${Date.now().toString(36).slice(-4)}`;
-      const data = {
+      const data: Record<string, unknown> = {
         providerId,
         name: p.name,
         category: p.category ?? null,
@@ -160,6 +167,7 @@ export async function PATCH(req: NextRequest) {
         taxRate: "19.00",
         stockQuantity: p.stockQuantity ?? 0,
       };
+      if (p.photoUrl) data.photo = p.photoUrl;
       if (existing) {
         await (prisma as never as {
           product: { update: (a: unknown) => Promise<unknown> };

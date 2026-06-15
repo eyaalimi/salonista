@@ -61,10 +61,6 @@ export function Step4Loyalty({
 
   return (
     <div className="space-y-5">
-      <p className="text-xs text-brand-ink-soft">
-        Récompensez vos clients fidèles. Vous pourrez modifier ces réglages à
-        tout moment depuis la page Fidélité.
-      </p>
 
       {/* Enable / disable */}
       <label className="flex items-start gap-3 p-3 rounded-lg border border-brand-line bg-brand-cream/30 cursor-pointer">

@@ -12,40 +12,16 @@
 export type SalonType = {
   value: string; // Category enum value
   label: string;
-  hint: string;
+  emoji: string;
 };
 
 export const SALON_TYPES: SalonType[] = [
-  {
-    value: "COIFFURE",
-    label: "Coiffure (mixte)",
-    hint: "Coupe, couleur, soins capillaires",
-  },
-  {
-    value: "ESTHETIQUE",
-    label: "Esthétique",
-    hint: "Soins visage, épilation",
-  },
-  {
-    value: "ONGLERIE",
-    label: "Onglerie",
-    hint: "Manucure, pédicure, pose d'ongles",
-  },
-  {
-    value: "MASSAGE",
-    label: "Spa & Massage",
-    hint: "Massages, soins corporels",
-  },
-  {
-    value: "PARFUMERIE",
-    label: "Parfumerie",
-    hint: "Vente de parfums & cosmétiques",
-  },
-  {
-    value: "AUTRE",
-    label: "Autre / Mixte",
-    hint: "Plusieurs activités",
-  },
+  { value: "COIFFURE", label: "Coiffure", emoji: "💇" },
+  { value: "ESTHETIQUE", label: "Esthétique", emoji: "💆" },
+  { value: "ONGLERIE", label: "Onglerie", emoji: "💅" },
+  { value: "MASSAGE", label: "Spa & Massage", emoji: "🧖" },
+  { value: "PARFUMERIE", label: "Parfumerie", emoji: "🌸" },
+  { value: "AUTRE", label: "Autre", emoji: "✨" },
 ];
 
 export type ServicePreset = {

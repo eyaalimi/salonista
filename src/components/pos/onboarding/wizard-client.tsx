@@ -98,16 +98,9 @@ export function WizardClient({
           </div>
         </div>
 
-        <h1 className="luxury-heading text-3xl text-brand-ink mb-1">
+        <h1 className="luxury-heading text-3xl text-brand-ink mb-6">
           {STEPS[step]}
         </h1>
-        <p className="text-sm text-brand-ink-soft mb-6">
-          {step === 0 && "Commençons par les informations de votre salon."}
-          {step === 1 && "Choisissez les services que vous proposez."}
-          {step === 2 && "Ajoutez vos produits à la vente. Étape facultative."}
-          {step === 3 && "Récompensez la fidélité de vos clients."}
-          {step === 4 && "Créez les comptes de votre équipe avec un code PIN."}
-        </p>
 
         <div className="bg-white rounded-3xl border border-brand-line shadow-sm p-6 sm:p-8">
           {step === 0 && (

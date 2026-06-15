@@ -88,14 +88,9 @@ export function Step5Team({
 
   return (
     <div className="space-y-5">
-      <div className="rounded-lg border border-pos-accent/30 bg-pos-accent/5 p-3">
-        <p className="text-xs text-brand-ink">
-          <strong>Vous êtes déjà connecté·e en tant que propriétaire.</strong>
-          {"  "}
-          Ajoutez ici les autres membres de votre équipe (caissier, coiffeur,
-          manager…) qui se connecteront avec leur propre code PIN.
-        </p>
-      </div>
+      <p className="text-xs text-brand-ink-soft">
+        Ajoutez les autres membres avec leur PIN · facultatif
+      </p>
 
       {employees.length === 0 ? (
         <p className="text-sm text-brand-ink-soft text-center py-6">

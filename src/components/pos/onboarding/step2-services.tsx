@@ -1,7 +1,7 @@
 "use client";
 
-import { useMemo, useState } from "react";
-import { Plus, Trash2 } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
+import { Plus, Trash2, ImagePlus } from "lucide-react";
 import { SERVICE_PRESETS, type ServicePreset } from "@/lib/onboarding-presets";
 
 type Provider = {
@@ -14,9 +14,21 @@ type Line = {
   title: string;
   durationMinutes: number;
   price: string;
+  photoUrl: string | null;
   selected: boolean;
   custom: boolean;
 };
+
+function readSalonTypes(providerId: string, fallback: string): string[] {
+  try {
+    const raw = localStorage.getItem(`onboarding.salonTypes.${providerId}`);
+    if (raw) {
+      const arr = JSON.parse(raw);
+      if (Array.isArray(arr) && arr.length > 0) return arr;
+    }
+  } catch {}
+  return [fallback];
+}
 
 export function Step2Services({
   provider,
@@ -29,31 +41,45 @@ export function Step2Services({
   onNext: () => void;
   onBack: () => void;
 }) {
-  const category = provider.category ?? "AUTRE";
-  const presets: ServicePreset[] =
-    SERVICE_PRESETS[category] ?? SERVICE_PRESETS.AUTRE;
+  const [lines, setLines] = useState<Line[]>([]);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [uploadingFor, setUploadingFor] = useState<number | null>(null);
 
-  // Initial state: every preset shown, all selected by default for a fast
-  // happy path. The salon unchecks what they don't offer.
-  const initial: Line[] = useMemo(
-    () =>
-      presets.map((p) => ({
+  // Build the preset list by merging all chosen salon types.
+  const mergedPresets = useMemo<ServicePreset[]>(() => {
+    const fallback = provider.category ?? "AUTRE";
+    const types = readSalonTypes(provider.id, fallback);
+    const seen = new Set<string>();
+    const out: ServicePreset[] = [];
+    for (const t of types) {
+      const list = SERVICE_PRESETS[t] ?? [];
+      for (const p of list) {
+        const key = p.title.toLowerCase().trim();
+        if (seen.has(key)) continue;
+        seen.add(key);
+        out.push(p);
+      }
+    }
+    return out;
+  }, [provider.id, provider.category]);
+
+  useEffect(() => {
+    setLines(
+      mergedPresets.map((p) => ({
         title: p.title,
         durationMinutes: p.durationMinutes,
         price: p.price,
+        photoUrl: null,
         selected: true,
         custom: false,
       })),
-    [presets],
-  );
-  const [lines, setLines] = useState<Line[]>(initial);
-  const [busy, setBusy] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+    );
+  }, [mergedPresets]);
 
   function update(i: number, patch: Partial<Line>) {
     setLines((prev) => prev.map((l, idx) => (idx === i ? { ...l, ...patch } : l)));
   }
-
   function addCustom() {
     setLines((prev) => [
       ...prev,
@@ -61,14 +87,27 @@ export function Step2Services({
         title: "",
         durationMinutes: 30,
         price: "20.000",
+        photoUrl: null,
         selected: true,
         custom: true,
       },
     ]);
   }
-
   function remove(i: number) {
     setLines((prev) => prev.filter((_, idx) => idx !== i));
+  }
+
+  async function uploadPhoto(i: number, file: File) {
+    setUploadingFor(i);
+    try {
+      const fd = new FormData();
+      fd.append("file", file);
+      const res = await fetch("/api/upload", { method: "POST", body: fd });
+      const data = await res.json();
+      if (res.ok) update(i, { photoUrl: data.url ?? data.path ?? null });
+    } finally {
+      setUploadingFor(null);
+    }
   }
 
   const selectedCount = lines.filter((l) => l.selected && l.title.trim()).length;
@@ -83,6 +122,7 @@ export function Step2Services({
           title: l.title.trim(),
           durationMinutes: l.durationMinutes,
           price: l.price,
+          photoUrl: l.photoUrl,
         }));
       const res = await fetch("/api/pos/onboarding", {
         method: "PATCH",
@@ -104,15 +144,14 @@ export function Step2Services({
   return (
     <div className="space-y-4">
       <p className="text-xs text-brand-ink-soft">
-        Voici une liste type pour votre salon. Cochez ce que vous proposez,
-        ajustez les prix, puis continuez.
+        Cochez ce que vous proposez · 📸 image facultative
       </p>
 
       <div className="space-y-2">
         {lines.map((l, i) => (
           <div
             key={i}
-            className={`flex items-center gap-2 p-2.5 rounded-lg border transition ${
+            className={`flex items-center gap-2 p-2 rounded-lg border transition ${
               l.selected
                 ? "border-pos-accent/30 bg-pos-accent/5"
                 : "border-brand-line bg-white opacity-60"
@@ -124,11 +163,21 @@ export function Step2Services({
               onChange={(e) => update(i, { selected: e.target.checked })}
               className="w-4 h-4 accent-pos-accent shrink-0"
             />
+
+            {/* Photo thumbnail / upload button */}
+            <PhotoCell
+              photoUrl={l.photoUrl}
+              uploading={uploadingFor === i}
+              disabled={!l.selected}
+              onUpload={(file) => uploadPhoto(i, file)}
+              onClear={() => update(i, { photoUrl: null })}
+            />
+
             <input
               type="text"
               value={l.title}
               onChange={(e) => update(i, { title: e.target.value })}
-              placeholder={l.custom ? "Nom du service…" : ""}
+              placeholder={l.custom ? "Nom…" : ""}
               disabled={!l.selected}
               className="flex-1 min-w-0 bg-transparent text-sm font-medium text-brand-ink focus:outline-none disabled:opacity-60"
             />
@@ -173,7 +222,7 @@ export function Step2Services({
         onClick={addCustom}
         className="inline-flex items-center gap-1.5 text-sm text-pos-accent hover:text-pos-accent/80 font-medium"
       >
-        <Plus size={14} /> Ajouter un service sur-mesure
+        <Plus size={14} /> Ajouter un service
       </button>
 
       {error && (
@@ -190,21 +239,73 @@ export function Step2Services({
         >
           ← Retour
         </button>
-        <div className="flex items-center gap-3">
-          <span className="text-xs text-brand-ink-soft">
-            {selectedCount} service{selectedCount !== 1 ? "s" : ""} sélectionné
-            {selectedCount !== 1 ? "s" : ""}
-          </span>
-          <button
-            type="button"
-            onClick={save}
-            disabled={busy || selectedCount === 0}
-            className="px-8 py-3 rounded-xl bg-pos-accent text-white font-semibold hover:bg-pos-accent/90 disabled:opacity-50"
-          >
-            {busy ? "Sauvegarde…" : "Continuer →"}
-          </button>
-        </div>
+        <button
+          type="button"
+          onClick={save}
+          disabled={busy || selectedCount === 0}
+          className="px-8 py-3 rounded-xl bg-pos-accent text-white font-semibold hover:bg-pos-accent/90 disabled:opacity-50"
+        >
+          {busy ? "Sauvegarde…" : `Continuer (${selectedCount}) →`}
+        </button>
       </div>
     </div>
+  );
+}
+
+function PhotoCell({
+  photoUrl,
+  uploading,
+  disabled,
+  onUpload,
+  onClear,
+}: {
+  photoUrl: string | null;
+  uploading: boolean;
+  disabled: boolean;
+  onUpload: (file: File) => void;
+  onClear: () => void;
+}) {
+  return (
+    <label
+      className={`relative w-10 h-10 rounded-lg overflow-hidden border border-brand-line bg-brand-cream/50 flex items-center justify-center shrink-0 ${
+        disabled ? "opacity-40 cursor-not-allowed" : "cursor-pointer hover:border-pos-accent"
+      }`}
+      aria-label="Image du service"
+    >
+      {photoUrl ? (
+        <>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src={photoUrl} alt="" className="w-full h-full object-cover" />
+          {!disabled && (
+            <button
+              type="button"
+              onClick={(e) => {
+                e.preventDefault();
+                onClear();
+              }}
+              className="absolute top-0 right-0 w-4 h-4 bg-black/60 text-white text-[10px] leading-none flex items-center justify-center"
+              aria-label="Retirer"
+            >
+              ×
+            </button>
+          )}
+        </>
+      ) : uploading ? (
+        <span className="text-[9px] text-brand-ink-soft">…</span>
+      ) : (
+        <ImagePlus size={14} className="text-brand-ink-soft" />
+      )}
+      <input
+        type="file"
+        accept="image/jpeg,image/png,image/webp,image/avif"
+        disabled={disabled}
+        onChange={(e) => {
+          const file = e.target.files?.[0];
+          if (file) onUpload(file);
+          e.target.value = "";
+        }}
+        className="hidden"
+      />
+    </label>
   );
 }
