@@ -34,23 +34,10 @@ export async function POST(req: NextRequest) {
   const existing = await prisma.customer.findUnique({ where: { phone } });
 
   if (existing) {
-    if (existing.firstSalonId === providerId) {
-      return Response.json(existing, { status: 200 });
-    }
-    return Response.json(
-      {
-        existing: {
-          scope: "external",
-          customer: {
-            id: existing.id,
-            phone: existing.phone,
-            firstName: existing.firstName,
-            lastName: existing.lastName,
-          },
-        },
-      },
-      { status: 409 },
-    );
+    // A phone number identifies one person across all salons. Whether they
+    // first registered here or elsewhere, the salon can still encaisser them.
+    // Return the existing record so the caller can attach it to a sale.
+    return Response.json(existing, { status: 200 });
   }
 
   let birthday: Date | undefined;
