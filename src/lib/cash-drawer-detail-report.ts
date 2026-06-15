@@ -545,13 +545,31 @@ export function renderDetailReportHtml(r: DetailReport): string {
 
   footer { margin-top: 30px; padding-top: 12px; border-top: 1px solid #eee; text-align: center; color: #999; font-size: 9px; }
 
+  .toolbar { position: sticky; top: 0; left: 0; right: 0; background: #fff; border-bottom: 1px solid #e5e5e5; padding: 10px 0; margin: -12mm -12mm 16px -12mm; padding-left: 12mm; padding-right: 12mm; display: flex; justify-content: space-between; align-items: center; z-index: 10; }
+  .toolbar-title { font-size: 12px; font-weight: 600; color: #1a1a1a; }
+  .toolbar-actions { display: flex; gap: 8px; }
+  .toolbar button { font: inherit; font-size: 12px; padding: 8px 14px; border-radius: 6px; cursor: pointer; border: 1px solid transparent; }
+  .btn-primary { background: #7c3aed; color: #fff; border-color: #7c3aed; }
+  .btn-primary:hover { background: #6d28d9; }
+  .btn-secondary { background: #fff; color: #1a1a1a; border-color: #d8d8d8; }
+  .btn-secondary:hover { background: #f7f7f7; }
+
   @media print {
-    .no-print { display: none; }
+    .no-print, .toolbar { display: none !important; }
     .sales-detail { page-break-before: auto; }
   }
 </style>
 </head>
 <body>
+
+  <!-- TOOLBAR (screen only) -->
+  <div class="toolbar no-print">
+    <div class="toolbar-title">Rapport de journée — ${salonName}</div>
+    <div class="toolbar-actions">
+      <button type="button" class="btn-secondary" onclick="window.print()">Imprimer</button>
+      <button type="button" class="btn-primary" id="closeReportBtn">Fermer</button>
+    </div>
+  </div>
 
   <!-- HEADER -->
   <div class="header">
@@ -712,9 +730,25 @@ export function renderDetailReportHtml(r: DetailReport): string {
   </footer>
 
   <script>
-    if (window.location && window.location.protocol !== 'mailto:') {
-      setTimeout(function(){ window.print(); }, 300);
-    }
+    (function () {
+      var btn = document.getElementById('closeReportBtn');
+      if (btn) {
+        btn.addEventListener('click', function () {
+          // Try to close (works for new tabs/Electron windows opened via target=_blank).
+          window.close();
+          // Fallback: if still open after a tick, go back or to the drawer page.
+          setTimeout(function () {
+            if (!window.closed) {
+              if (window.history.length > 1) {
+                window.history.back();
+              } else {
+                window.location.href = '/pos/cash-drawer';
+              }
+            }
+          }, 120);
+        });
+      }
+    })();
   </script>
 </body>
 </html>`;
