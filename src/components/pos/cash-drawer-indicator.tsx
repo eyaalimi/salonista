@@ -12,7 +12,13 @@ type Summary = {
   expectedCash: string;
 };
 
-type Session = { id: string; status: string; openedAt: string } | null;
+type Session = {
+  id: string;
+  status: string;
+  openedAt: string;
+  openingFloat?: string;
+  employee?: { displayName: string };
+} | null;
 
 export function CashDrawerIndicator({ canOpen, employeeName }: { canOpen: boolean; employeeName?: string }) {
   const [session, setSession] = useState<Session>(null);
@@ -45,14 +51,25 @@ export function CashDrawerIndicator({ canOpen, employeeName }: { canOpen: boolea
         onClick={() => (isOpen ? setOpen(true) : canOpen ? setOpeningModal(true) : null)}
         disabled={!canOpen && !isOpen}
         className="inline-flex items-center gap-2 text-xs hover:text-brand-cream/100"
-        title={isOpen ? "Caisse ouverte" : "Ouvrir la caisse"}
+        title={
+          isOpen && session
+            ? `Caisse ouverte par ${session.employee?.displayName ?? "—"} · Fond ${formatDT(session.openingFloat ?? "0.000")}`
+            : "Ouvrir la caisse"
+        }
       >
         <span
           className={`h-2 w-2 rounded-full ${isOpen ? "bg-emerald-400" : "bg-red-400"}`}
         />
-        {isOpen
-          ? `Caisse · ${formatDT(summary?.expectedCash ?? "0.000")}`
-          : "Ouvrir caisse"}
+        {isOpen && session ? (
+          <span className="flex items-center gap-2">
+            <span>Caisse · {formatDT(summary?.expectedCash ?? "0.000")}</span>
+            <span className="hidden md:inline text-[10px] text-pos-ink-4">
+              · Ouverte par {session.employee?.displayName ?? "—"} · Fond {formatDT(session.openingFloat ?? "0.000")}
+            </span>
+          </span>
+        ) : (
+          "Ouvrir caisse"
+        )}
       </button>
 
       {open && session && summary && (
@@ -72,9 +89,15 @@ export function CashDrawerIndicator({ canOpen, employeeName }: { canOpen: boolea
                 ✕
               </button>
             </div>
-            <p className="text-xs text-brand-ink-soft mb-4">
+            <p className="text-xs text-brand-ink-soft mb-1">
               Ouverte le {new Date(session.openedAt).toLocaleString("fr-FR")}
             </p>
+            {session.employee?.displayName && (
+              <p className="text-xs text-brand-ink mb-4">
+                Par <strong>{session.employee.displayName}</strong> · Fond{" "}
+                <strong>{formatDT(session.openingFloat ?? summary.openingFloat)}</strong>
+              </p>
+            )}
             <dl className="space-y-2 text-sm mb-6">
               <Row label="Fond initial" value={formatDT(summary.openingFloat)} />
               <Row label="Ventes cash" value={formatDT(summary.cashSalesTotal)} />
