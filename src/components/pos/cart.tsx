@@ -8,6 +8,7 @@ import { formatDT, toMillimes } from "@/lib/money";
 import { usePOSShortcut } from "@/lib/use-pos-shortcuts";
 import { getShortcutLabel } from "@/lib/pos-shortcuts";
 import { BookingStrip } from "@/components/pos/booking-strip";
+import { CartSuggestions } from "@/components/pos/cart-suggestions";
 
 type Permission = string;
 type Employee = { id: string; displayName: string; role: string };
@@ -285,6 +286,8 @@ export function Cart({
           })}
         </ul>
       )}
+
+      <CartSuggestions />
 
       <div className="border-t-2 border-pos-ink bg-pos-bg pos-mono px-3 py-2 text-xs">
         <Row label="Sous-total" value={totals.subtotal} />
