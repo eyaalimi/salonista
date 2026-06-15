@@ -1,6 +1,8 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import { signOut } from "next-auth/react";
+import { LogOut } from "lucide-react";
 import { OnlineStatusBadge } from "@/components/pos/online-status-badge";
 import { CashDrawerIndicator } from "@/components/pos/cash-drawer-indicator";
 import { UniversalSearch } from "@/components/pos/universal-search";
@@ -10,6 +12,33 @@ type Employee = { id: string; displayName: string; role: string; permissions: Re
 
 export function PosTopbar({ provider, employee }: { provider: Provider | null; employee: Employee }) {
   const [now, setNow] = useState<string>("--:--");
+  const [menuOpen, setMenuOpen] = useState(false);
+  const [loggingOut, setLoggingOut] = useState(false);
+  const menuRef = useRef<HTMLDivElement>(null);
+
+  // Close on outside click / Escape.
+  useEffect(() => {
+    if (!menuOpen) return;
+    function onClick(e: MouseEvent) {
+      if (!menuRef.current?.contains(e.target as Node)) setMenuOpen(false);
+    }
+    function onKey(e: KeyboardEvent) {
+      if (e.key === "Escape") setMenuOpen(false);
+    }
+    document.addEventListener("mousedown", onClick);
+    document.addEventListener("keydown", onKey);
+    return () => {
+      document.removeEventListener("mousedown", onClick);
+      document.removeEventListener("keydown", onKey);
+    };
+  }, [menuOpen]);
+
+  async function handleLogout() {
+    setLoggingOut(true);
+    await signOut({ redirect: false });
+    window.location.href = "/salon-pin";
+  }
+
   useEffect(() => {
     const tick = () => {
       const d = new Date();
@@ -59,12 +88,43 @@ export function PosTopbar({ provider, employee }: { provider: Provider | null; e
         <OnlineStatusBadge />
         <span className="pos-mono text-xs text-pos-ink-4 hidden md:inline">{now}</span>
         {employee.permissions["pos.cash_drawer"] && <CashDrawerIndicator canOpen={true} employeeName={employee.displayName} />}
-        <div
-          className="w-8 h-8 rounded-full flex items-center justify-center text-pos-ink text-xs font-semibold"
-          style={{ backgroundColor: "var(--color-pos-yellow)" }}
-          title={`${employee.displayName} (${employee.role})`}
-        >
-          {initials}
+
+        <div className="relative" ref={menuRef}>
+          <button
+            type="button"
+            onClick={() => setMenuOpen((v) => !v)}
+            className="w-8 h-8 rounded-full flex items-center justify-center text-pos-ink text-xs font-semibold hover:opacity-90"
+            style={{ backgroundColor: "var(--color-pos-yellow)" }}
+            title={`${employee.displayName} (${employee.role})`}
+            aria-haspopup="menu"
+            aria-expanded={menuOpen}
+          >
+            {initials}
+          </button>
+
+          {menuOpen && (
+            <div
+              role="menu"
+              className="absolute right-0 top-10 z-50 w-56 rounded-lg border border-pos-border bg-white text-pos-ink shadow-xl overflow-hidden"
+            >
+              <div className="px-4 py-3 border-b border-pos-border">
+                <div className="text-sm font-semibold truncate">{employee.displayName}</div>
+                <div className="text-[10px] uppercase tracking-[0.18em] text-pos-ink-3 mt-0.5">
+                  {employee.role}
+                </div>
+              </div>
+              <button
+                type="button"
+                role="menuitem"
+                onClick={handleLogout}
+                disabled={loggingOut}
+                className="w-full flex items-center gap-2 px-4 py-3 text-sm hover:bg-pos-highlight text-left disabled:opacity-50"
+              >
+                <LogOut size={16} className="text-pos-danger" />
+                {loggingOut ? "Déconnexion…" : "Déconnexion"}
+              </button>
+            </div>
+          )}
         </div>
       </div>
     </header>
