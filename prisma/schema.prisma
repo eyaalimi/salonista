@@ -463,19 +463,24 @@ model Customer {
 }
 
 model SalonEmployee {
-  id          String       @id @default(cuid())
-  providerId  String
-  userId      String?
-  displayName String
-  phone       String?
-  email       String?
-  pinHash     String?
-  role        EmployeeRole @default(CASHIER)
-  permissions Json?
-  active      Boolean      @default(true)
-  lastLoginAt DateTime?
-  createdAt   DateTime     @default(now())
-  updatedAt   DateTime     @updatedAt
+  id             String       @id @default(cuid())
+  providerId     String
+  userId         String?
+  displayName    String
+  phone          String?
+  email          String?
+  pinHash        String?
+  role           EmployeeRole @default(CASHIER)
+  permissions    Json?
+  // Flat commission percentage on service SaleItems attributed to this
+  // employee. NULL = no commission owed (default). Snapshotted onto
+  // SaleItem.commissionRateSnapshot at sale creation time so later rate
+  // changes don't rewrite historical amounts.
+  commissionRate Decimal?     @db.Decimal(5, 2)
+  active         Boolean      @default(true)
+  lastLoginAt    DateTime?
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
 
   provider           ProviderProfile     @relation(fields: [providerId], references: [id], onDelete: Cascade)
   user               User?               @relation(fields: [userId], references: [id], onDelete: SetNull)
@@ -634,6 +639,15 @@ model SaleItem {
 
   refundedQuantity Int @default(0)
 
+  // Staff commission — computed at sale-close time from the assigned
+  // employee's commissionRate. NULL rate/amount means either no employee
+  // was attributed or the employee has no rate configured. Rate is
+  // snapshotted so past commissions survive rate changes.
+  commissionRateSnapshot Decimal?  @db.Decimal(5, 2)
+  commissionAmount       Decimal?  @db.Decimal(10, 3)
+  commissionPaid         Boolean   @default(false)
+  commissionPaidAt       DateTime?
+
   createdAt DateTime @default(now())
 
   sale             Sale           @relation(fields: [saleId], references: [id], onDelete: Cascade)
@@ -643,6 +657,7 @@ model SaleItem {
   refundItems      RefundItem[]
 
   @@index([saleId])
+  @@index([assignedEmployeeId, commissionPaid])
 }
 
 model Payment {

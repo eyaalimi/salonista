@@ -10,6 +10,7 @@ type UpdateBody = {
   email?: string | null;
   active?: boolean;
   pin?: string | null; // null = remove PIN, string = set new PIN
+  commissionRate?: number | string | null; // null/"" = remove commission
 };
 
 const VALID_ROLES = new Set(["OWNER", "MANAGER", "CASHIER", "STYLIST"]);
@@ -85,6 +86,23 @@ export async function PUT(
         );
       }
       data.pinHash = await bcrypt.hash(body.pin, 10);
+    }
+  }
+  if (body.commissionRate !== undefined) {
+    if (body.commissionRate === null || body.commissionRate === "") {
+      data.commissionRate = null;
+    } else {
+      const n =
+        typeof body.commissionRate === "string"
+          ? Number(body.commissionRate)
+          : body.commissionRate;
+      if (!Number.isFinite(n) || n < 0 || n > 100) {
+        return Response.json(
+          { error: "Taux de commission invalide (0 à 100 %)." },
+          { status: 400 },
+        );
+      }
+      data.commissionRate = n.toFixed(2);
     }
   }
 

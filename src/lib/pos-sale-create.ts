@@ -192,6 +192,39 @@ export async function createSaleFromPayload(args: {
     return { kind: "validation", error: "Panier vide après résolution", conflicts };
   }
 
+  // ------------------------------------------------------------------
+  // Staff commissions — snapshot rate + amount per SERVICE SaleItem.
+  //
+  // Rule: only lines with kind=SERVICE + assignedEmployeeId, whose
+  // employee has a non-null commissionRate > 0, get a commission.
+  // Base is lineSubtotal converted to HT (subtotal is TTC after line
+  // discount as produced by computeTotals). Amount snapshotted onto
+  // SaleItem so future rate changes never rewrite history.
+  // ------------------------------------------------------------------
+  const assignedIds = Array.from(
+    new Set(
+      resolved
+        .filter((l) => l.kind === "SERVICE" && l.assignedEmployeeId)
+        .map((l) => l.assignedEmployeeId as string),
+    ),
+  );
+  const commissionRatesById = new Map<string, string>();
+  if (assignedIds.length > 0) {
+    const emps = (await (prisma as never as {
+      salonEmployee: {
+        findMany: (a: unknown) => Promise<Array<{ id: string; commissionRate: unknown }>>;
+      };
+    }).salonEmployee.findMany({
+      where: { id: { in: assignedIds }, providerId },
+      select: { id: true, commissionRate: true },
+    })) as Array<{ id: string; commissionRate: unknown | null }>;
+    for (const e of emps) {
+      if (e.commissionRate === null || e.commissionRate === undefined) continue;
+      const rate = String(e.commissionRate);
+      if (Number(rate) > 0) commissionRatesById.set(e.id, rate);
+    }
+  }
+
   // Recompute totals server-side (authoritative).
   const cartForCompute: CartInput = {
     lines: resolved.map((r) => ({
@@ -379,22 +412,42 @@ export async function createSaleFromPayload(args: {
           closedAt: receiptDate,
           createdAt: receiptDate,
           items: {
-            create: resolved.map((line, i) => ({
-              kind: line.kind,
-              offerId: line.offerId,
-              productId: line.productId,
-              assignedEmployeeId: line.assignedEmployeeId,
-              nameSnapshot: line.nameSnapshot,
-              priceSnapshot: line.priceSnapshot,
-              taxRateSnapshot: line.taxRateSnapshot,
-              quantity: line.quantity,
-              discountAmount: totals.lines[i].discountAmount,
-              discountIsPercent: line.discount?.isPercent ?? false,
-              discountValue: line.discount?.value ?? null,
-              lineSubtotal: totals.lines[i].lineSubtotal,
-              lineTaxAmount: totals.lines[i].lineTaxAmount,
-              lineTotal: totals.lines[i].lineTotal,
-            })),
+            create: resolved.map((line, i) => {
+              // Commission: only for SERVICE lines with an assigned employee
+              // whose commissionRate was set. Base is HT after line discount.
+              let commissionRateSnapshot: string | null = null;
+              let commissionAmount: string | null = null;
+              const rate =
+                line.kind === "SERVICE" && line.assignedEmployeeId
+                  ? commissionRatesById.get(line.assignedEmployeeId) ?? null
+                  : null;
+              if (rate) {
+                const lineSubTTC = Number(totals.lines[i].lineSubtotal);
+                const tax = Number(line.taxRateSnapshot);
+                const lineSubHT = lineSubTTC / (1 + tax / 100);
+                const amount = (lineSubHT * Number(rate)) / 100;
+                commissionRateSnapshot = rate;
+                commissionAmount = amount.toFixed(3);
+              }
+              return {
+                kind: line.kind,
+                offerId: line.offerId,
+                productId: line.productId,
+                assignedEmployeeId: line.assignedEmployeeId,
+                nameSnapshot: line.nameSnapshot,
+                priceSnapshot: line.priceSnapshot,
+                taxRateSnapshot: line.taxRateSnapshot,
+                quantity: line.quantity,
+                discountAmount: totals.lines[i].discountAmount,
+                discountIsPercent: line.discount?.isPercent ?? false,
+                discountValue: line.discount?.value ?? null,
+                lineSubtotal: totals.lines[i].lineSubtotal,
+                lineTaxAmount: totals.lines[i].lineTaxAmount,
+                lineTotal: totals.lines[i].lineTotal,
+                commissionRateSnapshot,
+                commissionAmount,
+              };
+            }),
           },
           payments: {
             create: payload.payments.map((p) => ({

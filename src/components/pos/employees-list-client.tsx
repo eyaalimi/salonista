@@ -11,6 +11,8 @@ type Employee = {
   email: string | null;
   active: boolean;
   hasPin: boolean;
+  /** Flat commission rate as a decimal string ("30.00") or null. */
+  commissionRate: string | null;
   lastLoginAt: string | null;
   createdAt: string;
 };
@@ -86,6 +88,7 @@ export function EmployeesListClient() {
                 <th className="px-4 py-3 font-medium">Rôle</th>
                 <th className="px-4 py-3 font-medium">Contact</th>
                 <th className="px-4 py-3 font-medium">PIN</th>
+                <th className="px-4 py-3 font-medium text-right">Commission</th>
                 <th className="px-4 py-3 font-medium">Statut</th>
                 <th className="px-4 py-3 font-medium text-right">Actions</th>
               </tr>
@@ -119,6 +122,11 @@ export function EmployeesListClient() {
                         Non défini
                       </span>
                     )}
+                  </td>
+                  <td className="px-4 py-3 text-right pos-mono text-pos-ink-2">
+                    {e.commissionRate
+                      ? `${Number(e.commissionRate).toFixed(2)} %`
+                      : "—"}
                   </td>
                   <td className="px-4 py-3">
                     <span
@@ -228,6 +236,9 @@ function EmployeeFormModal({
   const [email, setEmail] = useState(employee?.email ?? "");
   const [active, setActive] = useState(employee?.active ?? true);
   const [pin, setPin] = useState("");
+  const [commissionRate, setCommissionRate] = useState<string>(
+    employee?.commissionRate ?? "",
+  );
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -249,6 +260,18 @@ function EmployeeFormModal({
       };
       if (isEdit) body.active = active;
       if (pin) body.pin = pin;
+      // Send commissionRate: "" or "0" clears it, otherwise a valid number.
+      if (commissionRate.trim() === "") {
+        body.commissionRate = null;
+      } else {
+        const n = Number(commissionRate);
+        if (!Number.isFinite(n) || n < 0 || n > 100) {
+          setError("Le taux de commission doit être entre 0 et 100.");
+          setBusy(false);
+          return;
+        }
+        body.commissionRate = n;
+      }
       const res = await fetch(url, {
         method,
         headers: { "Content-Type": "application/json" },
@@ -348,6 +371,28 @@ function EmployeeFormModal({
               className="mt-1 w-full px-3 py-2 border border-pos-border rounded text-sm pos-mono tracking-widest"
             />
           </label>
+
+          {(role === "STYLIST" || role === "CASHIER") && (
+            <label className="block">
+              <span className="text-xs text-pos-ink-2">
+                Commission sur services{" "}
+                <span className="text-pos-ink-3">— % du HT (laisser vide = aucune)</span>
+              </span>
+              <div className="mt-1 flex items-center gap-2">
+                <input
+                  type="number"
+                  min={0}
+                  max={100}
+                  step={0.5}
+                  value={commissionRate}
+                  onChange={(e) => setCommissionRate(e.target.value)}
+                  placeholder="Ex: 30"
+                  className="w-24 px-3 py-2 border border-pos-border rounded text-sm pos-mono text-right"
+                />
+                <span className="text-sm text-pos-ink-2">%</span>
+              </div>
+            </label>
+          )}
 
           {isEdit && (
             <label className="flex items-center gap-2">

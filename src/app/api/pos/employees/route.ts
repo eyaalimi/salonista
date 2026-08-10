@@ -9,7 +9,18 @@ type CreateBody = {
   phone?: string;
   email?: string;
   pin?: string;
+  /** Flat commission percentage, e.g. 30 = 30%. Null/omitted = no commission. */
+  commissionRate?: number | string | null;
 };
+
+function normalizeCommissionRate(input: unknown): { value: string | null } | { error: string } {
+  if (input === null || input === undefined || input === "") return { value: null };
+  const n = typeof input === "string" ? Number(input) : (input as number);
+  if (!Number.isFinite(n) || n < 0 || n > 100) {
+    return { error: "Taux de commission invalide (0 à 100 %)." };
+  }
+  return { value: n.toFixed(2) };
+}
 
 const VALID_ROLES = new Set(["OWNER", "MANAGER", "CASHIER", "STYLIST"]);
 
@@ -43,6 +54,7 @@ export async function GET() {
       email: true,
       active: true,
       pinHash: true,
+      commissionRate: true,
       lastLoginAt: true,
       createdAt: true,
     },
@@ -54,6 +66,7 @@ export async function GET() {
     email: string | null;
     active: boolean;
     pinHash: string | null;
+    commissionRate: unknown | null;
     lastLoginAt: Date | null;
     createdAt: Date;
   }>;
@@ -67,6 +80,10 @@ export async function GET() {
       email: e.email,
       active: e.active,
       hasPin: !!e.pinHash,
+      commissionRate:
+        e.commissionRate === null || e.commissionRate === undefined
+          ? null
+          : String(e.commissionRate),
       lastLoginAt: e.lastLoginAt,
       createdAt: e.createdAt,
     })),
@@ -98,6 +115,15 @@ export async function POST(req: NextRequest) {
 
   const pinHash = body.pin ? await bcrypt.hash(body.pin, 10) : null;
 
+  let commissionRate: string | null = null;
+  if (body.commissionRate !== undefined) {
+    const parsed = normalizeCommissionRate(body.commissionRate);
+    if ("error" in parsed) {
+      return Response.json({ error: parsed.error }, { status: 400 });
+    }
+    commissionRate = parsed.value;
+  }
+
   const created = (await (prisma as never as {
     salonEmployee: { create: (args: unknown) => Promise<unknown> };
   }).salonEmployee.create({
@@ -108,6 +134,7 @@ export async function POST(req: NextRequest) {
       phone: body.phone?.trim() || null,
       email: body.email?.trim() || null,
       pinHash,
+      commissionRate,
     },
     select: { id: true },
   })) as { id: string };
