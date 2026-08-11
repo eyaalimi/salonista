@@ -70,6 +70,8 @@ export function NextBookingTicker() {
   );
 
   if (upcoming.length === 0) {
+    // Empty state is desktop-only — no need to burn scarce mobile topbar
+    // real-estate on "Aucun RDV".
     return (
       <div className="hidden md:flex items-center gap-2 text-[11px] text-pos-ink-4">
         <Calendar size={12} />
@@ -88,30 +90,54 @@ export function NextBookingTicker() {
       ? `dans ${mins} min`
       : `à ${formatTime(next.startTime)}`;
 
+  const pillClass = `flex items-center gap-2 rounded-full text-[11px] font-medium ${
+    isNow
+      ? "bg-emerald-500/20 text-emerald-300 border border-emerald-400/40 animate-pulse"
+      : isSoon
+        ? "bg-amber-500/15 text-amber-300 border border-amber-400/30"
+        : "bg-white/5 text-pos-ink-4 border border-white/10"
+  }`;
+  const title = `${formatTime(next.startTime)} — ${customerName(next)} · ${next.items.map((i) => i.name).join(", ")}`;
+
   return (
-    <div
-      className={`hidden md:flex items-center gap-2 px-2.5 py-1 rounded-full text-[11px] font-medium ${
-        isNow
-          ? "bg-emerald-500/20 text-emerald-300 border border-emerald-400/40 animate-pulse"
-          : isSoon
-            ? "bg-amber-500/15 text-amber-300 border border-amber-400/30"
-            : "bg-white/5 text-pos-ink-4 border border-white/10"
-      }`}
-      // suppressHydrationWarning to silence countdown text drift between SSR and CSR.
-      suppressHydrationWarning
-      title={`${formatTime(next.startTime)} — ${customerName(next)} · ${next.items.map((i) => i.name).join(", ")}`}
-    >
-      <Calendar size={12} />
-      <span className="pos-mono font-semibold">{formatTime(next.startTime)}</span>
-      <span className="truncate max-w-[140px] capitalize">{customerName(next)}</span>
-      <span className="opacity-70">· {countdown}</span>
-      {upcoming.length > 1 && (
-        <span className="ml-1 px-1.5 rounded-full bg-white/15 text-[10px]">
-          +{upcoming.length - 1}
+    <>
+      {/* Desktop: full ticker with name + countdown. */}
+      <div
+        className={`hidden md:flex px-2.5 py-1 ${pillClass}`}
+        suppressHydrationWarning
+        title={title}
+      >
+        <Calendar size={12} />
+        <span className="pos-mono font-semibold">{formatTime(next.startTime)}</span>
+        <span className="truncate max-w-[140px] capitalize">{customerName(next)}</span>
+        <span className="opacity-70">· {countdown}</span>
+        {upcoming.length > 1 && (
+          <span className="ml-1 px-1.5 rounded-full bg-white/15 text-[10px]">
+            +{upcoming.length - 1}
+          </span>
+        )}
+        <span className="sr-only">{tick}</span>
+      </div>
+
+      {/* Mobile: compact pill (icon + time + short countdown + optional +N).
+          Fits between the search box and the online-status dot. */}
+      <div
+        className={`md:hidden px-2 py-0.5 ${pillClass}`}
+        suppressHydrationWarning
+        title={title}
+      >
+        <Calendar size={12} />
+        <span className="pos-mono font-semibold">{formatTime(next.startTime)}</span>
+        <span className="opacity-80 whitespace-nowrap">
+          {isNow ? "now" : mins < 60 ? `${mins}m` : `à ${formatTime(next.startTime)}`}
         </span>
-      )}
-      {/* Reference `tick` so the effect dependency forces re-render. */}
-      <span className="sr-only">{tick}</span>
-    </div>
+        {upcoming.length > 1 && (
+          <span className="px-1.5 rounded-full bg-white/15 text-[10px]">
+            +{upcoming.length - 1}
+          </span>
+        )}
+        <span className="sr-only">{tick}</span>
+      </div>
+    </>
   );
 }
