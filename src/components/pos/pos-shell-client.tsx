@@ -257,23 +257,45 @@ export function PosShellClient({ employee }: { employee: EmployeeProp }) {
         />
       </div>
 
-      {/* Mobile FAB — show cart count + total, tap to open the sheet. */}
+      {/* Mobile action bar — full-width bar pinned above the rail bottom-bar
+          with cart count + total + explicit CTA. Visible any time the cart
+          has items; disappears when the sheet is open. Sized to be obviously
+          tappable and to communicate "you must tap this to finalize". */}
       {cartItemCount > 0 && !cartOpen && (
-        <button
-          type="button"
-          onClick={() => setCartOpen(true)}
-          className="md:hidden fixed bottom-20 right-4 z-40 inline-flex items-center gap-2 pl-4 pr-5 py-3 rounded-full bg-pos-ink text-pos-bg shadow-2xl active:scale-95 transition"
-          style={{ marginBottom: "env(safe-area-inset-bottom)" }}
-          aria-label={`Ouvrir le panier — ${cartItemCount} article${cartItemCount > 1 ? "s" : ""}`}
+        <div
+          className="md:hidden fixed inset-x-0 z-40 px-3"
+          style={{ bottom: "calc(env(safe-area-inset-bottom) + 72px)" }}
         >
-          <span className="relative">
-            <ShoppingCart size={20} />
-            <span className="absolute -top-2 -right-3 min-w-[18px] h-[18px] px-1 rounded-full bg-pos-yellow text-pos-ink text-[10px] font-bold flex items-center justify-center">
-              {cartItemCount}
+          <button
+            type="button"
+            onClick={() => setCartOpen(true)}
+            className="w-full flex items-center justify-between gap-3 px-5 py-3.5 rounded-2xl bg-pos-ink text-pos-bg shadow-2xl active:scale-[0.98] transition border-2 border-pos-yellow/60"
+            aria-label={`Voir le panier — ${cartItemCount} article${cartItemCount > 1 ? "s" : ""}`}
+          >
+            <span className="flex items-center gap-3">
+              <span className="relative inline-flex items-center justify-center h-10 w-10 rounded-full bg-pos-yellow/20">
+                <ShoppingCart size={22} className="text-pos-yellow" />
+                <span className="absolute -top-1 -right-1 min-w-[20px] h-5 px-1 rounded-full bg-pos-yellow text-pos-ink text-[11px] font-bold flex items-center justify-center">
+                  {cartItemCount}
+                </span>
+              </span>
+              <span className="flex flex-col items-start leading-tight">
+                <span className="text-[11px] uppercase tracking-[0.14em] text-pos-bg/70">
+                  Voir panier
+                </span>
+                <span className="text-base font-semibold">
+                  {cartItemCount} article{cartItemCount > 1 ? "s" : ""}
+                </span>
+              </span>
             </span>
-          </span>
-          <span className="pos-mono text-sm font-semibold ml-2">{formatCartTotal(totals.total)} DT</span>
-        </button>
+            <span className="flex flex-col items-end leading-tight">
+              <span className="text-[10px] uppercase tracking-[0.14em] text-pos-bg/70">Total</span>
+              <span className="pos-mono text-lg font-semibold">
+                {formatCartTotal(totals.total)} DT
+              </span>
+            </span>
+          </button>
+        </div>
       )}
 
       {/* Mobile bottom-sheet — full-screen drawer with the Cart inside. */}
@@ -305,26 +327,29 @@ export function PosShellClient({ employee }: { employee: EmployeeProp }) {
         </div>
       )}
 
-      {/* Side drawer (Client / RDV / Recent sales) */}
+      {/* Side drawer (Client / RDV / Recent sales).
+          Desktop: absolute inside the shell, 360px wide, z-40.
+          Mobile: fixed full-screen, z-[60] so it sits ABOVE the cart sheet
+          (z-50) — otherwise "Ajouter cliente" opens invisibly beneath it. */}
       {sideOpen && (
         <>
           <div
-            className="absolute inset-0 z-30 bg-black/30"
+            className="md:absolute fixed inset-0 md:z-30 z-[55] bg-black/30"
             onClick={() => setSideOpen(false)}
             aria-hidden="true"
           />
           <aside
             role="dialog"
             aria-modal="true"
-            className="absolute top-0 right-0 z-40 h-full w-[360px] bg-pos-surface border-l border-pos-border shadow-2xl flex flex-col"
+            className="md:absolute fixed top-0 right-0 md:z-40 z-[60] h-full md:h-full h-dvh md:w-[360px] w-full bg-pos-surface border-l border-pos-border shadow-2xl flex flex-col"
           >
-            <div className="flex items-center justify-between px-4 h-11 border-b border-pos-border">
+            <div className="flex items-center justify-between px-4 h-11 border-b border-pos-border shrink-0">
               <span className="text-sm font-semibold">Client / RDV / Ventes</span>
               <button
                 type="button"
                 onClick={() => setSideOpen(false)}
                 aria-label="Fermer"
-                className="text-pos-ink-3 hover:text-pos-ink text-lg leading-none"
+                className="text-pos-ink-3 hover:text-pos-ink text-lg leading-none p-2 -mr-2"
               >
                 ✕
               </button>
