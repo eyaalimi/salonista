@@ -22,11 +22,18 @@ export async function GET() {
   const tomorrow = new Date(today);
   tomorrow.setDate(tomorrow.getDate() + 1);
 
+  // Coarse filter: any booking of this provider that either has a slot today
+  // OR was created today (walk-ins/no-slot cases). Filtering by createdAt
+  // alone excluded bookings created yesterday for today — they never showed
+  // up in the "RDV aujourd'hui" panel.
   const bookings = await prisma.booking.findMany({
     where: {
       phantom: false,
       items: { some: { offer: { providerId: employee.providerId } } },
-      createdAt: { gte: today, lt: tomorrow },
+      OR: [
+        { items: { some: { slot: { startTime: { gte: today, lt: tomorrow } } } } },
+        { createdAt: { gte: today, lt: tomorrow } },
+      ],
     },
     include: {
       customer: { select: { id: true, phone: true, firstName: true, lastName: true } },
@@ -40,9 +47,8 @@ export async function GET() {
     },
   });
 
-  // Filter to bookings whose first slot is today (calendar-day semantics, not
-  // creation date). The query above used createdAt as a coarse filter — refine
-  // here for accuracy.
+  // Refine: keep only bookings whose first slot (or createdAt fallback for
+  // walk-ins) falls in today's calendar day.
   const startOfDay = today.getTime();
   const endOfDay = tomorrow.getTime();
 
