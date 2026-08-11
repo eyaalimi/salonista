@@ -1,8 +1,8 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { MessageCircle, ShoppingCart, X } from "lucide-react";
+import { MessageCircle, ShoppingCart, X, ArrowLeft, ArrowRight } from "lucide-react";
 import { useOnlineStatus } from "@/components/pos/online-status";
 import { ChargeModal } from "@/components/pos/charge-modal";
 import { ReceiptPrintFrame, type ReceiptData } from "@/components/pos/receipt";
@@ -41,6 +41,10 @@ export function PosShellClient({ employee }: { employee: EmployeeProp }) {
   const [printNow, setPrintNow] = useState(false);
   const [sideOpen, setSideOpen] = useState(false);
   const [cartOpen, setCartOpen] = useState(false);
+  // Tracks the previous customer id so we can auto-close the mobile side
+  // drawer when the cashier picks/creates a customer (no bounce-back button
+  // otherwise — see the mobile "Client / RDV / Ventes" flow).
+  const prevCustomerIdRef = useRef<string | null>(null);
   const [bookingsTodayCount, setBookingsTodayCount] = useState(0);
   const [whatsappTemplate, setWhatsappTemplate] = useState<string | null>(null);
   const [successToast, setSuccessToast] = useState<{
@@ -232,6 +236,25 @@ export function PosShellClient({ employee }: { employee: EmployeeProp }) {
     return () => document.removeEventListener("keydown", onKey);
   }, [sideOpen]);
 
+  // Mobile only: when the cashier picks/creates a customer from the side
+  // drawer, auto-close it and reopen the cart sheet — otherwise there's no
+  // obvious way back to encaissement (feedback: "pas de retour au
+  // encaissement une chose qui peut valider quand a mis le client").
+  // We detect the null→non-null transition on `customer.id` so it doesn't
+  // fire when the drawer merely opens while a customer was already picked.
+  useEffect(() => {
+    const prev = prevCustomerIdRef.current;
+    const now = customer?.id ?? null;
+    prevCustomerIdRef.current = now;
+    if (!sideOpen) return;
+    if (prev === null && now !== null && window.matchMedia("(max-width: 767px)").matches) {
+      setSideOpen(false);
+      // Reopen the cart if it isn't already, so the cashier lands on the
+      // charge flow with the customer attached.
+      if (cart.length > 0) setCartOpen(true);
+    }
+  }, [customer?.id, sideOpen, cart.length]);
+
   // Ctrl+F (customer search) now opens the side drawer first; the
   // CustomerBlock's own focus shortcut handles the input focus once mounted.
   usePOSShortcut("customer.search", () => {
@@ -359,6 +382,39 @@ export function PosShellClient({ employee }: { employee: EmployeeProp }) {
                 defaultEmployeeId={employee.id}
                 permissions={employee.permissions}
               />
+            </div>
+
+            {/* Mobile-only sticky footer — always offers a clear way back to
+                the cart. Without this the cashier lands in a dead-end after
+                picking a customer, with no visible action to resume the sale. */}
+            <div
+              className="md:hidden shrink-0 border-t border-pos-border bg-pos-surface px-3 pt-3 flex flex-col gap-2"
+              style={{ paddingBottom: "max(env(safe-area-inset-bottom), 12px)" }}
+            >
+              {cart.length > 0 ? (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setSideOpen(false);
+                    setCartOpen(true);
+                  }}
+                  className="w-full flex items-center justify-center gap-2 py-3 rounded-xl bg-pos-ink text-pos-bg text-sm font-semibold active:scale-[0.98] transition"
+                >
+                  {customer
+                    ? "Retour au panier · Continuer"
+                    : `Retour au panier (${cart.length})`}
+                  <ArrowRight size={16} />
+                </button>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => setSideOpen(false)}
+                  className="w-full flex items-center justify-center gap-2 py-3 rounded-xl border border-pos-border text-pos-ink text-sm font-medium active:scale-[0.98] transition"
+                >
+                  <ArrowLeft size={16} />
+                  Fermer
+                </button>
+              )}
             </div>
           </aside>
         </>
