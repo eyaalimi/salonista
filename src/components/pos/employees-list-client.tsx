@@ -232,7 +232,25 @@ function EmployeeFormModal({
 }) {
   const isEdit = !!employee;
   const [displayName, setDisplayName] = useState(employee?.displayName ?? "");
-  const [role, setRole] = useState<Employee["role"]>(employee?.role ?? "CASHIER");
+  // roleChoice includes an extra "OTHER" option (UI-only). When picked, the
+  // freeform label is appended to displayName ("Sarah — Barbier") and the
+  // stored role stays STYLIST (least-privileged POS-selling role).
+  const parseCustom = (): { role: Employee["role"] | "OTHER"; label: string } => {
+    if (!employee) return { role: "CASHIER", label: "" };
+    const match = employee.displayName.match(/^(.+?)\s+—\s+(.+)$/);
+    if (match && employee.role === "STYLIST") {
+      return { role: "OTHER", label: match[2].trim() };
+    }
+    return { role: employee.role, label: "" };
+  };
+  const initial = parseCustom();
+  const [roleChoice, setRoleChoice] = useState<Employee["role"] | "OTHER">(initial.role);
+  const [customRoleLabel, setCustomRoleLabel] = useState<string>(initial.label);
+  const [baseName, setBaseName] = useState<string>(
+    initial.role === "OTHER" && employee
+      ? employee.displayName.replace(/\s+—\s+.+$/, "")
+      : employee?.displayName ?? "",
+  );
   const [phone, setPhone] = useState(employee?.phone ?? "");
   const [email, setEmail] = useState(employee?.email ?? "");
   const [active, setActive] = useState(employee?.active ?? true);
@@ -243,19 +261,37 @@ function EmployeeFormModal({
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  // Keep displayName in sync with baseName + custom label when "Autre" picked.
+  useEffect(() => {
+    if (roleChoice === "OTHER") {
+      const label = customRoleLabel.trim();
+      setDisplayName(label ? `${baseName.trim()} — ${label}` : baseName.trim());
+    } else {
+      setDisplayName(baseName);
+    }
+  }, [roleChoice, customRoleLabel, baseName]);
+
   async function submit() {
     setError(null);
-    if (!displayName.trim()) {
+    if (!baseName.trim()) {
       setError("Le nom est requis.");
+      return;
+    }
+    if (roleChoice === "OTHER" && !customRoleLabel.trim()) {
+      setError("Précisez le rôle personnalisé.");
       return;
     }
     setBusy(true);
     try {
       const url = isEdit ? `/api/pos/employees/${employee!.id}` : "/api/pos/employees";
       const method = isEdit ? "PUT" : "POST";
+      // OTHER is a UI construct — persist as STYLIST (least-privileged POS role)
+      // with the custom label appended to displayName.
+      const persistedRole: Employee["role"] =
+        roleChoice === "OTHER" ? "STYLIST" : roleChoice;
       const body: Record<string, unknown> = {
         displayName: displayName.trim(),
-        role,
+        role: persistedRole,
         phone: phone.trim() || null,
         email: email.trim() || null,
       };
@@ -314,8 +350,8 @@ function EmployeeFormModal({
             <input
               type="text"
               autoFocus
-              value={displayName}
-              onChange={(e) => setDisplayName(e.target.value)}
+              value={baseName}
+              onChange={(e) => setBaseName(e.target.value)}
               className="mt-1 w-full px-3 py-2 border border-pos-border rounded text-sm"
             />
           </label>
@@ -323,16 +359,42 @@ function EmployeeFormModal({
           <label className="block">
             <span className="text-xs text-pos-ink-2">Rôle</span>
             <select
-              value={role}
-              onChange={(e) => setRole(e.target.value as Employee["role"])}
+              value={roleChoice}
+              onChange={(e) =>
+                setRoleChoice(e.target.value as Employee["role"] | "OTHER")
+              }
               className="mt-1 w-full px-3 py-2 border border-pos-border rounded text-sm bg-white"
             >
               <option value="OWNER">Propriétaire — accès complet</option>
               <option value="MANAGER">Manager — gestion sauf employés</option>
               <option value="CASHIER">Caissière — encaisser, clients</option>
               <option value="STYLIST">Styliste — voir RDV</option>
+              <option value="OTHER">Autre…</option>
             </select>
           </label>
+
+          {roleChoice === "OTHER" && (
+            <label className="block">
+              <span className="text-xs text-pos-ink-2">
+                Précisez le rôle *{" "}
+                <span className="text-pos-ink-3">
+                  — ex. Barbier, Masseuse, Prothésiste ongulaire…
+                </span>
+              </span>
+              <input
+                type="text"
+                value={customRoleLabel}
+                onChange={(e) => setCustomRoleLabel(e.target.value)}
+                maxLength={40}
+                placeholder="Ex: Barbier"
+                className="mt-1 w-full px-3 py-2 border border-pos-border rounded text-sm"
+              />
+              <span className="mt-1 block text-[10px] text-pos-ink-3">
+                Ce libellé sera affiché à côté du nom. Les permissions par
+                défaut sont celles d&apos;un styliste.
+              </span>
+            </label>
+          )}
 
           <div className="grid grid-cols-2 gap-3">
             <label className="block">
@@ -373,7 +435,7 @@ function EmployeeFormModal({
             />
           </label>
 
-          {(role === "STYLIST" || role === "CASHIER") && (
+          {(roleChoice === "STYLIST" || roleChoice === "CASHIER" || roleChoice === "OTHER") && (
             <label className="block">
               <span className="text-xs text-pos-ink-2">
                 Commission sur services{" "}

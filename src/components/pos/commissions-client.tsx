@@ -60,7 +60,7 @@ function fmtMoney(v: string) {
 }
 
 export function CommissionsClient() {
-  const [period, setPeriod] = useState<PeriodKey>("last-month");
+  const [period, setPeriod] = useState<PeriodKey>("this-month");
   const [customFrom, setCustomFrom] = useState("");
   const [customTo, setCustomTo] = useState("");
   const [data, setData] = useState<ApiResponse | null>(null);

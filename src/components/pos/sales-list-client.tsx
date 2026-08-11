@@ -26,8 +26,14 @@ const STATUS_LABELS: Record<string, string> = {
 };
 
 function todayISO(): string {
+  // Build YYYY-MM-DD from LOCAL components. Using .toISOString() would shift
+  // to UTC and yield yesterday's date for any timezone east of UTC (Tunis is
+  // UTC+1, so local midnight = 23:00 UTC of the previous day).
   const d = new Date();
-  return new Date(d.getFullYear(), d.getMonth(), d.getDate()).toISOString().slice(0, 10);
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  return `${y}-${m}-${day}`;
 }
 
 export function SalesListClient() {

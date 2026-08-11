@@ -88,7 +88,7 @@ export function BarcodePrompt({ defaultEmployeeId }: { defaultEmployeeId: string
 
   return (
     <div
-      className={`bg-pos-ink text-pos-bg flex items-center px-3 h-10 border-t border-pos-border-strong gap-3 sticky bottom-0 ${
+      className={`hidden md:flex bg-pos-ink text-pos-bg items-center px-3 h-10 border-t border-pos-border-strong gap-3 sticky bottom-0 ${
         error ? "animate-pulse !bg-pos-danger" : ""
       }`}
     >
