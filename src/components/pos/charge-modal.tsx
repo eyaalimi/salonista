@@ -356,7 +356,7 @@ export function ChargeModal({
               })}
             </div>
 
-            {wallet && (
+            {wallet ? (
               <button
                 type="button"
                 disabled={!loyaltyTileEligible}
@@ -378,6 +378,26 @@ export function ChargeModal({
                   <span className="text-brand-ink-soft"> (≈ {formatDT(fromMillimes(Math.round(wallet.balance * dpp * 1000)))})</span>
                 </p>
               </button>
+            ) : customerId ? (
+              // Customer attached but no wallet — module not activated or
+              // brand-new customer with zero balance.
+              <div className="w-full mb-6 rounded-2xl border border-dashed border-brand-line bg-brand-cream/40 py-3 px-4 text-xs text-brand-ink-soft">
+                <span className="uppercase tracking-[0.18em]">★ Points fidélité</span>
+                <span className="block mt-1">
+                  Aucun point disponible sur ce compte.
+                </span>
+              </div>
+            ) : (
+              // No customer attached at all — this is the common source of
+              // "why don't I see the loyalty tile?". Tell the cashier.
+              <div className="w-full mb-6 rounded-2xl border-2 border-dashed border-brand-gold/50 bg-brand-gold-soft/10 py-3 px-4 text-xs">
+                <p className="uppercase tracking-[0.18em] text-brand-ink font-semibold">
+                  ★ Points fidélité
+                </p>
+                <p className="mt-1 text-brand-ink-soft">
+                  Attachez une cliente au panier pour utiliser ses points de fidélité en paiement.
+                </p>
+              </div>
             )}
 
             {showLoyaltyExpansion && wallet && (
