@@ -183,7 +183,7 @@ export function PosCalendar({ initialDate, onCreateAt, onOpenBooking }: Props) {
   return (
     <div ref={containerRef} className="flex flex-col h-full">
       {/* Top bar */}
-      <div className="border-b border-brand-line bg-white px-4 py-3 flex items-center gap-3">
+      <div className="border-b border-brand-line bg-white md:px-4 px-3 md:py-3 py-2 flex items-center md:gap-3 gap-1.5 flex-wrap">
         <button
           type="button"
           onClick={() =>
@@ -193,16 +193,18 @@ export function PosCalendar({ initialDate, onCreateAt, onOpenBooking }: Props) {
               return n;
             })
           }
-          className="text-xs uppercase tracking-[0.18em] text-brand-ink-soft hover:text-brand-ink"
+          className="w-8 h-8 flex items-center justify-center rounded text-brand-ink-soft hover:text-brand-ink hover:bg-brand-sand"
+          aria-label="Précédent"
         >
           ←
         </button>
         <button
           type="button"
           onClick={() => setCursor(new Date())}
-          className="text-[10px] uppercase tracking-[0.18em] text-brand-ink-soft hover:text-brand-ink"
+          className="text-[10px] uppercase tracking-[0.18em] text-brand-ink-soft hover:text-brand-ink px-2 py-1"
         >
-          Aujourd&apos;hui
+          <span className="hidden sm:inline">Aujourd&apos;hui</span>
+          <span className="sm:hidden">Auj.</span>
         </button>
         <button
           type="button"
@@ -213,20 +215,21 @@ export function PosCalendar({ initialDate, onCreateAt, onOpenBooking }: Props) {
               return n;
             })
           }
-          className="text-xs uppercase tracking-[0.18em] text-brand-ink-soft hover:text-brand-ink"
+          className="w-8 h-8 flex items-center justify-center rounded text-brand-ink-soft hover:text-brand-ink hover:bg-brand-sand"
+          aria-label="Suivant"
         >
           →
         </button>
-        <span className="luxury-heading text-sm text-brand-ink ml-2">
+        <span className="luxury-heading text-sm text-brand-ink md:ml-2 min-w-0 truncate">
           {view === "day"
             ? cursor.toLocaleDateString("fr-FR", {
-                weekday: "long",
+                weekday: "short",
                 day: "numeric",
-                month: "long",
+                month: "short",
               })
-            : `Semaine du ${range.from.toLocaleDateString("fr-FR")}`}
+            : `Sem. ${range.from.toLocaleDateString("fr-FR", { day: "numeric", month: "short" })}`}
         </span>
-        <div className="ml-auto flex gap-1">
+        <div className="ml-auto flex gap-1 shrink-0">
           <button
             type="button"
             onClick={() => setView("day")}
@@ -247,7 +250,8 @@ export function PosCalendar({ initialDate, onCreateAt, onOpenBooking }: Props) {
                 : "border border-brand-line bg-white text-brand-ink-soft"
             }`}
           >
-            Semaine
+            <span className="hidden sm:inline">Semaine</span>
+            <span className="sm:hidden">Sem.</span>
           </button>
         </div>
         {loading && <span className="text-[10px] text-brand-ink-soft">…</span>}
@@ -401,7 +405,7 @@ function WeekView({
   });
 
   return (
-    <div className="grid grid-cols-7 min-h-full">
+    <div className="grid grid-cols-7 min-h-full md:min-w-0 min-w-[700px]">
       {days.map((d, idx) => {
         const dayBookings = bookings.filter((b) => {
           const start = new Date(b.startTime);

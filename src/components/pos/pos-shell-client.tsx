@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import { MessageCircle } from "lucide-react";
+import { MessageCircle, ShoppingCart, X } from "lucide-react";
 import { useOnlineStatus } from "@/components/pos/online-status";
 import { ChargeModal } from "@/components/pos/charge-modal";
 import { ReceiptPrintFrame, type ReceiptData } from "@/components/pos/receipt";
@@ -40,6 +40,7 @@ export function PosShellClient({ employee }: { employee: EmployeeProp }) {
   const [lastReceipt, setLastReceipt] = useState<ReceiptData | null>(null);
   const [printNow, setPrintNow] = useState(false);
   const [sideOpen, setSideOpen] = useState(false);
+  const [cartOpen, setCartOpen] = useState(false);
   const [bookingsTodayCount, setBookingsTodayCount] = useState(0);
   const [whatsappTemplate, setWhatsappTemplate] = useState<string | null>(null);
   const [successToast, setSuccessToast] = useState<{
@@ -237,22 +238,72 @@ export function PosShellClient({ employee }: { employee: EmployeeProp }) {
     setSideOpen(true);
   });
 
+  const cartItemCount = cart.reduce((n, l) => n + l.quantity, 0);
+
   return (
-    <div
-      className="h-full grid relative"
-      style={{ gridTemplateColumns: "1fr 420px" }}
-    >
-      <section className="overflow-hidden bg-pos-bg flex flex-col">
+    <div className="h-full md:grid flex flex-col relative md:[grid-template-columns:1fr_420px]">
+      <section className="overflow-hidden bg-pos-bg flex flex-col min-h-0 flex-1 md:flex-initial">
         <Results defaultEmployeeId={employee.id} />
       </section>
 
-      <Cart
-        employees={catalog?.employees ?? []}
-        permissions={employee.permissions}
-        onCharge={() => setChargeOpen(true)}
-        onOpenSide={() => setSideOpen(true)}
-        bookingsTodayCount={bookingsTodayCount}
-      />
+      {/* Desktop: cart inline on the right. Mobile: cart hidden, opens as bottom-sheet. */}
+      <div className="hidden md:flex md:flex-col md:h-full min-h-0">
+        <Cart
+          employees={catalog?.employees ?? []}
+          permissions={employee.permissions}
+          onCharge={() => setChargeOpen(true)}
+          onOpenSide={() => setSideOpen(true)}
+          bookingsTodayCount={bookingsTodayCount}
+        />
+      </div>
+
+      {/* Mobile FAB — show cart count + total, tap to open the sheet. */}
+      {cartItemCount > 0 && !cartOpen && (
+        <button
+          type="button"
+          onClick={() => setCartOpen(true)}
+          className="md:hidden fixed bottom-20 right-4 z-40 inline-flex items-center gap-2 pl-4 pr-5 py-3 rounded-full bg-pos-ink text-pos-bg shadow-2xl active:scale-95 transition"
+          style={{ marginBottom: "env(safe-area-inset-bottom)" }}
+          aria-label={`Ouvrir le panier — ${cartItemCount} article${cartItemCount > 1 ? "s" : ""}`}
+        >
+          <span className="relative">
+            <ShoppingCart size={20} />
+            <span className="absolute -top-2 -right-3 min-w-[18px] h-[18px] px-1 rounded-full bg-pos-yellow text-pos-ink text-[10px] font-bold flex items-center justify-center">
+              {cartItemCount}
+            </span>
+          </span>
+          <span className="pos-mono text-sm font-semibold ml-2">{formatCartTotal(totals.total)} DT</span>
+        </button>
+      )}
+
+      {/* Mobile bottom-sheet — full-screen drawer with the Cart inside. */}
+      {cartOpen && (
+        <div className="md:hidden fixed inset-0 z-50 flex flex-col bg-pos-surface">
+          <div className="flex items-center justify-between h-11 px-3 border-b border-pos-border shrink-0">
+            <span className="font-semibold text-sm">Panier</span>
+            <button
+              type="button"
+              onClick={() => setCartOpen(false)}
+              aria-label="Fermer"
+              className="p-2 -mr-2 text-pos-ink-3 hover:text-pos-ink"
+            >
+              <X size={20} />
+            </button>
+          </div>
+          <div className="flex-1 min-h-0">
+            <Cart
+              employees={catalog?.employees ?? []}
+              permissions={employee.permissions}
+              onCharge={() => {
+                setCartOpen(false);
+                setChargeOpen(true);
+              }}
+              onOpenSide={() => setSideOpen(true)}
+              bookingsTodayCount={bookingsTodayCount}
+            />
+          </div>
+        </div>
+      )}
 
       {/* Side drawer (Client / RDV / Recent sales) */}
       {sideOpen && (
@@ -351,6 +402,12 @@ export function PosShellClient({ employee }: { employee: EmployeeProp }) {
  * zeros for the country code). Placeholders {name}, {earned}, {balance} are
  * substituted before URL-encoding the message body.
  */
+function formatCartTotal(total: string | number): string {
+  const n = typeof total === "number" ? total : Number(total);
+  if (!Number.isFinite(n)) return "0.000";
+  return n.toFixed(3);
+}
+
 function buildWhatsappLink(
   template: string,
   ctx: { phone: string; name: string; earned: number; balance: number },

@@ -53,21 +53,22 @@ export function EmployeesListClient() {
   }, []);
 
   return (
-    <div className="h-full overflow-y-auto p-6 max-w-6xl mx-auto">
-      <div className="flex items-center justify-between mb-6">
-        <div>
-          <h1 className="text-2xl font-semibold text-pos-ink">Équipe</h1>
-          <p className="text-sm text-pos-ink-3 mt-1">
+    <div className="h-full overflow-y-auto md:p-6 p-4 max-w-6xl mx-auto">
+      <div className="flex md:items-center items-start justify-between mb-4 md:mb-6 gap-3 flex-wrap">
+        <div className="min-w-0">
+          <h1 className="md:text-2xl text-xl font-semibold text-pos-ink">Équipe</h1>
+          <p className="text-xs md:text-sm text-pos-ink-3 mt-1 hidden md:block">
             Gérez les membres de votre équipe et leurs PIN d&apos;accès à la caisse.
           </p>
         </div>
         <button
           type="button"
           onClick={() => setCreating(true)}
-          className="inline-flex items-center gap-2 px-4 py-2.5 bg-pos-accent text-white rounded-lg text-sm font-medium hover:bg-pos-accent/90"
+          className="inline-flex items-center gap-2 px-3 md:px-4 py-2.5 bg-pos-accent text-white rounded-lg text-sm font-medium hover:bg-pos-accent/90 shrink-0"
         >
           <UserPlus size={16} />
-          Nouvel employé
+          <span className="hidden sm:inline">Nouvel employé</span>
+          <span className="sm:hidden">Nouveau</span>
         </button>
       </div>
 
@@ -80,8 +81,8 @@ export function EmployeesListClient() {
           Aucun employé pour le moment.
         </p>
       ) : (
-        <div className="bg-white border border-pos-border rounded-lg overflow-hidden">
-          <table className="w-full text-sm">
+        <div className="bg-white border border-pos-border rounded-lg overflow-hidden overflow-x-auto">
+          <table className="w-full text-sm min-w-[720px]">
             <thead className="bg-pos-bg border-b border-pos-border">
               <tr className="text-left text-xs uppercase tracking-wider text-pos-ink-3">
                 <th className="px-4 py-3 font-medium">Nom</th>

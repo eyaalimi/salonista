@@ -69,19 +69,19 @@ export function CashDrawerListClient() {
   }, []);
 
   return (
-    <div className="p-6 max-w-5xl mx-auto">
-      <div className="flex items-center justify-between mb-6">
-        <div>
-          <h1 className="text-2xl font-semibold text-brand-ink flex items-center gap-2">
-            <Wallet size={24} /> Tiroir-caisse
+    <div className="md:p-6 p-4 max-w-5xl mx-auto">
+      <div className="flex md:items-center items-start justify-between mb-4 md:mb-6 gap-3 flex-wrap">
+        <div className="min-w-0">
+          <h1 className="md:text-2xl text-xl font-semibold text-brand-ink flex items-center gap-2">
+            <Wallet size={22} /> Tiroir-caisse
           </h1>
-          <p className="text-sm text-brand-ink-soft mt-1">
+          <p className="text-xs md:text-sm text-brand-ink-soft mt-1 hidden md:block">
             Ouverture, dépenses et clôture du tiroir.
           </p>
         </div>
         <Link
           href="/pos"
-          className="text-xs uppercase tracking-[0.18em] text-brand-ink-soft hover:text-brand-ink"
+          className="text-xs uppercase tracking-[0.18em] text-brand-ink-soft hover:text-brand-ink shrink-0"
         >
           ← Caisse
         </Link>

@@ -121,17 +121,17 @@ export function LoyaltyClient({ canEditSettings }: { canEditSettings: boolean })
   }
 
   return (
-    <div className="h-full overflow-y-auto p-6 max-w-6xl mx-auto">
-      <div className="mb-6">
-        <h1 className="text-2xl font-semibold text-pos-ink">Programme de fidélité</h1>
-        <p className="text-sm text-pos-ink-3 mt-1">
+    <div className="h-full overflow-y-auto md:p-6 p-4 max-w-6xl mx-auto">
+      <div className="mb-4 md:mb-6">
+        <h1 className="md:text-2xl text-xl font-semibold text-pos-ink">Programme de fidélité</h1>
+        <p className="text-xs md:text-sm text-pos-ink-3 mt-1">
           Configurez le cashback et gérez les soldes de points de vos clientes.
         </p>
       </div>
 
       {program && <ProgramCard program={program} canEdit={canEditSettings} onSaved={loadProgram} />}
 
-      <div className="mt-8 grid grid-cols-1 lg:grid-cols-[1fr_320px] gap-6">
+      <div className="mt-6 md:mt-8 grid grid-cols-1 lg:grid-cols-[1fr_320px] gap-4 md:gap-6">
         <div>
           <div className="flex items-center justify-between mb-3">
             <h2 className="text-lg font-semibold text-pos-ink">Portefeuilles clientes</h2>
@@ -152,8 +152,8 @@ export function LoyaltyClient({ canEditSettings }: { canEditSettings: boolean })
               Aucun portefeuille pour le moment.
             </p>
           ) : (
-            <div className="bg-white border border-pos-border rounded-lg overflow-hidden">
-              <table className="w-full text-sm">
+            <div className="bg-white border border-pos-border rounded-lg overflow-hidden overflow-x-auto">
+              <table className="w-full text-sm min-w-[500px]">
               <thead className="bg-pos-bg border-b border-pos-border">
                 <tr className="text-left text-xs uppercase tracking-wider text-pos-ink-3">
                   <th className="px-4 py-3 font-medium">Cliente</th>

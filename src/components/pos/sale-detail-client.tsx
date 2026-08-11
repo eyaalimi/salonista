@@ -175,11 +175,11 @@ export function SaleDetailClient({
     canRefund && (sale.status === "PAID" || sale.status === "PARTIALLY_REFUNDED");
 
   return (
-    <div className="p-6 max-w-3xl mx-auto">
-      <div className="flex items-center justify-between mb-6">
-        <div>
+    <div className="md:p-6 p-4 max-w-3xl mx-auto">
+      <div className="flex md:items-center items-start justify-between mb-4 md:mb-6 gap-3 flex-wrap">
+        <div className="min-w-0">
           <p className="luxury-badge mb-2">Reçu</p>
-          <h1 className="luxury-heading text-3xl text-brand-ink">{sale.receiptNumber}</h1>
+          <h1 className="luxury-heading md:text-3xl text-xl text-brand-ink font-mono break-all">{sale.receiptNumber}</h1>
         </div>
         <Link
           href="/pos/sales"
@@ -210,7 +210,7 @@ export function SaleDetailClient({
           )}
         </div>
 
-        <table className="w-full text-sm mb-4">
+        <div className="overflow-x-auto mb-4"><table className="w-full text-sm min-w-[400px]">
           <tbody>
             {sale.items.map((it) => (
               <tr key={it.id} className="border-t border-brand-line">
@@ -231,7 +231,7 @@ export function SaleDetailClient({
               </tr>
             ))}
           </tbody>
-        </table>
+        </table></div>
 
         <div className="border-t border-brand-line pt-4 space-y-1 text-sm">
           <div className="flex justify-between">

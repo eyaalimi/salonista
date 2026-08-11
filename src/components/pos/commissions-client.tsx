@@ -135,22 +135,23 @@ export function CommissionsClient() {
   }
 
   return (
-    <div className="h-full overflow-y-auto p-6 max-w-6xl mx-auto">
-      <div className="flex items-center justify-between mb-6">
-        <div>
-          <h1 className="text-2xl font-semibold text-pos-ink flex items-center gap-2">
+    <div className="h-full overflow-y-auto md:p-6 p-4 max-w-6xl mx-auto">
+      <div className="flex items-start justify-between mb-4 md:mb-6 gap-3">
+        <div className="min-w-0">
+          <h1 className="md:text-2xl text-xl font-semibold text-pos-ink flex items-center gap-2">
             <Coins size={22} /> Commissions
           </h1>
-          <p className="text-sm text-pos-ink-3 mt-1">
+          <p className="text-xs md:text-sm text-pos-ink-3 mt-1 hidden md:block">
             Suivi des commissions dues à votre équipe sur les services vendus.
           </p>
         </div>
         <button
           type="button"
           onClick={() => void load()}
-          className="inline-flex items-center gap-1.5 text-sm text-pos-ink-2 hover:text-pos-ink"
+          className="inline-flex items-center gap-1.5 text-sm text-pos-ink-2 hover:text-pos-ink shrink-0"
+          aria-label="Actualiser"
         >
-          <RefreshCw size={14} /> Actualiser
+          <RefreshCw size={14} /> <span className="hidden sm:inline">Actualiser</span>
         </button>
       </div>
 
@@ -209,20 +210,20 @@ export function CommissionsClient() {
 
       {/* KPI totals */}
       {data && (
-        <div className="grid grid-cols-2 gap-3 mb-6 max-w-md">
-          <div className="rounded-xl border border-amber-300 bg-amber-50/60 p-4">
+        <div className="grid grid-cols-2 gap-3 mb-6 md:max-w-md">
+          <div className="rounded-xl border border-amber-300 bg-amber-50/60 md:p-4 p-3">
             <div className="text-[10px] uppercase tracking-[0.18em] text-amber-800 font-semibold mb-1">
               À payer
             </div>
-            <div className="text-2xl font-semibold text-pos-ink pos-mono">
+            <div className="md:text-2xl text-lg font-semibold text-pos-ink pos-mono">
               {fmtMoney(data.totals.pending)}
             </div>
           </div>
-          <div className="rounded-xl border border-emerald-300 bg-emerald-50/60 p-4">
+          <div className="rounded-xl border border-emerald-300 bg-emerald-50/60 md:p-4 p-3">
             <div className="text-[10px] uppercase tracking-[0.18em] text-emerald-800 font-semibold mb-1">
               Déjà payé
             </div>
-            <div className="text-2xl font-semibold text-pos-ink pos-mono">
+            <div className="md:text-2xl text-lg font-semibold text-pos-ink pos-mono">
               {fmtMoney(data.totals.paid)}
             </div>
           </div>
@@ -238,7 +239,8 @@ export function CommissionsClient() {
           fiche employé pour commencer.
         </div>
       ) : (
-        <div className="bg-white border border-pos-border rounded-lg overflow-hidden">
+        <>
+        <div className="hidden md:block bg-white border border-pos-border rounded-lg overflow-hidden">
           <table className="w-full text-sm">
             <thead className="bg-pos-bg border-b border-pos-border">
               <tr className="text-left text-xs uppercase tracking-wider text-pos-ink-3">
@@ -290,6 +292,57 @@ export function CommissionsClient() {
             </tbody>
           </table>
         </div>
+
+        <div className="md:hidden flex flex-col gap-2">
+          {data.rows.map((r) => {
+            const canPay = Number(r.commissionPending) > 0;
+            return (
+              <div
+                key={r.employeeId}
+                className="rounded-lg border border-pos-border bg-white p-3"
+              >
+                <div className="flex items-start justify-between gap-2 mb-2">
+                  <div className="min-w-0">
+                    <p className="font-medium text-pos-ink truncate">{r.displayName}</p>
+                    <p className="text-[10px] uppercase tracking-wider text-pos-ink-3 mt-0.5">
+                      {r.role}
+                      {r.commissionRate ? ` · ${Number(r.commissionRate).toFixed(2)} %` : ""}
+                    </p>
+                  </div>
+                  <div className="text-right shrink-0">
+                    <p className="text-[10px] uppercase tracking-wider text-amber-800">À payer</p>
+                    <p className="pos-mono font-semibold text-amber-800">
+                      {fmtMoney(r.commissionPending)}
+                    </p>
+                  </div>
+                </div>
+                <div className="grid grid-cols-3 gap-2 text-[11px] mb-2">
+                  <div>
+                    <p className="text-pos-ink-3">Services</p>
+                    <p className="pos-mono">{r.servicesCount}</p>
+                  </div>
+                  <div>
+                    <p className="text-pos-ink-3">Base HT</p>
+                    <p className="pos-mono">{fmtMoney(r.baseHT)}</p>
+                  </div>
+                  <div>
+                    <p className="text-pos-ink-3">Payé</p>
+                    <p className="pos-mono text-emerald-700">{fmtMoney(r.commissionPaid)}</p>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  disabled={!canPay || payingId === r.employeeId}
+                  onClick={() => void markPaid(r)}
+                  className="w-full px-3 py-2 rounded-md bg-emerald-600 text-white text-xs font-medium hover:bg-emerald-700 disabled:opacity-40 disabled:cursor-not-allowed"
+                >
+                  {payingId === r.employeeId ? "…" : "Marquer payée"}
+                </button>
+              </div>
+            );
+          })}
+        </div>
+        </>
       )}
     </div>
   );

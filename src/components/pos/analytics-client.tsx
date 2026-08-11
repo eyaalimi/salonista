@@ -142,15 +142,15 @@ export function AnalyticsClient() {
   }, [load]);
 
   return (
-    <div className="p-6 max-w-6xl mx-auto">
-      <div className="flex items-center justify-between mb-6">
-        <div>
+    <div className="md:p-6 p-4 max-w-6xl mx-auto">
+      <div className="flex md:items-center items-start justify-between mb-4 md:mb-6 gap-3 flex-wrap">
+        <div className="min-w-0">
           <p className="luxury-badge mb-2">Analytique</p>
-          <h1 className="luxury-heading text-3xl text-brand-ink">Tableau de bord</h1>
+          <h1 className="luxury-heading md:text-3xl text-2xl text-brand-ink">Tableau de bord</h1>
         </div>
         <Link
           href="/pos"
-          className="text-xs uppercase tracking-[0.18em] text-brand-ink-soft hover:text-brand-ink"
+          className="text-xs uppercase tracking-[0.18em] text-brand-ink-soft hover:text-brand-ink shrink-0"
         >
           ← Caisse
         </Link>
@@ -281,7 +281,8 @@ export function AnalyticsClient() {
           {byEmployee.length === 0 ? (
             <p className="text-sm text-brand-ink-soft">Aucune donnée.</p>
           ) : (
-            <table className="w-full text-sm">
+            <div className="overflow-x-auto">
+            <table className="w-full text-sm min-w-[420px]">
               <thead className="text-left text-[10px] uppercase tracking-[0.18em] text-brand-ink-soft">
                 <tr>
                   <th className="py-2">Employé·e</th>
@@ -301,6 +302,7 @@ export function AnalyticsClient() {
                 ))}
               </tbody>
             </table>
+            </div>
           )}
         </div>
 

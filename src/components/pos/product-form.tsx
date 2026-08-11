@@ -107,8 +107,8 @@ export function ProductForm(props: Props) {
   }
 
   return (
-    <div className="p-6 max-w-2xl mx-auto">
-      <div className="flex items-center justify-between mb-6">
+    <div className="md:p-6 p-4 max-w-2xl mx-auto">
+      <div className="flex md:items-center items-start justify-between mb-4 md:mb-6 gap-3 flex-wrap">
         <div>
           <p className="luxury-badge mb-2">Caisse</p>
           <h1 className="luxury-heading text-3xl text-brand-ink">
