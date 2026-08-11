@@ -60,22 +60,24 @@ export default async function PosLayout({ children }: { children: React.ReactNod
   return (
     <div data-pos-theme className={`${plexSans.variable} ${plexMono.variable}`}>
       <OnlineStatusProvider>
-        <div className="h-dvh grid" style={{ gridTemplateRows: "48px 1fr" }}>
-          <PosTopbar
-            provider={provider ? { salonName: provider.salonName, city: provider.city } : null}
-            employee={{
-              id: employee.id,
-              displayName: employee.displayName,
-              role: employee.role,
-              permissions: employee.permissions,
-            }}
-          />
-          <div
-            className="grid h-full overflow-hidden"
-            style={{ gridTemplateColumns: "80px 1fr" }}
-          >
+        <div className="h-dvh flex flex-col overflow-hidden">
+          <div className="h-12 shrink-0">
+            <PosTopbar
+              provider={provider ? { salonName: provider.salonName, city: provider.city } : null}
+              employee={{
+                id: employee.id,
+                displayName: employee.displayName,
+                role: employee.role,
+                permissions: employee.permissions,
+              }}
+            />
+          </div>
+          {/* Mobile: rail becomes a bottom bar. Desktop: side rail 80px. */}
+          <div className="flex-1 min-h-0 flex md:flex-row flex-col-reverse overflow-hidden">
             <Rail permissions={employee.permissions} />
-            <main className="overflow-y-auto overflow-x-hidden">{children}</main>
+            <main className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden">
+              {children}
+            </main>
           </div>
         </div>
         {!provider?.matriculeFiscal && (

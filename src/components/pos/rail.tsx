@@ -54,7 +54,7 @@ export function Rail({ permissions }: { permissions: Record<Permission, boolean>
         key={it.href}
         href={it.href}
         title={`${it.label} (${it.shortcut})`}
-        className={`group relative w-16 px-1 py-2 rounded-lg flex flex-col items-center justify-center gap-1 transition-colors ${
+        className={`group relative shrink-0 md:w-16 w-[68px] px-1 py-2 rounded-lg flex flex-col items-center justify-center gap-1 transition-colors ${
           active
             ? "bg-pos-accent text-white"
             : "text-pos-ink-2 hover:bg-pos-border/60 hover:text-pos-ink"
@@ -75,9 +75,19 @@ export function Rail({ permissions }: { permissions: Record<Permission, boolean>
   }
 
   return (
-    <aside className="bg-pos-rail border-r border-pos-border flex flex-col items-center py-3 gap-1 w-[80px] overflow-y-auto">
+    <aside
+      className={
+        // Desktop: vertical side rail. Mobile: horizontal bottom bar, scrollable.
+        "bg-pos-rail flex md:flex-col flex-row items-center " +
+        "md:w-[80px] w-full md:h-auto shrink-0 " +
+        "md:border-r md:border-b-0 border-t border-pos-border " +
+        "md:py-3 md:px-0 px-2 py-1.5 md:gap-1 gap-1 " +
+        "md:overflow-y-auto overflow-x-auto overflow-y-hidden"
+      }
+      style={{ paddingBottom: "max(env(safe-area-inset-bottom), 6px)" }}
+    >
       {items.map(renderItem)}
-      <div className="my-2 w-8 h-px bg-pos-border-strong" />
+      <div className="md:my-2 md:mx-0 mx-1 md:w-8 md:h-px w-px h-8 bg-pos-border-strong shrink-0" />
       {items2.map(renderItem)}
     </aside>
   );

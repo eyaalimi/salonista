@@ -59,7 +59,7 @@ export function PosTopbar({ provider, employee }: { provider: Provider | null; e
     .toUpperCase();
 
   return (
-    <header className="h-12 bg-pos-ink text-pos-bg flex items-center px-3 gap-4">
+    <header className="h-12 bg-pos-ink text-pos-bg flex items-center md:px-3 px-2 md:gap-4 gap-2">
       <div className="flex items-center gap-2 shrink-0">
         <span
           className="text-[18px] leading-none italic"

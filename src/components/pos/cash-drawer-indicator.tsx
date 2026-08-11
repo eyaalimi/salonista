@@ -62,13 +62,19 @@ export function CashDrawerIndicator({ canOpen, employeeName }: { canOpen: boolea
         />
         {isOpen && session ? (
           <span className="flex items-center gap-2">
-            <span>Caisse · {formatDT(summary?.expectedCash ?? "0.000")}</span>
+            <span className="pos-mono">
+              <span className="hidden sm:inline">Caisse · </span>
+              {formatDT(summary?.expectedCash ?? "0.000")}
+            </span>
             <span className="hidden md:inline text-[10px] text-pos-ink-4">
               · Ouverte par {session.employee?.displayName ?? "—"} · Fond {formatDT(session.openingFloat ?? "0.000")}
             </span>
           </span>
         ) : (
-          "Ouvrir caisse"
+          <span>
+            <span className="hidden sm:inline">Ouvrir caisse</span>
+            <span className="sm:hidden">Ouvrir</span>
+          </span>
         )}
       </button>
 

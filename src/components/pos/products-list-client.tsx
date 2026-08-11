@@ -58,23 +58,23 @@ export function ProductsListClient({ canManage }: { canManage: boolean }) {
   });
 
   return (
-    <div className="p-6 max-w-6xl mx-auto">
-      <div className="flex items-center justify-between mb-6">
+    <div className="md:p-6 p-4 max-w-6xl mx-auto">
+      <div className="flex md:items-center items-start justify-between mb-4 md:mb-6 gap-3 flex-wrap">
         <div>
           <p className="luxury-badge mb-2">Caisse</p>
-          <h1 className="luxury-heading text-3xl text-brand-ink">Produits</h1>
+          <h1 className="luxury-heading md:text-3xl text-2xl text-brand-ink">Produits</h1>
         </div>
-        <div className="flex gap-2">
+        <div className="flex gap-2 flex-wrap">
           <Link
             href="/pos"
-            className="rounded-lg border border-brand-line bg-white px-4 py-2 text-xs uppercase tracking-[0.18em] text-brand-ink-soft hover:border-brand-gold"
+            className="rounded-lg border border-brand-line bg-white px-3 py-2 md:px-4 text-xs uppercase tracking-[0.18em] text-brand-ink-soft hover:border-brand-gold"
           >
             Retour caisse
           </Link>
           {canManage && (
             <Link
               href="/pos/products/new"
-              className="rounded-lg bg-brand-ink px-4 py-2 text-xs uppercase tracking-[0.18em] text-brand-cream hover:bg-brand-ink-soft"
+              className="rounded-lg bg-brand-ink px-3 py-2 md:px-4 text-xs uppercase tracking-[0.18em] text-brand-cream hover:bg-brand-ink-soft"
             >
               + Nouveau produit
             </Link>
@@ -103,7 +103,8 @@ export function ProductsListClient({ canManage }: { canManage: boolean }) {
       {loading ? (
         <p className="text-sm text-brand-ink-soft">Chargement…</p>
       ) : (
-        <div className="overflow-x-auto rounded-2xl border border-brand-line bg-white">
+        <>
+        <div className="hidden md:block overflow-x-auto rounded-2xl border border-brand-line bg-white">
           <table className="w-full text-sm">
             <thead className="bg-brand-sand text-left text-[10px] uppercase tracking-[0.18em] text-brand-ink-soft">
               <tr>
@@ -196,6 +197,86 @@ export function ProductsListClient({ canManage }: { canManage: boolean }) {
             </tbody>
           </table>
         </div>
+
+        <div className="md:hidden flex flex-col gap-2">
+          {filtered.map((p) => {
+            const stockColor =
+              p.stockQuantity <= 0
+                ? "text-red-600"
+                : p.stockQuantity <= p.lowStockThreshold
+                  ? "text-amber-700"
+                  : "text-emerald-700";
+            return (
+              <div
+                key={p.id}
+                className="rounded-lg border border-brand-line bg-white p-3"
+              >
+                <div className="flex items-start justify-between gap-2 mb-2">
+                  <div className="min-w-0 flex-1">
+                    <p className="font-medium text-brand-ink truncate">{p.name}</p>
+                    {p.category && (
+                      <p className="text-[10px] uppercase tracking-[0.18em] text-brand-ink-soft mt-0.5">
+                        {p.category}
+                      </p>
+                    )}
+                    <p className="text-xs font-mono text-brand-ink-soft mt-1">
+                      SKU {p.sku}
+                      {p.barcode ? ` · ${p.barcode}` : ""}
+                    </p>
+                  </div>
+                  <div className="shrink-0 text-right">
+                    <p className="font-semibold text-brand-ink whitespace-nowrap">
+                      {formatDT(p.salePrice)}
+                    </p>
+                    <p className={`text-xs mt-0.5 ${stockColor}`}>
+                      Stock {p.stockQuantity}
+                    </p>
+                  </div>
+                </div>
+                {p.costPrice && Number(p.costPrice) > 0 && (
+                  <p className="text-[11px] px-2 py-0.5 rounded bg-green-50 text-green-800 inline-block mb-2">
+                    Marge {(Number(p.salePrice) - Number(p.costPrice)).toFixed(3)} DT
+                    ({Number(p.salePrice) > 0 ? (((Number(p.salePrice) - Number(p.costPrice)) / Number(p.salePrice)) * 100).toFixed(0) : "0"}%)
+                  </p>
+                )}
+                {canManage && (
+                  <div className="flex items-center gap-3 flex-wrap pt-2 border-t border-brand-line">
+                    <button
+                      type="button"
+                      onClick={() => setReceptionFor({ id: p.id, name: p.name, costPrice: p.costPrice })}
+                      className="text-xs px-2 py-1 rounded border border-brand-line hover:bg-brand-cream"
+                    >
+                      Réception
+                    </button>
+                    <Link
+                      href={`/pos/products/${p.id}/edit`}
+                      className="text-xs text-brand-gold hover:underline"
+                    >
+                      Modifier
+                    </Link>
+                    {p.active ? (
+                      <button
+                        type="button"
+                        onClick={() => deactivate(p.id)}
+                        className="text-xs text-red-600 hover:underline ml-auto"
+                      >
+                        Désactiver
+                      </button>
+                    ) : (
+                      <span className="text-xs text-brand-ink-soft ml-auto">Désactivé</span>
+                    )}
+                  </div>
+                )}
+              </div>
+            );
+          })}
+          {filtered.length === 0 && (
+            <p className="text-sm text-brand-ink-soft text-center py-12">
+              Aucun produit.
+            </p>
+          )}
+        </div>
+        </>
       )}
 
       {receptionFor && (

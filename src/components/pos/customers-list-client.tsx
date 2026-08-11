@@ -66,9 +66,9 @@ export function CustomersListClient({ canEdit }: { canEdit: boolean }) {
   }, [rows, query]);
 
   return (
-    <div className="h-full overflow-y-auto p-6 max-w-7xl mx-auto">
-      <div className="flex items-center justify-between gap-4 mb-6">
-        <div className="relative flex-1 max-w-md">
+    <div className="h-full overflow-y-auto md:p-6 p-4 max-w-7xl mx-auto">
+      <div className="flex md:flex-row flex-col md:items-center gap-3 md:gap-4 mb-4 md:mb-6">
+        <div className="relative flex-1 md:max-w-md">
           <Search
             size={16}
             className="absolute left-3 top-1/2 -translate-y-1/2 text-pos-ink-4"
@@ -85,7 +85,7 @@ export function CustomersListClient({ canEdit }: { canEdit: boolean }) {
           <button
             type="button"
             onClick={() => setCreateOpen(true)}
-            className="inline-flex items-center gap-2 px-4 py-2.5 bg-pos-accent text-white rounded-lg text-sm font-medium hover:bg-pos-accent/90"
+            className="inline-flex items-center justify-center gap-2 px-4 py-2.5 bg-pos-accent text-white rounded-lg text-sm font-medium hover:bg-pos-accent/90 shrink-0"
           >
             <UserPlus size={16} />
             Nouvelle cliente
@@ -114,7 +114,8 @@ export function CustomersListClient({ canEdit }: { canEdit: boolean }) {
             : "Aucun résultat pour cette recherche."}
         </p>
       ) : (
-        <div className="bg-white border border-pos-border rounded-lg overflow-hidden">
+        <>
+        <div className="hidden md:block bg-white border border-pos-border rounded-lg overflow-hidden">
           <table className="w-full text-sm">
             <thead className="bg-pos-bg border-b border-pos-border">
               <tr className="text-left text-xs uppercase tracking-wider text-pos-ink-3">
@@ -173,6 +174,49 @@ export function CustomersListClient({ canEdit }: { canEdit: boolean }) {
             </tbody>
           </table>
         </div>
+
+        <div className="md:hidden flex flex-col gap-2">
+          {visible.map((c) => {
+            const name =
+              `${c.firstName ?? ""} ${c.lastName ?? ""}`.trim() || "—";
+            return (
+              <button
+                type="button"
+                key={c.id}
+                onClick={() => setSelectedId(c.id)}
+                className="text-left rounded-lg border border-pos-border bg-white p-3 hover:border-pos-accent"
+              >
+                <div className="flex items-start justify-between gap-2 mb-1">
+                  <div className="min-w-0 flex-1">
+                    <p className="font-medium text-pos-ink truncate">
+                      {name}
+                      {c.isWalkIn && (
+                        <span className="ml-2 text-[10px] uppercase tracking-wider text-pos-ink-3">
+                          passager
+                        </span>
+                      )}
+                    </p>
+                    <p className="text-xs text-pos-ink-2 pos-mono mt-0.5">
+                      {c.phone ? formatPhoneDisplay(c.phone) : "—"}
+                    </p>
+                  </div>
+                  {c.loyaltyPoints > 0 && (
+                    <span className="shrink-0 inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-amber-50 text-amber-700 text-xs font-semibold pos-mono">
+                      ★ {c.loyaltyPoints}
+                    </span>
+                  )}
+                </div>
+                <div className="flex items-center justify-between gap-2 text-xs text-pos-ink-3 mt-1">
+                  <span>{c.totalVisits} visite{c.totalVisits > 1 ? "s" : ""}</span>
+                  <span className="pos-mono font-medium text-pos-ink">
+                    {formatDT(c.totalSpent)}
+                  </span>
+                </div>
+              </button>
+            );
+          })}
+        </div>
+        </>
       )}
 
       {selectedId && (

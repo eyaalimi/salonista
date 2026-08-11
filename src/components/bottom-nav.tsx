@@ -12,7 +12,8 @@ const items = [
 
 // Hide on dashboard sub-trees (provider/influencer/admin own their layouts).
 // /cliente is allowed to keep showing the bottom nav so the client can hop back to /offres easily.
-const HIDDEN_PREFIXES = ["/prestataire", "/influenceuse", "/admin"];
+// /pos and /salon-pin own the full viewport (POS PWA) — no client bottom nav.
+const HIDDEN_PREFIXES = ["/prestataire", "/influenceuse", "/admin", "/pos", "/salon-pin"];
 
 export function BottomNav() {
   const pathname = usePathname() || "/";
