@@ -2,6 +2,8 @@ import { NextRequest } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { tryNormalizePhone } from "@/lib/phone";
 import { requirePermission, toResponse } from "@/lib/employee-session";
+import { hasModule } from "@/lib/modules";
+import { getOrCreateProgram } from "@/lib/rewards/program";
 
 /**
  * Universal customer search for the POS side panel.
@@ -87,13 +89,44 @@ export async function GET(req: NextRequest) {
     })) as Row[];
   }
 
+  // Attach reward wallet summary so the ChargeModal can offer the loyalty
+  // tile immediately after the cashier picks a customer via search — without
+  // this, `customer.wallet` stayed undefined and the modal showed
+  // "Aucun point disponible sur ce compte" even for customers who had points.
+  const walletByCustomer = new Map<
+    string,
+    { walletId: string; balance: number; minPointsToRedeem: number; maxRedemptionPctPerSale: number; dinarPerPoint: string }
+  >();
+  if (customers.length > 0 && (await hasModule(providerId, "REWARDS"))) {
+    const program = await getOrCreateProgram(providerId);
+    if (program.active) {
+      const wallets = await prisma.rewardWallet.findMany({
+        where: { providerId, customerId: { in: customers.map((c) => c.id) } },
+        select: { id: true, customerId: true, balance: true },
+      });
+      for (const w of wallets) {
+        walletByCustomer.set(w.customerId, {
+          walletId: w.id,
+          balance: w.balance,
+          minPointsToRedeem: program.minPointsToRedeem,
+          maxRedemptionPctPerSale: program.maxRedemptionPctPerSale,
+          dinarPerPoint: program.dinarPerPoint.toString(),
+        });
+      }
+    }
+  }
+
   return Response.json({
-    customers: customers.map((c) => ({
-      id: c.id,
-      phone: c.phone.startsWith("walk-in-") ? null : c.phone,
-      firstName: c.firstName,
-      lastName: c.lastName,
-      email: c.email,
-    })),
+    customers: customers.map((c) => {
+      const wallet = walletByCustomer.get(c.id);
+      return {
+        id: c.id,
+        phone: c.phone.startsWith("walk-in-") ? null : c.phone,
+        firstName: c.firstName,
+        lastName: c.lastName,
+        email: c.email,
+        ...(wallet ? { wallet } : {}),
+      };
+    }),
   });
 }
