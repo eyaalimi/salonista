@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Star, Plus, Minus, Search } from "lucide-react";
+import { Star, Plus, Minus, Search, Trophy, MessageCircle } from "lucide-react";
 
 type Program = {
   id: string;
@@ -14,6 +14,19 @@ type Program = {
   welcomeBonusPoints: number;
   birthdayBonusPoints: number;
   displayName: string | null;
+  whatsappMessage: string | null;
+};
+
+type TopItem = {
+  rank: number;
+  walletId: string;
+  balance: number;
+  customer: {
+    id: string;
+    firstName: string | null;
+    lastName: string | null;
+    phone: string;
+  };
 };
 
 type Wallet = {
@@ -33,6 +46,7 @@ type Wallet = {
 export function LoyaltyClient({ canEditSettings }: { canEditSettings: boolean }) {
   const [program, setProgram] = useState<Program | null>(null);
   const [wallets, setWallets] = useState<Wallet[]>([]);
+  const [top, setTop] = useState<TopItem[]>([]);
   const [moduleActive, setModuleActive] = useState(true);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
@@ -65,10 +79,18 @@ export function LoyaltyClient({ canEditSettings }: { canEditSettings: boolean })
     }
   }
 
+  async function loadTop() {
+    const res = await fetch("/api/rewards/top?limit=10");
+    if (res.ok) {
+      const data = (await res.json()) as { items: TopItem[] };
+      setTop(data.items);
+    }
+  }
+
   useEffect(() => {
     (async () => {
       await loadProgram();
-      await loadWallets();
+      await Promise.all([loadWallets(), loadTop()]);
       setLoading(false);
     })();
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -109,28 +131,29 @@ export function LoyaltyClient({ canEditSettings }: { canEditSettings: boolean })
 
       {program && <ProgramCard program={program} canEdit={canEditSettings} onSaved={loadProgram} />}
 
-      <div className="mt-8">
-        <div className="flex items-center justify-between mb-3">
-          <h2 className="text-lg font-semibold text-pos-ink">Portefeuilles clientes</h2>
-          <div className="relative w-64">
-            <Search size={14} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-pos-ink-4" />
-            <input
-              type="text"
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              placeholder="Nom ou téléphone…"
-              className="w-full text-sm bg-white border border-pos-border rounded pl-8 pr-2 py-1.5"
-            />
+      <div className="mt-8 grid grid-cols-1 lg:grid-cols-[1fr_320px] gap-6">
+        <div>
+          <div className="flex items-center justify-between mb-3">
+            <h2 className="text-lg font-semibold text-pos-ink">Portefeuilles clientes</h2>
+            <div className="relative w-64">
+              <Search size={14} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-pos-ink-4" />
+              <input
+                type="text"
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                placeholder="Nom ou téléphone…"
+                className="w-full text-sm bg-white border border-pos-border rounded pl-8 pr-2 py-1.5"
+              />
+            </div>
           </div>
-        </div>
 
-        {wallets.length === 0 ? (
-          <p className="text-sm text-pos-ink-3 text-center py-12">
-            Aucun portefeuille pour le moment.
-          </p>
-        ) : (
-          <div className="bg-white border border-pos-border rounded-lg overflow-hidden">
-            <table className="w-full text-sm">
+          {wallets.length === 0 ? (
+            <p className="text-sm text-pos-ink-3 text-center py-12">
+              Aucun portefeuille pour le moment.
+            </p>
+          ) : (
+            <div className="bg-white border border-pos-border rounded-lg overflow-hidden">
+              <table className="w-full text-sm">
               <thead className="bg-pos-bg border-b border-pos-border">
                 <tr className="text-left text-xs uppercase tracking-wider text-pos-ink-3">
                   <th className="px-4 py-3 font-medium">Cliente</th>
@@ -177,8 +200,12 @@ export function LoyaltyClient({ canEditSettings }: { canEditSettings: boolean })
                 ))}
               </tbody>
             </table>
-          </div>
-        )}
+            </div>
+          )}
+        </div>
+
+        {/* Top 10 fidèles — right column */}
+        <TopFidelesWidget items={top} />
       </div>
 
       {adjustTarget && (
@@ -192,6 +219,45 @@ export function LoyaltyClient({ canEditSettings }: { canEditSettings: boolean })
         />
       )}
     </div>
+  );
+}
+
+function TopFidelesWidget({ items }: { items: TopItem[] }) {
+  return (
+    <aside className="bg-white border border-pos-border rounded-lg p-4 h-fit">
+      <h3 className="text-sm font-semibold text-pos-ink flex items-center gap-1.5 mb-3">
+        <Trophy size={14} className="text-amber-500" /> Top 10 fidèles
+      </h3>
+      {items.length === 0 ? (
+        <p className="text-xs text-pos-ink-3 py-4 text-center">
+          Aucune cliente avec des points.
+        </p>
+      ) : (
+        <ol className="space-y-1.5">
+          {items.map((it) => {
+            const name =
+              `${it.customer.firstName ?? ""} ${it.customer.lastName ?? ""}`.trim() ||
+              it.customer.phone;
+            return (
+              <li
+                key={it.walletId}
+                className="flex items-center justify-between gap-2 py-1 border-b border-pos-border/60 last:border-0"
+              >
+                <div className="flex items-center gap-2 min-w-0">
+                  <span className="text-xs text-pos-ink-3 pos-mono w-5 shrink-0">
+                    {it.rank}.
+                  </span>
+                  <span className="text-sm text-pos-ink truncate">{name}</span>
+                </div>
+                <span className="pos-mono text-sm font-semibold text-pos-ink shrink-0">
+                  {it.balance} pts
+                </span>
+              </li>
+            );
+          })}
+        </ol>
+      )}
+    </aside>
   );
 }
 
@@ -212,6 +278,9 @@ function ProgramCard({
     maxRedemptionPctPerSale: program.maxRedemptionPctPerSale,
     welcomeBonusPoints: program.welcomeBonusPoints,
     birthdayBonusPoints: program.birthdayBonusPoints,
+    whatsappMessage:
+      program.whatsappMessage ??
+      "Bonjour {name} 💖 Merci pour votre visite ! Vous avez gagné {earned} points. Solde total : {balance} points.",
   });
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -230,6 +299,7 @@ function ProgramCard({
           maxRedemptionPctPerSale: form.maxRedemptionPctPerSale,
           welcomeBonusPoints: form.welcomeBonusPoints,
           birthdayBonusPoints: form.birthdayBonusPoints,
+          whatsappMessage: form.whatsappMessage.trim() || null,
         }),
       });
       if (res.ok) {
@@ -327,6 +397,25 @@ function ProgramCard({
             />
           </label>
 
+          <label className="block col-span-2">
+            <span className="text-xs text-pos-ink-2 font-semibold flex items-center gap-1">
+              <MessageCircle size={12} className="text-emerald-600" /> Message WhatsApp
+            </span>
+            <textarea
+              value={form.whatsappMessage}
+              onChange={(e) => setForm({ ...form, whatsappMessage: e.target.value })}
+              rows={3}
+              maxLength={500}
+              placeholder="Bonjour {name} 💖 Merci pour votre visite ! Vous avez gagné {earned} points. Solde total : {balance} points."
+              className="mt-1 w-full px-3 py-2 border border-pos-border rounded text-sm resize-y focus:border-pos-accent focus:outline-none"
+            />
+            <span className="text-[10px] text-pos-ink-3 mt-0.5 block">
+              Variables disponibles : <code className="pos-mono">{"{name}"}</code>,{" "}
+              <code className="pos-mono">{"{earned}"}</code>,{" "}
+              <code className="pos-mono">{"{balance}"}</code>. Laisser vide pour désactiver.
+            </span>
+          </label>
+
           {error && <p className="col-span-2 text-sm text-red-600">{error}</p>}
 
           <div className="col-span-2 flex justify-end gap-2 mt-2">
@@ -365,6 +454,14 @@ function ProgramCard({
             <dt className="text-xs text-pos-ink-3">Bonus bienvenue / anniversaire</dt>
             <dd className="text-pos-ink pos-mono">
               {program.welcomeBonusPoints} / {program.birthdayBonusPoints} pts
+            </dd>
+          </div>
+          <div className="col-span-2">
+            <dt className="text-xs text-pos-ink-3 flex items-center gap-1">
+              <MessageCircle size={11} className="text-emerald-600" /> Message WhatsApp
+            </dt>
+            <dd className="text-pos-ink text-xs mt-0.5 italic">
+              {program.whatsappMessage ?? "Non configuré"}
             </dd>
           </div>
         </dl>

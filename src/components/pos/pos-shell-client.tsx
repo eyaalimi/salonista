@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
+import { MessageCircle } from "lucide-react";
 import { useOnlineStatus } from "@/components/pos/online-status";
 import { ChargeModal } from "@/components/pos/charge-modal";
 import { ReceiptPrintFrame, type ReceiptData } from "@/components/pos/receipt";
@@ -40,7 +41,12 @@ export function PosShellClient({ employee }: { employee: EmployeeProp }) {
   const [printNow, setPrintNow] = useState(false);
   const [sideOpen, setSideOpen] = useState(false);
   const [bookingsTodayCount, setBookingsTodayCount] = useState(0);
-  const [successToast, setSuccessToast] = useState<{ total: string; receiptNumber: string } | null>(null);
+  const [whatsappTemplate, setWhatsappTemplate] = useState<string | null>(null);
+  const [successToast, setSuccessToast] = useState<{
+    total: string;
+    receiptNumber: string;
+    whatsappUrl: string | null;
+  } | null>(null);
 
   const cart = usePosStore((s) => s.cart);
   const customer = usePosStore((s) => s.customer);
@@ -159,19 +165,58 @@ export function PosShellClient({ employee }: { employee: EmployeeProp }) {
     }
   }, [lastReceipt, printNow]);
 
-  // Auto-dismiss the success toast.
+  // Auto-dismiss the success toast (longer if there's a WhatsApp CTA).
   useEffect(() => {
     if (!successToast) return;
-    const id = setTimeout(() => setSuccessToast(null), 2500);
+    const timeoutMs = successToast.whatsappUrl ? 8000 : 2500;
+    const id = setTimeout(() => setSuccessToast(null), timeoutMs);
     return () => clearTimeout(id);
   }, [successToast]);
+
+  // Load the WhatsApp message template once on mount. Fails silently if the
+  // REWARDS module is off or the fetch errors — the toast just skips the CTA.
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await fetch("/api/rewards/program", { cache: "no-store" });
+        if (!res.ok || cancelled) return;
+        const data = (await res.json()) as { whatsappMessage?: string | null };
+        if (!cancelled) setWhatsappTemplate(data.whatsappMessage ?? null);
+      } catch {
+        // ignore
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   function handleCompleted(receipt: ReceiptData, shouldPrint: boolean) {
     if (shouldPrint) {
       setLastReceipt(receipt);
       setPrintNow(true);
     }
-    setSuccessToast({ total: receipt.total, receiptNumber: receipt.receiptNumber });
+    // Build an optional wa.me URL if the salon has configured a template AND
+    // this sale earned points AND we have a customer phone snapshot.
+    const totalEarned =
+      (receipt.rewards?.earned ?? 0) +
+      (receipt.rewards?.welcomeBonus ?? 0) +
+      (receipt.rewards?.birthdayBonus ?? 0);
+    const whatsappUrl =
+      whatsappTemplate && totalEarned > 0 && customer?.phone
+        ? buildWhatsappLink(whatsappTemplate, {
+            phone: customer.phone,
+            name: (`${customer.firstName ?? ""} ${customer.lastName ?? ""}`.trim()) || "",
+            earned: totalEarned,
+            balance: receipt.rewards?.newBalance ?? 0,
+          })
+        : null;
+    setSuccessToast({
+      total: receipt.total,
+      receiptNumber: receipt.receiptNumber,
+      whatsappUrl,
+    });
     setChargeOpen(false);
     clearCart();
   }
@@ -275,16 +320,47 @@ export function PosShellClient({ employee }: { employee: EmployeeProp }) {
           <span className="inline-flex items-center justify-center w-8 h-8 rounded-full bg-white/20 text-lg">
             ✓
           </span>
-          <div>
+          <div className="flex-1">
             <div className="font-semibold text-sm">Paiement encaissé</div>
             <div className="text-xs opacity-90 pos-mono">
               {successToast.receiptNumber} · {successToast.total} DT
             </div>
           </div>
+          {successToast.whatsappUrl && (
+            <a
+              href={successToast.whatsappUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              onClick={() => setSuccessToast(null)}
+              className="ml-2 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white text-emerald-700 text-xs font-semibold hover:bg-emerald-50"
+            >
+              <MessageCircle size={14} /> WhatsApp
+            </a>
+          )}
         </div>
       )}
 
       <ShortcutHelpOverlay />
     </div>
   );
+}
+
+/**
+ * Build a wa.me deep link from the salon's template + sale context.
+ * Normalizes the customer phone to E.164 digits (removes spaces, +, leading
+ * zeros for the country code). Placeholders {name}, {earned}, {balance} are
+ * substituted before URL-encoding the message body.
+ */
+function buildWhatsappLink(
+  template: string,
+  ctx: { phone: string; name: string; earned: number; balance: number },
+): string | null {
+  // Strip everything but digits. wa.me needs no leading + and no formatting.
+  const digits = ctx.phone.replace(/[^\d]/g, "");
+  if (!digits) return null;
+  const text = template
+    .replaceAll("{name}", ctx.name || "")
+    .replaceAll("{earned}", String(ctx.earned))
+    .replaceAll("{balance}", String(ctx.balance));
+  return `https://wa.me/${digits}?text=${encodeURIComponent(text)}`;
 }

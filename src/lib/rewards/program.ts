@@ -21,6 +21,7 @@ export type RewardProgramInput = {
   birthdayBonusPoints?: number;
   active?: boolean;
   displayName?: string | null;
+  whatsappMessage?: string | null;
 };
 
 /**
@@ -102,7 +103,11 @@ export async function updateProgram(
       birthdayBonusPoints: updates.birthdayBonusPoints,
       active: updates.active,
       displayName: updates.displayName,
-    },
+      // Cast: local Prisma client is stale for the new column; server regen fixes it.
+      ...(updates.whatsappMessage !== undefined
+        ? ({ whatsappMessage: updates.whatsappMessage } as unknown as Record<string, unknown>)
+        : {}),
+    } as never,
   });
 }
 

@@ -39,6 +39,7 @@ export async function GET() {
     birthdayBonusPoints: program.birthdayBonusPoints,
     active: program.active,
     displayName: program.displayName,
+    whatsappMessage: (program as unknown as { whatsappMessage: string | null }).whatsappMessage ?? null,
   });
 }
 
@@ -54,6 +55,7 @@ type PutBody = {
   birthdayBonusPoints?: number;
   active?: boolean;
   displayName?: string | null;
+  whatsappMessage?: string | null;
 };
 
 export async function PUT(req: NextRequest) {
@@ -86,6 +88,12 @@ export async function PUT(req: NextRequest) {
     birthdayBonusPoints: body.birthdayBonusPoints,
     active: body.active,
     displayName: body.displayName,
+    whatsappMessage:
+      body.whatsappMessage === undefined
+        ? undefined
+        : body.whatsappMessage === null || body.whatsappMessage.trim() === ""
+          ? null
+          : body.whatsappMessage.slice(0, 500),
   };
   if (body.cashbackPct !== undefined) {
     try {
@@ -116,6 +124,7 @@ export async function PUT(req: NextRequest) {
       birthdayBonusPoints: updated.birthdayBonusPoints,
       active: updated.active,
       displayName: updated.displayName,
+      whatsappMessage: (updated as unknown as { whatsappMessage: string | null }).whatsappMessage ?? null,
     });
   } catch (err) {
     if (err instanceof ProgramValidationError) {
