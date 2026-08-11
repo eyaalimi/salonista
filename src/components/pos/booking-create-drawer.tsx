@@ -28,10 +28,18 @@ type Props = {
 };
 
 function isoLocal(d: Date): string {
-  // datetime-local-friendly format
+  // datetime-local-friendly format (used only for walk-ins, which don't need
+  // to align on the slot grid).
   const pad = (n: number) => String(n).padStart(2, "0");
   return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
 }
+
+function isoDate(d: Date): string {
+  const pad = (n: number) => String(n).padStart(2, "0");
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+}
+
+type Slot = { startTime: string; endTime: string };
 
 export function BookingCreateDrawer({
   initialStart,
@@ -53,6 +61,13 @@ export function BookingCreateDrawer({
   const [notes, setNotes] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  // Slot picker state (service mode). The date is a YYYY-MM-DD; the chosen
+  // slot is an ISO string (as returned by the API — always aligned on the grid).
+  const [dateStr, setDateStr] = useState<string>(isoDate(initialStart));
+  const [availableSlots, setAvailableSlots] = useState<Slot[]>([]);
+  const [selectedSlot, setSelectedSlot] = useState<string | null>(null);
+  const [loadingSlots, setLoadingSlots] = useState(false);
+  const [slotError, setSlotError] = useState<string | null>(null);
 
   useEffect(() => {
     (async () => {
@@ -92,6 +107,52 @@ export function BookingCreateDrawer({
     return sum;
   }, [walkIn, selectedOffers, offers, duration]);
 
+  // Fetch available slot start-times whenever the offer list or the day
+  // changes. Skip when the form is in walk-in mode.
+  useEffect(() => {
+    if (walkIn || selectedOffers.length === 0 || !dateStr) {
+      setAvailableSlots([]);
+      setSelectedSlot(null);
+      setSlotError(null);
+      return;
+    }
+    let cancelled = false;
+    setLoadingSlots(true);
+    setSlotError(null);
+    (async () => {
+      try {
+        const params = new URLSearchParams({
+          offerIds: selectedOffers.join(","),
+          date: dateStr,
+        });
+        const res = await fetch(`/api/pos/slots?${params.toString()}`, {
+          cache: "no-store",
+        });
+        if (!res.ok) {
+          const d = await res.json().catch(() => ({}));
+          if (!cancelled) {
+            setAvailableSlots([]);
+            setSelectedSlot(null);
+            setSlotError(d?.error ?? "Impossible de charger les créneaux");
+          }
+          return;
+        }
+        const data = (await res.json()) as { slots: Slot[] };
+        if (cancelled) return;
+        setAvailableSlots(data.slots);
+        // Preserve current selection if still valid, otherwise pick nothing.
+        setSelectedSlot((prev) =>
+          prev && data.slots.some((s) => s.startTime === prev) ? prev : null,
+        );
+      } finally {
+        if (!cancelled) setLoadingSlots(false);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [walkIn, selectedOffers, dateStr]);
+
   function toggleOffer(id: string) {
     setSelectedOffers((s) =>
       s.includes(id) ? s.filter((x) => x !== id) : [...s, id],
@@ -105,6 +166,10 @@ export function BookingCreateDrawer({
       setError("Sélectionnez au moins un service");
       return;
     }
+    if (!walkIn && !selectedSlot) {
+      setError("Choisissez un créneau disponible");
+      return;
+    }
     if (phone && !customer) {
       const normalized = tryNormalizePhone(phone);
       if (!normalized) {
@@ -114,10 +179,13 @@ export function BookingCreateDrawer({
     }
     setSubmitting(true);
     try {
+      const startIso = walkIn
+        ? new Date(startStr).toISOString()
+        : selectedSlot!;
       const body = {
         customerId: customer?.id ?? null,
         walkIn,
-        startTime: new Date(startStr).toISOString(),
+        startTime: startIso,
         offerIds: walkIn ? [] : selectedOffers,
         durationMinutes: walkIn ? duration : undefined,
         assignedEmployeeId: employeeId,
@@ -165,18 +233,6 @@ export function BookingCreateDrawer({
         )}
 
         <form onSubmit={submit} className="space-y-4 text-sm">
-          <div>
-            <label className="block text-[10px] uppercase tracking-[0.18em] text-brand-ink-soft mb-1">
-              Date et heure
-            </label>
-            <input
-              type="datetime-local"
-              value={startStr}
-              onChange={(e) => setStartStr(e.target.value)}
-              className="w-full rounded border border-brand-line bg-white px-3 py-2"
-            />
-          </div>
-
           <label className="flex items-center gap-2 text-xs">
             <input
               type="checkbox"
@@ -187,43 +243,116 @@ export function BookingCreateDrawer({
           </label>
 
           {walkIn ? (
-            <div>
-              <label className="block text-[10px] uppercase tracking-[0.18em] text-brand-ink-soft mb-1">
-                Durée (min)
-              </label>
-              <input
-                type="number"
-                min="5"
-                step="5"
-                value={duration}
-                onChange={(e) => setDuration(parseInt(e.target.value) || 30)}
-                className="w-full rounded border border-brand-line bg-white px-3 py-2"
-              />
-            </div>
+            <>
+              <div>
+                <label className="block text-[10px] uppercase tracking-[0.18em] text-brand-ink-soft mb-1">
+                  Date et heure
+                </label>
+                <input
+                  type="datetime-local"
+                  value={startStr}
+                  onChange={(e) => setStartStr(e.target.value)}
+                  className="w-full rounded border border-brand-line bg-white px-3 py-2"
+                />
+              </div>
+              <div>
+                <label className="block text-[10px] uppercase tracking-[0.18em] text-brand-ink-soft mb-1">
+                  Durée (min)
+                </label>
+                <input
+                  type="number"
+                  min="5"
+                  step="5"
+                  value={duration}
+                  onChange={(e) => setDuration(parseInt(e.target.value) || 30)}
+                  className="w-full rounded border border-brand-line bg-white px-3 py-2"
+                />
+              </div>
+            </>
           ) : (
-            <div>
-              <label className="block text-[10px] uppercase tracking-[0.18em] text-brand-ink-soft mb-1">
-                Services
-              </label>
-              <ul className="space-y-1 max-h-40 overflow-y-auto border border-brand-line rounded bg-white p-2">
-                {offers.map((o) => (
-                  <li key={o.id}>
-                    <label className="flex items-center gap-2 text-xs">
-                      <input
-                        type="checkbox"
-                        checked={selectedOffers.includes(o.id)}
-                        onChange={() => toggleOffer(o.id)}
-                      />
-                      <span className="flex-1">{o.title}</span>
-                      <span className="text-brand-ink-soft">{o.durationMinutes} min</span>
-                    </label>
-                  </li>
-                ))}
-              </ul>
-              <p className="mt-1 text-[10px] text-brand-ink-soft">
-                Durée totale: {Math.floor(totalDuration / 60)}h {totalDuration % 60}min
-              </p>
-            </div>
+            <>
+              <div>
+                <label className="block text-[10px] uppercase tracking-[0.18em] text-brand-ink-soft mb-1">
+                  Services
+                </label>
+                <ul className="space-y-1 max-h-40 overflow-y-auto border border-brand-line rounded bg-white p-2">
+                  {offers.map((o) => (
+                    <li key={o.id}>
+                      <label className="flex items-center gap-2 text-xs">
+                        <input
+                          type="checkbox"
+                          checked={selectedOffers.includes(o.id)}
+                          onChange={() => toggleOffer(o.id)}
+                        />
+                        <span className="flex-1">{o.title}</span>
+                        <span className="text-brand-ink-soft">{o.durationMinutes} min</span>
+                      </label>
+                    </li>
+                  ))}
+                </ul>
+                <p className="mt-1 text-[10px] text-brand-ink-soft">
+                  Durée totale: {Math.floor(totalDuration / 60)}h {totalDuration % 60}min
+                </p>
+              </div>
+
+              <div>
+                <label className="block text-[10px] uppercase tracking-[0.18em] text-brand-ink-soft mb-1">
+                  Jour
+                </label>
+                <input
+                  type="date"
+                  value={dateStr}
+                  onChange={(e) => setDateStr(e.target.value)}
+                  min={isoDate(new Date())}
+                  className="w-full rounded border border-brand-line bg-white px-3 py-2"
+                />
+              </div>
+
+              <div>
+                <label className="block text-[10px] uppercase tracking-[0.18em] text-brand-ink-soft mb-1">
+                  Créneau disponible
+                </label>
+                {selectedOffers.length === 0 ? (
+                  <p className="text-xs text-brand-ink-soft italic px-1">
+                    Sélectionnez d&apos;abord un service pour voir les créneaux libres.
+                  </p>
+                ) : loadingSlots ? (
+                  <p className="text-xs text-brand-ink-soft px-1">Chargement…</p>
+                ) : slotError ? (
+                  <p className="text-xs text-red-600 px-1">{slotError}</p>
+                ) : availableSlots.length === 0 ? (
+                  <p className="text-xs text-amber-800 bg-amber-50 border border-amber-200 rounded px-2 py-2">
+                    Aucun créneau disponible ce jour pour cette combinaison de
+                    services. Choisissez un autre jour ou modifiez les services.
+                  </p>
+                ) : (
+                  <div className="grid grid-cols-4 gap-1.5">
+                    {availableSlots.map((s) => {
+                      const d = new Date(s.startTime);
+                      const label = d.toLocaleTimeString("fr-FR", {
+                        hour: "2-digit",
+                        minute: "2-digit",
+                      });
+                      const active = selectedSlot === s.startTime;
+                      return (
+                        <button
+                          key={s.startTime}
+                          type="button"
+                          onClick={() => setSelectedSlot(s.startTime)}
+                          className={`px-2 py-2 rounded border text-xs font-medium transition ${
+                            active
+                              ? "bg-brand-ink text-brand-cream border-brand-ink"
+                              : "bg-white border-brand-line text-brand-ink hover:border-brand-gold"
+                          }`}
+                        >
+                          {label}
+                        </button>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+            </>
           )}
 
           <div>
