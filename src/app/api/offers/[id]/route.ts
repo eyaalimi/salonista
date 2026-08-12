@@ -3,6 +3,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { regenerateOfferSlots } from "@/lib/slots";
+import { requirePermission, toResponse } from "@/lib/employee-session";
 
 const ALLOWED_DURATIONS = [15, 30, 45, 60, 75, 90, 105, 120, 150, 180, 240];
 
@@ -48,17 +49,19 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
 // PUT: update offer (owner only)
 export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  const session = await getServerSession(authOptions);
-  if (!session || session.user.role !== "PROVIDER") {
-    return NextResponse.json({ error: "Non autorisé" }, { status: 401 });
+
+  // Accepte session PROVIDER et session employe par PIN (cf. POST /api/offers).
+  let employee;
+  try {
+    employee = await requirePermission("products.manage");
+  } catch (err) {
+    const r = toResponse(err);
+    if (r) return r;
+    throw err;
   }
 
-  const profile = await prisma.providerProfile.findUnique({
-    where: { userId: session.user.id },
-  });
-
   const offer = await prisma.offer.findUnique({ where: { id } });
-  if (!offer || offer.providerId !== profile?.id) {
+  if (!offer || offer.providerId !== employee.providerId) {
     return NextResponse.json({ error: "Offre introuvable" }, { status: 404 });
   }
 
