@@ -280,14 +280,21 @@ export function PosShellClient({ employee }: { employee: EmployeeProp }) {
         />
       </div>
 
-      {/* Mobile action bar — full-width bar pinned above the rail bottom-bar
-          with cart count + total + explicit CTA. Visible any time the cart
-          has items; disappears when the sheet is open. Sized to be obviously
-          tappable and to communicate "you must tap this to finalize". */}
+      {/* Mobile action bar — bar pinned to the bottom of the screen, inset
+          from the left to clear the side rail, with cart count + total +
+          explicit CTA. Visible any time the cart has items; disappears when
+          the sheet is open. Sized to be obviously tappable and to
+          communicate "you must tap this to finalize". */}
       {cartItemCount > 0 && !cartOpen && (
         <div
-          className="md:hidden fixed inset-x-0 z-40 px-3"
-          style={{ bottom: "calc(env(safe-area-inset-bottom) + 72px)" }}
+          className="md:hidden fixed z-40 pr-3"
+          style={{
+            // Decalee de la largeur du rail (56px) pour ne pas le recouvrir.
+            // Plus de bottom-bar a eviter : la barre se colle au bas de l'ecran.
+            left: "56px",
+            right: 0,
+            bottom: "calc(env(safe-area-inset-bottom) + 12px)",
+          }}
         >
           <button
             type="button"
