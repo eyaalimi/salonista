@@ -22,6 +22,7 @@ export default async function ServicesPage() {
       taxRate: true,
       active: true,
       publishedToMarketplace: true,
+      photos: true,
     } as never,
   });
   return <ServicesListClient initialOffers={offers as never} />;

@@ -11,9 +11,51 @@ type Offer = {
   taxRate: string;
   active: boolean;
   publishedToMarketplace: boolean;
+  photos: string[];
 };
 
 const ALLOWED_DURATIONS = [15, 30, 45, 60, 75, 90, 105, 120, 150, 180, 240];
+
+/**
+ * Badge de statut marketplace a trois etats.
+ *
+ * Un service publie sans photo est cree mais masque du feed public (le filtre
+ * photos.isEmpty s'en charge cote serveur) : le badge ambre signale au
+ * prestataire ce qu'il lui reste a faire. Le clic mènera au drawer d'edition
+ * au lot B ; au lot A le parametre ?edit= est simplement ignore.
+ */
+function StatusBadge({ offer, compact }: { offer: Offer; compact?: boolean }) {
+  const published = offer.publishedToMarketplace;
+  const hasPhoto = offer.photos.length > 0;
+
+  if (published && hasPhoto) {
+    return (
+      <span className="inline-flex items-center gap-1 rounded bg-green-50 px-2 py-0.5 text-xs text-green-800">
+        En ligne
+      </span>
+    );
+  }
+
+  if (published && !hasPhoto) {
+    return (
+      <Link
+        href={`/pos/services?edit=${offer.id}`}
+        className="inline-flex items-center gap-1 rounded bg-amber-50 px-2 py-0.5 text-xs text-amber-800 hover:bg-amber-100"
+      >
+        {compact ? "Photo manquante" : "Ajouter une photo"}
+      </Link>
+    );
+  }
+
+  return (
+    <Link
+      href={`/pos/services?edit=${offer.id}`}
+      className="inline-flex items-center gap-1 rounded bg-pos-border px-2 py-0.5 text-xs text-pos-ink-2 hover:bg-pos-border/70"
+    >
+      Hors ligne
+    </Link>
+  );
+}
 
 export function ServicesListClient({ initialOffers }: { initialOffers: Offer[] }) {
   const [offers, setOffers] = useState<Offer[]>(initialOffers);
@@ -67,7 +109,9 @@ export function ServicesListClient({ initialOffers }: { initialOffers: Offer[] }
         return;
       }
       setOffers((o) =>
-        [...o, json].sort((a, b) => a.title.localeCompare(b.title, "fr"))
+        [...o, { ...json, photos: json.photos ?? [] }].sort((a, b) =>
+          a.title.localeCompare(b.title, "fr"),
+        ),
       );
       setQaTitle("");
       setQaPrice("");
@@ -139,7 +183,7 @@ export function ServicesListClient({ initialOffers }: { initialOffers: Offer[] }
       )}
 
       {/* Quick-add form: stacked on mobile, 12-col grid on md+ */}
-      <div className="mb-4 md:mb-2 p-3 rounded border-2 border-pos-border-strong bg-pos-card md:grid md:grid-cols-12 md:gap-2 flex flex-col gap-2">
+      <div className="mb-4 md:mb-2 p-3 rounded border-2 border-pos-border-strong bg-pos-surface md:grid md:grid-cols-12 md:gap-2 flex flex-col gap-2">
         <input
           ref={newNameRef}
           className="md:col-span-4 px-2 py-2 md:py-1 rounded border border-pos-border bg-white text-sm w-full"
@@ -230,7 +274,7 @@ export function ServicesListClient({ initialOffers }: { initialOffers: Offer[] }
             {offers.map((o) => (
               <tr
                 key={o.id}
-                className="border-t border-pos-border hover:bg-pos-card/60"
+                className="border-t border-pos-border hover:bg-pos-surface/60"
               >
                 <td className="px-3 py-2">{o.title}</td>
                 <td className="px-3 py-2 text-right whitespace-nowrap">
@@ -264,21 +308,7 @@ export function ServicesListClient({ initialOffers }: { initialOffers: Offer[] }
                   />
                 </td>
                 <td className="px-3 py-2">
-                  {o.publishedToMarketplace ? (
-                    <Link
-                      href={`/prestataire/offres/${o.id}`}
-                      className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-green-50 text-green-800 text-xs"
-                    >
-                      Publié·e en ligne
-                    </Link>
-                  ) : (
-                    <Link
-                      href={`/prestataire/offres/${o.id}`}
-                      className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-pos-border text-pos-ink-2 text-xs"
-                    >
-                      POS uniquement · Publier en ligne →
-                    </Link>
-                  )}
+                  <StatusBadge offer={o} />
                 </td>
               </tr>
             ))}
@@ -290,7 +320,7 @@ export function ServicesListClient({ initialOffers }: { initialOffers: Offer[] }
         {offers.map((o) => (
           <div
             key={o.id}
-            className="rounded-lg border border-pos-border bg-pos-card p-3"
+            className="rounded-lg border border-pos-border bg-pos-surface p-3"
           >
             <div className="flex items-start justify-between gap-2 mb-2">
               <div className="min-w-0 flex-1">
@@ -325,21 +355,7 @@ export function ServicesListClient({ initialOffers }: { initialOffers: Offer[] }
                   ? `TVA ${Number(o.taxRate).toFixed(2)}%`
                   : "Sans TVA"}
               </button>
-              {o.publishedToMarketplace ? (
-                <Link
-                  href={`/prestataire/offres/${o.id}`}
-                  className="inline-flex items-center gap-1 px-2 py-1 rounded bg-green-50 text-green-800 text-xs"
-                >
-                  En ligne
-                </Link>
-              ) : (
-                <Link
-                  href={`/prestataire/offres/${o.id}`}
-                  className="inline-flex items-center gap-1 px-2 py-1 rounded bg-pos-border text-pos-ink-2 text-xs"
-                >
-                  POS uniquement →
-                </Link>
-              )}
+              <StatusBadge offer={o} compact />
             </div>
           </div>
         ))}
