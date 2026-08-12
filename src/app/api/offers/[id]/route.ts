@@ -68,9 +68,21 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
   const body = await req.json();
 
   const existingPublished = (offer as { publishedToMarketplace?: boolean }).publishedToMarketplace ?? false;
+  // Valeur a ecrire : inchangee si le corps ne la mentionne pas.
   const willBePublished = body.publishedToMarketplace ?? existingPublished;
 
-  if (willBePublished) {
+  // On ne valide que la TRANSITION explicite vers "publie", pas chaque
+  // modification d'une offre deja publiee.
+  //
+  // Depuis que la creation publie par defaut, valider sur l'etat final
+  // rendait toute offre issue de l'ajout rapide immediatement non
+  // modifiable : basculer la TVA ou le statut actif renvoyait un 400
+  // "prix barre + photo manquants", alors que ces champs n'ont rien a voir
+  // avec l'operation demandee. La completude conditionne la VISIBILITE dans
+  // le feed (filtre photos.isEmpty cote lecture), pas le droit de modifier.
+  const isPublishTransition = body.publishedToMarketplace === true && !existingPublished;
+
+  if (isPublishTransition) {
     const missing: string[] = [];
     const effCategory = body.category ?? offer.category;
     if (!effCategory) missing.push("catégorie");
