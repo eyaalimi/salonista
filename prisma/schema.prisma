@@ -232,6 +232,7 @@ model ProviderProfile {
   cashDrawerSessions    CashDrawerSession[]
   rewardProgram         RewardProgram?
   rewardWallets         RewardWallet[]
+  featureInterests      FeatureInterest[]
 }
 
 model InfluencerProfile {
@@ -868,4 +869,20 @@ model RewardTransaction {
   @@index([saleId])
   @@index([refundId])
   @@index([reason])
+}
+
+/// Liste d'attente pour les fonctionnalites verrouillees (Collab, Store).
+/// `feature` est une String et non un enum : ces valeurs bougent au gre des
+/// idees produit, et une migration pour ajouter une option de teasing serait
+/// disproportionnee.
+model FeatureInterest {
+  id         String   @id @default(cuid())
+  providerId String
+  feature    String
+  createdAt  DateTime @default(now())
+
+  provider ProviderProfile @relation(fields: [providerId], references: [id], onDelete: Cascade)
+
+  @@unique([providerId, feature])
+  @@index([feature])
 }
