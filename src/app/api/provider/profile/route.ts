@@ -45,6 +45,8 @@ export async function PUT(req: NextRequest) {
     address,
     city,
     phone,
+    lat,
+    lng,
     photos,
     openingHours,
     matriculeFiscal,
@@ -65,6 +67,32 @@ export async function PUT(req: NextRequest) {
     );
   }
 
+  // lat et lng vont toujours ensemble : soit un point complet, soit aucun.
+  // Un seul des deux renseigne un demi-point, qu'aucun affichage ne sait
+  // utiliser (la fiche publique teste `lat && lng`).
+  const latFourni = lat !== undefined && lat !== null;
+  const lngFourni = lng !== undefined && lng !== null;
+  if (latFourni !== lngFourni) {
+    return NextResponse.json(
+      { error: "Latitude et longitude doivent être fournies ensemble" },
+      { status: 400 },
+    );
+  }
+  if (latFourni && lngFourni) {
+    const latNum = Number(lat);
+    const lngNum = Number(lng);
+    if (
+      !Number.isFinite(latNum) ||
+      !Number.isFinite(lngNum) ||
+      latNum < -90 ||
+      latNum > 90 ||
+      lngNum < -180 ||
+      lngNum > 180
+    ) {
+      return NextResponse.json({ error: "Coordonnées invalides" }, { status: 400 });
+    }
+  }
+
   const profile = await prisma.providerProfile.update({
     where: { id: employee.providerId },
     data: {
@@ -74,6 +102,8 @@ export async function PUT(req: NextRequest) {
       address,
       city,
       phone,
+      ...(lat !== undefined ? { lat: lat === null ? null : Number(lat) } : {}),
+      ...(lng !== undefined ? { lng: lng === null ? null : Number(lng) } : {}),
       openingHours,
       ...(photos !== undefined ? { photos } : {}),
       ...(matriculeFiscal !== undefined ? { matriculeFiscal: matriculeFiscal || null } : {}),
