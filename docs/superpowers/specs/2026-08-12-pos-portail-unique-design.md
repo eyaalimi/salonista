@@ -268,6 +268,25 @@ Quatre requêtes alimentent les surfaces publiques :
 aujourd'hui. Avec la publication par défaut, tous les services de caisse s'y
 afficheraient — la correction devient bloquante.
 
+### Authentification des routes offers — bug préexistant à corriger
+
+`POST /api/offers` ([ligne 52](../../../src/app/api/offers/route.ts)) et
+`PUT /api/offers/[id]` exigent une session **PROVIDER email/mot de passe**.
+
+Or `/pos/services` autorise l'accès sur la permission `products.manage`, que
+possèdent aussi MANAGER et OWNER connectés par PIN. Un employé connecté par PIN
+reçoit donc un **401** sur l'ajout rapide et sur les bascules TVA / actif —
+la page s'affiche mais aucune action n'aboutit.
+
+Les deux routes basculent sur `getCurrentEmployee()` + vérification de
+`products.manage`, qui accepte les deux modes d'authentification (cf. §
+« Contrainte d'authentification »). Le scoping par `providerId` est renforcé au
+passage : l'employé ne peut créer ou modifier que des offres de son propre salon.
+
+Cette correction est incluse au lot A parce que ces routes sont modifiées de toute
+façon pour la publication par défaut, et que sans elle `/pos/services` reste
+inutilisable pour tout employé non-propriétaire.
+
 ### Services existants — aucune migration de données
 
 Les services créés avant ce changement ont `publishedToMarketplace: false`. Les
@@ -326,6 +345,8 @@ Migration : `20260812_feature_interest`. Aucune migration de données.
 - Badge de statut à trois états
 - Filtre `photos: { isEmpty: false }` sur 4 surfaces publiques + correction du bug
   `/salon/[id]`
+- Bascule de `POST /api/offers` et `PUT /api/offers/[id]` sur `getCurrentEmployee()`
+  + `products.manage` (correction du 401 pour les employés PIN)
 
 ### Explicitement hors lot A
 
@@ -356,6 +377,8 @@ Le lot est livrable quand :
    vert `En ligne`
 9. Un service antérieur au changement garde `publishedToMarketplace: false` et le
    badge `Hors ligne`
-10. `npx tsc --noEmit` ne remonte aucune erreur nouvelle sur les fichiers touchés
+10. Un employé MANAGER connecté par PIN peut créer un service et basculer TVA /
+    actif depuis `/pos/services` sans recevoir de 401
+11. `npx tsc --noEmit` ne remonte aucune erreur nouvelle sur les fichiers touchés
     (les erreurs Prisma préexistantes du client local corrompu sont attendues —
     voir règle 7 de CLAUDE.md)
