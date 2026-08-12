@@ -53,8 +53,8 @@ Aucune modification de `src/lib/auth.ts` ni de `src/middleware.ts` n'est nécess
 
 ### Structure
 
-Quinze entrées en trois groupes séparés par un trait fin, plus un groupe verrouillé.
-Le séparateur existe déjà dans le rail actuel.
+Quatorze entrées en trois groupes séparés par un trait fin, plus un groupe
+verrouillé. Le séparateur existe déjà dans le rail actuel.
 
 | Groupe | Entrées |
 |---|---|
@@ -333,7 +333,7 @@ Migration : `20260812_feature_interest`. Aucune migration de données.
 
 ### Inclus dans le lot A
 
-- Rail : 3 groupes, 15 entrées, vertical sur toutes tailles, largeur adaptative
+- Rail : 3 groupes, 14 entrées, vertical sur toutes tailles, largeur adaptative
 - Champ `locked` sur `RailItem` et son rendu
 - `/pos/collab` et `/pos/store` via `<LockedFeaturePage>`
 - `/pos/settings` en lecture seule
@@ -367,7 +367,7 @@ Le lot est livrable quand :
 1. Aucune occurrence de `/prestataire` dans `src/components/pos/` et `src/app/(pos)/`
    (`grep -rn`)
 2. Les 7 URLs `/prestataire/*` redirigent en 307 vers leur cible
-3. Le rail affiche 15 entrées en 3 groupes, à 56px sur mobile et 80px sur desktop
+3. Le rail affiche 14 entrées en 3 groupes, à 56px sur mobile et 80px sur desktop
 4. Collab et Store sont visibles, grisées, cliquables, et mènent à leur teaser
 5. « Être prévenu » écrit une ligne `FeatureInterest` ; un second clic ne duplique pas
 6. Un service créé par l'ajout rapide a `publishedToMarketplace: true` et porte le

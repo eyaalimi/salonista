@@ -4,7 +4,7 @@
 
 **Goal:** Faire de la PWA POS le portail unique du prestataire — plus aucun renvoi vers `/prestataire`.
 
-**Architecture :** Le rail POS passe à 15 entrées en 3 groupes, vertical sur toutes tailles d'écran. Deux pages teaser verrouillées (Collab, Store) collectent des inscriptions via un nouveau modèle `FeatureInterest`. Sept routes `/prestataire/*` deviennent des redirections 307. Les services créés en caisse partent sur le feed public par défaut, leur visibilité étant conditionnée à la présence d'une photo.
+**Architecture :** Le rail POS passe à 14 entrées en 3 groupes, vertical sur toutes tailles d'écran. Deux pages teaser verrouillées (Collab, Store) collectent des inscriptions via un nouveau modèle `FeatureInterest`. Sept routes `/prestataire/*` deviennent des redirections 307. Les services créés en caisse partent sur le feed public par défaut, leur visibilité étant conditionnée à la présence d'une photo.
 
 **Tech Stack :** Next.js 16.2 (App Router), React 19, Tailwind v4, Prisma 7 + PostgreSQL, NextAuth v4, lucide-react.
 
@@ -60,7 +60,7 @@ Ne **pas** utiliser `@ts-expect-error` : le jour où le client est régénéré,
 | Fichier | Changement |
 |---|---|
 | `prisma/schema.prisma` | Modèle `FeatureInterest` + relation inverse sur `ProviderProfile` |
-| `src/components/pos/rail.tsx` | 15 entrées, 3 groupes, largeur adaptative, champ `locked` |
+| `src/components/pos/rail.tsx` | 14 entrées, 3 groupes, largeur adaptative, champ `locked` |
 | `src/app/(pos)/layout.tsx` | Retour au rail latéral (retrait de `flex-col-reverse`) |
 | `src/components/pos/pos-shell-client.tsx` | Repositionnement de la barre panier |
 | `src/components/pos/services-list-client.tsx` | Badge à 3 états, liens internes |
@@ -593,7 +593,7 @@ fuir les services POS-only."
 
 ---
 
-## Tâche 5 : Rail — structure à 15 entrées en 3 groupes
+## Tâche 5 : Rail — structure à 14 entrées en 3 groupes
 
 **Fichiers :**
 - Modifier : `src/components/pos/rail.tsx`
@@ -750,7 +750,7 @@ Les cinq icônes utilisées (`Handshake`, `ShoppingBag`, `Settings`, `Lock`, `Ch
 
 ```bash
 git add src/components/pos/rail.tsx
-git commit -m "feat(pos): rail a 15 entrees en 3 groupes avec sections verrouillees
+git commit -m "feat(pos): rail a 14 entrees en 3 groupes avec sections verrouillees
 
 Clients remonte dans le groupe CAISSE (usage quotidien), Profil apparait,
 Collab et Store s'ajoutent grisees avec un cadenas. Le rail redevient vertical
@@ -829,7 +829,7 @@ npm run dev
 Ouvrir `http://localhost:3000/pos`, activer l'inspecteur en mode iPhone SE (375 × 667) :
 
 - le rail est à gauche, vertical, 56px, icônes seules
-- les 15 entrées sont atteignables en faisant défiler le rail verticalement
+- les 14 entrées sont atteignables en faisant défiler le rail verticalement
 - les 3 traits séparateurs sont visibles
 - Collab et Store sont grisées avec un cadenas en bas à droite de l'icône
 - en ajoutant un article au panier, la barre panier apparaît en bas **sans recouvrir le rail**
@@ -1612,7 +1612,7 @@ npm run dev
 
 Connecté en tant que PROVIDER :
 
-1. Le rail affiche 15 entrées en 3 groupes, à 56px sur mobile et 80px sur desktop
+1. Le rail affiche 14 entrées en 3 groupes, à 56px sur mobile et 80px sur desktop
 2. Collab et Store sont grisées, cliquables, et mènent à leur teaser
 3. « Être prévenu » enregistre l'inscription ; un second clic ne duplique rien
 4. Créer un service via l'ajout rapide sur `/pos/services` : il porte le badge ambre « Ajouter une photo »
@@ -1645,7 +1645,7 @@ Ne **pas** fusionner dans `main` sans validation de l'utilisateur : le déploiem
 | 2 | API liste d'attente | 1 | backend |
 | 3 | Auth employé + publication par défaut | 2 | backend |
 | 4 | Filtre de visibilité du feed | 4 | backend |
-| 5 | Rail 15 entrées | 1 | interface |
+| 5 | Rail 14 entrées | 1 | interface |
 | 6 | Rail latéral sur mobile | 2 | interface |
 | 7 | Pages teaser | 3 | interface |
 | 8 | Badge à 3 états | 2 | interface |
