@@ -423,13 +423,13 @@ export function parseCoords(
 }
 ```
 
-- [ ] **Step 4 : Lancer le test — 13 passants attendus**
+- [ ] **Step 4 : Lancer le test — 12 passants attendus**
 
 ```bash
 npx vitest run src/lib/coords.test.ts
 ```
 
-Attendu : PASS, 13 tests (7 pour `isValidCoords`, 6 pour `parseCoords`).
+Attendu : PASS, 12 tests (7 pour `isValidCoords`, 5 pour `parseCoords`).
 
 - [ ] **Step 5 : Lancer la suite complète**
 
@@ -437,7 +437,7 @@ Attendu : PASS, 13 tests (7 pour `isValidCoords`, 6 pour `parseCoords`).
 npm test
 ```
 
-Attendu : **137 tests** passants en 9 fichiers (124 + 13). Si le compte diffère,
+Attendu : **136 tests** passants en 9 fichiers (124 + 12). Si le compte diffère,
 arrête-toi et signale-le ; ne « répare » pas d'autres tests.
 
 - [ ] **Step 6 : Vérifier et commiter**
@@ -518,7 +518,7 @@ npx eslint src/lib/geocode.ts
 npm test
 ```
 
-Attendu : aucune erreur, 137 tests passants.
+Attendu : aucune erreur, 136 tests passants.
 
 - [ ] **Step 3 : Commit**
 
@@ -963,7 +963,7 @@ npx eslint src/components/pos/settings/salon-form.tsx "src/app/(pos)/pos/setting
 npm test
 ```
 
-Attendu : aucune erreur, 137 tests passants.
+Attendu : aucune erreur, 136 tests passants.
 
 - [ ] **Step 8 : Commit**
 
@@ -1050,7 +1050,7 @@ npx eslint "src/app/salon/[id]/salon-client.tsx"
 npm test
 ```
 
-Attendu : aucune erreur, 137 tests passants.
+Attendu : aucune erreur, 136 tests passants.
 
 - [ ] **Step 4 : Le build — l'étape qui compte**
 
@@ -1169,7 +1169,7 @@ Si rien n'a bougé, ne commite rien.
 npm test && npx tsc --noEmit && npm run lint && npm run build
 ```
 
-Attendu : 137 tests, aucune nouvelle erreur `tsc`, lint propre sur les fichiers
+Attendu : 136 tests, aucune nouvelle erreur `tsc`, lint propre sur les fichiers
 touchés, build réussi.
 
 - [ ] **Step 2 : Pousser**
@@ -1196,7 +1196,7 @@ Le salon place son emplacement sur une carte depuis la caisse ; la cliente le vo
 - **Leaflet + OpenStreetMap, sans clé d'API ni carte bancaire.** Écarté Google Maps et Mapbox : meilleures données en Tunisie, mais compte de facturation obligatoire pour un bénéfice que les pilotes ne verraient pas encore. Migrer plus tard ne toucherait que les composants de carte — les coordonnées stockées ne changent pas.
 - **Trois chemins vers le point** dans la caisse : bouton « Localiser » (géocodage Nominatim restreint à la Tunisie), glisser le marqueur, cliquer sur la carte. Le glisser est essentiel : « en face du café Chaabane » est une adresse tunisienne courante que le géocodage ne résout pas.
 - **Carte + bouton Itinéraire** sur la fiche publique. Le lien devient une URL `/maps/dir/`, qui bascule dans l'app de navigation sur mobile avec le trajet déjà calculé.
-- **Validation en fonction pure testée** (`src/lib/coords.ts`, 13 tests), dont le rejet de `(0, 0)` — le « Null Island » qu'on obtient quand un parsing échoue en silence, `Number("")` valant 0.
+- **Validation en fonction pure testée** (`src/lib/coords.ts`, 12 tests), dont le rejet de `(0, 0)` — le « Null Island » qu'on obtient quand un parsing échoue en silence, `Number("")` valant 0.
 - Sans coordonnées, **aucune carte ne s'affiche** : ni bloc vide, ni marqueur au milieu de la mer. Important au démarrage, où aucun salon n'est encore placé.
 
 ## Non inclus, volontairement
@@ -1210,7 +1210,7 @@ Le géocodage part du navigateur, donc le `User-Agent` envoyé à Nominatim est 
 
 ## Vérification
 
-`npm test` 137/137 · `tsc --noEmit` (seules restent les 23 erreurs pré-existantes, dans deux fichiers non touchés) · `eslint` propre · `npm run build` réussi — c'est lui, et non `tsc`, qui prouve que les `dynamic(..., { ssr: false })` sont corrects.
+`npm test` 136/136 · `tsc --noEmit` (seules restent les 23 erreurs pré-existantes, dans deux fichiers non touchés) · `eslint` propre · `npm run build` réussi — c'est lui, et non `tsc`, qui prouve que les `dynamic(..., { ssr: false })` sont corrects.
 
 Checklist manuelle déroulée : géocodage, glisser-déposer, persistance après rechargement, adresse introuvable sans plantage, fiche sans coordonnées propre, molette qui ne capture pas le scroll.
 ```
