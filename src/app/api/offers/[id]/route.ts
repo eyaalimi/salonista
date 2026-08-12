@@ -4,6 +4,7 @@ import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { regenerateOfferSlots } from "@/lib/slots";
 import { requirePermission, toResponse } from "@/lib/employee-session";
+import { missingForPublish } from "@/lib/offer-publish";
 
 const ALLOWED_DURATIONS = [15, 30, 45, 60, 75, 90, 105, 120, 150, 180, 240];
 
@@ -83,20 +84,12 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
   const isPublishTransition = body.publishedToMarketplace === true && !existingPublished;
 
   if (isPublishTransition) {
-    const missing: string[] = [];
-    const effCategory = body.category ?? offer.category;
-    if (!effCategory) missing.push("catégorie");
-    const effOriginal = body.originalPrice ?? offer.originalPrice;
-    const effDiscount = body.discountPrice ?? offer.discountPrice;
-    if (
-      effOriginal === null ||
-      effOriginal === undefined ||
-      Number(effOriginal) < Number(effDiscount)
-    ) {
-      missing.push("prix barré (≥ prix actuel)");
-    }
-    const effPhotos = body.photos ?? offer.photos;
-    if (!effPhotos || effPhotos.length === 0) missing.push("au moins une photo");
+    const missing = missingForPublish({
+      category: body.category ?? offer.category,
+      originalPrice: body.originalPrice ?? offer.originalPrice,
+      discountPrice: body.discountPrice ?? offer.discountPrice,
+      photos: body.photos ?? offer.photos,
+    });
     if (missing.length > 0) {
       return NextResponse.json(
         { error: `Publication impossible — champs manquants : ${missing.join(", ")}` },
