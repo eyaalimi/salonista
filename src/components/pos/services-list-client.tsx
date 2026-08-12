@@ -23,7 +23,8 @@ const ALLOWED_DURATIONS = [15, 30, 45, 60, 75, 90, 105, 120, 150, 180, 240];
  *
  * Un service publie sans photo est cree mais masque du feed public (le filtre
  * photos.isEmpty s'en charge cote serveur) : le badge ambre signale au
- * prestataire ce qu'il lui reste a faire. Le clic ouvre le drawer d'edition via ?edit=<id>.
+ * prestataire ce qu'il lui reste a faire. Le clic ouvre le drawer d'edition
+ * via ?edit=<id>.
  */
 function StatusBadge({ offer, compact }: { offer: Offer; compact?: boolean }) {
   const published = offer.publishedToMarketplace;
@@ -41,6 +42,7 @@ function StatusBadge({ offer, compact }: { offer: Offer; compact?: boolean }) {
     return (
       <Link
         href={`/pos/services?edit=${offer.id}`}
+        scroll={false}
         className="inline-flex items-center gap-1 rounded bg-amber-50 px-2 py-0.5 text-xs text-amber-800 hover:bg-amber-100"
       >
         {compact ? "Photo manquante" : "Ajouter une photo"}
@@ -51,6 +53,7 @@ function StatusBadge({ offer, compact }: { offer: Offer; compact?: boolean }) {
   return (
     <Link
       href={`/pos/services?edit=${offer.id}`}
+      scroll={false}
       className="inline-flex items-center gap-1 rounded bg-pos-border px-2 py-0.5 text-xs text-pos-ink-2 hover:bg-pos-border/70"
     >
       Hors ligne
