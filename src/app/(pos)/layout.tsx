@@ -72,8 +72,10 @@ export default async function PosLayout({ children }: { children: React.ReactNod
               }}
             />
           </div>
-          {/* Mobile: rail becomes a bottom bar. Desktop: side rail 80px. */}
-          <div className="flex-1 min-h-0 flex md:flex-row flex-col-reverse overflow-hidden">
+          {/* Rail lateral a toutes les tailles : 56px sur mobile, 80px sur
+              desktop. La bottom-bar mobile a ete abandonnee apres test sur
+              iPhone — elle n'etait pas confortable a l'usage. */}
+          <div className="flex-1 min-h-0 flex flex-row overflow-hidden">
             <Rail permissions={employee.permissions} />
             <main className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden">
               {children}

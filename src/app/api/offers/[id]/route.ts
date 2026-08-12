@@ -3,6 +3,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { regenerateOfferSlots } from "@/lib/slots";
+import { requirePermission, toResponse } from "@/lib/employee-session";
 
 const ALLOWED_DURATIONS = [15, 30, 45, 60, 75, 90, 105, 120, 150, 180, 240];
 
@@ -48,26 +49,40 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
 // PUT: update offer (owner only)
 export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  const session = await getServerSession(authOptions);
-  if (!session || session.user.role !== "PROVIDER") {
-    return NextResponse.json({ error: "Non autorisé" }, { status: 401 });
+
+  // Accepte session PROVIDER et session employe par PIN (cf. POST /api/offers).
+  let employee;
+  try {
+    employee = await requirePermission("products.manage");
+  } catch (err) {
+    const r = toResponse(err);
+    if (r) return r;
+    throw err;
   }
 
-  const profile = await prisma.providerProfile.findUnique({
-    where: { userId: session.user.id },
-  });
-
   const offer = await prisma.offer.findUnique({ where: { id } });
-  if (!offer || offer.providerId !== profile?.id) {
+  if (!offer || offer.providerId !== employee.providerId) {
     return NextResponse.json({ error: "Offre introuvable" }, { status: 404 });
   }
 
   const body = await req.json();
 
   const existingPublished = (offer as { publishedToMarketplace?: boolean }).publishedToMarketplace ?? false;
+  // Valeur a ecrire : inchangee si le corps ne la mentionne pas.
   const willBePublished = body.publishedToMarketplace ?? existingPublished;
 
-  if (willBePublished) {
+  // On ne valide que la TRANSITION explicite vers "publie", pas chaque
+  // modification d'une offre deja publiee.
+  //
+  // Depuis que la creation publie par defaut, valider sur l'etat final
+  // rendait toute offre issue de l'ajout rapide immediatement non
+  // modifiable : basculer la TVA ou le statut actif renvoyait un 400
+  // "prix barre + photo manquants", alors que ces champs n'ont rien a voir
+  // avec l'operation demandee. La completude conditionne la VISIBILITE dans
+  // le feed (filtre photos.isEmpty cote lecture), pas le droit de modifier.
+  const isPublishTransition = body.publishedToMarketplace === true && !existingPublished;
+
+  if (isPublishTransition) {
     const missing: string[] = [];
     const effCategory = body.category ?? offer.category;
     if (!effCategory) missing.push("catégorie");

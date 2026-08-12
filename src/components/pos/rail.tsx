@@ -14,6 +14,10 @@ import {
   UserCog,
   Star,
   Coins,
+  Settings,
+  Handshake,
+  ShoppingBag,
+  Lock,
 } from "lucide-react";
 
 type Permission = string;
@@ -24,48 +28,79 @@ type RailItem = {
   shortcut: string;
   icon: React.ReactNode;
   perm?: Permission;
+  /**
+   * Fonctionnalite pas encore livree : l'entree s'affiche grisee avec un
+   * cadenas et mene a une page teaser. Elle ignore volontairement le filtre
+   * de permission — l'offre commerciale doit etre visible par tous, pas
+   * seulement par le proprietaire.
+   */
+  locked?: boolean;
 };
 
 export function Rail({ permissions }: { permissions: Record<Permission, boolean> }) {
   const pathname = usePathname();
 
-  const items: RailItem[] = [
+  // Groupe 1 — CAISSE : le quotidien de la caissiere.
+  const groupCaisse: RailItem[] = [
     { href: "/pos", label: "Caisse", shortcut: "1", icon: <LayoutGrid size={20} />, perm: "pos.sell" },
     { href: "/pos/calendar", label: "RDV", shortcut: "B", icon: <Calendar size={20} />, perm: "bookings.view" },
-    { href: "/pos/services", label: "Services", shortcut: "S", icon: <Scissors size={20} />, perm: "products.manage" },
     { href: "/pos/customers", label: "Clients", shortcut: "C", icon: <Users size={20} />, perm: "customers.view" },
+  ];
+
+  // Groupe 2 — CATALOGUE : ce que le salon vend.
+  const groupCatalogue: RailItem[] = [
+    { href: "/pos/services", label: "Services", shortcut: "S", icon: <Scissors size={20} />, perm: "products.manage" },
     { href: "/pos/products", label: "Produits", shortcut: "P", icon: <Package size={20} />, perm: "inventory.view" },
   ];
 
-  const items2: RailItem[] = [
+  // Groupe 3 — GESTION : ce que le proprietaire consulte.
+  const groupGestion: RailItem[] = [
     { href: "/pos/sales", label: "Ventes", shortcut: "V", icon: <Receipt size={20} />, perm: "pos.sell" },
     { href: "/pos/cash-drawer", label: "Tiroir", shortcut: "F", icon: <Wallet size={20} />, perm: "pos.cash_drawer" },
     { href: "/pos/loyalty", label: "Fidélité", shortcut: "L", icon: <Star size={20} />, perm: "rewards.adjust" },
     { href: "/pos/commissions", label: "Commissions", shortcut: "M", icon: <Coins size={20} />, perm: "employees.manage" },
     { href: "/pos/employees", label: "Équipe", shortcut: "E", icon: <UserCog size={20} />, perm: "employees.manage" },
     { href: "/pos/analytics", label: "Stats", shortcut: "A", icon: <BarChart3 size={20} />, perm: "analytics.view" },
+    { href: "/pos/settings", label: "Profil", shortcut: "R", icon: <Settings size={20} />, perm: "settings.manage" },
+  ];
+
+  // Groupe 4 — VERROUILLE : teasing commercial.
+  const groupLocked: RailItem[] = [
+    { href: "/pos/collab", label: "Collab", shortcut: "", icon: <Handshake size={20} />, locked: true },
+    { href: "/pos/store", label: "Store", shortcut: "", icon: <ShoppingBag size={20} />, locked: true },
   ];
 
   function renderItem(it: RailItem) {
-    if (it.perm && !permissions[it.perm]) return null;
+    if (it.perm && !it.locked && !permissions[it.perm]) return null;
     const active = pathname === it.href || (it.href !== "/" && pathname.startsWith(it.href + "/"));
+
     return (
       <Link
         key={it.href}
         href={it.href}
-        title={`${it.label} (${it.shortcut})`}
-        className={`group relative shrink-0 md:w-16 w-[68px] px-1 py-2 rounded-lg flex flex-col items-center justify-center gap-1 transition-colors ${
+        title={it.locked ? `${it.label} — bientôt disponible` : `${it.label}${it.shortcut ? ` (${it.shortcut})` : ""}`}
+        aria-label={it.label}
+        className={`group relative shrink-0 w-full flex flex-col items-center justify-center gap-1 rounded-lg transition-colors md:px-1 md:py-2 px-0 py-2.5 ${
           active
             ? "bg-pos-accent text-white"
-            : "text-pos-ink-2 hover:bg-pos-border/60 hover:text-pos-ink"
+            : it.locked
+              ? "text-pos-ink-3 opacity-60 hover:opacity-100 hover:bg-pos-border/40"
+              : "text-pos-ink-2 hover:bg-pos-border/60 hover:text-pos-ink"
         }`}
       >
-        <span className="flex items-center justify-center">
+        <span className="relative flex items-center justify-center">
           {it.icon}
+          {it.locked && (
+            <span className="absolute -bottom-1 -right-1.5 rounded-full bg-pos-rail p-[1px]">
+              <Lock size={11} className="text-pos-ink-3" />
+            </span>
+          )}
         </span>
+        {/* Sur mobile le libelle est masque visuellement mais reste lisible
+            par les lecteurs d'ecran ; le title couvre l'appui long. */}
         <span
-          className={`text-[11px] leading-none font-medium text-center ${
-            active ? "text-white" : "text-pos-ink-2 group-hover:text-pos-ink"
+          className={`text-[11px] leading-none font-medium text-center md:not-sr-only sr-only ${
+            active ? "text-white" : it.locked ? "text-pos-ink-3" : "text-pos-ink-2 group-hover:text-pos-ink"
           }`}
         >
           {it.label}
@@ -74,21 +109,23 @@ export function Rail({ permissions }: { permissions: Record<Permission, boolean>
     );
   }
 
+  const separator = (key: string) => (
+    <div key={key} className="my-2 h-px w-8 shrink-0 bg-pos-border-strong" />
+  );
+
   return (
     <aside
-      className={
-        // Desktop: vertical side rail. Mobile: horizontal bottom bar, scrollable.
-        "bg-pos-rail flex md:flex-col flex-row items-center " +
-        "md:w-[80px] w-full md:h-auto shrink-0 " +
-        "md:border-r md:border-b-0 border-t border-pos-border " +
-        "md:py-3 md:px-0 px-2 py-1.5 md:gap-1 gap-1 " +
-        "md:overflow-y-auto overflow-x-auto overflow-y-hidden"
-      }
-      style={{ paddingBottom: "max(env(safe-area-inset-bottom), 6px)" }}
+      className="flex h-full shrink-0 flex-col items-center gap-1 overflow-y-auto overflow-x-hidden border-r border-pos-border bg-pos-rail md:w-[80px] w-[56px] md:px-2 px-1 py-3"
+      style={{ paddingBottom: "max(env(safe-area-inset-bottom), 12px)" }}
+      aria-label="Navigation principale"
     >
-      {items.map(renderItem)}
-      <div className="md:my-2 md:mx-0 mx-1 md:w-8 md:h-px w-px h-8 bg-pos-border-strong shrink-0" />
-      {items2.map(renderItem)}
+      {groupCaisse.map(renderItem)}
+      {separator("sep-1")}
+      {groupCatalogue.map(renderItem)}
+      {separator("sep-2")}
+      {groupGestion.map(renderItem)}
+      {separator("sep-3")}
+      {groupLocked.map(renderItem)}
     </aside>
   );
 }

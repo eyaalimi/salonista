@@ -3,6 +3,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { regenerateOfferSlots } from "@/lib/slots";
+import { requirePermission, toResponse } from "@/lib/employee-session";
 
 const ALLOWED_DURATIONS = [15, 30, 45, 60, 75, 90, 105, 120, 150, 180, 240];
 
@@ -33,7 +34,13 @@ export async function GET(req: NextRequest) {
   }
 
   // Public: active offers
-  const where: Record<string, unknown> = { active: true, publishedToMarketplace: true };
+  // photos.isEmpty : une offre publiee mais sans photo reste masquee du feed.
+  // C'est ce qui rend honnete le badge "Ajouter une photo" cote POS.
+  const where: Record<string, unknown> = {
+    active: true,
+    publishedToMarketplace: true,
+    photos: { isEmpty: false },
+  };
   if (category) where.category = category;
 
   const offers = await prisma.offer.findMany({
@@ -48,18 +55,24 @@ export async function GET(req: NextRequest) {
 
 // POST: create offer (provider only)
 export async function POST(req: NextRequest) {
-  const session = await getServerSession(authOptions);
-  if (!session || session.user.role !== "PROVIDER") {
-    return NextResponse.json({ error: "Non autorisé" }, { status: 401 });
+  // Accepte les deux modes d'auth : session PROVIDER email/mot de passe ET
+  // session employe par PIN. Sans cela un MANAGER connecte par PIN recevait
+  // un 401 depuis /pos/services alors que la page lui accorde l'acces via
+  // la permission products.manage.
+  let employee;
+  try {
+    employee = await requirePermission("products.manage");
+  } catch (err) {
+    const r = toResponse(err);
+    if (r) return r;
+    throw err;
   }
 
-  let profile = await prisma.providerProfile.findUnique({
-    where: { userId: session.user.id },
+  const profile = await prisma.providerProfile.findUnique({
+    where: { id: employee.providerId },
   });
   if (!profile) {
-    profile = await prisma.providerProfile.create({
-      data: { userId: session.user.id, salonName: session.user.name || "Mon Salon", category: "AUTRE" },
-    });
+    return NextResponse.json({ error: "Salon introuvable" }, { status: 404 });
   }
 
   const body = await req.json();
@@ -72,7 +85,7 @@ export async function POST(req: NextRequest) {
     photos,
     durationMinutes,
     taxRate,
-    publishedToMarketplace = false,
+    publishedToMarketplace = true,
   } = body as {
     title?: string;
     description?: string | null;
@@ -95,21 +108,13 @@ export async function POST(req: NextRequest) {
     missing.push(`durée (valeurs : ${ALLOWED_DURATIONS.join(", ")} min)`);
   }
 
-  const finalCategory = publishedToMarketplace
-    ? category
-    : (category ?? "AUTRE");
-
-  if (publishedToMarketplace) {
-    if (!category) missing.push("catégorie");
-    if (
-      originalPrice === undefined ||
-      originalPrice === null ||
-      Number(originalPrice) < Number(discountPrice)
-    ) {
-      missing.push("prix barré (≥ prix actuel)");
-    }
-    if (!photos || photos.length === 0) missing.push("au moins une photo");
-  }
+  // Publier est desormais l'intention par defaut : la completude conditionne
+  // la VISIBILITE dans le feed, pas la creation. Un service cree par l'ajout
+  // rapide (nom + prix + duree + TVA) est donc publie mais masque du feed
+  // tant qu'il n'a pas de photo — l'interface affiche un badge "Ajouter une
+  // photo" pour le signaler. Le garde-fou de publication sera reimplemente
+  // cote UI dans le drawer d'edition au lot B.
+  const finalCategory = category ?? "AUTRE";
 
   if (missing.length > 0) {
     return NextResponse.json(
@@ -128,7 +133,7 @@ export async function POST(req: NextRequest) {
       providerId: profile.id,
       title: String(title).trim(),
       description: description || null,
-      originalPrice: publishedToMarketplace ? originalPrice : (originalPrice ?? null),
+      originalPrice: originalPrice ?? null,
       discountPrice,
       category: finalCategory as never,
       photos: photos || [],
@@ -138,10 +143,9 @@ export async function POST(req: NextRequest) {
     } as never,
   });
 
-  // Auto-generate slots based on opening hours and duration
-  if (publishedToMarketplace) {
-    await regenerateOfferSlots(offer.id);
-  }
+  // Les creneaux sont generes pour tout service : ils servent aussi bien aux
+  // reservations en ligne qu'au calendrier interne du POS.
+  await regenerateOfferSlots(offer.id);
 
   return NextResponse.json(offer, { status: 201 });
 }

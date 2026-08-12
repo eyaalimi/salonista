@@ -14,7 +14,11 @@ export default async function SalonPage({ params }: Props) {
     where: { id },
     include: {
       offers: {
-        where: { active: true },
+        // Bug preexistant : cette page ne filtrait pas sur
+        // publishedToMarketplace, laissant fuir les services POS-only sur la
+        // page publique du salon. Avec la publication par defaut, tous les
+        // services de caisse s'y afficheraient.
+        where: { active: true, publishedToMarketplace: true, photos: { isEmpty: false } } as never,
         orderBy: { createdAt: "desc" },
         include: {
           slots: {
