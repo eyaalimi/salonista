@@ -121,7 +121,33 @@ export function ServiceEditDrawer({
 
   const hasPhoto = (form?.photos.length ?? 0) > 0;
 
-  async function save() {
+  /**
+   * Corps PUT complet a partir de l'etat du formulaire.
+   *
+   * `override` permet de forcer un champ (la desactivation force
+   * `active: false`) tout en emportant le reste des saisies en cours. Sans ca,
+   * un PUT partiel { active: false } ferait relire a l'API les valeurs encore
+   * en base : une caissiere qui corrige un prix puis clique "Desactiver"
+   * verrait sa correction disparaitre sans le moindre message.
+   */
+  function buildPayload(f: FormState, override?: Partial<FormState>) {
+    const merged = { ...f, ...override };
+    return {
+      title: merged.title.trim(),
+      description: merged.description.trim() || null,
+      discountPrice: merged.discountPrice,
+      // Prix barre facultatif : chaine vide => null, pas 0.
+      originalPrice: merged.originalPrice.trim() === "" ? null : merged.originalPrice,
+      category: merged.category,
+      durationMinutes: merged.durationMinutes,
+      taxRate: merged.taxRate,
+      active: merged.active,
+      publishedToMarketplace: merged.publishedToMarketplace,
+      photos: merged.photos,
+    };
+  }
+
+  async function submit(override: Partial<FormState> | undefined, echec: string) {
     if (!form || busy || uploading) return;
     setBusy(true);
     setError(null);
@@ -129,23 +155,11 @@ export function ServiceEditDrawer({
       const res = await fetch(`/api/offers/${offerId}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          title: form.title.trim(),
-          description: form.description.trim() || null,
-          discountPrice: form.discountPrice,
-          // Prix barre facultatif : chaine vide => null, pas 0.
-          originalPrice: form.originalPrice.trim() === "" ? null : form.originalPrice,
-          category: form.category,
-          durationMinutes: form.durationMinutes,
-          taxRate: form.taxRate,
-          active: form.active,
-          publishedToMarketplace: form.publishedToMarketplace,
-          photos: form.photos,
-        }),
+        body: JSON.stringify(buildPayload(form, override)),
       });
       const json = await res.json();
       if (!res.ok) {
-        setError(json?.error ?? "Enregistrement impossible.");
+        setError(json?.error ?? echec);
         return;
       }
       onSaved({ ...json, photos: json.photos ?? [] } as ServiceOffer);
@@ -156,28 +170,9 @@ export function ServiceEditDrawer({
     }
   }
 
-  async function deactivate() {
-    if (!form || busy) return;
-    setBusy(true);
-    setError(null);
-    try {
-      const res = await fetch(`/api/offers/${offerId}`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ active: false }),
-      });
-      const json = await res.json();
-      if (!res.ok) {
-        setError(json?.error ?? "Désactivation impossible.");
-        return;
-      }
-      onSaved({ ...json, photos: json.photos ?? [] } as ServiceOffer);
-    } catch {
-      setError("Erreur réseau.");
-    } finally {
-      setBusy(false);
-    }
-  }
+  const save = () => submit(undefined, "Enregistrement impossible.");
+
+  const deactivate = () => submit({ active: false }, "Désactivation impossible.");
 
   const statut = !form
     ? null
