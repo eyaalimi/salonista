@@ -888,13 +888,13 @@ export function ServiceEditDrawer({
 - [ ] **Step 2 : Vérifier que `lucide-react` exporte bien ces trois icônes**
 
 ```bash
-grep -rn "ChevronDown\|ChevronRight" src/components/pos/ | head -3
+grep -o "ChevronDown\|ChevronRight\|\bX\b" node_modules/lucide-react/dist/lucide-react.d.ts | sort -u
 ```
 
-Attendu : au moins une occurrence existante dans le dossier — ces icônes sont déjà
-utilisées ailleurs dans la caisse. Si la commande ne renvoie rien, vérifie que
-`lucide-react` est bien dans `package.json` (il l'est : `customer-detail-drawer.tsx`
-importe `X`, `Phone`, `Mail`).
+Attendu : les trois noms apparaissent. `X` est déjà utilisé par
+`customer-detail-drawer.tsx` ; `ChevronDown` et `ChevronRight` ne sont encore importés
+nulle part dans ce dépôt — c'est normal, tu es le premier à en avoir besoin. Ne cherche
+donc pas d'usage existant dans `src/`, il n'y en a pas.
 
 - [ ] **Step 3 : Typecheck et lint**
 
@@ -1163,6 +1163,13 @@ git commit -m "feat(pos): ouvrir le drawer d'edition depuis la liste des service
 **Pourquoi.** Next.js 16 exige qu'un composant appelant `useSearchParams()` soit sous une
 frontière `<Suspense>`, sinon le build échoue au prérendu (règle 3 de `CLAUDE.md`).
 `ServicesListClient` vient d'en gagner un à la Task 5.
+
+**Précédent exact dans le dépôt** : `src/app/(pos)/pos/analytics/page.tsx` fait déjà
+cela — même layout POS, même garde `getCurrentEmployee`, `<Suspense>` autour d'un
+composant client qui lit `useSearchParams` (voir `analytics-client.tsx`). Lis-le avant
+d'écrire. La seule différence ci-dessous est le `fallback`, non nul, parce que la liste
+des services est le contenu principal de la page et qu'un écran vide donnerait
+l'impression d'un bug sur une tablette lente.
 
 **Files:**
 - Modify: `src/app/(pos)/pos/services/page.tsx`
