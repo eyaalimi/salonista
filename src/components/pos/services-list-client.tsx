@@ -100,7 +100,10 @@ export function ServicesListClient({ initialOffers }: { initialOffers: Offer[] }
           discountPrice: qaPrice,
           durationMinutes: qaDuration,
           taxRate: qaTaxOn ? qaTaxRate : 0,
-          publishedToMarketplace: false,
+          // publishedToMarketplace est volontairement omis : le serveur le
+          // met a true par defaut. Le service part donc sur le feed, mais
+          // reste masque tant qu'il n'a pas de photo — d'ou le badge ambre
+          // "Ajouter une photo" dans la liste.
         }),
       });
       const json = await res.json();
