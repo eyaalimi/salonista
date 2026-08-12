@@ -322,7 +322,7 @@ export function findConflicts(slots: BookedSlot[], hours: OpeningHours): BookedS
 npx vitest run src/lib/booking-conflicts.test.ts
 ```
 
-Attendu : PASS, 13 tests.
+Attendu : PASS, 12 tests.
 
 - [ ] **Step 6 : Lancer la suite complète**
 
@@ -330,7 +330,7 @@ Attendu : PASS, 13 tests.
 npm test
 ```
 
-Attendu : **125 tests** passants en 8 fichiers (112 + 13). Si le compte diffère,
+Attendu : **124 tests** passants en 8 fichiers (112 + 12). Si le compte diffère,
 arrête-toi et signale-le ; ne « répare » pas d'autres tests.
 
 - [ ] **Step 7 : Typecheck et lint**
@@ -507,7 +507,7 @@ npx eslint src/app/api/provider/profile/route.ts
 npm test
 ```
 
-Attendu : aucune erreur sur ce fichier, 125 tests passants.
+Attendu : aucune erreur sur ce fichier, 124 tests passants.
 
 - [ ] **Step 6 : Commit**
 
@@ -1237,7 +1237,7 @@ npm test
 npm run build
 ```
 
-Attendu : aucune erreur, 125 tests, **build réussi**.
+Attendu : aucune erreur, 124 tests, **build réussi**.
 
 Si le build échoue sur une connexion PostgreSQL refusée (`ECONNREFUSED` sur
 `localhost:5433`) : le prérendu de `/` et `/sitemap.xml` interroge la base. Démarre un
@@ -1277,7 +1277,7 @@ touche pas** — ce sont les onglets Colab et Store, volontairement verrouillés
 npm test && npx tsc --noEmit && npm run lint && npm run build
 ```
 
-Attendu : 125 tests, pas d'erreur de type nouvelle (seules restent celles de
+Attendu : 124 tests, pas d'erreur de type nouvelle (seules restent celles de
 `wizard-client.tsx` et `rewards.test.ts`), lint propre sur les fichiers touchés, build
 réussi.
 
@@ -1396,7 +1396,7 @@ Rend le profil du salon et les horaires d'ouverture modifiables depuis la caisse
 
 - **`/pos/settings` devient éditable**, en deux onglets : Salon (9 champs) et Horaires. Les deux enregistrent séparément — éditer un téléphone ne peut jamais toucher un créneau de réservation.
 - **Confirmation avant de réduire les horaires.** Si des rendez-vous déjà pris tombent hors des nouvelles plages, un dialogue les liste avant d'écrire. Ils sont honorés de toute façon (`regenerateOfferSlots` épargne les créneaux réservés) — le but est que le salon le sache avant de fermer le samedi.
-- **La règle de conflit est une fonction pure testée** (`src/lib/booking-conflicts.ts`, 13 tests) : jour de semaine, plages multiples, bornes exactes d'ouverture et de fermeture.
+- **La règle de conflit est une fonction pure testée** (`src/lib/booking-conflicts.ts`, 12 tests) : jour de semaine, plages multiples, bornes exactes d'ouverture et de fermeture.
 - **`/api/provider/profile` accepte la session employé PIN.** Un propriétaire ouvre la caisse avec son code, pas son mot de passe : la garde PROVIDER-only rendait le profil non modifiable depuis la tablette. Route sans aucun appelant avant ce lot, donc rien à casser.
 - **`photos` devient éditable** — colonne existante qu'aucune interface n'écrivait.
 
@@ -1408,7 +1408,7 @@ Rend le profil du salon et les horaires d'ouverture modifiables depuis la caisse
 
 ## Vérification
 
-`npm test` 125/125 · `tsc --noEmit` (seules restent deux erreurs pré-existantes) · `eslint` propre · `npm run build` réussi.
+`npm test` 124/124 · `tsc --noEmit` (seules restent deux erreurs pré-existantes) · `eslint` propre · `npm run build` réussi.
 
 Checklist manuelle déroulée, dont le test central : fermer le samedi alors qu'un rendez-vous y est pris → le dialogue l'annonce, et après confirmation **le rendez-vous existe toujours**.
 ```
