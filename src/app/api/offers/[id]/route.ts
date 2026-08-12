@@ -3,7 +3,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { regenerateOfferSlots } from "@/lib/slots";
-import { requirePermission, toResponse } from "@/lib/employee-session";
+import { getCurrentEmployee, requirePermission, toResponse } from "@/lib/employee-session";
 import { missingForPublish } from "@/lib/offer-publish";
 
 const ALLOWED_DURATIONS = [15, 30, 45, 60, 75, 90, 105, 120, 150, 180, 240];
@@ -24,7 +24,8 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
     return NextResponse.json({ error: "Offre introuvable" }, { status: 404 });
   }
 
-  // Check if unpublished — if so, only allow provider-owner or admin
+  // Check if unpublished — if so, only allow provider-owner, admin, or a
+  // PIN-authenticated employee of the owning salon.
   const isPublished = (offer as { publishedToMarketplace?: boolean }).publishedToMarketplace ?? false;
   if (!isPublished) {
     const session = await getServerSession(authOptions);
@@ -36,6 +37,15 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
         where: { userId: session.user.id },
       });
       if (profile?.id === offer.providerId) {
+        allowed = true;
+      }
+    } else {
+      // Session employe par PIN : pas de session PROVIDER, mais un droit
+      // legitime de lire la fiche de son propre salon. Sans cette branche,
+      // une caissiere prend un 404 sur toute offre hors ligne — donc
+      // precisement celles que le drawer d'edition sert a corriger.
+      const employee = await getCurrentEmployee();
+      if (employee?.providerId === offer.providerId) {
         allowed = true;
       }
     }
