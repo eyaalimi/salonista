@@ -1,18 +1,23 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { isValidOpeningHours } from "@/lib/opening-hours";
 import { regenerateAllProviderSlots } from "@/lib/slots";
+import { requirePermission, toResponse } from "@/lib/employee-session";
 
 export async function GET() {
-  const session = await getServerSession(authOptions);
-  if (!session || session.user.role !== "PROVIDER") {
-    return NextResponse.json({ error: "Non autorisé" }, { status: 401 });
+  // Accepte session PROVIDER et session employe par PIN : un proprietaire
+  // ouvre le plus souvent la caisse avec son code, pas avec son mot de passe.
+  let employee;
+  try {
+    employee = await requirePermission("settings.manage");
+  } catch (err) {
+    const r = toResponse(err);
+    if (r) return r;
+    throw err;
   }
 
   const profile = await prisma.providerProfile.findUnique({
-    where: { userId: session.user.id },
+    where: { id: employee.providerId },
   });
 
   if (!profile) {
@@ -23,9 +28,13 @@ export async function GET() {
 }
 
 export async function PUT(req: NextRequest) {
-  const session = await getServerSession(authOptions);
-  if (!session || session.user.role !== "PROVIDER") {
-    return NextResponse.json({ error: "Non autorisé" }, { status: 401 });
+  let employee;
+  try {
+    employee = await requirePermission("settings.manage");
+  } catch (err) {
+    const r = toResponse(err);
+    if (r) return r;
+    throw err;
   }
 
   const body = await req.json();
@@ -36,6 +45,7 @@ export async function PUT(req: NextRequest) {
     address,
     city,
     phone,
+    photos,
     openingHours,
     matriculeFiscal,
     receiptFooter,
@@ -55,9 +65,9 @@ export async function PUT(req: NextRequest) {
     );
   }
 
-  const profile = await prisma.providerProfile.upsert({
-    where: { userId: session.user.id },
-    update: {
+  const profile = await prisma.providerProfile.update({
+    where: { id: employee.providerId },
+    data: {
       salonName,
       category,
       description,
@@ -65,20 +75,9 @@ export async function PUT(req: NextRequest) {
       city,
       phone,
       openingHours,
+      ...(photos !== undefined ? { photos } : {}),
       ...(matriculeFiscal !== undefined ? { matriculeFiscal: matriculeFiscal || null } : {}),
       ...(receiptFooter !== undefined ? { receiptFooter: receiptFooter || null } : {}),
-    },
-    create: {
-      userId: session.user.id,
-      salonName: salonName || "Mon Salon",
-      category: category || "AUTRE",
-      description,
-      address,
-      city,
-      phone,
-      openingHours,
-      matriculeFiscal: matriculeFiscal || null,
-      receiptFooter: receiptFooter || null,
     },
   });
 

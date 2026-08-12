@@ -44,12 +44,12 @@ export function isValidOpeningHours(value: unknown): value is OpeningHours {
   return true;
 }
 
-function toMinutes(hhmm: string): number {
+export function toMinutes(hhmm: string): number {
   const [h, m] = hhmm.split(":").map(Number);
   return h * 60 + m;
 }
 
-function dayKeyFromDate(d: Date): DayKey {
+export function dayKeyFromDate(d: Date): DayKey {
   // JS getDay: 0=sun, 1=mon, ..., 6=sat
   return (["sun", "mon", "tue", "wed", "thu", "fri", "sat"] as DayKey[])[d.getDay()];
 }
