@@ -3,7 +3,8 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { regenerateOfferSlots } from "@/lib/slots";
-import { requirePermission, toResponse } from "@/lib/employee-session";
+import { getCurrentEmployee, requirePermission, toResponse } from "@/lib/employee-session";
+import { missingForPublish } from "@/lib/offer-publish";
 
 const ALLOWED_DURATIONS = [15, 30, 45, 60, 75, 90, 105, 120, 150, 180, 240];
 
@@ -23,7 +24,8 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
     return NextResponse.json({ error: "Offre introuvable" }, { status: 404 });
   }
 
-  // Check if unpublished — if so, only allow provider-owner or admin
+  // Check if unpublished — if so, only allow provider-owner, admin, or a
+  // PIN-authenticated employee of the owning salon.
   const isPublished = (offer as { publishedToMarketplace?: boolean }).publishedToMarketplace ?? false;
   if (!isPublished) {
     const session = await getServerSession(authOptions);
@@ -35,6 +37,15 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
         where: { userId: session.user.id },
       });
       if (profile?.id === offer.providerId) {
+        allowed = true;
+      }
+    } else {
+      // Session employe par PIN : pas de session PROVIDER, mais un droit
+      // legitime de lire la fiche de son propre salon. Sans cette branche,
+      // une caissiere prend un 404 sur toute offre hors ligne — donc
+      // precisement celles que le drawer d'edition sert a corriger.
+      const employee = await getCurrentEmployee();
+      if (employee?.providerId === offer.providerId) {
         allowed = true;
       }
     }
@@ -83,20 +94,12 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
   const isPublishTransition = body.publishedToMarketplace === true && !existingPublished;
 
   if (isPublishTransition) {
-    const missing: string[] = [];
-    const effCategory = body.category ?? offer.category;
-    if (!effCategory) missing.push("catégorie");
-    const effOriginal = body.originalPrice ?? offer.originalPrice;
-    const effDiscount = body.discountPrice ?? offer.discountPrice;
-    if (
-      effOriginal === null ||
-      effOriginal === undefined ||
-      Number(effOriginal) < Number(effDiscount)
-    ) {
-      missing.push("prix barré (≥ prix actuel)");
-    }
-    const effPhotos = body.photos ?? offer.photos;
-    if (!effPhotos || effPhotos.length === 0) missing.push("au moins une photo");
+    const missing = missingForPublish({
+      category: body.category ?? offer.category,
+      originalPrice: body.originalPrice ?? offer.originalPrice,
+      discountPrice: body.discountPrice ?? offer.discountPrice,
+      photos: body.photos ?? offer.photos,
+    });
     if (missing.length > 0) {
       return NextResponse.json(
         { error: `Publication impossible — champs manquants : ${missing.join(", ")}` },
