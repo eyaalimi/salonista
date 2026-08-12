@@ -13,8 +13,10 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   ];
 
   // Dynamic offer pages
+  // Meme filtre que le feed public : une offre sans photo est masquee
+  // partout, elle ne doit donc pas etre annoncee aux moteurs de recherche.
   const offers = await prisma.offer.findMany({
-    where: { active: true, publishedToMarketplace: true } as never,
+    where: { active: true, publishedToMarketplace: true, photos: { isEmpty: false } } as never,
     select: { id: true, createdAt: true },
   });
 
