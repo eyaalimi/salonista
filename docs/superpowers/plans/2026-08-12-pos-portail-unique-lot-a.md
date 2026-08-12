@@ -16,17 +16,24 @@
 
 1. **`npx prisma generate` est cassé en local** (paquet `effect` corrompu — règle 7 de CLAUDE.md). Le client généré dans `src/generated/prisma/` est **commité** et ne connaît pas les nouveaux modèles. Pour tout accès à `FeatureInterest`, utiliser le cast documenté ci-dessous. Le déploiement régénère correctement.
 
-2. **Aucun framework de test dans le dépôt.** Pas de `vitest`, `jest` ni `playwright` — `npm test` n'existe pas. La vérification se fait par `npx tsc --noEmit` plus une checklist manuelle. Chaque tâche porte sa propre étape de vérification ; ne pas inventer de commande de test.
+2. ~~**Aucun framework de test dans le dépôt.**~~ **FAUX — corrigé après coup.** Le dépôt utilise **Vitest** ; `npm test` lance `vitest run` (99 tests, 6 fichiers). Cette contrainte était une erreur : `node_modules` était corrompu, ce qui masquait le binaire. Les tâches de ce plan ont donc été exécutées sans lancer les tests. Ils ont été lancés après coup : **99/99 passent**, aucune régression.
 
-3. **`npx eslint` est cassé en local** (`es-abstract/2024/AddEntriesFromIterable` introuvable). Ne pas l'utiliser comme porte de qualité.
+3. ~~**`npx eslint` est cassé en local**~~ — c'était également un symptôme du `node_modules` corrompu.
 
-4. **`npx tsc --noEmit` remonte ~80 erreurs préexistantes** liées au client Prisma corrompu (`Property 'sale' does not exist`, `Property 'cashDrawerSession' does not exist`…). C'est attendu. La règle : **aucune erreur nouvelle sur les fichiers touchés par la tâche**. Toujours filtrer la sortie avec `grep` sur les fichiers concernés.
+4. ~~**`npx tsc --noEmit` remonte ~80 erreurs préexistantes**~~ — même cause. Après réinstallation propre et `npx prisma generate`, il n'en reste que **25**, toutes hors périmètre du lot A (`rewards.test.ts`, `wizard-client.tsx`, artefact `.next/types`).
+
+> **Leçon pour les prochains lots :** avant de déclarer un outil « cassé » et de bâtir un plan autour de cette contrainte, tenter `rm -rf node_modules && npm install`. Les règles 7 et 9 de CLAUDE.md décrivaient un environnement corrompu, pas une fatalité du projet.
 
 5. **L'interface est en français.** Libellés, messages d'erreur, commentaires de code destinés aux futurs mainteneurs : tout en français. Les messages de commit aussi, sans accents (convention du dépôt).
 
 ### Le cast Prisma pour les nouveaux modèles
 
-`prisma.featureInterest` n'existe pas dans le client local. Le motif utilisé partout dans ce dépôt (voir [src/app/api/pos/customers/[id]/route.ts:95](../../../src/app/api/pos/customers/[id]/route.ts)) :
+> **Obsolète depuis la réinstallation.** `npx prisma generate` fonctionne : le client
+> connaît désormais `FeatureInterest`, les casts ci-dessous ne sont plus nécessaires
+> pour les nouveaux modèles. Ils restent en place dans le code livré (inoffensifs) et
+> pourront être retirés lors d'un passage de nettoyage au lot B ou C.
+
+`prisma.featureInterest` n'existait pas dans le client local. Le motif utilisé partout dans ce dépôt (voir [src/app/api/pos/customers/[id]/route.ts:95](../../../src/app/api/pos/customers/[id]/route.ts)) :
 
 ```ts
 const rows = (await (prisma as never as {

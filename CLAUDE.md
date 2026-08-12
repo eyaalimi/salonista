@@ -29,7 +29,7 @@ A fuller human-oriented narrative lives in [CONTEXT.md](CONTEXT.md) — read it 
 4. **Set `sizes` whenever `<Image fill>` is used.** Next logs warnings otherwise.
 5. **`localPatterns` in [next.config.ts](next.config.ts)** must list every public path that the optimizer touches. Currently `/uploads/**` and `/images/**` — add new ones explicitly.
 6. **Never run `prisma migrate dev`** against production. Schema changes go through `prisma migrate dev --name <name>` locally → commit migration → deploy runs `prisma migrate deploy`.
-7. **Local `npx prisma generate` is broken** (corrupt `effect` package — `MODULE_NOT_FOUND` for `effect/dist/cjs/index.js`). The generated client at [src/generated/prisma/](src/generated/prisma/) is **committed**. If you add new fields, either fix the local install or use `as never` casts in route code; deploy regenerates correctly.
+7. ~~**Local `npx prisma generate` is broken**~~ — **RESOLVED 2026-08-12.** This was a corrupt `node_modules`, not a project defect. `rm -rf node_modules && npm install` fixed it; `npx prisma generate` now works. The same corruption also masked **Vitest** (`npm test` → 99 tests) and **ESLint**. The generated client at `src/generated/prisma/` is **gitignored**, so run `npx prisma generate` after a fresh clone. Legacy `as never` casts remain in older route code — harmless, removable on sight. **If a tool looks broken, reinstall before designing around it.**
 8. **The site is in French.** UI strings, error messages, email templates — all French. Don't translate to English without being asked.
 9. **Money is `Decimal(10, 3)`** in TND (Tunisian dinar uses 3 decimals — millimes). Don't convert to `number` for arithmetic; use `Decimal` math from Prisma's runtime.
 
@@ -42,7 +42,7 @@ A fuller human-oriented narrative lives in [CONTEXT.md](CONTEXT.md) — read it 
 | Framework | **Next.js 16.2** (App Router, Turbopack) on **Node 20** |
 | UI | **React 19**, **Tailwind v4** (single `globals.css`), Playfair Display + Geist Sans |
 | Auth | **NextAuth v4** (JWT strategy, Credentials + Google) |
-| ORM | **Prisma 7** with `@prisma/adapter-pg`, generated client committed at `src/generated/prisma/` |
+| ORM | **Prisma 7** with `@prisma/adapter-pg`, client generated into `src/generated/prisma/` (gitignored — run `npx prisma generate`) |
 | DB | **PostgreSQL** (`salonista_prod` in prod) |
 | Email | **Nodemailer** + Gmail SMTP App Password |
 | QR | `qrcode` package, `bcryptjs` for password hashing, `nanoid` for tokens |
@@ -209,9 +209,11 @@ The submit button on offer create/edit forms is disabled while a photo upload is
 
 `REQUIRE_EMAIL_VERIFICATION` env var. When `true`, new users get a verification email and can't sign in until they verify. Inline auth on the offer page bypasses this for CLIENT role only (see #4 above). Auth check: [src/lib/auth.ts:44](src/lib/auth.ts#L44).
 
-### 9. Local Prisma generate is broken
+### 9. ~~Local Prisma generate is broken~~ — RESOLVED 2026-08-12
 
-`npx prisma generate` fails locally with `MODULE_NOT_FOUND` for `effect/dist/cjs/index.js`. Production deploy runs it fine. When schema changes need new fields on the client, either fix the local install or use `as never` casts in the route until the next deploy regenerates.
+This was a corrupt `node_modules`, not a project defect. `rm -rf node_modules && npm install` restored `npx prisma generate`, and with it **Vitest** and **ESLint**, which the same corruption had masked.
+
+The lesson is worth keeping: a whole implementation plan was once designed around "there is no test framework here" and "typecheck reports ~80 unavoidable errors" — both false. **Reinstall before designing around a broken tool.**
 
 ### 10. JWT role refresh on every token cycle
 
@@ -381,7 +383,7 @@ npm run lint
 
 ## Open work / known limitations
 
-- Local `npx prisma generate` fails (corrupt `effect` package) — non-blocking; prod regenerates fine.
+- ~~Local `npx prisma generate` fails~~ — resolved 2026-08-12 by reinstalling `node_modules`.
 - Image optimizer is bypassed for `/uploads/` — we lose webp/avif/srcset for user photos. OK for now; revisit if photo bandwidth becomes an issue.
 - No CDN in front of `/uploads/` yet. Nginx 7-day caching handles it.
 - Payment is a stub (no real PSP integration).
