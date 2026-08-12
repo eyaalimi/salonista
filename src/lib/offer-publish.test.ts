@@ -1,8 +1,8 @@
 import { describe, it, expect } from "vitest";
-import { missingForPublish } from "./offer-publish";
+import { missingForPublish, type PublishCandidate } from "./offer-publish";
 
 describe("missingForPublish", () => {
-  const complet = {
+  const complet: PublishCandidate = {
     category: "COIFFURE",
     originalPrice: "50.000",
     discountPrice: "35.000",
@@ -21,8 +21,34 @@ describe("missingForPublish", () => {
     expect(missingForPublish({ ...complet, photos: [] })).toEqual(["au moins une photo"]);
   });
 
-  it("accepte un prix barre absent — la promotion est facultative", () => {
+  it("accepte un prix barre absent (null) — la promotion est facultative", () => {
     expect(missingForPublish({ ...complet, originalPrice: null })).toEqual([]);
+  });
+
+  it("accepte un prix barre absent (undefined explicite)", () => {
+    expect(missingForPublish({ ...complet, originalPrice: undefined })).toEqual([]);
+  });
+
+  it("accepte un prix barre absent (cle omise du tout)", () => {
+    // PublishCandidate type originalPrice comme obligatoire-mais-nullable
+    // (`Money | null | undefined`), pas comme propriete optionnelle (`?:`) :
+    // une omission de cle n'est donc pas assignable au type sans cast. On
+    // caste volontairement pour couvrir le cas reel d'un appelant JS/JSON
+    // qui omet la cle plutot que d'envoyer `undefined` explicitement — les
+    // deux doivent se comporter de facon identique a l'execution.
+    const { originalPrice: _originalPrice, ...sansOriginalPrice } = complet;
+    expect(missingForPublish(sansOriginalPrice as PublishCandidate)).toEqual([]);
+  });
+
+  it("exige une categorie (undefined explicite)", () => {
+    expect(missingForPublish({ ...complet, category: undefined })).toEqual(["catégorie"]);
+  });
+
+  it("exige une categorie (cle omise du tout)", () => {
+    // Meme remarque que ci-dessus : cast volontaire, cle absente plutot
+    // qu'explicitement undefined.
+    const { category: _category, ...sansCategory } = complet;
+    expect(missingForPublish(sansCategory as PublishCandidate)).toEqual(["catégorie"]);
   });
 
   it("refuse un prix barre inferieur au prix de vente", () => {
@@ -37,11 +63,23 @@ describe("missingForPublish", () => {
     ).toEqual([]);
   });
 
-  it("compare les prix en millimes, sans derive flottante", () => {
-    // 0.1 + 0.2 === 0.30000000000000004 en flottant : la comparaison doit
-    // passer par des entiers pour que 0.300 barre 0.300 soit accepte.
+  it("compare toujours via toMillimes, pas via Number() direct", () => {
+    // Recherche exhaustive (script jetable, voir conversation) : pour des
+    // chaines a 3 decimales dans une plage de prix realiste (jusqu'a
+    // 20 000 DT, pas de 0,001), Number(a) < Number(b) et
+    // toMillimes(a) < toMillimes(b) ne divergent jamais — l'erreur relative
+    // d'un double IEEE754 (~1e-16) est negligeable face a l'ecart minimal de
+    // 0,001 entre deux valeurs a 3 decimales distinctes. Ce test ne prouve
+    // donc pas une divergence (aucune paire de ce type n'existe pour cette
+    // comparaison), mais documente que toMillimes() est bien LE chemin de
+    // comparaison utilise, et qu'il gere sans erreur des formats equivalents
+    // (espaces de zeros, decimales tronquees) qu'une comparaison de chaines
+    // naive casserait.
     expect(
-      missingForPublish({ ...complet, originalPrice: "0.300", discountPrice: "0.300" }),
+      missingForPublish({ ...complet, originalPrice: "035.000", discountPrice: "35.000" }),
+    ).toEqual([]);
+    expect(
+      missingForPublish({ ...complet, originalPrice: "35.0", discountPrice: "35.000" }),
     ).toEqual([]);
   });
 
