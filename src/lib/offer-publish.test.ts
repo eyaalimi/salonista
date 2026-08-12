@@ -36,7 +36,8 @@ describe("missingForPublish", () => {
     // caste volontairement pour couvrir le cas reel d'un appelant JS/JSON
     // qui omet la cle plutot que d'envoyer `undefined` explicitement — les
     // deux doivent se comporter de facon identique a l'execution.
-    const { originalPrice: _originalPrice, ...sansOriginalPrice } = complet;
+    const sansOriginalPrice = { ...complet };
+    delete (sansOriginalPrice as Partial<PublishCandidate>).originalPrice;
     expect(missingForPublish(sansOriginalPrice as PublishCandidate)).toEqual([]);
   });
 
@@ -47,7 +48,8 @@ describe("missingForPublish", () => {
   it("exige une categorie (cle omise du tout)", () => {
     // Meme remarque que ci-dessus : cast volontaire, cle absente plutot
     // qu'explicitement undefined.
-    const { category: _category, ...sansCategory } = complet;
+    const sansCategory = { ...complet };
+    delete (sansCategory as Partial<PublishCandidate>).category;
     expect(missingForPublish(sansCategory as PublishCandidate)).toEqual(["catégorie"]);
   });
 
