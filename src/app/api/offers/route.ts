@@ -34,7 +34,13 @@ export async function GET(req: NextRequest) {
   }
 
   // Public: active offers
-  const where: Record<string, unknown> = { active: true, publishedToMarketplace: true };
+  // photos.isEmpty : une offre publiee mais sans photo reste masquee du feed.
+  // C'est ce qui rend honnete le badge "Ajouter une photo" cote POS.
+  const where: Record<string, unknown> = {
+    active: true,
+    publishedToMarketplace: true,
+    photos: { isEmpty: false },
+  };
   if (category) where.category = category;
 
   const offers = await prisma.offer.findMany({

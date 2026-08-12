@@ -35,6 +35,7 @@ export default async function OffresPage({
     where: {
       active: true,
       publishedToMarketplace: true,
+      photos: { isEmpty: false },
       ...(category ? { category: category as never } : {}),
       ...(q
         ? {
