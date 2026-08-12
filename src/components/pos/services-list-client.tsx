@@ -2,6 +2,8 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
+import { useRouter, useSearchParams } from "next/navigation";
+import { ServiceEditDrawer, type ServiceOffer } from "@/components/pos/service-edit-drawer";
 
 type Offer = {
   id: string;
@@ -21,8 +23,7 @@ const ALLOWED_DURATIONS = [15, 30, 45, 60, 75, 90, 105, 120, 150, 180, 240];
  *
  * Un service publie sans photo est cree mais masque du feed public (le filtre
  * photos.isEmpty s'en charge cote serveur) : le badge ambre signale au
- * prestataire ce qu'il lui reste a faire. Le clic mènera au drawer d'edition
- * au lot B ; au lot A le parametre ?edit= est simplement ignore.
+ * prestataire ce qu'il lui reste a faire. Le clic ouvre le drawer d'edition via ?edit=<id>.
  */
 function StatusBadge({ offer, compact }: { offer: Offer; compact?: boolean }) {
   const published = offer.publishedToMarketplace;
@@ -63,6 +64,44 @@ export function ServicesListClient({ initialOffers }: { initialOffers: Offer[] }
   const [busy, setBusy] = useState(false);
   const [toggling, setToggling] = useState<string | null>(null);
   const newNameRef = useRef<HTMLInputElement>(null);
+
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const editId = searchParams.get("edit");
+
+  const openEdit = useCallback(
+    (id: string) => router.push(`/pos/services?edit=${id}`, { scroll: false }),
+    [router],
+  );
+  const closeEdit = useCallback(
+    () => router.push("/pos/services", { scroll: false }),
+    [router],
+  );
+
+  // Patch local plutot que rechargement : la caisse peut tenir une centaine
+  // de services sur une tablette lente.
+  const applySaved = useCallback(
+    (u: ServiceOffer) => {
+      setOffers((arr) =>
+        arr.map((x) =>
+          x.id === u.id
+            ? {
+                ...x,
+                title: u.title,
+                discountPrice: String(u.discountPrice),
+                durationMinutes: u.durationMinutes,
+                taxRate: String(u.taxRate),
+                active: u.active,
+                publishedToMarketplace: u.publishedToMarketplace,
+                photos: u.photos ?? [],
+              }
+            : x,
+        ),
+      );
+      closeEdit();
+    },
+    [closeEdit],
+  );
 
   // Quick-add form state.
   const [qaTitle, setQaTitle] = useState("");
@@ -277,14 +316,15 @@ export function ServicesListClient({ initialOffers }: { initialOffers: Offer[] }
             {offers.map((o) => (
               <tr
                 key={o.id}
-                className="border-t border-pos-border hover:bg-pos-surface/60"
+                onClick={() => openEdit(o.id)}
+                className="border-t border-pos-border hover:bg-pos-surface/60 cursor-pointer"
               >
                 <td className="px-3 py-2">{o.title}</td>
                 <td className="px-3 py-2 text-right whitespace-nowrap">
                   {Number(o.discountPrice).toFixed(3)} DT
                 </td>
                 <td className="px-3 py-2 text-right whitespace-nowrap">{o.durationMinutes} min</td>
-                <td className="px-3 py-2 text-right">
+                <td className="px-3 py-2 text-right" onClick={(e) => e.stopPropagation()}>
                   <button
                     type="button"
                     onClick={() => toggleTax(o)}
@@ -301,7 +341,7 @@ export function ServicesListClient({ initialOffers }: { initialOffers: Offer[] }
                       : "Sans TVA"}
                   </button>
                 </td>
-                <td className="px-3 py-2 text-center">
+                <td className="px-3 py-2 text-center" onClick={(e) => e.stopPropagation()}>
                   <input
                     type="checkbox"
                     checked={o.active}
@@ -310,7 +350,7 @@ export function ServicesListClient({ initialOffers }: { initialOffers: Offer[] }
                     aria-label={`Actif — ${o.title}`}
                   />
                 </td>
-                <td className="px-3 py-2">
+                <td className="px-3 py-2" onClick={(e) => e.stopPropagation()}>
                   <StatusBadge offer={o} />
                 </td>
               </tr>
@@ -323,7 +363,8 @@ export function ServicesListClient({ initialOffers }: { initialOffers: Offer[] }
         {offers.map((o) => (
           <div
             key={o.id}
-            className="rounded-lg border border-pos-border bg-pos-surface p-3"
+            onClick={() => openEdit(o.id)}
+            className="rounded-lg border border-pos-border bg-pos-surface p-3 cursor-pointer"
           >
             <div className="flex items-start justify-between gap-2 mb-2">
               <div className="min-w-0 flex-1">
@@ -332,7 +373,10 @@ export function ServicesListClient({ initialOffers }: { initialOffers: Offer[] }
                   {Number(o.discountPrice).toFixed(3)} DT · {o.durationMinutes} min
                 </p>
               </div>
-              <label className="shrink-0 flex items-center gap-1 text-xs text-pos-ink-2">
+              <label
+                className="shrink-0 flex items-center gap-1 text-xs text-pos-ink-2"
+                onClick={(e) => e.stopPropagation()}
+              >
                 <input
                   type="checkbox"
                   checked={o.active}
@@ -343,7 +387,7 @@ export function ServicesListClient({ initialOffers }: { initialOffers: Offer[] }
                 Actif
               </label>
             </div>
-            <div className="flex items-center gap-2 flex-wrap">
+            <div className="flex items-center gap-2 flex-wrap" onClick={(e) => e.stopPropagation()}>
               <button
                 type="button"
                 onClick={() => toggleTax(o)}
@@ -368,6 +412,14 @@ export function ServicesListClient({ initialOffers }: { initialOffers: Offer[] }
           </p>
         )}
       </div>
+
+      {editId && (
+        <ServiceEditDrawer
+          offerId={editId}
+          onClose={closeEdit}
+          onSaved={applySaved}
+        />
+      )}
     </div>
   );
 }
