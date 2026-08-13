@@ -8,6 +8,7 @@ import { MultiServiceCalendar, type SimpleSlot } from "@/components/multi-servic
 import { DAY_KEYS, DAY_LABELS_FR, type OpeningHours } from "@/lib/opening-hours";
 import { NavAccount } from "@/components/nav-account";
 import { Logo } from "@/components/logo";
+import { isValidCoords } from "@/lib/coords";
 import dynamic from "next/dynamic";
 
 // Leaflet manipule le DOM et n'existe pas cote serveur : sans ssr:false, le
@@ -507,7 +508,7 @@ export function SalonClient({ salon }: { salon: Salon }) {
                   {salon.phone}
                 </a>
               )}
-              {salon.lat !== null && salon.lng !== null && (
+              {salon.lat !== null && salon.lng !== null && isValidCoords(salon.lat, salon.lng) && (
                 <div className="mt-4">
                   <SalonMap lat={salon.lat} lng={salon.lng} label={salon.salonName} />
                   <a
