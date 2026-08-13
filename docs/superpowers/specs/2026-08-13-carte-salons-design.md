@@ -71,15 +71,26 @@ Trois chemins vers le point, par ordre de commodité :
 Le salon voit immédiatement si le point est juste, au lieu de le découvrir par
 une cliente perdue.
 
-### Le géocodage se fait côté client
+### Le géocodage passe par une route serveur
 
-Le navigateur appelle Nominatim directement, sans route serveur intermédiaire.
-Plus simple, et surtout : la charge se répartit sur les utilisateurs au lieu de
-se concentrer sur l'IP du serveur, ce que Nominatim n'apprécie pas.
+**Corrigé pendant l'implémentation.** Le design initial faisait appeler Nominatim
+directement par le navigateur, en acceptant comme dette que le `User-Agent` ne
+serait pas un identifiant Salonista.
 
-Contrepartie assumée : le `User-Agent` est celui du navigateur, pas un
-identifiant Salonista. Si Nominatim finit par limiter, la parade est une route
-serveur avec cache — à construire le jour où le problème existe, pas avant.
+Cette approche ne peut pas fonctionner, et ce n'était pas une dette mais un
+blocage : Nominatim renvoie **403 Forbidden** à toute requête sans `User-Agent`
+identifiant (sa politique d'usage l'exige), or `User-Agent` est un **en-tête
+interdit** côté navigateur — `fetch` l'ignore silencieusement. Vérifié contre le
+service réel : 403 sans en-tête, 200 avec.
+
+Le géocodage passe donc par `GET /api/geocode?q=`, qui pose l'en-tête et relaie.
+La route est réservée aux employés connectés (`requireEmployee`) : un proxy de
+géocodage ouvert serait un relais anonyme vers Nominatim, ce que sa politique
+interdit également.
+
+Contrepartie réelle : toutes les requêtes partent de l'IP du serveur. Acceptable
+au volume actuel — un appel par clic sur « Localiser », pas par visite. Si le
+volume monte, un cache par adresse se pose dans cette route.
 
 Nominatim impose **1 requête/seconde**. On ne géocode que sur clic explicite du
 bouton, jamais à la frappe, donc la limite ne sera pas approchée. Le bouton se
@@ -107,7 +118,8 @@ n'a encore de coordonnées : la page reste propre.
 |---|---|---|
 | `src/lib/coords.ts` | Règle pure : une coordonnée est-elle valide ? | **Créer** |
 | `src/lib/coords.test.ts` | Tests de la règle | **Créer** |
-| `src/lib/geocode.ts` | Appel Nominatim + normalisation | **Créer** |
+| `src/lib/geocode.ts` | Client de `/api/geocode` | **Créer** |
+| `src/app/api/geocode/route.ts` | Proxy Nominatim (pose le User-Agent) | **Créer** |
 | `src/components/map/location-picker.tsx` | Carte éditable, marqueur déplaçable | **Créer** |
 | `src/components/map/salon-map.tsx` | Carte en lecture seule | **Créer** |
 | `src/components/pos/settings/salon-form.tsx` | Intégrer le picker, envoyer lat/lng | **Modifier** |
@@ -194,11 +206,6 @@ build ne type-check pas. `npx tsc --noEmit` est le seul filet sur les types.
 ---
 
 ## Dette assumée
-
-**Le `User-Agent` envoyé à Nominatim est celui du navigateur.** La politique
-d'usage de Nominatim demande un identifiant applicatif. On l'accepte parce que le
-volume est très faible (un appel par enregistrement de profil, pas par visite).
-À revoir si Nominatim limite : route serveur avec cache.
 
 **Aucune limite de débit côté application.** Un salon qui cliquerait « Localiser »
 en rafale pourrait dépasser 1 req/s. Le bouton désactivé pendant l'appel rend ça
