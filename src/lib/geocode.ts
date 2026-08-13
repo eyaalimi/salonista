@@ -1,36 +1,34 @@
 import { parseCoords, type Coords } from "@/lib/coords";
 
-const NOMINATIM = "https://nominatim.openstreetmap.org/search";
-
 /**
  * Cherche des coordonnees a partir d'une adresse libre.
  *
- * Appele depuis le navigateur, sur clic explicite de l'utilisateur — jamais a
- * la frappe. Nominatim limite a 1 requete/seconde ; ce rythme ne l'approche
- * pas.
+ * Passe par /api/geocode et non directement par Nominatim : ce dernier renvoie
+ * 403 sans User-Agent identifiant, et `User-Agent` est un en-tete interdit
+ * cote navigateur — fetch l'ignore. Le detail vit dans la route ; ici on ne
+ * garde que le contrat.
+ *
+ * Appele sur clic explicite de l'utilisateur, jamais a la frappe : Nominatim
+ * limite a 1 requete/seconde et ce rythme ne l'approche pas.
  *
  * Renvoie null si l'adresse est introuvable ou si la reponse est inexploitable.
- * L'appelant distingue les deux cas par le message affiche, pas par le retour :
- * dans les deux cas il n'y a rien a placer sur la carte.
+ * L'appelant ne distingue pas les deux cas : dans les deux il n'y a rien a
+ * placer sur la carte.
  */
 export async function geocodeAddress(query: string): Promise<Coords | null> {
   const q = query.trim();
   if (!q) return null;
 
-  const url = `${NOMINATIM}?format=json&limit=1&countrycodes=tn&q=${encodeURIComponent(q)}`;
-
   try {
-    const res = await fetch(url, {
-      headers: { Accept: "application/json" },
-    });
+    const res = await fetch(`/api/geocode?q=${encodeURIComponent(q)}`);
     if (!res.ok) return null;
 
-    const data: unknown = await res.json();
-    if (!Array.isArray(data) || data.length === 0) return null;
+    const data = (await res.json()) as { coords?: unknown };
+    if (!data.coords || typeof data.coords !== "object") return null;
 
-    const first = data[0] as { lat?: string; lon?: string };
-    // Nominatim nomme la longitude "lon", pas "lng".
-    return parseCoords(first.lat, first.lon);
+    const { lat, lng } = data.coords as { lat?: unknown; lng?: unknown };
+    // Revalide cote client : la route est un proxy, pas une source de verite.
+    return parseCoords(lat as number, lng as number);
   } catch {
     return null;
   }
