@@ -27,6 +27,8 @@ export default async function SettingsPage() {
       address: true,
       city: true,
       phone: true,
+      lat: true,
+      lng: true,
       photos: true,
       matriculeFiscal: true,
       receiptFooter: true,
@@ -39,6 +41,8 @@ export default async function SettingsPage() {
     address: string | null;
     city: string | null;
     phone: string | null;
+    lat: number | null;
+    lng: number | null;
     photos: string[];
     matriculeFiscal: string | null;
     receiptFooter: string | null;
@@ -67,6 +71,8 @@ export default async function SettingsPage() {
             address: provider.address,
             city: provider.city,
             phone: provider.phone,
+            lat: provider.lat,
+            lng: provider.lng,
             photos: provider.photos ?? [],
             matriculeFiscal: provider.matriculeFiscal,
             receiptFooter: provider.receiptFooter,

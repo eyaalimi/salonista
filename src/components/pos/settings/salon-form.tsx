@@ -2,6 +2,16 @@
 
 import { useState } from "react";
 import { ImageUpload } from "@/components/image-upload";
+import dynamic from "next/dynamic";
+
+// Leaflet manipule le DOM et n'existe pas cote serveur : sans ssr:false, le
+// build echoue sur « window is not defined ».
+const LocationPicker = dynamic(() => import("@/components/map/location-picker"), {
+  ssr: false,
+  loading: () => (
+    <div className="h-64 w-full rounded border border-pos-border bg-pos-bg" />
+  ),
+});
 
 export type SalonProfile = {
   salonName: string;
@@ -10,6 +20,8 @@ export type SalonProfile = {
   address: string | null;
   city: string | null;
   phone: string | null;
+  lat: number | null;
+  lng: number | null;
   photos: string[];
   matriculeFiscal: string | null;
   receiptFooter: string | null;
@@ -34,6 +46,8 @@ export function SalonForm({ initial }: { initial: SalonProfile }) {
     address: initial.address ?? "",
     city: initial.city ?? "",
     phone: initial.phone ?? "",
+    lat: initial.lat,
+    lng: initial.lng,
     photos: initial.photos ?? [],
     matriculeFiscal: initial.matriculeFiscal ?? "",
     receiptFooter: initial.receiptFooter ?? "",
@@ -64,6 +78,8 @@ export function SalonForm({ initial }: { initial: SalonProfile }) {
           address: form.address.trim() || null,
           city: form.city.trim() || null,
           phone: form.phone.trim() || null,
+          lat: form.lat,
+          lng: form.lng,
           photos: form.photos,
           matriculeFiscal: form.matriculeFiscal.trim() || null,
           receiptFooter: form.receiptFooter.trim() || null,
@@ -167,6 +183,22 @@ export function SalonForm({ initial }: { initial: SalonProfile }) {
             onChange={(e) => patch("matriculeFiscal", e.target.value)}
           />
         </label>
+      </div>
+
+      <div>
+        <span className="mb-1 block text-xs uppercase tracking-wider text-pos-ink-3">
+          Emplacement sur la carte
+        </span>
+        <LocationPicker
+          lat={form.lat}
+          lng={form.lng}
+          address={form.address}
+          city={form.city}
+          onChange={(lat, lng) => {
+            setForm((f) => ({ ...f, lat, lng }));
+            setOk(false);
+          }}
+        />
       </div>
 
       <label className="block">

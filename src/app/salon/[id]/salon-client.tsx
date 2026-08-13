@@ -8,6 +8,15 @@ import { MultiServiceCalendar, type SimpleSlot } from "@/components/multi-servic
 import { DAY_KEYS, DAY_LABELS_FR, type OpeningHours } from "@/lib/opening-hours";
 import { NavAccount } from "@/components/nav-account";
 import { Logo } from "@/components/logo";
+import { isValidCoords } from "@/lib/coords";
+import dynamic from "next/dynamic";
+
+// Leaflet manipule le DOM et n'existe pas cote serveur : sans ssr:false, le
+// build echoue sur « window is not defined ».
+const SalonMap = dynamic(() => import("@/components/map/salon-map"), {
+  ssr: false,
+  loading: () => <div className="h-56 w-full rounded bg-brand-sand" />,
+});
 
 interface Offer {
   id: string;
@@ -499,15 +508,18 @@ export function SalonClient({ salon }: { salon: Salon }) {
                   {salon.phone}
                 </a>
               )}
-              {salon.lat && salon.lng && (
-                <a
-                  href={`https://www.google.com/maps?q=${salon.lat},${salon.lng}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-block mt-4 text-[10px] tracking-[0.15em] uppercase text-brand-gold hover:text-brand-bordeaux"
-                >
-                  Voir sur la carte →
-                </a>
+              {salon.lat !== null && salon.lng !== null && isValidCoords(salon.lat, salon.lng) && (
+                <div className="mt-4">
+                  <SalonMap lat={salon.lat} lng={salon.lng} label={salon.salonName} />
+                  <a
+                    href={`https://www.google.com/maps/dir/?api=1&destination=${salon.lat},${salon.lng}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="mt-3 block w-full border border-brand-gold/40 py-2 text-center text-[10px] uppercase tracking-[0.15em] text-brand-gold hover:bg-brand-gold hover:text-white transition-colors"
+                  >
+                    Itinéraire →
+                  </a>
+                </div>
               )}
             </div>
 
