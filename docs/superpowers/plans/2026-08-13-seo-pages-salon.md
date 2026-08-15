@@ -820,7 +820,10 @@ npm run dev
 Toute ligne qui échoue = la tâche n'est pas finie.
 
 - [ ] `curl -s http://localhost:3000/salon/<id> | grep -o "<title>[^<]*"` →
-      affiche `{nom}, {ville} — {catégorie}`, **pas** « Salonista ».
+      affiche `{nom}, {ville} — {catégorie} — Salonista`. Le suffixe vient du
+      `title.template` du layout racine (`src/app/layout.tsx:24`), commun à tout
+      le site : c'est normal. Ce qui compte est que le titre ne soit **pas** le
+      générique « Salonista » seul.
 - [ ] `curl -s http://localhost:3000/salon/<id> | grep -o 'name="description"[^>]*'` →
       description spécifique au salon.
 - [ ] `curl -s http://localhost:3000/salon/<id> | grep -c "application/ld+json"` →
