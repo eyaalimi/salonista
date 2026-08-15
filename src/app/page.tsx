@@ -5,6 +5,7 @@ import { Logo } from "@/components/logo";
 import { UploadedImage } from "@/components/uploaded-image";
 import { Greeting } from "@/components/greeting";
 import { PromoBanner } from "@/components/promo-banner";
+import { FAQ_ITEMS, buildFaqJsonLd } from "@/lib/faq";
 
 const categoryLabels: Record<string, string> = {
   COIFFURE: "Coiffure",
@@ -313,6 +314,39 @@ export default async function Home() {
         </div>
       </section>
 
+      {/* FAQ — le contenu reste dans le HTML meme replie (details/summary
+          natif, sans JS), ce qui satisfait l'exigence de Google : une
+          question balisee doit etre visible sur la page. */}
+      <section className="mt-10 px-6 md:px-12" aria-labelledby="faq-titre">
+        <div className="mx-auto max-w-3xl">
+          <p className="mb-2 text-[11px] tracking-widest uppercase text-brand-bordeaux/40">
+            Questions fréquentes
+          </p>
+          <h2 id="faq-titre" className="luxury-heading mb-6 text-2xl sm:text-3xl">
+            Tout savoir sur <span className="italic">Salonista</span>
+          </h2>
+
+          <div className="divide-y divide-brand-gold/20 border-y border-brand-gold/20">
+            {FAQ_ITEMS.map((item) => (
+              <details key={item.question} className="group py-4">
+                <summary className="flex cursor-pointer items-center justify-between gap-4 text-sm font-medium text-brand-bordeaux marker:content-['']">
+                  {item.question}
+                  <span
+                    aria-hidden="true"
+                    className="shrink-0 text-brand-gold transition-transform group-open:rotate-45"
+                  >
+                    +
+                  </span>
+                </summary>
+                <p className="mt-3 text-sm leading-relaxed text-brand-bordeaux/70">
+                  {item.answer}
+                </p>
+              </details>
+            ))}
+          </div>
+        </div>
+      </section>
+
       {/* FOOTER */}
       <footer className="bg-brand-ink text-white border-t border-white/10">
         <div className="mx-auto flex max-w-7xl flex-col items-center justify-between gap-5 px-6 py-8 sm:flex-row md:px-12">
@@ -364,6 +398,13 @@ export default async function Home() {
             areaServed: { "@type": "Country", name: "Tunisia" },
           }),
         }}
+      />
+      {/* FAQPage : contrairement a WebSite et Organization ci-dessus, valides
+          mais non previsualisables, ce type est reconnu par le Test des
+          resultats enrichis de Google. Meme source que la section affichee. */}
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(buildFaqJsonLd()) }}
       />
     </div>
   );
