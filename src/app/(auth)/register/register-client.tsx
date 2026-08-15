@@ -5,6 +5,8 @@ import { Suspense, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { Logo } from "@/components/logo";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 
 const roles = [
   {
@@ -106,26 +108,28 @@ function RegisterPageInner() {
 
   if (needsVerification) {
     return (
-      <div className="min-h-screen bg-brand-cream flex items-center justify-center px-6">
-        <div className="bg-white p-12 max-w-md w-full text-center border border-brand-gold/20">
-          <div className="w-16 h-16 mx-auto mb-6 border-2 border-brand-gold flex items-center justify-center">
-            <svg className="w-8 h-8 text-brand-gold" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
-            </svg>
+      <div className="min-h-screen bg-creme flex flex-col items-center justify-center px-5 py-10 gap-8">
+        <Link href="/" className="ds-display text-4xl text-prune">
+          Salonista<span className="text-rose">.</span>
+        </Link>
+
+        <div className="w-full max-w-[420px] rounded-[var(--radius-card)] bg-white p-6 sm:p-8 flex flex-col gap-5 text-center">
+          <h2 className="ds-display text-2xl text-prune">Vérifie ton e-mail</h2>
+
+          <div className="flex flex-col gap-1">
+            <p className="text-base text-prune-soft">Un e-mail a été envoyé à</p>
+            <p className="text-base font-semibold text-prune">{email}</p>
           </div>
-          <h2 className="luxury-heading text-2xl text-brand-bordeaux mb-3">Verifiez votre email</h2>
-          <p className="text-sm text-brand-bordeaux/50 leading-relaxed mb-2">
-            Un email de verification a ete envoye a
+
+          <p className="text-sm text-prune-soft">
+            Clique sur le lien pour activer ton compte. Il expire dans 24 heures.
           </p>
-          <p className="text-sm text-brand-bordeaux font-medium mb-6">{email}</p>
-          <p className="text-xs text-brand-bordeaux/40 mb-8">
-            Cliquez sur le lien dans l&apos;email pour activer votre compte. Le lien expire dans 24 heures.
-          </p>
+
           <Link
             href={callbackUrl ? `/login?callbackUrl=${encodeURIComponent(callbackUrl)}` : "/login"}
-            className="inline-block px-8 py-4 text-xs tracking-[0.2em] uppercase bg-brand-bordeaux text-white hover:bg-brand-gold transition-colors duration-500"
+            className="ds-press ds-focus inline-flex items-center justify-center min-h-[48px] px-6 rounded-[var(--radius-pill)] bg-rose text-white text-base font-semibold hover:bg-[#F04A79]"
           >
-            Aller a la connexion
+            Aller à la connexion
           </Link>
         </div>
       </div>
