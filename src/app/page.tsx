@@ -6,6 +6,10 @@ import { UploadedImage } from "@/components/uploaded-image";
 import { Greeting } from "@/components/greeting";
 import { PromoBanner } from "@/components/promo-banner";
 import { FAQ_ITEMS, buildFaqJsonLd } from "@/lib/faq";
+import { Chip } from "@/components/ui/chip";
+import { Badge } from "@/components/ui/badge";
+import { Card } from "@/components/ui/card";
+import { pickNextSlot, formatAvailability } from "@/lib/salon-availability";
 
 const categoryLabels: Record<string, string> = {
   COIFFURE: "Coiffure",
@@ -41,8 +45,22 @@ export default async function Home() {
         _count: { select: { offers: true } },
         offers: {
           where: { active: true, photos: { isEmpty: false } },
-          take: 1,
-          select: { photos: true },
+          select: {
+            photos: true,
+            discountPrice: true,
+            category: true,
+            // Bornage volontaire : on ne remonte que les creneaux futurs, et
+            // TimeSlot est indexe sur [offerId, startTime], donc ce filtre
+            // utilise l'index. Sans borne, un salon actif remonterait des
+            // milliers de lignes.
+            slots: {
+              where: { startTime: { gte: new Date() } },
+              orderBy: { startTime: "asc" },
+              take: 1,
+              select: { startTime: true, capacity: true, bookedCount: true },
+            },
+            reviews: { select: { rating: true } },
+          },
         },
       },
       orderBy: { offers: { _count: "desc" } },
@@ -61,6 +79,35 @@ export default async function Home() {
       count: categories.find((c) => c.category === key)?._count || 0,
     }))
     .filter((c) => c.count > 0);
+
+  // Donnees derivees des salons, calculees une fois pour l'affichage.
+  //
+  // Le badge et l'etoile n'apparaissent que si la donnee existe reellement :
+  // un salon sans creneau libre n'affiche pas de badge, un salon sans avis
+  // n'affiche pas d'etoile. Aucune valeur par defaut inventee.
+  const now = new Date();
+  const salonExtras = new Map(
+    topSalons.map((salon) => {
+      const slots = salon.offers.flatMap((o) => o.slots);
+      const ratings = salon.offers.flatMap((o) => o.reviews.map((r) => r.rating));
+      const prices = salon.offers.map((o) => Number(o.discountPrice));
+
+      return [
+        salon.id,
+        {
+          availability: formatAvailability(pickNextSlot(slots, now), now),
+          rating:
+            ratings.length > 0
+              ? Math.round((ratings.reduce((s, r) => s + r, 0) / ratings.length) * 10) / 10
+              : null,
+          minPrice: prices.length > 0 ? Math.min(...prices) : null,
+          categories: [...new Set(salon.offers.map((o) => categoryLabels[o.category]))]
+            .filter(Boolean)
+            .slice(0, 2),
+        },
+      ];
+    }),
+  );
 
   return (
     <div className="min-h-screen bg-brand-cream">
