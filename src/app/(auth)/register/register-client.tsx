@@ -36,8 +36,20 @@ function RegisterPageInner() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const callbackUrl = searchParams.get("callbackUrl");
-  const [step, setStep] = useState<1 | 2>(1);
-  const [role, setRole] = useState("");
+  // Le role venant de l'URL est valide plus bas ; on saute l'etape 1 quand il
+  // l'est, sinon l'onglet de la page de connexion menait a un ecran ou il
+  // fallait re-cliquer le profil deja choisi. Le bouton « Changer » de
+  // l'etape 2 permet de revenir en arriere.
+  const roleFromUrl = searchParams.get("role");
+  const validRoleFromUrl =
+    roleFromUrl === "CLIENT" || roleFromUrl === "PROVIDER" || roleFromUrl === "INFLUENCER"
+      ? roleFromUrl
+      : "";
+  const [step, setStep] = useState<1 | 2>(validRoleFromUrl ? 2 : 1);
+  // Pre-selection depuis /register?role=… (les onglets de la page de
+  // connexion). Une valeur inconnue est ignoree : on retombe sur le
+  // comportement actuel, l'utilisateur choisit lui-meme.
+  const [role, setRole] = useState(validRoleFromUrl);
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
