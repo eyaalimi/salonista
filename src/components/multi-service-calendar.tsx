@@ -125,46 +125,46 @@ export function MultiServiceCalendar({ selectedOffers, selectedStart, onSelect }
   return (
     <div className="space-y-6">
       {selectedOffers.length === 0 ? (
-        <div className="bg-white border border-brand-gold/20 p-8 text-center">
-          <p className="text-sm text-brand-bordeaux/40">
-            Sélectionnez au moins un service ci-dessous pour voir les créneaux disponibles.
+        <div className="rounded-[var(--radius-card)] border-2 border-hairline bg-white p-8 text-center">
+          <p className="text-base text-prune-soft">
+            Sélectionne au moins un service ci-dessous pour voir les créneaux disponibles.
           </p>
         </div>
       ) : (
         <>
           {/* Calendar */}
-          <div className="bg-white border border-brand-gold/20 p-5 md:p-6">
-            <div className="flex items-center justify-between mb-5">
+          <div className="rounded-[var(--radius-card)] border-2 border-hairline bg-white p-5 md:p-6">
+            <div className="mb-5 flex items-center justify-between">
               <button
                 type="button"
                 onClick={() => canGoPrev && setViewMonth(addMonths(viewMonth, -1))}
                 disabled={!canGoPrev}
-                className="w-9 h-9 border border-brand-gold/20 flex items-center justify-center text-brand-bordeaux/60 hover:border-brand-gold hover:text-brand-gold disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+                className="ds-press ds-focus flex h-11 w-11 items-center justify-center rounded-[var(--radius-pill)] border-2 border-hairline text-prune hover:border-rose hover:text-rose"
                 aria-label="Mois précédent"
               >
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M15 19l-7-7 7-7" />
                 </svg>
               </button>
               <div className="text-center">
-                <p className="luxury-heading text-lg text-brand-bordeaux">{MONTHS[viewMonth.getMonth()]}</p>
-                <p className="text-[10px] tracking-[0.25em] uppercase text-brand-bordeaux/40 mt-0.5">{viewMonth.getFullYear()}</p>
+                <p className="ds-display text-lg text-prune">{MONTHS[viewMonth.getMonth()]}</p>
+                <p className="mt-0.5 text-sm text-prune-soft">{viewMonth.getFullYear()}</p>
               </div>
               <button
                 type="button"
                 onClick={() => setViewMonth(addMonths(viewMonth, 1))}
-                className="w-9 h-9 border border-brand-gold/20 flex items-center justify-center text-brand-bordeaux/60 hover:border-brand-gold hover:text-brand-gold transition-colors"
+                className="ds-press ds-focus flex h-11 w-11 items-center justify-center rounded-[var(--radius-pill)] border-2 border-hairline text-prune hover:border-rose hover:text-rose"
                 aria-label="Mois suivant"
               >
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 5l7 7-7 7" />
                 </svg>
               </button>
             </div>
 
-            <div className="grid grid-cols-7 gap-1 mb-2">
+            <div className="mb-2 grid grid-cols-7 gap-1">
               {WEEKDAYS.map((w) => (
-                <div key={w} className="text-center text-[10px] tracking-[0.2em] uppercase text-brand-bordeaux/40 py-2">
+                <div key={w} className="py-2 text-center text-xs font-semibold uppercase tracking-wide text-prune-soft">
                   {w}
                 </div>
               ))}
@@ -180,15 +180,16 @@ export function MultiServiceCalendar({ selectedOffers, selectedStart, onSelect }
                 const isPicked = pickedDate === k;
 
                 let classes = "";
-                const base = "aspect-square flex flex-col items-center justify-center text-sm transition-all duration-300 relative";
+                const base =
+                  "ds-press ds-focus relative flex aspect-square flex-col items-center justify-center rounded-[var(--radius-panel)] text-sm";
                 if (isPast) {
-                  classes = "text-brand-bordeaux/20 cursor-not-allowed";
+                  classes = "text-prune-soft/30 cursor-not-allowed";
                 } else if (isPicked) {
-                  classes = "bg-brand-bordeaux text-white cursor-pointer shadow-sm";
+                  classes = "bg-rose text-white cursor-pointer font-semibold";
                 } else if (isAvailable) {
-                  classes = "bg-brand-gold/10 text-brand-bordeaux border border-brand-gold/40 hover:bg-brand-gold/20 hover:border-brand-gold cursor-pointer font-medium";
+                  classes = "bg-menthe text-menthe-deep cursor-pointer font-semibold hover:bg-menthe-deep hover:text-white";
                 } else {
-                  classes = "text-brand-bordeaux/25 cursor-not-allowed bg-brand-cream/40";
+                  classes = "text-prune-soft/40 cursor-not-allowed bg-creme";
                 }
 
                 return (
@@ -203,44 +204,41 @@ export function MultiServiceCalendar({ selectedOffers, selectedStart, onSelect }
                     className={`${base} ${classes}`}
                   >
                     <span>{date.getDate()}</span>
-                    {isAvailable && !isPicked && (
-                      <span className="absolute bottom-1 w-1 h-1 rounded-full bg-brand-gold" />
-                    )}
                     {isToday && !isPicked && (
-                      <span className="absolute top-1 right-1 text-[7px] tracking-wider uppercase text-brand-gold/80">•</span>
+                      <span className="absolute top-1 right-1 h-1.5 w-1.5 rounded-full bg-rose" />
                     )}
                   </button>
                 );
               })}
             </div>
 
-            <div className="flex items-center justify-center gap-5 mt-5 pt-4 border-t border-brand-gold/15 flex-wrap">
-              <span className="flex items-center gap-2 text-[10px] tracking-[0.15em] uppercase text-brand-bordeaux/50">
-                <span className="w-3 h-3 bg-brand-gold/10 border border-brand-gold/40" /> Disponible
+            <div className="mt-5 flex flex-wrap items-center justify-center gap-5 border-t border-hairline pt-4">
+              <span className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-prune-soft">
+                <span className="h-3 w-3 rounded-full bg-menthe" /> Disponible
               </span>
-              <span className="flex items-center gap-2 text-[10px] tracking-[0.15em] uppercase text-brand-bordeaux/50">
-                <span className="w-3 h-3 bg-brand-cream/40" /> Indisponible
+              <span className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-prune-soft">
+                <span className="h-3 w-3 rounded-full bg-creme border border-hairline" /> Indisponible
               </span>
-              <span className="flex items-center gap-2 text-[10px] tracking-[0.15em] uppercase text-brand-bordeaux/50">
-                <span className="w-3 h-3 bg-brand-bordeaux" /> Sélectionné
+              <span className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-prune-soft">
+                <span className="h-3 w-3 rounded-full bg-rose" /> Sélectionné
               </span>
             </div>
           </div>
 
           {/* Time slots */}
           {pickedDate && (
-            <div className="bg-white border border-brand-gold/20 p-5 md:p-6">
-              <p className="text-[10px] tracking-[0.2em] uppercase text-brand-bordeaux/50 mb-1">Heure de début</p>
-              <h3 className="luxury-heading text-lg text-brand-bordeaux mb-1">
+            <div className="rounded-[var(--radius-card)] border-2 border-hairline bg-white p-5 md:p-6">
+              <p className="mb-1 text-xs font-semibold uppercase tracking-[0.12em] text-prune-soft">Heure de début</p>
+              <h3 className="ds-display mb-1 text-lg text-prune">
                 {new Date(pickedDate).toLocaleDateString("fr-TN", { weekday: "long", day: "numeric", month: "long" })}
               </h3>
-              <p className="text-xs text-brand-bordeaux/50 mb-4">
+              <p className="mb-4 text-sm text-prune-soft">
                 Durée totale : {formatDuration(totalDuration)}
               </p>
               {dayTimes.length === 0 ? (
-                <p className="text-xs text-brand-bordeaux/40 italic">Aucun horaire compatible</p>
+                <p className="text-sm text-prune-soft">Aucun horaire compatible</p>
               ) : (
-                <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-2">
+                <div className="grid grid-cols-3 gap-2 sm:grid-cols-4 md:grid-cols-6">
                   {dayTimes.map((t: Date) => {
                     const iso = t.toISOString();
                     const active = selectedStart === iso;
@@ -249,10 +247,10 @@ export function MultiServiceCalendar({ selectedOffers, selectedStart, onSelect }
                         type="button"
                         key={iso}
                         onClick={() => onSelect(iso)}
-                        className={`px-3 py-3 border text-xs transition-all duration-300 ${
+                        className={`ds-press ds-focus min-h-[44px] rounded-[var(--radius-pill)] border-2 px-3 text-sm font-semibold ${
                           active
-                            ? "border-brand-gold bg-brand-bordeaux text-white"
-                            : "border-brand-gold/30 text-brand-bordeaux hover:border-brand-gold hover:bg-brand-gold/5"
+                            ? "border-rose bg-rose text-white"
+                            : "border-hairline text-prune hover:border-rose"
                         }`}
                       >
                         {t.toLocaleTimeString("fr-TN", { hour: "2-digit", minute: "2-digit" })}
@@ -265,14 +263,14 @@ export function MultiServiceCalendar({ selectedOffers, selectedStart, onSelect }
           )}
 
           {!pickedDate && validStartTimes.size > 0 && (
-            <p className="text-xs text-brand-bordeaux/50 text-center italic">
-              Sélectionnez une date en doré pour voir les heures disponibles
+            <p className="text-center text-sm text-prune-soft">
+              Sélectionne une date en vert pour voir les heures disponibles
             </p>
           )}
 
           {validStartTimes.size === 0 && (
-            <p className="text-xs text-amber-700 italic text-center py-3">
-              Aucun créneau ne peut accueillir l&apos;ensemble des services sélectionnés. Essayez d&apos;en retirer ou de réorganiser l&apos;ordre.
+            <p className="py-3 text-center text-sm text-prune">
+              Aucun créneau ne peut accueillir l&apos;ensemble des services sélectionnés. Essaie d&apos;en retirer ou de réorganiser l&apos;ordre.
             </p>
           )}
         </>

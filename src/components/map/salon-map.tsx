@@ -50,5 +50,10 @@ export default function SalonMap({
     };
   }, [lat, lng, label]);
 
-  return <div ref={container} className="h-56 w-full rounded" />;
+  return (
+    <div
+      ref={container}
+      className="h-56 w-full overflow-hidden rounded-[var(--radius-panel)]"
+    />
+  );
 }
