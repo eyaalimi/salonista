@@ -26,6 +26,9 @@ Trois classes utilitaires existent dans `src/app/globals.css` : `.ds-press` (tra
 
 **Attention au piège du typage.** `next.config.ts` contient `typescript: { ignoreBuildErrors: true }`. Un `npm run build` qui réussit ne prouve donc PAS que les types sont bons. `npx tsc --noEmit` est le seul filet.
 
+**Mais `tsc` n'est pas propre au depart :** 23 erreurs preexistent sur `main`, toutes dans `src/components/pos/onboarding/wizard-client.tsx` (deux types `Provider` homonymes qui entrent en conflit). Elles ne viennent pas de ce lot et ne se corrigent pas ici. Filtre toujours sur nos fichiers :
+`npx tsc --noEmit 2>&1 | grep -E "salon-client|multi-service-calendar|salon-map"` — c'est cette sortie qui doit etre vide.
+
 **Langue de l'interface :** français, tutoiement, casse de phrase (« Confirmer la réservation », pas « CONFIRMER LA RÉSERVATION »).
 
 ### Les primitifs disponibles
@@ -295,10 +298,17 @@ import { Badge } from "@/components/ui/badge";
 - [ ] **Étape 5 : vérifier**
 
 ```bash
-npx tsc --noEmit 2>&1 | head -5
+npx tsc --noEmit 2>&1 | grep -E "salon-client|multi-service-calendar|salon-map"
 ```
 
-Attendu : aucune sortie.
+Attendu : **aucune sortie**.
+
+Ne lance pas `npx tsc --noEmit` sans filtre en croyant que le silence est le
+critere : **23 erreurs preexistent sur `main`**, toutes dans le module de caisse
+(`src/components/pos/onboarding/wizard-client.tsx`, un conflit entre deux types
+`Provider` homonymes). Elles ne viennent pas de ce lot et ne doivent pas etre
+corrigees ici. Le seul critere qui compte est qu'aucune erreur ne cite nos trois
+fichiers.
 
 - [ ] **Étape 6 : commit**
 
@@ -638,11 +648,11 @@ Attendu : la logique toujours présente, `brand-` à **0**, aucun interdit.
 - [ ] **Étape 6 : vérifier les types et les tests**
 
 ```bash
-npx tsc --noEmit 2>&1 | head -5
+npx tsc --noEmit 2>&1 | grep -E "salon-client|multi-service-calendar|salon-map"
 npm test 2>&1 | tail -5
 ```
 
-Attendu : aucune erreur de type, **180 tests au vert**.
+Attendu : **aucune sortie du grep** (23 erreurs preexistent ailleurs, dans le module de caisse — elles ne nous concernent pas), et **180 tests au vert**.
 
 - [ ] **Étape 7 : commit**
 
@@ -865,10 +875,10 @@ import { Button } from "@/components/ui/button";
 
 ```bash
 grep -c "DT" "src/app/salon/[id]/salon-client.tsx"
-npx tsc --noEmit 2>&1 | head -5
+npx tsc --noEmit 2>&1 | grep -E "salon-client|multi-service-calendar|salon-map"
 ```
 
-Attendu : `0` occurrence de « DT », aucune erreur de type.
+Attendu : `0` occurrence de « DT », et **aucune sortie du grep tsc** (23 erreurs preexistent dans le module de caisse — hors sujet).
 
 - [ ] **Étape 6 : commit**
 
@@ -1063,12 +1073,13 @@ Attendu : tous ≥ 1. Si l'un vaut 0, une protection a sauté — corrige avant 
 - [ ] **Étape 3 : types, lint, tests**
 
 ```bash
-npx tsc --noEmit 2>&1 | head -10
+npx tsc --noEmit 2>&1 | grep -E "salon-client|multi-service-calendar|salon-map"
+npx tsc --noEmit 2>&1 | grep -c "error TS"
 npm run lint 2>&1 | tail -10
 npm test 2>&1 | tail -5
 ```
 
-Attendu : aucune erreur de type, aucune erreur ESLint nouvelle, **180 tests au vert**.
+Attendu : **aucune sortie du premier grep** ; le second doit afficher **23** — le nombre exact d'erreurs preexistantes sur `main`, toutes dans le module de caisse. S'il affiche plus de 23, ce lot a introduit une regression ailleurs. Aucune erreur ESLint nouvelle, **180 tests au vert**.
 
 - [ ] **Étape 4 : le build**
 
