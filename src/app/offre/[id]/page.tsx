@@ -56,7 +56,6 @@ export default async function OffrePage({ params, searchParams }: Props) {
           city: true,
           category: true,
           description: true,
-          demo: true,
         },
       },
       slots: {
