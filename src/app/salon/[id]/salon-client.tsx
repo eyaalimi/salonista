@@ -207,27 +207,27 @@ export function SalonClient({ salon }: { salon: Salon }) {
 
   if (success) {
     return (
-      <div className="min-h-screen bg-brand-cream flex items-center justify-center px-6">
-        <div className="bg-white p-12 md:p-16 max-w-md w-full text-center border border-brand-gold/20">
-          <div className="w-16 h-16 border border-brand-gold/30 flex items-center justify-center mx-auto mb-6">
-            <svg className="w-8 h-8 text-brand-gold" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M5 13l4 4L19 7" />
+      <div className="flex min-h-screen items-center justify-center bg-creme px-6">
+        <div className="w-full max-w-md rounded-[var(--radius-card)] border-2 border-hairline bg-white p-12 text-center md:p-16">
+          <div className="mx-auto mb-6 flex h-16 w-16 items-center justify-center rounded-full bg-menthe">
+            <svg className="h-8 w-8 text-menthe-deep" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
             </svg>
           </div>
-          <h2 className="luxury-heading text-2xl text-brand-bordeaux mb-3">Réservation enregistrée</h2>
-          <p className="text-sm text-brand-bordeaux/50 mb-8 leading-relaxed">
-            Procédez au paiement pour recevoir votre QR code.
+          <h2 className="ds-display mb-3 text-2xl text-prune">Réservation enregistrée</h2>
+          <p className="mb-8 text-base leading-relaxed text-prune-soft">
+            Procède au paiement pour recevoir ton QR code.
           </p>
           <div className="flex flex-col gap-3">
             <Link
               href={`/cliente/paiement?bookingId=${success}`}
-              className="inline-block px-8 py-4 text-xs tracking-[0.2em] uppercase bg-brand-bordeaux text-white hover:bg-brand-gold transition-colors duration-500"
+              className="ds-press ds-focus inline-flex min-h-[48px] w-full items-center justify-center rounded-[var(--radius-pill)] bg-rose px-6 text-base font-semibold text-white hover:bg-[#F04A79]"
             >
               Payer maintenant
             </Link>
             <Link
               href="/cliente"
-              className="inline-block px-8 py-3 text-xs tracking-[0.2em] uppercase border border-brand-gold/20 text-brand-bordeaux/60 hover:border-brand-gold transition-colors duration-500"
+              className="ds-press ds-focus inline-flex min-h-[48px] w-full items-center justify-center rounded-[var(--radius-pill)] border-2 border-hairline px-6 text-base font-semibold text-prune hover:border-rose"
             >
               Payer plus tard
             </Link>
@@ -390,8 +390,8 @@ export function SalonClient({ salon }: { salon: Salon }) {
             {/* Calendar */}
             {cartOffers.length > 0 && (
               <section>
-                <h2 className="luxury-heading text-2xl text-brand-bordeaux mb-2">Choisir une date</h2>
-                <p className="text-xs text-brand-bordeaux/50 mb-6">
+                <h2 className="ds-display mb-2 text-2xl text-prune">Choisir une date</h2>
+                <p className="mb-6 text-base text-prune-soft">
                   Une seule heure de début. Les services s&apos;enchaînent automatiquement dans l&apos;ordre choisi.
                 </p>
                 <MultiServiceCalendar
