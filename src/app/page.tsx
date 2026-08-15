@@ -6,6 +6,10 @@ import { UploadedImage } from "@/components/uploaded-image";
 import { Greeting } from "@/components/greeting";
 import { PromoBanner } from "@/components/promo-banner";
 import { FAQ_ITEMS, buildFaqJsonLd } from "@/lib/faq";
+import { Chip } from "@/components/ui/chip";
+import { Badge } from "@/components/ui/badge";
+import { Card } from "@/components/ui/card";
+import { pickNextSlot, formatAvailability } from "@/lib/salon-availability";
 
 const categoryLabels: Record<string, string> = {
   COIFFURE: "Coiffure",
@@ -41,8 +45,22 @@ export default async function Home() {
         _count: { select: { offers: true } },
         offers: {
           where: { active: true, photos: { isEmpty: false } },
-          take: 1,
-          select: { photos: true },
+          select: {
+            photos: true,
+            discountPrice: true,
+            category: true,
+            // Bornage volontaire : on ne remonte que les creneaux futurs, et
+            // TimeSlot est indexe sur [offerId, startTime], donc ce filtre
+            // utilise l'index. Sans borne, un salon actif remonterait des
+            // milliers de lignes.
+            slots: {
+              where: { startTime: { gte: new Date() } },
+              orderBy: { startTime: "asc" },
+              take: 1,
+              select: { startTime: true, capacity: true, bookedCount: true },
+            },
+            reviews: { select: { rating: true } },
+          },
         },
       },
       orderBy: { offers: { _count: "desc" } },
@@ -62,8 +80,37 @@ export default async function Home() {
     }))
     .filter((c) => c.count > 0);
 
+  // Donnees derivees des salons, calculees une fois pour l'affichage.
+  //
+  // Le badge et l'etoile n'apparaissent que si la donnee existe reellement :
+  // un salon sans creneau libre n'affiche pas de badge, un salon sans avis
+  // n'affiche pas d'etoile. Aucune valeur par defaut inventee.
+  const now = new Date();
+  const salonExtras = new Map(
+    topSalons.map((salon) => {
+      const slots = salon.offers.flatMap((o) => o.slots);
+      const ratings = salon.offers.flatMap((o) => o.reviews.map((r) => r.rating));
+      const prices = salon.offers.map((o) => Number(o.discountPrice));
+
+      return [
+        salon.id,
+        {
+          availability: formatAvailability(pickNextSlot(slots, now), now),
+          rating:
+            ratings.length > 0
+              ? Math.round((ratings.reduce((s, r) => s + r, 0) / ratings.length) * 10) / 10
+              : null,
+          minPrice: prices.length > 0 ? Math.min(...prices) : null,
+          categories: [...new Set(salon.offers.map((o) => categoryLabels[o.category]))]
+            .filter(Boolean)
+            .slice(0, 2),
+        },
+      ];
+    }),
+  );
+
   return (
-    <div className="min-h-screen bg-brand-cream">
+    <div className="min-h-screen bg-creme">
       <HomeNav />
 
       {/* Spacer for fixed nav */}
@@ -72,11 +119,11 @@ export default async function Home() {
       {/* GREETING */}
       <Greeting />
 
-      {/* SEARCH — mobile-first, big, friendly */}
+      {/* SEARCH */}
       <section className="px-4 pt-4">
         <form action="/offres" method="GET" className="relative">
           <svg
-            className="pointer-events-none absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-brand-gold"
+            className="pointer-events-none absolute left-5 top-1/2 h-5 w-5 -translate-y-1/2 text-prune-soft"
             fill="none"
             stroke="currentColor"
             viewBox="0 0 24 24"
@@ -91,9 +138,9 @@ export default async function Home() {
           <input
             type="text"
             name="q"
-            placeholder="Cherche un soin, un salon..."
+            placeholder="Salon, ville, prestation…"
             aria-label="Rechercher"
-            className="w-full rounded-2xl border border-brand-gold-soft bg-brand-sand py-3 pl-12 pr-4 text-base text-brand-ink placeholder:text-brand-ink-soft/70 focus:border-brand-gold focus:outline-none"
+            className="ds-focus w-full min-h-[52px] rounded-[var(--radius-pill)] border-2 border-hairline bg-white pl-[52px] pr-5 text-base text-prune placeholder:text-prune-soft/60"
           />
         </form>
       </section>
@@ -101,24 +148,17 @@ export default async function Home() {
       {/* PROMO BANNER */}
       <PromoBanner />
 
-      {/* CATEGORY CHIPS — horizontal scroll */}
+      {/* CATEGORY CHIPS */}
       {categoryData.length > 0 && (
         <section className="mt-5">
           <div className="no-scrollbar flex gap-2 overflow-x-auto px-4 pb-1">
-            <Link
-              href="/offres"
-              className="shrink-0 rounded-full border border-brand-line bg-brand-sand px-4 py-2 text-sm text-brand-ink"
-            >
+            <Chip href="/offres" active>
               Tout
-            </Link>
+            </Chip>
             {categoryData.map((cat) => (
-              <Link
-                key={cat.key}
-                href={`/offres?category=${cat.key}`}
-                className="shrink-0 rounded-full border border-brand-line bg-brand-sand px-4 py-2 text-sm text-brand-ink"
-              >
+              <Chip key={cat.key} href={`/offres?category=${cat.key}`}>
                 {categoryEmoji[cat.key]} {cat.label}
-              </Link>
+              </Chip>
             ))}
           </div>
         </section>
@@ -128,14 +168,9 @@ export default async function Home() {
       {offers.length > 0 && (
         <section className="mt-6">
           <div className="flex items-center justify-between px-4 mb-3">
-            <h2 className="text-sm font-semibold text-brand-ink">
-              🔥 Soldes — Offres du jour
-            </h2>
-            <Link
-              href="/offres"
-              className="text-sm font-semibold text-brand-gold"
-            >
-              Voir →
+            <h2 className="ds-display text-lg text-prune">Offres du jour</h2>
+            <Link href="/offres" className="text-sm font-semibold text-rose">
+              Voir tout
             </Link>
           </div>
 
@@ -152,48 +187,50 @@ export default async function Home() {
                 <Link
                   key={offer.id}
                   href={`/offre/${offer.id}`}
-                  className="flex w-[160px] shrink-0 flex-col overflow-hidden rounded-2xl border border-brand-line bg-white"
+                  className="ds-press w-[170px] shrink-0"
                 >
-                  <div className="relative h-[90px] w-full bg-gradient-to-br from-brand-sand to-brand-gold-soft/40">
-                    {offer.photos.length > 0 ? (
-                      <UploadedImage
-                        src={offer.photos[0]}
-                        alt={offer.title}
-                        fill
-                        sizes="160px"
-                        className="object-cover"
-                      />
-                    ) : (
-                      <div className="flex h-full items-center justify-center text-3xl">
-                        {categoryEmoji[offer.category]}
-                      </div>
-                    )}
-                    {discount > 0 && (
-                      <span className="absolute right-2 top-2 rounded-full bg-brand-ink px-2 py-0.5 text-[10px] font-bold text-[#FBFAF7]">
-                        -{discount}%
-                      </span>
-                    )}
-                  </div>
-
-                  <div className="flex flex-1 flex-col px-2 pb-2">
-                    <p className="mt-2 line-clamp-1 text-[10px] text-brand-ink-soft">
-                      {offer.provider.salonName}
-                      {offer.provider.city && ` · ${offer.provider.city}`}
-                    </p>
-                    <h3 className="mt-0.5 line-clamp-2 text-xs font-semibold leading-tight text-brand-ink">
-                      {offer.title}
-                    </h3>
-                    <div className="mt-auto flex items-baseline gap-1.5 pt-2">
-                      <span className="text-sm font-bold text-brand-gold">
-                        {discounted.toFixed(0)} DT
-                      </span>
-                      {original > discounted && (
-                        <span className="text-xs text-gray-400 line-through">
-                          {original.toFixed(0)}
+                  <Card>
+                    <div className="relative h-[110px] w-full bg-rose-soft">
+                      {offer.photos.length > 0 ? (
+                        <UploadedImage
+                          src={offer.photos[0]}
+                          alt={offer.title}
+                          fill
+                          sizes="170px"
+                          className="object-cover"
+                        />
+                      ) : (
+                        <div className="flex h-full items-center justify-center text-3xl">
+                          {categoryEmoji[offer.category]}
+                        </div>
+                      )}
+                      {discount > 0 && (
+                        <span className="absolute right-2 top-2">
+                          <Badge tone="rose">-{discount}%</Badge>
                         </span>
                       )}
                     </div>
-                  </div>
+
+                    <div className="flex flex-col gap-1 p-3">
+                      <p className="line-clamp-1 text-xs text-prune-soft">
+                        {offer.provider.salonName}
+                        {offer.provider.city && ` · ${offer.provider.city}`}
+                      </p>
+                      <h3 className="line-clamp-2 text-sm font-semibold leading-tight text-prune">
+                        {offer.title}
+                      </h3>
+                      <div className="flex items-baseline gap-1.5 pt-1">
+                        <span className="text-base font-bold text-rose">
+                          {discounted.toFixed(0)} TND
+                        </span>
+                        {original > discounted && (
+                          <span className="text-xs text-prune-soft line-through">
+                            {original.toFixed(0)}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  </Card>
                 </Link>
               );
             })}
@@ -201,52 +238,71 @@ export default async function Home() {
         </section>
       )}
 
-      {/* SALONS — visual rail */}
+      {/* SALONS */}
       {topSalons.length > 0 && (
-        <section id="salons" className="mt-6">
-          <div className="flex items-center justify-between px-4 mb-3">
-            <h2 className="text-sm font-semibold text-brand-ink">
-              ✨ Salons populaires
-            </h2>
-            <Link
-              href="/offres"
-              className="text-sm font-semibold text-brand-gold"
-            >
-              Voir →
+        <section id="salons" className="mt-8 px-4">
+          <div className="flex items-center justify-between mb-3">
+            <h2 className="ds-display text-lg text-prune">Salons populaires</h2>
+            <Link href="/offres" className="text-sm font-semibold text-rose">
+              Voir tout
             </Link>
           </div>
 
-          <div className="no-scrollbar flex gap-3 overflow-x-auto px-4 pb-2">
+          <div className="flex flex-col gap-4">
             {topSalons.map((salon) => {
               const cover = salon.offers[0]?.photos[0];
+              const extras = salonExtras.get(salon.id);
+
               return (
-                <Link
-                  key={salon.id}
-                  href={`/salon/${salon.id}`}
-                  className="block w-[140px] shrink-0"
-                >
-                  <div className="relative aspect-square overflow-hidden rounded-2xl bg-gradient-to-br from-brand-sand to-brand-gold-soft/40">
-                    {cover ? (
-                      <UploadedImage
-                        src={cover}
-                        alt={salon.salonName}
-                        fill
-                        sizes="140px"
-                        className="object-cover"
-                      />
-                    ) : (
-                      <div className="absolute inset-0 flex items-center justify-center text-4xl text-brand-ink/30">
-                        {salon.salonName.charAt(0).toUpperCase()}
+                <Link key={salon.id} href={`/salon/${salon.id}`} className="ds-press block">
+                  <Card>
+                    <div className="relative h-[180px] w-full bg-rose-soft">
+                      {cover ? (
+                        <UploadedImage
+                          src={cover}
+                          alt={salon.salonName}
+                          fill
+                          sizes="(max-width: 640px) 100vw, 420px"
+                          className="object-cover"
+                        />
+                      ) : (
+                        <div className="flex h-full items-center justify-center text-5xl text-prune/30">
+                          {salon.salonName.charAt(0).toUpperCase()}
+                        </div>
+                      )}
+                      {/* Le badge n'apparait QUE si un creneau libre existe.
+                          Sur des salons sans creneau, son absence est le
+                          comportement correct. */}
+                      {extras?.availability && (
+                        <span className="absolute bottom-3 left-3">
+                          <Badge tone="menthe">{extras.availability}</Badge>
+                        </span>
+                      )}
+                    </div>
+
+                    <div className="flex flex-col gap-1 p-4">
+                      <div className="flex items-center justify-between gap-3">
+                        <h3 className="line-clamp-1 text-base font-bold text-prune">
+                          {salon.salonName}
+                        </h3>
+                        {/* Idem : pas d'avis, pas d'etoile. */}
+                        {extras?.rating !== null && extras?.rating !== undefined && (
+                          <span className="shrink-0 text-sm text-prune-soft">
+                            ★ {extras.rating.toFixed(1).replace(".", ",")}
+                          </span>
+                        )}
                       </div>
-                    )}
-                  </div>
-                  <h3 className="mt-2 line-clamp-1 text-sm font-semibold text-brand-ink">
-                    {salon.salonName}
-                  </h3>
-                  <p className="line-clamp-1 text-xs text-brand-ink-soft">
-                    {salon.city || "Tunisie"} · {salon._count.offers} offre
-                    {salon._count.offers > 1 ? "s" : ""}
-                  </p>
+                      <p className="line-clamp-1 text-sm text-prune-soft">
+                        {[
+                          salon.city || "Tunisie",
+                          ...(extras?.categories ?? []),
+                          extras?.minPrice != null ? `dès ${extras.minPrice.toFixed(0)} TND` : null,
+                        ]
+                          .filter(Boolean)
+                          .join(" · ")}
+                      </p>
+                    </div>
+                  </Card>
                 </Link>
               );
             })}
