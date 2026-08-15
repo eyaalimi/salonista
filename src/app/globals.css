@@ -1,7 +1,6 @@
-/* Bricolage Grotesque n'est pas au catalogue de next/font/google dans cette
-   version de Next (verifie) ; Archivo si, et passe par le helper dans
-   layout.tsx. D'ou cet import CSS pour la seule police de titres. */
-@import url("https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,700;12..96,800&display=swap");
+/* Bricolage Grotesque est chargee par un <link> dans layout.tsx, pas ici :
+   le bundler CSS de Next resout les @import au build et supprime les
+   distants — verifie, le CSS servi n'en contenait aucun. */
 @import "tailwindcss";
 
 @theme inline {

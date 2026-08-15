@@ -86,6 +86,19 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="fr" className={`${geistSans.variable} ${playfair.variable} ${archivo.variable} h-full antialiased`}>
+      <head>
+        {/* Bricolage Grotesque n'est pas au catalogue de next/font/google dans
+            cette version de Next. Un @import dans globals.css ne survit PAS a
+            la compilation — le bundler CSS de Next resout les @import au build
+            et supprime les distants (verifie sur le CSS servi). D'ou ce <link>,
+            que Next preserve, et qui precharge la police plus tot. */}
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="" />
+        <link
+          href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,700;12..96,800&display=swap"
+          rel="stylesheet"
+        />
+      </head>
       <body className="min-h-full flex flex-col bg-brand-cream text-brand-ink">
         <Providers>
           <main className="flex-1 pb-[76px] md:pb-0">{children}</main>
