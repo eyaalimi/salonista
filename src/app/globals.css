@@ -1,3 +1,7 @@
+/* Bricolage Grotesque n'est pas au catalogue de next/font/google dans cette
+   version de Next (verifie) ; Archivo si, et passe par le helper dans
+   layout.tsx. D'ou cet import CSS pour la seule police de titres. */
+@import url("https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,700;12..96,800&display=swap");
 @import "tailwindcss";
 
 @theme inline {
@@ -6,6 +10,26 @@
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
   --font-heading: var(--font-playfair);
+
+  /* ---- Design system 2026 : rose / prune / menthe / creme ----
+     Ces tokens s'AJOUTENT aux brand-* ci-dessous, qui restent en place :
+     142 fichiers en dependent, dont la caisse en production. Les anciens
+     disparaitront lot par lot, quand plus rien ne les referencera. */
+  --color-rose: #FF5C8A;
+  --color-rose-soft: #FFE0E8;
+  --color-prune: #3A1024;
+  --color-prune-soft: #6B4157;
+  --color-menthe: #A8E6CF;
+  --color-menthe-deep: #1F7A5A;
+  --color-creme: #FFF6F1;
+  --color-hairline: #EFE2DC;
+
+  --font-display: "Bricolage Grotesque", system-ui, sans-serif;
+  --font-ui: var(--font-archivo), system-ui, sans-serif;
+
+  --radius-pill: 999px;
+  --radius-card: 36px;
+  --radius-panel: 22px;
 
   /* Salonista palette — modern, clean, warm */
   --color-brand-ink: #1F1A1C;          /* primary text — soft charcoal */
@@ -246,4 +270,34 @@ body {
 
 /* Horizontal scroll without scrollbar (used for category chips & feed rails) */
 .no-scrollbar::-webkit-scrollbar { display: none; }
+
+/* ---- Interactions du design system 2026 ----
+   Survol = couleur seule. Appui = 0.97. Focus = anneau rose 2px.
+   Desactive = opacite 0.4. Rien ne rebondit. */
+.ds-press {
+  transition: transform 120ms cubic-bezier(0.2, 0.8, 0.2, 1),
+              background-color 120ms cubic-bezier(0.2, 0.8, 0.2, 1),
+              color 120ms cubic-bezier(0.2, 0.8, 0.2, 1),
+              border-color 120ms cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+.ds-press:active:not(:disabled) {
+  transform: scale(0.97);
+}
+.ds-press:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+.ds-focus:focus-visible {
+  outline: none;
+  border-color: var(--color-rose);
+  box-shadow: 0 0 0 2px var(--color-rose);
+}
+
+/* Le titre du design system 2026. N'affecte que les elements qui l'utilisent
+   explicitement — .luxury-heading reste en place pour les pages non migrees. */
+.ds-display {
+  font-family: var(--font-display);
+  font-weight: 800;
+  letter-spacing: -0.02em;
+}
 .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
