@@ -27,5 +27,29 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     priority: 0.8,
   }));
 
-  return [...staticPages, ...offerPages];
+  // Meme exigence que pour les offres : une page sans contenu ne doit pas etre
+  // annoncee a Google. Un salon sans offre publiee produirait une fiche quasi
+  // vide, et faire decouvrir des pages vides sur un domaine neuf envoie
+  // exactement le mauvais signal.
+  const providers = await prisma.providerProfile.findMany({
+    where: {
+      offers: {
+        some: {
+          active: true,
+          publishedToMarketplace: true,
+          photos: { isEmpty: false },
+        },
+      },
+    } as never,
+    select: { id: true, createdAt: true },
+  });
+
+  const salonPages: MetadataRoute.Sitemap = providers.map((p) => ({
+    url: `${baseUrl}/salon/${p.id}`,
+    lastModified: p.createdAt,
+    changeFrequency: "weekly" as const,
+    priority: 0.8,
+  }));
+
+  return [...staticPages, ...offerPages, ...salonPages];
 }
