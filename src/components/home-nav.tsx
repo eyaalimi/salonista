@@ -40,7 +40,7 @@ export function HomeNav() {
   const { data: session, status } = useSession();
 
   return (
-    <nav className="fixed top-0 left-0 right-0 z-50 bg-white/95 backdrop-blur-md border-b border-brand-line">
+    <nav className="fixed top-0 left-0 right-0 z-50 bg-creme border-b border-hairline">
       <div className="mx-auto flex max-w-7xl items-center justify-between gap-3 px-4 md:px-12 min-h-[56px] md:h-20">
         <Logo className="text-xl md:text-2xl" />
 
@@ -48,13 +48,13 @@ export function HomeNav() {
         <div className="hidden md:flex items-center gap-8">
           <Link
             href="/offres"
-            className="text-sm text-brand-ink-soft hover:text-brand-gold transition-colors"
+            className="ds-focus text-base text-prune-soft hover:text-rose rounded-[var(--radius-pill)] px-2 py-1"
           >
             Offres
           </Link>
           <a
             href="#salons"
-            className="text-sm text-brand-ink-soft hover:text-brand-gold transition-colors"
+            className="ds-focus text-base text-prune-soft hover:text-rose rounded-[var(--radius-pill)] px-2 py-1"
           >
             Salons
           </a>
@@ -63,7 +63,7 @@ export function HomeNav() {
         {/* Right-side: avatar (signed-in) or Connexion button */}
         <div className="flex items-center">
           {status === "loading" ? (
-            <span className="block h-9 w-9 rounded-full bg-brand-sand animate-pulse" />
+            <span className="block h-9 w-9 rounded-full bg-rose-soft animate-pulse" />
           ) : session?.user ? (
             <Link
               href="/cliente"
@@ -78,7 +78,7 @@ export function HomeNav() {
           ) : (
             <Link
               href="/login"
-              className="rounded-full border border-brand-line px-3 py-1.5 text-sm font-medium text-brand-ink hover:border-brand-gold transition-colors"
+              className="ds-press ds-focus inline-flex items-center min-h-[44px] px-4 rounded-[var(--radius-pill)] border-2 border-hairline text-base font-semibold text-prune hover:border-rose"
             >
               Connexion
             </Link>
