@@ -1,8 +1,11 @@
+import { categoryLabel } from "@/lib/salon-jsonld";
+
 /**
  * Traduction d'une offre en Product Schema.org.
  *
  * Pas d'import Prisma ici — le module doit rester chargeable par vitest
- * (cf. src/lib/verify-authz.ts, meme contrainte).
+ * (cf. src/lib/verify-authz.ts, meme contrainte). salon-jsonld est lui aussi
+ * un module pur, l'import ne rompt donc pas cette contrainte.
  */
 
 /** Offre reduite a ce qui sert au balisage. */
@@ -20,15 +23,6 @@ export type OfferForJsonLd = {
   freeSlotCount: number;
   reviewCount: number;
   avgRating: number;
-};
-
-const CATEGORY_LABELS: Record<string, string> = {
-  COIFFURE: "Coiffure",
-  ESTHETIQUE: "Esthétique",
-  ONGLERIE: "Onglerie",
-  MASSAGE: "Massage",
-  PARFUMERIE: "Parfumerie",
-  AUTRE: "Autre",
 };
 
 /** Fenetre de generation des creneaux, en jours. */
@@ -52,7 +46,7 @@ export function buildOfferJsonLd(
     "@context": "https://schema.org",
     "@type": "Product",
     name: offer.title,
-    category: CATEGORY_LABELS[offer.category] ?? offer.category,
+    category: categoryLabel(offer.category),
     brand: { "@type": "Brand", name: offer.salonName },
   };
 
