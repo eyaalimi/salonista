@@ -16,7 +16,14 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   // Meme filtre que le feed public : une offre sans photo est masquee
   // partout, elle ne doit donc pas etre annoncee aux moteurs de recherche.
   const offers = await prisma.offer.findMany({
-    where: { active: true, publishedToMarketplace: true, photos: { isEmpty: false } } as never,
+    where: {
+      active: true,
+      publishedToMarketplace: true,
+      photos: { isEmpty: false },
+      // Les offres d'un salon de demonstration sortent de l'index avec lui :
+      // sinon elles resteraient dans Google alors que leur salon en est parti.
+      provider: { demo: false },
+    } as never,
     select: { id: true, createdAt: true },
   });
 
@@ -33,6 +40,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   // exactement le mauvais signal.
   const providers = await prisma.providerProfile.findMany({
     where: {
+      demo: false,
       offers: {
         some: {
           active: true,
