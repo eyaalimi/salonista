@@ -24,7 +24,7 @@ export function BottomNav() {
 
   return (
     <nav
-      className="fixed bottom-0 left-0 right-0 z-50 flex h-[60px] items-center justify-around border-t border-brand-line bg-white md:hidden"
+      className="fixed bottom-0 left-0 right-0 z-50 flex h-[60px] items-center justify-around border-t border-hairline bg-white md:hidden"
       style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
       aria-label="Navigation principale"
     >
@@ -37,8 +37,8 @@ export function BottomNav() {
           <Link
             key={item.label}
             href={item.href}
-            className={`flex min-h-[44px] min-w-[44px] flex-col items-center justify-center gap-1 ${
-              active ? "text-brand-gold" : "text-brand-ink-soft"
+            className={`ds-press flex min-h-[44px] min-w-[44px] flex-col items-center justify-center gap-1 ${
+              active ? "text-rose" : "text-prune-soft"
             }`}
           >
             <span className="text-xl leading-none">{item.emoji}</span>
