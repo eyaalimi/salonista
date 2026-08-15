@@ -214,6 +214,8 @@ salons de test et huit offres font peu de portes d'entrée ; chaque salon réel 
 s'inscrit avec photos, catégorie juste et horaires ajoute mécaniquement des pages
 indexables.
 
-Point de contenu constaté à la rédaction : Salon Ayou est bien passé en
-« Esthétique », mais **Fadwa Dhibi affiche encore « Autre »** dans son titre. À
-corriger depuis `/pos/settings` — c'est du contenu, pas du code.
+Point de contenu corrigé pendant la rédaction : les deux salons de test
+affichaient la catégorie « Autre », sans valeur pour la recherche. Ils portent
+désormais « Coiffure » (Fadwa Dhibi) et « Esthétique » (Salon Ayou), qui sont de
+vrais mots-clés. Rappel utile : ce genre de correction se fait depuis
+`/pos/settings`, sans code.
