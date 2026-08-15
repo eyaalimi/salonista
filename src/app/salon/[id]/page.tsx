@@ -22,6 +22,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       city: true,
       address: true,
       photos: true,
+      demo: true,
       offers: {
         where: { active: true, publishedToMarketplace: true, photos: { isEmpty: false } } as never,
         select: { title: true },
@@ -60,6 +61,8 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     title: titre,
     description,
     alternates: { canonical: `${BASE_URL}/salon/${id}` },
+    // Un salon de demonstration reste consultable mais quitte l'index.
+    ...(provider.demo ? { robots: { index: false, follow: false } } : {}),
     openGraph: {
       title: `${titre} | Salonista`,
       description,
