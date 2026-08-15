@@ -4,7 +4,6 @@ import { signIn } from "next-auth/react";
 import { Suspense, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
-import { Logo } from "@/components/logo";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 
@@ -137,71 +136,54 @@ function RegisterPageInner() {
   }
 
   return (
-    <div className="min-h-screen flex bg-brand-cream">
-      {/* Left decorative panel */}
-      <div className="hidden lg:flex lg:w-1/2 bg-gradient-to-br from-brand-ink to-brand-ink/90 items-center justify-center relative overflow-hidden">
-        <div className="absolute inset-0 opacity-10">
-          <div className="absolute top-1/3 right-1/4 w-96 h-96 rounded-full bg-brand-gold blur-3xl" />
-          <div className="absolute bottom-1/3 left-1/4 w-64 h-64 rounded-full bg-brand-gold-soft blur-3xl" />
-        </div>
-        <div className="relative text-center px-12">
-          <Logo tone="light" className="text-5xl mb-4" href={null} />
-          <div className="luxury-divider !bg-brand-gold/50 mt-6 mb-6" />
-          <p className="text-white/50 text-sm tracking-wider max-w-sm mx-auto">
-            Rejoignez la marketplace beauté en Tunisie
-          </p>
-        </div>
+    <div className="min-h-screen bg-creme flex flex-col items-center justify-center px-5 py-10 gap-8">
+      <div className="flex flex-col items-center gap-3">
+        <Link href="/" className="ds-display text-4xl text-prune">
+          Salonista<span className="text-rose">.</span>
+        </Link>
+        <p className="text-base text-prune-soft">
+          {step === 1 ? "Choisis ton profil." : "Crée ton compte."}
+        </p>
       </div>
 
-      {/* Right form */}
-      <div className="flex-1 flex items-center justify-center px-6 py-12">
-        <div className="w-full max-w-sm">
-          <div className="lg:hidden mb-10 text-center">
-            <Logo className="text-2xl" href={null} />
-          </div>
-
-          <p className="luxury-badge mb-6">Nouveau compte</p>
-          <h1 className="luxury-heading text-3xl text-brand-bordeaux mb-2">Inscription</h1>
-          <p className="text-sm text-brand-bordeaux/40 mb-10">
-            {step === 1 ? "Choisissez votre profil" : "Créez votre compte"}
+      <div className="w-full max-w-[420px] rounded-[var(--radius-card)] bg-white p-6 sm:p-8 flex flex-col gap-6">
+        {error && (
+          <p
+            role="alert"
+            className="rounded-[var(--radius-panel)] bg-rose-soft px-4 py-3 text-sm text-prune"
+          >
+            {error}
           </p>
-
-          {error && (
-            <div className="mb-6 p-3 text-sm text-red-600 bg-red-50 border border-red-100">
-              {error}
-            </div>
-          )}
+        )}
 
           {step === 1 ? (
-            <div className="space-y-3">
+            <div className="flex flex-col gap-3">
               {roles.map((r) => (
                 <button
                   key={r.value}
+                  type="button"
                   onClick={() => {
                     setRole(r.value);
                     setStep(2);
                   }}
-                  className="w-full p-5 border border-brand-gold/20 text-left hover:border-brand-gold transition-all duration-500 group"
+                  className="ds-press ds-focus w-full text-left p-5 rounded-[var(--radius-card)] border-2 border-hairline bg-white hover:border-rose"
                 >
-                  <p className="text-sm font-medium text-brand-bordeaux group-hover:text-brand-gold transition-colors duration-500">
-                    {r.label}
-                  </p>
-                  <p className="text-xs text-brand-bordeaux/40 mt-1">{r.description}</p>
+                  <p className="text-base font-semibold text-prune">{r.label}</p>
+                  <p className="text-sm text-prune-soft mt-1">{r.description}</p>
                 </button>
               ))}
 
-              <div className="relative my-8">
-                <div className="absolute inset-0 flex items-center">
-                  <div className="w-full border-t border-brand-gold/15" />
-                </div>
-                <div className="relative flex justify-center">
-                  <span className="bg-brand-cream px-4 text-[10px] tracking-[0.15em] uppercase text-brand-bordeaux/30">ou</span>
-                </div>
+              <div className="flex items-center gap-3">
+                <span className="h-px flex-1 bg-hairline" />
+                <span className="text-sm text-prune-soft">ou</span>
+                <span className="h-px flex-1 bg-hairline" />
               </div>
 
-              <button
+              <Button
+                type="button"
+                variant="ghost"
+                fullWidth
                 onClick={() => signIn("google", { callbackUrl: "/api/auth/redirect" })}
-                className="w-full py-3.5 border border-brand-gold/20 text-brand-bordeaux text-xs tracking-[0.15em] uppercase hover:border-brand-gold transition-colors duration-500 flex items-center justify-center gap-3"
               >
                 <svg className="w-4 h-4" viewBox="0 0 24 24">
                   <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 0 1-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z" />
@@ -210,7 +192,7 @@ function RegisterPageInner() {
                   <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" />
                 </svg>
                 Continuer avec Google
-              </button>
+              </Button>
             </div>
           ) : (
             <form onSubmit={handleSubmit} className="space-y-5">
@@ -313,15 +295,14 @@ function RegisterPageInner() {
               </button>
             </form>
           )}
-
-          <p className="text-center text-xs text-brand-bordeaux/40 mt-8 tracking-wider">
-            Déjà un compte ?{" "}
-            <Link href="/login" className="text-brand-gold hover:text-brand-bordeaux transition-colors duration-300">
-              Se connecter
-            </Link>
-          </p>
-        </div>
       </div>
+
+      <p className="text-center text-xs text-brand-bordeaux/40 mt-8 tracking-wider">
+        Déjà un compte ?{" "}
+        <Link href="/login" className="text-brand-gold hover:text-brand-bordeaux transition-colors duration-300">
+          Se connecter
+        </Link>
+      </p>
     </div>
   );
 }
