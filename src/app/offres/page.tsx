@@ -129,60 +129,67 @@ export default async function OffresPage({
               <Link
                 key={offer.id}
                 href={`/offre/${offer.id}`}
-                className="group flex min-h-[80px] flex-col overflow-hidden rounded-2xl border border-brand-line bg-white transition-shadow hover:shadow-md"
+                className="ds-press block"
               >
-                <div className="relative aspect-[4/5] overflow-hidden bg-gradient-to-br from-brand-sand to-brand-gold-soft/40">
-                  {offer.photos.length > 0 ? (
-                    <UploadedImage src={offer.photos[0]} alt={offer.title} fill sizes="(max-width: 768px) 100vw, (max-width: 1024px) 50vw, 33vw" className="object-cover transition-transform duration-700 group-hover:scale-105" />
-                  ) : (
-                    <div className="flex h-full items-center justify-center text-6xl opacity-30">
-                      💇‍♀️
-                    </div>
-                  )}
-                  <span className="absolute left-3 top-3 rounded-full bg-white/95 px-3 py-1 text-[11px] font-semibold text-brand-ink backdrop-blur-sm">
-                    {categoryLabels[offer.category] || offer.category}
-                  </span>
-                  {discount > 0 && (
-                    <span className="absolute right-3 top-3 rounded-full bg-brand-ink px-3 py-1 text-xs font-bold text-[#FBFAF7]">
-                      -{discount}%
+                <Card className="flex h-full flex-col">
+                  <div className="relative aspect-[4/5] w-full bg-rose-soft">
+                    {offer.photos.length > 0 ? (
+                      <UploadedImage
+                        src={offer.photos[0]}
+                        alt={offer.title}
+                        fill
+                        sizes="(max-width: 768px) 100vw, (max-width: 1024px) 50vw, 33vw"
+                        className="object-cover"
+                      />
+                    ) : (
+                      <div className="flex h-full items-center justify-center text-6xl opacity-40">
+                        💇‍♀️
+                      </div>
+                    )}
+                    <span className="absolute left-3 top-3">
+                      <Badge tone="prune">
+                        {categoryLabels[offer.category] || offer.category}
+                      </Badge>
                     </span>
-                  )}
-                </div>
-                <div className="flex flex-1 flex-col p-4 sm:p-5">
-                  <p className="line-clamp-1 text-sm font-medium text-brand-ink">
-                    {offer.provider.salonName}
-                  </p>
-                  {offer.provider.city && (
-                    <p className="line-clamp-1 text-xs text-brand-ink-soft">
-                      📍 {offer.provider.city}
-                    </p>
-                  )}
-                  <h3 className="mt-2 line-clamp-2 text-sm font-semibold leading-snug text-brand-ink">
-                    {offer.title}
-                  </h3>
-                  <div className="mt-auto pt-3">
-                    <div className="flex items-baseline gap-2">
-                      <span className="text-base font-bold text-brand-gold">
-                        {Number(offer.discountPrice).toFixed(0)} DT
+                    {discount > 0 && (
+                      <span className="absolute right-3 top-3">
+                        <Badge tone="rose">-{discount}%</Badge>
                       </span>
-                      {Number(offer.originalPrice) > Number(offer.discountPrice) && (
-                        <span className="text-xs text-gray-400 line-through">
-                          {Number(offer.originalPrice).toFixed(0)} DT
-                        </span>
-                      )}
-                    </div>
-                    <p className="mt-0.5 text-[9px] uppercase tracking-[0.15em] text-brand-bordeaux/40">
-                      TVA incluse: {Number(offer.taxRate ?? 19)}%
-                    </p>
+                    )}
                   </div>
-                </div>
+
+                  <div className="flex flex-1 flex-col gap-1 p-4">
+                    <p className="line-clamp-1 text-sm text-prune-soft">
+                      {offer.provider.salonName}
+                      {offer.provider.city && ` · ${offer.provider.city}`}
+                    </p>
+                    <h3 className="line-clamp-2 text-base font-semibold leading-snug text-prune">
+                      {offer.title}
+                    </h3>
+                    <div className="mt-auto flex flex-col gap-0.5 pt-3">
+                      <div className="flex items-baseline gap-2">
+                        <span className="text-lg font-bold text-rose">
+                          {Number(offer.discountPrice).toFixed(0)} TND
+                        </span>
+                        {Number(offer.originalPrice) > Number(offer.discountPrice) && (
+                          <span className="text-sm text-prune-soft line-through">
+                            {Number(offer.originalPrice).toFixed(0)} TND
+                          </span>
+                        )}
+                      </div>
+                      <p className="text-xs text-prune-soft">
+                        TVA incluse : {Number(offer.taxRate ?? 19)}%
+                      </p>
+                    </div>
+                  </div>
+                </Card>
               </Link>
             );
           })}
         </div>
 
         {offers.length === 0 && (
-          <p className="text-center text-brand-bordeaux/40 py-20 text-sm tracking-wider">
+          <p className="text-center text-base text-prune-soft py-20">
             Aucune offre disponible pour le moment.
           </p>
         )}
