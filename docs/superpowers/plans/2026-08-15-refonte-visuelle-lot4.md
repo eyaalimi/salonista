@@ -1132,6 +1132,53 @@ Aucun outil automatique ne dit si une page est réussie. À vérifier à l'œil,
 
 ---
 
+## Piège du seed : les offres sont invisibles par défaut
+
+**À lire avant tout contrôle visuel de la fiche salon ou de la fiche offre.**
+
+Après `npm run db:seed`, une fiche salon affiche « Aucune offre disponible »
+alors que la base contient bien des offres. Ce n'est ni une panne ni une
+régression :
+
+- `prisma/seed.ts:1141` écrit explicitement `publishedToMarketplace: false`
+- `prisma/schema.prisma:273` a le même défaut
+- mais `src/app/salon/[id]/page.tsx:87` filtre sur
+  `{ active: true, publishedToMarketplace: true, photos: { isEmpty: false } }`
+
+Aucune offre du seed ne passe ce filtre. Pour voir les services s'afficher, il
+faut publier temporairement celles qui ont une photo :
+
+```sql
+UPDATE "Offer" SET "publishedToMarketplace"=true
+WHERE "providerId"='<id>' AND array_length(photos,1) > 0;
+```
+
+Pense à remettre `false` ensuite pour ne pas fausser les contrôles suivants.
+
+C'est une incoherence preexistante entre le seed et la requete de la page,
+etrangere a ce lot. Elle merite d'etre corrigee un jour dans `seed.ts`, mais
+c'est un travail separe.
+
+---
+
+## Omission découverte en cours d'exécution
+
+**L'en-tête de la section calendrier n'était couvert par aucune tâche.** La
+tâche 3 traitait la liste des services *jusqu'au* commentaire `{/* Calendar */}`,
+et la tâche 4 traitait le composant `MultiServiceCalendar` lui-même — mais entre
+les deux se trouvaient, dans `salon-client.tsx`, un `<h2>` « Choisir une date »
+et son sous-titre, restés en `luxury-heading` et `text-brand-bordeaux`.
+
+Découvert en fin de tâche 7 : `grep -c "brand-"` renvoyait **2** au lieu de 0.
+Corrigé dans le commit de la tâche 7.
+
+**À retenir pour le lot 5** (fiche offre, même structure) : découper par bornes
+de sections laisse des interstices. Le seul contrôle fiable est
+`grep -c "brand-"` ramené à zéro sur le fichier entier — pas la couverture
+apparente des tâches.
+
+---
+
 ## Ce que ce plan ne fait pas
 
 - La fiche offre (lot 5), le bas de l'accueil (lot 6).
