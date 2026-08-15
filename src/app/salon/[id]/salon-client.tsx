@@ -11,6 +11,7 @@ import { Logo } from "@/components/logo";
 import { isValidCoords } from "@/lib/coords";
 import dynamic from "next/dynamic";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 
 // Leaflet manipule le DOM et n'existe pas cote serveur : sans ssr:false, le
 // build echoue sur « window is not defined ».
@@ -403,35 +404,35 @@ export function SalonClient({ salon }: { salon: Salon }) {
           </div>
 
           {/* RIGHT: contact + cart */}
-          <aside className="lg:col-span-1 space-y-6">
+          <aside className="space-y-6 lg:col-span-1">
             {/* Cart summary (sticky) */}
-            <div className="bg-white border border-brand-gold/30 p-6 sticky top-24">
-              <p className="text-[10px] tracking-[0.15em] uppercase text-brand-bordeaux/40 mb-4">Votre réservation</p>
+            <div className="sticky top-24 rounded-[var(--radius-card)] border-2 border-hairline bg-white p-6">
+              <p className="mb-4 text-xs font-semibold uppercase tracking-[0.12em] text-prune-soft">Ta réservation</p>
 
               {cart.length === 0 ? (
-                <p className="text-xs text-brand-bordeaux/40 italic py-3">
+                <p className="py-3 text-sm text-prune-soft">
                   Aucun service sélectionné
                 </p>
               ) : (
-                <div className="space-y-3 mb-4">
+                <div className="mb-4 space-y-3">
                   {cartOffers.map((offer, idx) => (
-                    <div key={offer.id} className="flex items-start gap-2 p-3 bg-brand-cream/50 border border-brand-gold/15">
-                      <span className="w-5 h-5 rounded-full bg-brand-bordeaux text-white text-[10px] flex items-center justify-center shrink-0 mt-0.5">
+                    <div key={offer.id} className="flex items-start gap-2 rounded-[var(--radius-panel)] border border-hairline bg-creme p-3">
+                      <span className="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-prune text-xs font-bold text-white">
                         {idx + 1}
                       </span>
-                      <div className="flex-1 min-w-0">
-                        <p className="text-xs text-brand-bordeaux font-medium truncate">{offer.title}</p>
-                        <p className="text-[10px] text-brand-bordeaux/40">
-                          {formatDuration(offer.durationMinutes)} · {offer.discountPrice.toFixed(0)} DT
+                      <div className="min-w-0 flex-1">
+                        <p className="truncate text-sm font-semibold text-prune">{offer.title}</p>
+                        <p className="text-xs text-prune-soft">
+                          {formatDuration(offer.durationMinutes)} · {offer.discountPrice.toFixed(0)} TND
                         </p>
                       </div>
-                      <div className="flex flex-col gap-1">
+                      <div className="flex shrink-0 flex-col">
                         <button
                           type="button"
                           onClick={() => moveOffer(offer.id, -1)}
                           disabled={idx === 0}
-                          className="text-brand-bordeaux/40 hover:text-brand-gold disabled:opacity-30 text-xs"
-                          aria-label="Monter"
+                          className="ds-press ds-focus flex h-[22px] w-11 items-center justify-center rounded-t-[var(--radius-panel)] text-prune-soft hover:text-rose"
+                          aria-label={`Monter ${offer.title}`}
                         >
                           ▲
                         </button>
@@ -439,8 +440,8 @@ export function SalonClient({ salon }: { salon: Salon }) {
                           type="button"
                           onClick={() => moveOffer(offer.id, 1)}
                           disabled={idx === cartOffers.length - 1}
-                          className="text-brand-bordeaux/40 hover:text-brand-gold disabled:opacity-30 text-xs"
-                          aria-label="Descendre"
+                          className="ds-press ds-focus flex h-[22px] w-11 items-center justify-center rounded-b-[var(--radius-panel)] text-prune-soft hover:text-rose"
+                          aria-label={`Descendre ${offer.title}`}
                         >
                           ▼
                         </button>
@@ -448,8 +449,8 @@ export function SalonClient({ salon }: { salon: Salon }) {
                       <button
                         type="button"
                         onClick={() => toggleOffer(offer.id)}
-                        className="text-red-500 hover:text-red-700 text-xs"
-                        aria-label="Retirer"
+                        className="ds-press ds-focus flex h-11 w-11 shrink-0 items-center justify-center rounded-[var(--radius-pill)] text-prune-soft hover:text-rose"
+                        aria-label={`Retirer ${offer.title}`}
                       >
                         ✕
                       </button>
@@ -460,19 +461,19 @@ export function SalonClient({ salon }: { salon: Salon }) {
 
               {cart.length > 0 && (
                 <>
-                  <div className="space-y-1 pt-3 border-t border-brand-gold/15 mb-3">
-                    <div className="flex justify-between items-center text-xs">
-                      <span className="text-brand-bordeaux/50">Durée totale</span>
-                      <span className="text-brand-bordeaux">{formatDuration(totalDuration)}</span>
+                  <div className="mb-3 space-y-1 border-t border-hairline pt-3">
+                    <div className="flex items-center justify-between text-sm">
+                      <span className="text-prune-soft">Durée totale</span>
+                      <span className="text-prune">{formatDuration(totalDuration)}</span>
                     </div>
-                    <div className="flex justify-between items-center">
-                      <span className="text-[10px] tracking-wider uppercase text-brand-bordeaux/40">Total</span>
-                      <span className="luxury-heading text-2xl text-brand-gold">{totalPrice.toFixed(0)} DT</span>
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs font-semibold uppercase tracking-[0.12em] text-prune-soft">Total</span>
+                      <span className="ds-display text-2xl text-prune">{totalPrice.toFixed(0)} TND</span>
                     </div>
                     {selectedStart && (
-                      <div className="flex justify-between items-center text-xs pt-2 mt-2 border-t border-brand-gold/15">
-                        <span className="text-brand-bordeaux/50">Début</span>
-                        <span className="text-brand-bordeaux font-medium">
+                      <div className="mt-2 flex items-center justify-between border-t border-hairline pt-2 text-sm">
+                        <span className="text-prune-soft">Début</span>
+                        <span className="font-semibold text-prune">
                           {new Date(selectedStart).toLocaleString("fr-TN", {
                             weekday: "short",
                             day: "numeric",
@@ -490,19 +491,19 @@ export function SalonClient({ salon }: { salon: Salon }) {
                     onChange={(e) => setNotes(e.target.value)}
                     placeholder="Notes (optionnel)"
                     rows={2}
-                    className="w-full px-3 py-2 border border-brand-gold/20 bg-transparent text-brand-bordeaux text-xs placeholder:text-brand-bordeaux/30 focus:outline-none focus:border-brand-gold mb-3"
+                    className="ds-focus mb-3 w-full rounded-[var(--radius-panel)] border-2 border-hairline bg-white px-4 py-3 text-base text-prune placeholder:text-prune-soft/50"
                   />
-                  {error && <p className="text-xs text-red-600 mb-3">{error}</p>}
-                  <button
+                  {error && <p className="mb-3 text-sm font-semibold text-rose">{error}</p>}
+                  <Button
                     onClick={handleBook}
                     disabled={loading || !selectedStart}
-                    className="w-full py-3 text-xs tracking-[0.2em] uppercase bg-brand-bordeaux text-white hover:bg-brand-gold transition-colors duration-500 disabled:opacity-40 disabled:cursor-not-allowed"
+                    fullWidth
                   >
-                    {loading ? "Réservation..." : "Confirmer la réservation"}
-                  </button>
+                    {loading ? "Réservation…" : "Confirmer la réservation"}
+                  </Button>
                   {!selectedStart && cart.length > 0 && (
-                    <p className="text-[10px] text-brand-bordeaux/40 text-center mt-2 italic">
-                      Choisissez une heure pour activer le bouton
+                    <p className="mt-2 text-center text-sm text-prune-soft">
+                      Choisis une heure pour activer le bouton
                     </p>
                   )}
                 </>
@@ -510,16 +511,19 @@ export function SalonClient({ salon }: { salon: Salon }) {
             </div>
 
             {/* Contact */}
-            <div className="bg-white border border-brand-gold/20 p-6">
-              <p className="text-[10px] tracking-[0.15em] uppercase text-brand-bordeaux/40 mb-4">Coordonnées</p>
+            <div className="rounded-[var(--radius-card)] border-2 border-hairline bg-white p-6">
+              <p className="mb-4 text-xs font-semibold uppercase tracking-[0.12em] text-prune-soft">Coordonnées</p>
               {salon.address && (
-                <p className="text-sm text-brand-bordeaux mb-2">{salon.address}</p>
+                <p className="mb-2 text-base text-prune">{salon.address}</p>
               )}
               {salon.city && (
-                <p className="text-sm text-brand-bordeaux/60 mb-3">{salon.city}</p>
+                <p className="mb-3 text-base text-prune-soft">{salon.city}</p>
               )}
               {salon.phone && (
-                <a href={`tel:${salon.phone}`} className="text-sm text-brand-gold hover:underline block">
+                <a
+                  href={`tel:${salon.phone}`}
+                  className="ds-press ds-focus inline-flex min-h-[44px] items-center rounded-[var(--radius-pill)] text-base font-semibold text-rose hover:underline"
+                >
                   {salon.phone}
                 </a>
               )}
@@ -530,7 +534,7 @@ export function SalonClient({ salon }: { salon: Salon }) {
                     href={`https://www.google.com/maps/dir/?api=1&destination=${salon.lat},${salon.lng}`}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="mt-3 block w-full border border-brand-gold/40 py-2 text-center text-[10px] uppercase tracking-[0.15em] text-brand-gold hover:bg-brand-gold hover:text-white transition-colors"
+                    className="ds-press ds-focus mt-3 flex min-h-[44px] w-full items-center justify-center rounded-[var(--radius-pill)] border-2 border-hairline text-base font-semibold text-prune hover:border-rose"
                   >
                     Itinéraire →
                   </a>
@@ -539,15 +543,15 @@ export function SalonClient({ salon }: { salon: Salon }) {
             </div>
 
             {salon.openingHours && (
-              <div className="bg-white border border-brand-gold/20 p-6">
-                <p className="text-[10px] tracking-[0.15em] uppercase text-brand-bordeaux/40 mb-4">Horaires</p>
-                <div className="space-y-1.5 text-xs">
+              <div className="rounded-[var(--radius-card)] border-2 border-hairline bg-white p-6">
+                <p className="mb-4 text-xs font-semibold uppercase tracking-[0.12em] text-prune-soft">Horaires</p>
+                <div className="space-y-1.5 text-sm">
                   {DAY_KEYS.map((day) => {
                     const ranges = salon.openingHours![day];
                     return (
                       <div key={day} className="flex justify-between">
-                        <span className="text-brand-bordeaux/60">{DAY_LABELS_FR[day]}</span>
-                        <span className="text-brand-bordeaux">
+                        <span className="text-prune-soft">{DAY_LABELS_FR[day]}</span>
+                        <span className="text-prune">
                           {ranges.length === 0
                             ? "Fermé"
                             : ranges.map((r) => `${r.start}–${r.end}`).join(", ")}
