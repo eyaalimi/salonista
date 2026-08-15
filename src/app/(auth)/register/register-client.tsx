@@ -37,7 +37,15 @@ function RegisterPageInner() {
   const searchParams = useSearchParams();
   const callbackUrl = searchParams.get("callbackUrl");
   const [step, setStep] = useState<1 | 2>(1);
-  const [role, setRole] = useState("");
+  // Pre-selection depuis /register?role=… (les onglets de la page de
+  // connexion). Une valeur inconnue est ignoree : on retombe sur le
+  // comportement actuel, l'utilisateur choisit lui-meme.
+  const roleParam = searchParams.get("role");
+  const [role, setRole] = useState(
+    roleParam === "CLIENT" || roleParam === "PROVIDER" || roleParam === "INFLUENCER"
+      ? roleParam
+      : "",
+  );
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
