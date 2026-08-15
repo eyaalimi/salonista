@@ -10,12 +10,15 @@ import { NavAccount } from "@/components/nav-account";
 import { Logo } from "@/components/logo";
 import { isValidCoords } from "@/lib/coords";
 import dynamic from "next/dynamic";
+import { Badge } from "@/components/ui/badge";
 
 // Leaflet manipule le DOM et n'existe pas cote serveur : sans ssr:false, le
 // build echoue sur « window is not defined ».
 const SalonMap = dynamic(() => import("@/components/map/salon-map"), {
   ssr: false,
-  loading: () => <div className="h-56 w-full rounded bg-brand-sand" />,
+  loading: () => (
+    <div className="h-56 w-full rounded-[var(--radius-panel)] bg-rose-soft" />
+  ),
 });
 
 interface Offer {
@@ -234,13 +237,16 @@ export function SalonClient({ salon }: { salon: Salon }) {
   }
 
   return (
-    <div className="min-h-screen bg-brand-cream">
+    <div className="min-h-screen bg-creme">
       {/* Nav */}
-      <nav className="bg-white/80 backdrop-blur-md border-b border-brand-gold/15 sticky top-0 z-50">
-        <div className="max-w-7xl mx-auto px-6 md:px-12 flex items-center justify-between h-16">
+      <nav className="sticky top-0 z-40 border-b border-hairline bg-creme">
+        <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-6 md:px-12">
           <Logo className="text-xl" />
           <div className="flex items-center gap-6">
-            <Link href="/offres" className="text-xs tracking-[0.2em] uppercase text-brand-ink-soft hover:text-brand-gold transition-colors duration-500">
+            <Link
+              href="/offres"
+              className="ds-focus rounded-[var(--radius-pill)] px-2 py-1 text-base text-prune-soft hover:text-rose"
+            >
               Toutes les offres
             </Link>
             <NavAccount />
@@ -252,30 +258,34 @@ export function SalonClient({ salon }: { salon: Salon }) {
         {/* Salon header */}
         <div className="mb-12">
           {salon.photos.length > 0 && (
-            <div className="relative aspect-[21/9] mb-8 overflow-hidden">
+            <div className="relative mb-8 aspect-[21/9] overflow-hidden rounded-[var(--radius-card)]">
               <UploadedImage src={salon.photos[0]} alt={salon.salonName} fill className="object-cover" sizes="100vw" />
             </div>
           )}
-          <div className="flex items-start justify-between flex-wrap gap-4">
+          <div className="flex flex-wrap items-start justify-between gap-4">
             <div>
-              <p className="luxury-badge mb-3">{salon.category}</p>
-              <h1 className="luxury-heading text-3xl md:text-5xl text-brand-bordeaux">
+              <p className="mb-3 text-sm font-semibold uppercase tracking-[0.12em] text-prune-soft">
+                {salon.category}
+              </p>
+              <h1 className="ds-display text-3xl text-prune md:text-5xl">
                 {salon.salonName}
               </h1>
               {salon.verified && (
-                <span className="inline-block mt-3 px-3 py-1 border border-brand-gold text-brand-gold text-[10px] tracking-wider uppercase">
-                  Salon vérifié
+                <span className="mt-3 inline-block">
+                  <Badge tone="menthe">Salon vérifié</Badge>
                 </span>
               )}
             </div>
           </div>
           {salon.description && (
-            <p className="text-brand-bordeaux/60 leading-relaxed mt-6 max-w-3xl">{salon.description}</p>
+            <p className="mt-6 max-w-3xl text-base leading-relaxed text-prune-soft">
+              {salon.description}
+            </p>
           )}
           {restored && cart.length > 0 && (
-            <div className="mt-6 p-4 border border-brand-gold/40 bg-brand-gold/5 flex items-center justify-between gap-4 flex-wrap">
-              <p className="text-xs text-brand-bordeaux">
-                Votre sélection précédente a été restaurée — {cart.length} service{cart.length > 1 ? "s" : ""}.
+            <div className="mt-6 flex flex-wrap items-center justify-between gap-4 rounded-[var(--radius-panel)] border-2 border-hairline bg-white p-4">
+              <p className="text-sm text-prune">
+                Ta sélection précédente a été restaurée — {cart.length} service{cart.length > 1 ? "s" : ""}.
               </p>
               <button
                 type="button"
@@ -285,7 +295,7 @@ export function SalonClient({ salon }: { salon: Salon }) {
                   setNotes("");
                   setRestored(false);
                 }}
-                className="text-[10px] tracking-[0.15em] uppercase text-brand-bordeaux/60 hover:text-brand-gold transition-colors"
+                className="ds-press ds-focus min-h-[44px] rounded-[var(--radius-pill)] px-4 text-sm font-semibold text-prune-soft hover:text-rose"
               >
                 Effacer
               </button>
