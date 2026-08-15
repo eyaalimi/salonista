@@ -1,10 +1,73 @@
+import type { Metadata } from "next";
 import { prisma } from "@/lib/prisma";
 import { notFound } from "next/navigation";
 import { SalonClient } from "./salon-client";
 import { isValidOpeningHours, type OpeningHours } from "@/lib/opening-hours";
+import { buildSalonJsonLd, categoryLabel } from "@/lib/salon-jsonld";
 
 interface Props {
   params: Promise<{ id: string }>;
+}
+
+const BASE_URL = process.env.NEXTAUTH_URL || "https://salonista.tn";
+
+export async function generateMetadata({ params }: Props): Promise<Metadata> {
+  const { id } = await params;
+  const provider = await prisma.providerProfile.findUnique({
+    where: { id },
+    select: {
+      salonName: true,
+      category: true,
+      description: true,
+      city: true,
+      address: true,
+      photos: true,
+      offers: {
+        where: { active: true, publishedToMarketplace: true, photos: { isEmpty: false } } as never,
+        select: { title: true },
+        take: 3,
+      },
+    },
+  });
+
+  if (!provider) {
+    return { title: "Salon introuvable" };
+  }
+
+  const cat = categoryLabel(provider.category);
+  const titre = provider.city
+    ? `${provider.salonName}, ${provider.city} — ${cat}`
+    : `${provider.salonName} — ${cat}`;
+
+  // Description du salon si elle existe ; sinon on la compose a partir des
+  // faits (ville, services publies). On n'invente rien : une description
+  // absente vaut mieux qu'une description fausse.
+  const services = provider.offers.map((o) => o.title).join(", ");
+  const description =
+    provider.description?.trim() ||
+    [
+      `${provider.salonName}${provider.city ? ` à ${provider.city}` : ""}`,
+      services ? ` : ${services}.` : ".",
+      " Réservez en ligne sur Salonista.",
+      provider.address ? ` ${provider.address}.` : "",
+    ].join("");
+
+  const image = provider.photos[0]
+    ? `${BASE_URL}${provider.photos[0]}`
+    : undefined;
+
+  return {
+    title: titre,
+    description,
+    alternates: { canonical: `${BASE_URL}/salon/${id}` },
+    openGraph: {
+      title: `${titre} | Salonista`,
+      description,
+      type: "website",
+      url: `${BASE_URL}/salon/${id}`,
+      ...(image ? { images: [image] } : {}),
+    },
+  };
 }
 
 export default async function SalonPage({ params }: Props) {
