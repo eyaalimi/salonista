@@ -494,18 +494,24 @@ export function SalonClient({ salon }: { salon: Salon }) {
                     className="ds-focus mb-3 w-full rounded-[var(--radius-panel)] border-2 border-hairline bg-white px-4 py-3 text-base text-prune placeholder:text-prune-soft/50"
                   />
                   {error && <p className="mb-3 text-sm font-semibold text-rose">{error}</p>}
-                  <Button
-                    onClick={handleBook}
-                    disabled={loading || !selectedStart}
-                    fullWidth
-                  >
-                    {loading ? "Réservation…" : "Confirmer la réservation"}
-                  </Button>
-                  {!selectedStart && cart.length > 0 && (
-                    <p className="mt-2 text-center text-sm text-prune-soft">
-                      Choisis une heure pour activer le bouton
-                    </p>
-                  )}
+                  {/* Masque sur mobile : la barre fixe du bas porte deja l'action.
+                      Deux boutons roses simultanes enfreindraient la regle
+                      « une seule action primaire par vue ». Sur desktop la barre
+                      fixe n'existe pas (md:hidden), donc ce bouton reste. */}
+                  <div className="hidden md:block">
+                    <Button
+                      onClick={handleBook}
+                      disabled={loading || !selectedStart}
+                      fullWidth
+                    >
+                      {loading ? "Réservation…" : "Confirmer la réservation"}
+                    </Button>
+                    {!selectedStart && cart.length > 0 && (
+                      <p className="mt-2 text-center text-sm text-prune-soft">
+                        Choisis une heure pour activer le bouton
+                      </p>
+                    )}
+                  </div>
                 </>
               )}
             </div>
