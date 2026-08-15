@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { Geist } from "next/font/google";
 import { Playfair_Display } from "next/font/google";
+import { Archivo } from "next/font/google";
 import { Providers } from "@/components/providers";
 import { BottomNav } from "@/components/bottom-nav";
 import { SwRegister } from "@/components/sw-register";
@@ -15,6 +16,12 @@ const playfair = Playfair_Display({
   variable: "--font-playfair",
   subsets: ["latin"],
   weight: ["400", "500", "600", "700"],
+});
+
+const archivo = Archivo({
+  variable: "--font-archivo",
+  subsets: ["latin"],
+  weight: ["400", "500", "600", "700", "800"],
 });
 
 export const metadata: Metadata = {
@@ -78,7 +85,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="fr" className={`${geistSans.variable} ${playfair.variable} h-full antialiased`}>
+    <html lang="fr" className={`${geistSans.variable} ${playfair.variable} ${archivo.variable} h-full antialiased`}>
       <body className="min-h-full flex flex-col bg-brand-cream text-brand-ink">
         <Providers>
           <main className="flex-1 pb-[76px] md:pb-0">{children}</main>
