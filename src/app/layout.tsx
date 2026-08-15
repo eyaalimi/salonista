@@ -56,7 +56,14 @@ export const metadata: Metadata = {
     title: "Salonista POS",
   },
   icons: {
-    icon: "/icon.svg",
+    // Google n'accepte PAS les favicons SVG pour les resultats de recherche :
+    // sans variante matricielle, il affiche un globe gris a la place du logo.
+    // Les PNG carres de la PWA font l'affaire, ils sont deja servis.
+    icon: [
+      { url: "/icon.svg", type: "image/svg+xml" },
+      { url: "/icons/pwa-192.png", sizes: "192x192", type: "image/png" },
+      { url: "/icons/pwa-512.png", sizes: "512x512", type: "image/png" },
+    ],
     apple: "/icons/pwa-180-apple.png",
   },
 };
