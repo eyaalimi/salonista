@@ -57,7 +57,7 @@ function LoginPageInner() {
     <div className="min-h-screen bg-creme flex flex-col items-center justify-center px-5 py-10 gap-8">
       <div className="flex flex-col items-center gap-3">
         <Link href="/" className="ds-display text-4xl text-prune">
-          salonista<span className="text-rose">.</span>
+          Salonista<span className="text-rose">.</span>
         </Link>
         <p className="text-base text-prune-soft">{current.tagline}</p>
       </div>
