@@ -27,14 +27,14 @@ export function NavAccount() {
   }, [menuOpen]);
 
   if (status === "loading") {
-    return <div className="h-6 w-24 bg-brand-gold/10 animate-pulse" />;
+    return <div className="h-9 w-24 rounded-[var(--radius-pill)] bg-rose-soft animate-pulse" />;
   }
 
   if (!session?.user) {
     return (
       <Link
         href="/login"
-        className="text-xs tracking-[0.2em] uppercase text-brand-ink/60 hover:text-brand-gold transition-colors duration-500"
+        className="ds-press ds-focus inline-flex items-center min-h-[44px] px-4 rounded-[var(--radius-pill)] border-2 border-hairline text-base font-semibold text-prune hover:border-rose"
       >
         Connexion
       </Link>
@@ -45,28 +45,28 @@ export function NavAccount() {
     <div className="relative" ref={menuRef}>
       <button
         onClick={() => setMenuOpen(!menuOpen)}
-        className="flex items-center gap-3 px-4 py-2 border border-brand-gold/20 hover:border-brand-gold transition-colors duration-500"
+        className="ds-press ds-focus flex items-center gap-2 min-h-[44px] px-3 rounded-[var(--radius-pill)] border-2 border-hairline hover:border-rose"
       >
-        <span className="w-7 h-7 bg-brand-ink text-white flex items-center justify-center text-xs font-medium">
+        <span className="flex h-7 w-7 items-center justify-center rounded-full bg-rose text-xs font-bold text-white">
           {session.user.name?.[0]?.toUpperCase() || session.user.email?.[0]?.toUpperCase() || "?"}
         </span>
-        <span className="text-xs tracking-[0.15em] uppercase text-brand-ink hidden sm:inline">
+        <span className="text-sm font-semibold text-prune hidden sm:inline">
           {session.user.name?.split(" ")[0] || "Compte"}
         </span>
-        <svg className={`w-3 h-3 text-brand-ink/60 transition-transform duration-300 ${menuOpen ? "rotate-180" : ""}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <svg className={`w-3 h-3 text-prune-soft transition-transform duration-200 ${menuOpen ? "rotate-180" : ""}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
         </svg>
       </button>
 
       {menuOpen && (
-        <div className="absolute right-0 mt-2 w-56 bg-white border border-brand-gold/20 shadow-lg">
-          <div className="px-4 py-3 border-b border-brand-gold/15">
-            <p className="text-xs text-brand-ink/50 truncate">{session.user.email}</p>
+        <div className="absolute right-0 mt-2 w-60 overflow-hidden rounded-[var(--radius-panel)] border-2 border-hairline bg-white">
+          <div className="px-4 py-3 border-b border-hairline">
+            <p className="text-sm text-prune-soft truncate">{session.user.email}</p>
           </div>
           <Link
             href={dashboardByRole[session.user.role]?.href || "/"}
             onClick={() => setMenuOpen(false)}
-            className="block px-4 py-3 text-xs tracking-[0.15em] uppercase text-brand-ink hover:bg-brand-cream transition-colors"
+            className="block px-4 py-3 text-base font-semibold text-prune hover:bg-creme"
           >
             {dashboardByRole[session.user.role]?.label || "Mon espace"}
           </Link>
@@ -75,7 +75,7 @@ export function NavAccount() {
               setMenuOpen(false);
               signOut({ callbackUrl: "/" });
             }}
-            className="w-full text-left px-4 py-3 text-xs tracking-[0.15em] uppercase text-brand-ink/70 hover:bg-brand-cream transition-colors border-t border-brand-gold/15"
+            className="w-full text-left px-4 py-3 text-base text-prune-soft hover:bg-creme border-t border-hairline"
           >
             Se déconnecter
           </button>
