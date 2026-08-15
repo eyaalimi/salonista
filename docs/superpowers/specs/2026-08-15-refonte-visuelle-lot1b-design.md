@@ -108,6 +108,12 @@ cliquable donc en pill au rayon `--radius-card`, bordure `hairline`, fond blanc
 sur crème. Au survol la bordure passe au rose ; à l'appui `scale(0.97)` via
 `.ds-press`.
 
+**Le bouton « Continuer avec Google » de cette étape est conservé.** Les sections
+de design présentées ne le mentionnaient pas — omission relevée en lisant le
+fichier. Il existe aujourd'hui (avec son séparateur « ou » et son logo Google en
+SVG inline) et fonctionne : le supprimer retirerait une façon de s'inscrire. Il
+devient un `<Button variant="ghost">`, le SVG restant inchangé.
+
 ### Étape 2 — le formulaire
 
 Même carte que le login. En tête, un bloc « Profil : … » au rayon
