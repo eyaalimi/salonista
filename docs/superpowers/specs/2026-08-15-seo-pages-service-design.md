@@ -38,9 +38,9 @@ les données de test puissent quitter l'index proprement le jour du lancement.
 
 ## Non-objectifs
 
-- **`aggregateRating`** sur les offres. Les avis existent en base
-  (`Review.offerId`) mais ne sont pas affichés sur la page ; Google exige que
-  toute note balisée soit visible. À traiter quand la page affichera les avis.
+*(Le non-objectif « `aggregateRating` » a été retiré : voir la décision
+correspondante ci-dessous — la note EST affichée sur les pages offre,
+contrairement à ce que supposait la première version de ce spec.)*
 - **Le classement.** Ce lot rend les pages correctement présentées, pas mieux
   classées. Voir « Ce que ce lot ne fait pas ».
 
@@ -76,6 +76,23 @@ chaîne** pour éviter toute dérive de virgule flottante.
 
 `priceValidUntil` à 30 jours — la fenêtre des créneaux générés. Sans ce champ,
 Google finit par considérer le prix comme périmé et cesse de l'afficher.
+
+### `aggregateRating`, mais seulement s'il y a des avis
+
+**Correction apportée pendant la rédaction du plan.** La première version de ce
+spec écartait `aggregateRating` au motif que la note n'était pas affichée sur la
+page. C'était faux : `/offre/[id]` calcule déjà `avgRating` depuis les avis réels
+et l'affiche en étoiles (« 4.5 · 12 avis ») — vérifié dans
+`offer-client.tsx:272`.
+
+La condition de Google est donc remplie, et `aggregateRating` est ce qui met des
+**étoiles** dans les résultats de recherche : l'enrichissement le plus visible.
+
+**La règle stricte à respecter :** n'émettre `aggregateRating` que si
+`reviewCount >= 1`. Une note de `0` sur zéro avis est une violation, et l'absence
+d'avis est le cas actuel de toutes les offres. Le bloc d'étoiles de la page suit
+exactement la même condition (`reviews.length > 0`), donc balisage et affichage
+restent alignés par construction.
 
 ### La disponibilité vient des créneaux
 
