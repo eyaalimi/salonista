@@ -168,11 +168,11 @@ export function SalonClient({ salon }: { salon: Salon }) {
       return;
     }
     if (cart.length === 0) {
-      setError("Sélectionnez au moins un service");
+      setError("Sélectionne au moins un service");
       return;
     }
     if (!selectedStart) {
-      setError("Choisissez une heure de début");
+      setError("Choisis une heure de début");
       return;
     }
     setLoading(true);
