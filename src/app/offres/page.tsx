@@ -4,6 +4,9 @@ import Link from "next/link";
 import { UploadedImage } from "@/components/uploaded-image";
 import { NavAccount } from "@/components/nav-account";
 import { Logo } from "@/components/logo";
+import { Chip } from "@/components/ui/chip";
+import { Badge } from "@/components/ui/badge";
+import { Card } from "@/components/ui/card";
 
 export const metadata: Metadata = {
   title: "Offres",
@@ -55,31 +58,29 @@ export default async function OffresPage({
   });
 
   return (
-    <div className="min-h-screen bg-brand-cream">
+    <div className="min-h-screen bg-creme">
       {/* Nav */}
-      <nav className="bg-white/80 backdrop-blur-md border-b border-brand-gold/15 sticky top-0 z-50">
-        <div className="max-w-7xl mx-auto px-6 md:px-12 flex items-center justify-between h-16">
+      <nav className="bg-creme border-b border-hairline sticky top-0 z-50">
+        <div className="max-w-7xl mx-auto px-5 md:px-12 flex items-center justify-between h-16">
           <Logo className="text-xl" />
           <NavAccount />
         </div>
       </nav>
 
       <div className="max-w-7xl mx-auto px-6 md:px-12 py-16 md:py-24">
-        <div className="text-center mb-12">
-          <p className="luxury-badge mb-6">Collection</p>
-          <h1 className="luxury-heading text-3xl md:text-5xl text-brand-bordeaux mb-4">
+        <div className="text-center mb-10 flex flex-col gap-2">
+          <h1 className="ds-display text-3xl md:text-4xl text-prune">
             {q ? (
-              <>R&eacute;sultats pour <span className="italic">&laquo; {q} &raquo;</span></>
+              <>Résultats pour « {q} »</>
             ) : category ? (
               <>{categoryLabels[category] || category}</>
             ) : (
-              <>Nos offres <span className="italic">beaut&eacute;</span></>
+              <>Nos offres beauté</>
             )}
           </h1>
-          <p className="text-brand-bordeaux/50 mt-4 max-w-md mx-auto">
+          <p className="text-base text-prune-soft">
             {offers.length} offre{offers.length > 1 ? "s" : ""} disponible{offers.length > 1 ? "s" : ""}
           </p>
-          <div className="luxury-divider mt-6" />
         </div>
 
         {/* Search + Filters */}
