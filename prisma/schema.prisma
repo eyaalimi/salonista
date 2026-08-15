@@ -220,6 +220,11 @@ model ProviderProfile {
   receiptFooter   String?
   onboardingDismissedAt DateTime?
   verified        Boolean  @default(false)
+  /// Salon de demonstration : exclu de l'index Google (noindex + absent du
+  /// sitemap) mais parfaitement consultable. Permet de garder des donnees de
+  /// test en ligne sans polluer les resultats de recherche, et de les retirer
+  /// le jour du lancement sans produire de 404.
+  demo            Boolean  @default(false)
   createdAt       DateTime @default(now())
 
   user                  User                   @relation(fields: [userId], references: [id], onDelete: Cascade)
