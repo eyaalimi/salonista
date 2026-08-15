@@ -308,13 +308,13 @@ export function SalonClient({ salon }: { salon: Salon }) {
           <div className="lg:col-span-2 space-y-8">
             {/* Services list */}
             <section>
-              <h2 className="luxury-heading text-2xl text-brand-bordeaux mb-2">Services proposés</h2>
-              <p className="text-xs text-brand-bordeaux/50 mb-6">
-                Sélectionnez un ou plusieurs services. Vous choisirez ensuite une seule heure de début.
+              <h2 className="ds-display mb-2 text-2xl text-prune">Services proposés</h2>
+              <p className="mb-6 text-base text-prune-soft">
+                Sélectionne un ou plusieurs services. Tu choisiras ensuite une seule heure de début.
               </p>
 
               {salon.offers.length === 0 ? (
-                <p className="text-sm text-brand-bordeaux/40">Aucune offre disponible pour le moment</p>
+                <p className="text-base text-prune-soft">Aucune offre disponible pour le moment</p>
               ) : (
                 <div className="space-y-3">
                   {salon.offers.map((offer) => {
@@ -327,49 +327,54 @@ export function SalonClient({ salon }: { salon: Salon }) {
                         type="button"
                         key={offer.id}
                         onClick={() => toggleOffer(offer.id)}
-                        className={`w-full text-left bg-white border transition-colors duration-300 overflow-hidden flex ${
-                          inCart ? "border-brand-gold shadow-sm" : "border-brand-gold/20 hover:border-brand-gold/60"
+                        aria-pressed={inCart}
+                        className={`ds-press ds-focus flex w-full overflow-hidden rounded-[var(--radius-card)] border-2 text-left ${
+                          inCart
+                            ? "border-rose bg-rose-soft"
+                            : "border-hairline bg-white hover:border-rose"
                         }`}
                       >
                         {offer.photos.length > 0 && (
-                          <div className="relative w-32 sm:w-40 aspect-square shrink-0">
+                          <div className="relative aspect-square w-32 shrink-0 sm:w-40">
                             <UploadedImage src={offer.photos[0]} alt={offer.title} fill className="object-cover" sizes="160px" />
                           </div>
                         )}
-                        <div className="flex-1 p-4 sm:p-5 flex flex-col">
-                          <div className="flex items-start justify-between gap-3 mb-1">
-                            <h3 className="luxury-heading text-base sm:text-lg text-brand-bordeaux">{offer.title}</h3>
-                            <div className="text-right shrink-0">
-                              <p className="luxury-heading text-base text-brand-gold">
-                                {offer.discountPrice.toFixed(0)} DT
+                        <div className="flex flex-1 flex-col p-4 sm:p-5">
+                          <div className="mb-1 flex items-start justify-between gap-3">
+                            <h3 className="ds-display text-base text-prune sm:text-lg">{offer.title}</h3>
+                            <div className="shrink-0 text-right">
+                              <p className="ds-display text-lg text-prune">
+                                {offer.discountPrice.toFixed(0)} TND
                               </p>
                               {discount > 0 && (
-                                <p className="text-[10px] tracking-wider uppercase text-brand-gold/70">-{discount}%</p>
+                                <span className="mt-1 inline-block">
+                                  <Badge tone="rose">-{discount}%</Badge>
+                                </span>
                               )}
-                              <p className="text-[9px] tracking-[0.15em] uppercase text-brand-bordeaux/40">
+                              <p className="mt-1 text-xs text-prune-soft">
                                 TVA {Number(offer.taxRate ?? 19)}%
                               </p>
                             </div>
                           </div>
-                          <p className="text-[10px] tracking-[0.15em] uppercase text-brand-bordeaux/40 mb-2">
+                          <p className="mb-2 text-sm font-semibold text-prune-soft">
                             {formatDuration(offer.durationMinutes)}
                           </p>
                           {offer.description && (
-                            <p className="text-xs text-brand-bordeaux/60 line-clamp-2">{offer.description}</p>
+                            <p className="line-clamp-2 text-sm text-prune-soft">{offer.description}</p>
                           )}
-                          <div className="mt-auto pt-3 flex items-center gap-2">
+                          <div className="mt-auto flex items-center gap-2 pt-3">
                             <span
-                              className={`inline-flex items-center justify-center w-5 h-5 border-2 transition-colors ${
-                                inCart ? "border-brand-gold bg-brand-gold" : "border-brand-bordeaux/30"
+                              className={`inline-flex h-6 w-6 items-center justify-center rounded-full border-2 ${
+                                inCart ? "border-rose bg-rose" : "border-hairline"
                               }`}
                             >
                               {inCart && (
-                                <svg className="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <svg className="h-4 w-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
                                 </svg>
                               )}
                             </span>
-                            <span className="text-[10px] tracking-[0.2em] uppercase text-brand-bordeaux/60">
+                            <span className="text-sm font-semibold text-prune">
                               {inCart ? "Sélectionné" : "Ajouter"}
                             </span>
                           </div>
