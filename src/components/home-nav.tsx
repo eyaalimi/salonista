@@ -16,7 +16,7 @@ function ProfileAvatar({
 
   if (image) {
     return (
-      <span className="block h-9 w-9 overflow-hidden rounded-full border border-brand-gold">
+      <span className="block h-9 w-9 overflow-hidden rounded-full border-2 border-hairline">
         {/* Plain <img> — provider avatars are remote (Google) or stable. */}
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
@@ -30,7 +30,7 @@ function ProfileAvatar({
   }
 
   return (
-    <span className="flex h-9 w-9 items-center justify-center rounded-full border border-brand-gold bg-brand-sand text-sm font-semibold text-brand-ink">
+    <span className="flex h-9 w-9 items-center justify-center rounded-full border-2 border-hairline bg-rose-soft text-sm font-semibold text-prune">
       {initials}
     </span>
   );
