@@ -85,41 +85,35 @@ export default async function OffresPage({
 
         {/* Search + Filters */}
         <div className="mb-12 space-y-4">
-          <form action="/offres" method="GET" className="mx-auto flex max-w-2xl overflow-hidden rounded-2xl border border-brand-gold-soft bg-brand-sand">
+          <form action="/offres" method="GET" className="mx-auto flex max-w-2xl gap-2">
             <input
               type="text"
               name="q"
               defaultValue={q || ""}
-              placeholder="Cherche un soin, un salon..."
-              className="flex-1 bg-transparent px-5 py-3 text-base text-brand-ink placeholder:text-brand-ink-soft/70 focus:outline-none"
+              placeholder="Cherche un soin, un salon…"
+              aria-label="Rechercher"
+              className="ds-focus flex-1 min-h-[52px] rounded-[var(--radius-pill)] border-2 border-hairline bg-white px-5 text-base text-prune placeholder:text-prune-soft/60"
             />
             <button
               type="submit"
-              className="bg-brand-ink px-5 py-3 text-sm font-semibold text-white transition-colors hover:bg-brand-gold"
+              className="ds-press ds-focus shrink-0 min-h-[52px] px-6 rounded-[var(--radius-pill)] bg-rose text-base font-semibold text-white hover:bg-[#F04A79]"
             >
               Rechercher
             </button>
           </form>
 
           <div className="flex gap-2 justify-center flex-wrap">
-            <Link
-              href="/offres"
-              className={`px-4 py-2 text-[10px] tracking-[0.15em] uppercase font-medium transition-colors duration-500 ${
-                !category ? "bg-brand-bordeaux text-white" : "border border-brand-gold/20 text-brand-bordeaux/60 hover:border-brand-gold"
-              }`}
-            >
+            <Chip href="/offres" active={!category}>
               Toutes
-            </Link>
+            </Chip>
             {Object.entries(categoryLabels).map(([key, label]) => (
-              <Link
+              <Chip
                 key={key}
                 href={`/offres?category=${key}`}
-                className={`px-4 py-2 text-[10px] tracking-[0.15em] uppercase font-medium transition-colors duration-500 ${
-                  category === key ? "bg-brand-bordeaux text-white" : "border border-brand-gold/20 text-brand-bordeaux/60 hover:border-brand-gold"
-                }`}
+                active={category === key}
               >
                 {label}
-              </Link>
+              </Chip>
             ))}
           </div>
         </div>
