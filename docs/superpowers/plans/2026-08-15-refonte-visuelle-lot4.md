@@ -415,7 +415,7 @@ Remplace les lignes 300-372 par :
 Points d'attention :
 
 - `shadow-sm` (interdit) a disparu de l'état sélectionné.
-- **Deux « DT » sur trois** sont traités ici : le prix du service. Le troisième est dans le panier (tâche 5).
+- **Un « DT » sur trois** est traité ici : le prix du service. Les **deux autres** sont dans le panier (tâche 5) : la ligne d'un service et le total.
 - La coche passe de carrée à ronde et de 20px à 24px — cohérent avec les pills du système.
 - `aria-pressed={inCart}` est ajouté : un `<button>` qui bascule un état doit l'annoncer aux lecteurs d'écran. Il n'y en avait aucun.
 - La remise passe en `Badge tone="rose"`. C'est son usage documenté.
@@ -665,7 +665,8 @@ git commit -m "feat(design): calendrier multi-services au design system"
 
 ## Tâche 5 : le panier et la colonne de droite
 
-Le troisième « DT » se trouve ici, ainsi que les commandes minuscules à corriger.
+Les **deux derniers** « DT » se trouvent ici — la ligne d'un service et le total —
+ainsi que les commandes minuscules à corriger.
 
 **Fichiers :**
 - Modifier : `src/app/salon/[id]/salon-client.tsx:391-546` (l'`<aside>` complet)
@@ -738,7 +739,7 @@ Les cibles tactiles, expliquées :
 - **La croix fait 44×44** en entier.
 - Les `aria-label` deviennent spécifiques (« Monter Balayage » au lieu de « Monter »). Avec plusieurs services au panier, l'ancien label était ambigu pour un lecteur d'écran.
 - Le `text-red-500` de la croix disparaît — le rouge n'est pas dans la palette. Le survol passe en rose.
-- **Troisième et dernier « DT » → « TND »**, ligne du panier.
+- **Deuxième « DT » → « TND »**, sur la ligne du service. Le troisième et dernier est sur le total, à l'étape suivante.
 
 - [ ] **Étape 2 : les totaux, les notes et le bouton**
 
