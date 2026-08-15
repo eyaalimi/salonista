@@ -255,7 +255,7 @@ export function SalonClient({ salon }: { salon: Salon }) {
         </div>
       </nav>
 
-      <div className="max-w-6xl mx-auto px-6 md:px-12 py-12 md:py-16">
+      <div className="mx-auto max-w-6xl px-6 pt-12 pb-40 md:px-12 md:pt-16 md:pb-16">
         {/* Salon header */}
         <div className="mb-12">
           {salon.photos.length > 0 && (
@@ -565,6 +565,32 @@ export function SalonClient({ salon }: { salon: Salon }) {
           </aside>
         </div>
       </div>
+
+      {/* Barre de reservation fixe — mobile uniquement.
+          BottomNav occupe fixed bottom-0 z-50 h-[60px] avec la safe-area :
+          on se pose exactement au-dessus, sinon les deux se superposent. */}
+      {cart.length > 0 && (
+        <div
+          className="fixed left-0 right-0 z-40 border-t border-hairline bg-white px-6 py-3 md:hidden"
+          style={{ bottom: "calc(60px + env(safe-area-inset-bottom))" }}
+        >
+          <div className="flex items-center justify-between gap-4">
+            <div className="min-w-0">
+              <p className="text-xs text-prune-soft">
+                {cart.length} service{cart.length > 1 ? "s" : ""} · {formatDuration(totalDuration)}
+              </p>
+              <p className="ds-display text-xl text-prune">{totalPrice.toFixed(0)} TND</p>
+            </div>
+            <Button
+              onClick={handleBook}
+              disabled={loading || !selectedStart}
+              className="shrink-0"
+            >
+              {loading ? "Réservation…" : selectedStart ? "Confirmer" : "Choisis une heure"}
+            </Button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
