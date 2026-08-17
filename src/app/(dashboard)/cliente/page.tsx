@@ -2,6 +2,8 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 
 interface BookingItem {
   offer: { id: string; title: string; category: string; provider: { salonName: string; city: string | null } };
@@ -21,9 +23,11 @@ interface Booking {
   items: BookingItem[];
 }
 
+// Les CLES (COIFFURE, ESTHETIQUE…) sont des valeurs de base de donnees et ne
+// doivent jamais etre accentuees. Seules les valeurs affichees le sont.
 const categoryLabels: Record<string, string> = {
   COIFFURE: "Coiffure",
-  ESTHETIQUE: "Esthetique",
+  ESTHETIQUE: "Esthétique",
   ONGLERIE: "Onglerie",
   MASSAGE: "Massage",
   PARFUMERIE: "Parfumerie",
@@ -73,7 +77,7 @@ export default function ClienteReservations() {
   }
 
   async function cancelBooking(id: string) {
-    if (!confirm("Etes-vous sure de vouloir annuler cette reservation ?")) return;
+    if (!confirm("Es-tu sûre de vouloir annuler cette réservation ?")) return;
     setCancelling(id);
     const res = await fetch(`/api/client/bookings/${id}`, { method: "DELETE" });
     if (res.ok) {
@@ -87,55 +91,55 @@ export default function ClienteReservations() {
   const filtered = filter === "ALL" ? bookings : bookings.filter((b) => b.status === filter);
 
   if (loading) {
-    return <div className="flex items-center justify-center h-64 text-brand-bordeaux/40 text-xs tracking-[0.2em] uppercase">Chargement...</div>;
+    return <div className="flex h-64 items-center justify-center text-base text-prune-soft">Chargement…</div>;
   }
 
   return (
     <div>
-      <div className="flex items-center justify-between mb-8">
+      <div className="mb-8 flex flex-wrap items-center justify-between gap-4">
         <div>
-          <p className="luxury-badge mb-3">Mon espace</p>
-          <h1 className="luxury-heading text-3xl text-brand-bordeaux">Mes reservations</h1>
+          <p className="mb-3 text-sm font-semibold uppercase tracking-[0.12em] text-prune-soft">Mon espace</p>
+          <h1 className="ds-display text-3xl text-prune">Mes réservations</h1>
         </div>
         <Link
           href="/offres"
-          className="px-6 py-3 text-xs tracking-[0.2em] uppercase bg-brand-bordeaux text-white hover:bg-brand-gold transition-colors duration-500"
+          className="ds-press ds-focus inline-flex min-h-[48px] items-center rounded-[var(--radius-pill)] bg-rose px-6 text-base font-semibold text-prune hover:bg-[#F04A79]"
         >
-          Decouvrir les offres
+          Découvrir les offres
         </Link>
       </div>
 
       {/* Stats cards */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+      <div className="mb-8 grid grid-cols-2 gap-4 md:grid-cols-4">
         {[
           { label: "Total", value: bookings.length },
           { label: "En attente", value: bookings.filter((b) => b.status === "PENDING").length },
-          { label: "Confirmees", value: bookings.filter((b) => b.status === "CONFIRMED").length },
-          { label: "Terminees", value: bookings.filter((b) => b.status === "COMPLETED").length },
+          { label: "Confirmées", value: bookings.filter((b) => b.status === "CONFIRMED").length },
+          { label: "Terminées", value: bookings.filter((b) => b.status === "COMPLETED").length },
         ].map((s) => (
-          <div key={s.label} className="bg-white p-5 border border-brand-gold/20 text-center">
-            <p className="luxury-heading text-2xl text-brand-bordeaux">{s.value}</p>
-            <p className="text-[10px] tracking-[0.15em] uppercase text-brand-bordeaux/40 mt-1">{s.label}</p>
+          <div key={s.label} className="rounded-[var(--radius-card)] border-2 border-hairline bg-white p-5 text-center">
+            <p className="ds-display text-2xl text-prune">{s.value}</p>
+            <p className="mt-1 text-sm text-prune-soft">{s.label}</p>
           </div>
         ))}
       </div>
 
       {/* Filter tabs */}
-      <div className="flex gap-2 mb-6 overflow-x-auto pb-1">
+      <div className="mb-6 flex gap-2 overflow-x-auto pb-1">
         {[
           { key: "ALL", label: "Toutes" },
           { key: "PENDING", label: "En attente" },
-          { key: "CONFIRMED", label: "Confirmees" },
-          { key: "COMPLETED", label: "Terminees" },
-          { key: "CANCELLED", label: "Annulees" },
+          { key: "CONFIRMED", label: "Confirmées" },
+          { key: "COMPLETED", label: "Terminées" },
+          { key: "CANCELLED", label: "Annulées" },
         ].map((f) => (
           <button
             key={f.key}
             onClick={() => setFilter(f.key)}
-            className={`px-4 py-2 text-[10px] tracking-[0.15em] uppercase font-medium whitespace-nowrap transition-colors duration-500 ${
+            className={`ds-press ds-focus min-h-[44px] shrink-0 whitespace-nowrap rounded-[var(--radius-pill)] px-4 text-sm font-semibold ${
               filter === f.key
-                ? "bg-brand-bordeaux text-white"
-                : "border border-brand-gold/20 text-brand-bordeaux/60 hover:border-brand-gold"
+                ? "bg-rose text-prune"
+                : "border-2 border-hairline bg-white text-prune hover:border-rose"
             }`}
           >
             {f.label}
@@ -146,44 +150,44 @@ export default function ClienteReservations() {
       {/* Bookings list */}
       <div className="space-y-3">
         {filtered.map((booking) => {
-          const statusStyles: Record<string, string> = {
-            PENDING: "border-amber-300 text-amber-700",
-            CONFIRMED: "border-blue-300 text-blue-700",
-            COMPLETED: "border-emerald-300 text-emerald-700",
-            CANCELLED: "border-red-300 text-red-700",
+          const statusTones: Record<string, "menthe" | "rose" | "prune"> = {
+            PENDING: "prune",
+            CONFIRMED: "menthe",
+            COMPLETED: "menthe",
+            CANCELLED: "rose",
           };
           const statusLabels: Record<string, string> = {
             PENDING: "En attente",
-            CONFIRMED: "Confirmee",
-            COMPLETED: "Terminee",
-            CANCELLED: "Annulee",
+            CONFIRMED: "Confirmée",
+            COMPLETED: "Terminée",
+            CANCELLED: "Annulée",
           };
           return (
             <div
               key={booking.id}
-              className="bg-white border border-brand-gold/20 p-5 hover:border-brand-gold transition-colors duration-500"
+              className="rounded-[var(--radius-card)] border-2 border-hairline bg-white p-5"
             >
-              <div className="flex flex-col md:flex-row md:items-center gap-3">
+              <div className="flex flex-col gap-3 md:flex-row md:items-center">
                 <div className="flex-1">
-                  <div className="flex items-center gap-2 mb-2">
+                  <div className="mb-2 flex flex-wrap items-center gap-2">
                     {booking.items[0] && (
-                      <span className="luxury-badge text-[10px]">
+                      <Badge tone="prune">
                         {categoryLabels[booking.items[0].offer.category] || booking.items[0].offer.category}
-                      </span>
+                      </Badge>
                     )}
-                    <span className={`px-3 py-1 border text-[10px] tracking-[0.1em] uppercase font-medium ${statusStyles[booking.status] || "border-gray-300 text-gray-600"}`}>
+                    <Badge tone={statusTones[booking.status] || "prune"}>
                       {statusLabels[booking.status] || booking.status}
-                    </span>
+                    </Badge>
                   </div>
-                  <h3 className="luxury-heading text-lg text-brand-bordeaux">
+                  <h3 className="ds-display text-lg text-prune">
                     {booking.items.map((i) => i.offer.title).join(", ")}
                   </h3>
-                  <p className="text-xs text-brand-bordeaux/40 mt-1">
+                  <p className="mt-1 text-sm text-prune-soft">
                     {booking.items[0]?.offer.provider.salonName}
                     {booking.items[0]?.offer.provider.city && ` · ${booking.items[0].offer.provider.city}`}
                   </p>
                   {booking.items[0]?.slot && (
-                    <p className="text-sm text-brand-bordeaux/50 mt-2">
+                    <p className="mt-2 text-base text-prune">
                       {new Date(booking.items[0].slot.startTime).toLocaleDateString("fr-TN", {
                         weekday: "long",
                         day: "numeric",
@@ -195,65 +199,57 @@ export default function ClienteReservations() {
                     </p>
                   )}
                   {booking.notes && (
-                    <p className="text-xs text-brand-bordeaux/30 mt-1">Note : {booking.notes}</p>
+                    <p className="mt-1 text-sm text-prune-soft">Note : {booking.notes}</p>
                   )}
                 </div>
 
-                <div className="flex items-center gap-3 flex-wrap justify-end">
-                  <span className="luxury-heading text-xl text-brand-gold">
+                <div className="flex flex-wrap items-center justify-end gap-3">
+                  <span className="ds-display text-xl text-prune">
                     {Number(booking.totalPrice).toFixed(0)} TND
                   </span>
 
-                  {/* Payment status badge */}
                   {booking.paymentStatus === "PAID" && (
-                    <span className="px-3 py-1 border border-emerald-300 text-[10px] tracking-[0.1em] uppercase font-medium text-emerald-700">
-                      {booking.qrVerified ? "Verifie" : "Paye"}
-                    </span>
+                    <Badge tone="menthe">{booking.qrVerified ? "Vérifié" : "Payé"}</Badge>
                   )}
 
-                  {/* Pay button for unpaid confirmed/pending bookings */}
                   {booking.paymentStatus === "UNPAID" && booking.status !== "CANCELLED" && (
                     <Link
                       href={`/cliente/paiement?bookingId=${booking.id}`}
-                      className="px-4 py-2 text-xs tracking-[0.15em] uppercase bg-brand-gold text-white hover:bg-brand-bordeaux transition-colors duration-500"
+                      className="ds-press ds-focus inline-flex min-h-[44px] items-center rounded-[var(--radius-pill)] bg-prune px-4 text-sm font-semibold text-white hover:bg-[#4E1832]"
                     >
                       Payer
                     </Link>
                   )}
 
-                  {/* QR code button for paid bookings */}
                   {booking.paymentStatus === "PAID" && booking.qrCode && (
                     <Link
                       href={`/cliente/reservation?id=${booking.id}`}
-                      className="px-4 py-2 text-xs tracking-[0.15em] uppercase border border-brand-bordeaux text-brand-bordeaux hover:bg-brand-bordeaux hover:text-white transition-colors duration-500"
+                      className="ds-press ds-focus inline-flex min-h-[44px] items-center rounded-[var(--radius-pill)] border-2 border-hairline px-4 text-sm font-semibold text-prune hover:border-rose"
                     >
-                      QR Code
+                      QR code
                     </Link>
                   )}
 
-                  {/* Review button for completed bookings */}
                   {booking.status === "COMPLETED" && !booking.hasReview && (
                     <button
                       onClick={() => { setReviewBooking(booking); setReviewRating(5); setReviewComment(""); }}
-                      className="px-4 py-2 text-xs tracking-[0.15em] uppercase border border-brand-gold text-brand-gold hover:bg-brand-gold hover:text-white transition-colors duration-500"
+                      className="ds-press ds-focus inline-flex min-h-[44px] items-center rounded-[var(--radius-pill)] border-2 border-hairline px-4 text-sm font-semibold text-prune hover:border-rose"
                     >
                       Laisser un avis
                     </button>
                   )}
                   {booking.status === "COMPLETED" && booking.hasReview && (
-                    <span className="px-3 py-1 border border-brand-gold/30 text-[10px] tracking-[0.1em] uppercase font-medium text-brand-gold">
-                      Avis donne
-                    </span>
+                    <Badge tone="menthe">Avis donné</Badge>
                   )}
 
-                  {/* Cancel button */}
+                  {/* Seule action destructrice : traitement a part, jamais rose ni prune */}
                   {booking.status === "PENDING" && booking.paymentStatus === "UNPAID" && (
                     <button
                       onClick={() => cancelBooking(booking.id)}
                       disabled={cancelling === booking.id}
-                      className="px-4 py-2 text-xs tracking-[0.15em] uppercase border border-red-300 text-red-600 hover:bg-red-50 transition-colors duration-500 disabled:opacity-50"
+                      className="ds-press ds-focus inline-flex min-h-[44px] items-center rounded-[var(--radius-pill)] border-2 border-hairline px-4 text-sm font-semibold text-prune-soft hover:border-rose hover:text-rose"
                     >
-                      {cancelling === booking.id ? "..." : "Annuler"}
+                      {cancelling === booking.id ? "…" : "Annuler"}
                     </button>
                   )}
                 </div>
@@ -264,15 +260,15 @@ export default function ClienteReservations() {
       </div>
 
       {filtered.length === 0 && (
-        <div className="text-center py-16">
-          <p className="text-brand-bordeaux/40 text-sm mb-6">
-            {filter === "ALL" ? "Aucune reservation pour le moment." : "Aucune reservation dans cette categorie."}
+        <div className="py-16 text-center">
+          <p className="mb-6 text-base text-prune-soft">
+            {filter === "ALL" ? "Aucune réservation pour le moment." : "Aucune réservation dans cette catégorie."}
           </p>
           <Link
             href="/offres"
-            className="inline-block px-8 py-3 text-xs tracking-[0.2em] uppercase bg-brand-bordeaux text-white hover:bg-brand-gold transition-colors duration-500"
+            className="ds-press ds-focus inline-flex min-h-[48px] items-center rounded-[var(--radius-pill)] border-2 border-hairline px-8 text-base font-semibold text-prune hover:border-rose"
           >
-            Decouvrir les offres
+            Découvrir les offres
           </Link>
         </div>
       )}
