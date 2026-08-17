@@ -64,7 +64,7 @@ export function RoleTabs({
               "ds-press ds-focus flex-1 min-h-[44px] px-3 " +
               "rounded-[var(--radius-pill)] text-sm font-semibold " +
               (active
-                ? "bg-rose text-white"
+                ? "bg-rose text-prune"
                 : "bg-transparent text-prune hover:bg-white/60")
             }
           >
