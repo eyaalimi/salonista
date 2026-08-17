@@ -47,7 +47,7 @@ export function NavAccount() {
         onClick={() => setMenuOpen(!menuOpen)}
         className="ds-press ds-focus flex items-center gap-2 min-h-[44px] px-3 rounded-[var(--radius-pill)] border-2 border-hairline hover:border-rose"
       >
-        <span className="flex h-7 w-7 items-center justify-center rounded-full bg-rose text-xs font-bold text-white">
+        <span className="flex h-7 w-7 items-center justify-center rounded-full bg-rose text-xs font-bold text-prune">
           {session.user.name?.[0]?.toUpperCase() || session.user.email?.[0]?.toUpperCase() || "?"}
         </span>
         <span className="text-sm font-semibold text-prune hidden sm:inline">
