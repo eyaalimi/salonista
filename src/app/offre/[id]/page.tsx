@@ -29,7 +29,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
   return {
     title: `${offer.title} — ${offer.provider.salonName}`,
-    description: `${offer.title} à ${Number(offer.discountPrice).toFixed(0)} DT au lieu de ${Number(offer.originalPrice).toFixed(0)} DT (-${discount}%) chez ${offer.provider.salonName}${offer.provider.city ? `, ${offer.provider.city}` : ""}. Réservez en ligne sur Salonista.`,
+    description: `${offer.title} à ${Number(offer.discountPrice).toFixed(0)} TND au lieu de ${Number(offer.originalPrice).toFixed(0)} TND (-${discount}%) chez ${offer.provider.salonName}${offer.provider.city ? `, ${offer.provider.city}` : ""}. Réservez en ligne sur Salonista.`,
     alternates: { canonical: `${BASE_URL}/offre/${id}` },
     // Un salon de demonstration ne doit pas polluer l'index : ses offres
     // sortent des resultats avec lui.

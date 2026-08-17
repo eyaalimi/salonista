@@ -152,7 +152,7 @@ export async function sendBookingConfirmationEmail(
       </tr>
       <tr>
         <td style="padding:12px 16px;font-size:12px;color:#2D0A0A;opacity:0.4;text-transform:uppercase;letter-spacing:0.1em;">Montant</td>
-        <td style="padding:12px 16px;font-size:18px;color:#C9A96E;text-align:right;font-family:Georgia,'Times New Roman',serif;">${data.price} DT</td>
+        <td style="padding:12px 16px;font-size:18px;color:#C9A96E;text-align:right;font-family:Georgia,'Times New Roman',serif;">${data.price} TND</td>
       </tr>
     </table>
     <p style="margin:0;font-size:13px;color:#2D0A0A;opacity:0.4;line-height:1.5;">
@@ -190,7 +190,7 @@ export async function sendPaymentConfirmationEmail(
       Bonjour ${data.clientName},
     </p>
     <p style="margin:0 0 24px;font-size:14px;color:#2D0A0A;opacity:0.6;line-height:1.6;">
-      Votre paiement de <strong style="color:#C9A96E;">${data.price} DT</strong> a &eacute;t&eacute; re&ccedil;u.
+      Votre paiement de <strong style="color:#C9A96E;">${data.price} TND</strong> a &eacute;t&eacute; re&ccedil;u.
       Pr&eacute;sentez le QR code ci-dessous au salon le jour de votre rendez-vous.
     </p>
     <table cellpadding="0" cellspacing="0" style="margin:0 auto 24px;">
@@ -321,7 +321,7 @@ export async function sendNewBookingToProvider(
       </tr>
       <tr>
         <td style="padding:12px 16px;font-size:12px;color:#2D0A0A;opacity:0.4;text-transform:uppercase;letter-spacing:0.1em;">Montant</td>
-        <td style="padding:12px 16px;font-size:18px;color:#C9A96E;text-align:right;font-family:Georgia,'Times New Roman',serif;">${data.price} DT</td>
+        <td style="padding:12px 16px;font-size:18px;color:#C9A96E;text-align:right;font-family:Georgia,'Times New Roman',serif;">${data.price} TND</td>
       </tr>
     </table>
     <table cellpadding="0" cellspacing="0" style="margin:0 auto;">
