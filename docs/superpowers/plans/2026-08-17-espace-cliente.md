@@ -882,6 +882,37 @@ git push -u origin design-espace-cliente
 
 ---
 
+## Trouve par la revue finale
+
+### Corrige : la sidebar repoussait son pied hors de l'ecran
+
+Les entrees de menu sont passees de `text-xs` a **44px de haut**. Pour un
+prestataire avec ses 7 entrees, sur un ecran court, le pied de barre — avatar et
+Deconnexion — sortait de la vue.
+
+Corrige : la barre devient `sticky top-0 h-screen`, la nav defile en interne
+(`overflow-y-auto`), l'en-tete et le pied restent fixes (`shrink-0`).
+
+**C'est un effet de bord introduit par ce lot** : les cibles de 44px sont une
+regle du design system, mais personne n'avait verifie ce qu'elles font a un menu
+de 7 entrees.
+
+### Reporte : le survol rose est illisible, mais c'est un defaut du token
+
+`hover:text-rose` sur fond blanc donne **2,94:1**, sous le seuil AA de 4,5:1.
+Il touche le lien « Annuler », la sidebar, et les etoiles de la modale.
+
+Mesure faite avant de decider : le motif apparait **16 fois dans le projet** —
+3 dans ce lot, **13 deja mergees** (fiche salon, fiche offre, les deux
+calendriers, la navigation d'accueil).
+
+**Corriger 3 sur 16 creerait une incoherence pire que le defaut** : le meme
+geste se comporterait differemment selon la page. C'est le meme token
+`--color-rose` que le chantier de contraste a traite en **fond** sans traiter la
+**couleur de texte**.
+
+A faire d'un geste sur les 16 emplacements, dans un chantier dedie.
+
 ## Ce que ce plan ne fait pas
 
 - Les autres pages de l'espace cliente : `paiement` (355 lignes), `reservation` (189), `fidelite` (80 + 134). Second lot.
