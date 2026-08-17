@@ -1144,6 +1144,38 @@ Aucun outil automatique ne dit si une page est réussie. À vérifier à l'œil,
 
 ---
 
+## Découvertes en cours d'exécution
+
+### L'interstice — deuxième fois, rattrapé par le contrôle global
+
+**La description de l'offre** (`<p>{offer.description}</p>`) n'était couverte par
+aucune tâche : elle se trouve entre le bloc prix (tâche 2) et le formulaire
+(tâche 3), et est restée en `text-brand-ink-soft`.
+
+Trouvée par `grep -c "brand-"` en fin de tâche 4, exactement comme l'en-tête
+oublié du lot 4. Corrigée dans le commit de la tâche 5.
+
+**La leçon se confirme sur deux lots consécutifs :** un découpage par bornes de
+sections laisse toujours des trous. Le compteur global ramené à zéro est le seul
+contrôle qui les attrape.
+
+### « DT » subsiste dans la méta-description SEO — hors périmètre
+
+Le HTML servi contient encore quatre « DT », alors que les deux fichiers du lot
+sont à zéro. Ils viennent de `src/app/offre/[id]/page.tsx:32`, la
+`description` des métadonnées — **du texte indexé par Google, visible dans les
+résultats de recherche**.
+
+Un `grep` à l'échelle du dépôt montre que **plus de douze fichiers** utilisent
+encore « DT » : tableaux de bord admin, cliente, influenceuse, et la caisse.
+
+Ce lot ne les corrige pas — ce serait l'étendre bien au-delà de la fiche offre.
+Mais c'est une incohérence réelle : le site affiche « TND » sur les pages
+publiques refaites et « DT » ailleurs, y compris dans ce que Google indexe.
+**À traiter comme un chantier à part**, d'un seul geste sur tout le dépôt.
+
+---
+
 ## Ce que ce plan ne fait pas
 
 - Le bas de l'accueil (lot 6).
