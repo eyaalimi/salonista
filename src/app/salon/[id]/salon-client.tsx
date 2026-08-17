@@ -221,7 +221,7 @@ export function SalonClient({ salon }: { salon: Salon }) {
           <div className="flex flex-col gap-3">
             <Link
               href={`/cliente/paiement?bookingId=${success}`}
-              className="ds-press ds-focus inline-flex min-h-[48px] w-full items-center justify-center rounded-[var(--radius-pill)] bg-rose px-6 text-base font-semibold text-white hover:bg-[#F04A79]"
+              className="ds-press ds-focus inline-flex min-h-[48px] w-full items-center justify-center rounded-[var(--radius-pill)] bg-rose px-6 text-base font-semibold text-prune hover:bg-[#F04A79]"
             >
               Payer maintenant
             </Link>

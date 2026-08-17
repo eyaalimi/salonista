@@ -346,7 +346,7 @@ export default async function Home() {
             <p className="mt-2 text-base text-white/70">
               Reçois des réservations qualifiées chaque jour.
             </p>
-            <span className="mt-4 inline-flex min-h-[44px] items-center rounded-[var(--radius-pill)] bg-rose px-5 text-base font-semibold text-white">
+            <span className="mt-4 inline-flex min-h-[44px] items-center rounded-[var(--radius-pill)] bg-rose px-5 text-base font-semibold text-prune">
               Rejoindre →
             </span>
           </Link>
@@ -363,7 +363,7 @@ export default async function Home() {
             <p className="mt-2 text-base text-white/70">
               10% de commission sur chaque réservation.
             </p>
-            <span className="mt-4 inline-flex min-h-[44px] items-center rounded-[var(--radius-pill)] bg-rose px-5 text-base font-semibold text-white">
+            <span className="mt-4 inline-flex min-h-[44px] items-center rounded-[var(--radius-pill)] bg-rose px-5 text-base font-semibold text-prune">
               Devenir partenaire →
             </span>
           </Link>

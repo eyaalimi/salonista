@@ -208,7 +208,7 @@ export function OfferClient({
           <div className="flex flex-col gap-3">
             <Link
               href={`/cliente/paiement?bookingId=${bookingId}`}
-              className="ds-press ds-focus inline-flex min-h-[48px] w-full items-center justify-center rounded-[var(--radius-pill)] bg-rose px-6 text-base font-semibold text-white hover:bg-[#F04A79]"
+              className="ds-press ds-focus inline-flex min-h-[48px] w-full items-center justify-center rounded-[var(--radius-pill)] bg-rose px-6 text-base font-semibold text-prune hover:bg-[#F04A79]"
             >
               Payer maintenant
             </Link>
@@ -371,7 +371,7 @@ export function OfferClient({
                         onClick={() => setAuthMode("register")}
                         className={`ds-press ds-focus min-h-[44px] flex-1 rounded-[var(--radius-pill)] px-3 text-sm font-semibold ${
                           authMode === "register"
-                            ? "bg-rose text-white"
+                            ? "bg-rose text-prune"
                             : "bg-transparent text-prune hover:bg-white/60"
                         }`}
                       >
@@ -384,7 +384,7 @@ export function OfferClient({
                         onClick={() => setAuthMode("login")}
                         className={`ds-press ds-focus min-h-[44px] flex-1 rounded-[var(--radius-pill)] px-3 text-sm font-semibold ${
                           authMode === "login"
-                            ? "bg-rose text-white"
+                            ? "bg-rose text-prune"
                             : "bg-transparent text-prune hover:bg-white/60"
                         }`}
                       >
