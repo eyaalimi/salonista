@@ -145,7 +145,10 @@ export function PromoBanner() {
           Jusqu&apos;à -50% sur hammam &amp; coiffure
         </p>
       </div>
-      <span className="ds-press shrink-0 rounded-[var(--radius-pill)] bg-rose px-4 py-2 text-sm font-semibold text-white">
+      {/* Traitement secondaire, pas `bg-rose` : le rose plein est reserve au
+          CTA professionnel plus bas. Cette banniere et le CTA pro peuvent se
+          voir ensemble au defilement — trois pilules roses se concurrenceraient. */}
+      <span className="ds-press shrink-0 rounded-[var(--radius-pill)] bg-rose-soft px-4 py-2 text-sm font-semibold text-prune">
         Voir tout
       </span>
     </Link>
@@ -155,7 +158,8 @@ export function PromoBanner() {
 
 Ce qui change :
 
-- `bg-brand-ink` devient `bg-prune`, `bg-brand-gold` devient `bg-rose`, `text-brand-gold-soft` devient `text-white/70`, `text-[#FBFAF7]` devient `text-white`.
+- `bg-brand-ink` devient `bg-prune`, `text-brand-gold-soft` devient `text-white/70`, `text-[#FBFAF7]` devient `text-white`.
+- **Le badge « Voir tout » passe en `bg-rose-soft` avec texte `prune`, PAS en `bg-rose`.** Le rose plein est reserve au CTA professionnel, plus bas dans la meme page : les deux blocs peuvent se voir ensemble au defilement, et trois pilules roses se concurrenceraient. Contraste mesure : 13,35:1, tres au-dessus du seuil AA.
 - `rounded-2xl` devient `rounded-[var(--radius-panel)]`.
 - `transition-opacity hover:opacity-90` disparaît au profit de `.ds-press` : le système anime la couleur et l'échelle, pas l'opacité.
 - Le texte passe de `text-xs` à `text-sm` et de `text-sm` à `text-base` — le corps doit faire au moins 16px.
