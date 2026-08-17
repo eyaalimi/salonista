@@ -46,8 +46,12 @@ export function RoleTabs({
   onChange: (next: RoleKey) => void;
 }) {
   return (
+    // `group` et non `tablist` : ce selecteur ne controle aucun panneau. Il
+    // change l'accroche affichee et la destination d'inscription — rien
+    // d'autre (voir le commentaire en tete de fichier). Un `role="tab"`
+    // promettrait a un lecteur d'ecran un panneau qui n'existe pas.
     <div
-      role="tablist"
+      role="group"
       aria-label="Je suis"
       className="flex gap-1 rounded-[var(--radius-pill)] bg-rose-soft p-1"
     >
@@ -57,8 +61,7 @@ export function RoleTabs({
           <button
             key={opt.key}
             type="button"
-            role="tab"
-            aria-selected={active}
+            aria-pressed={active}
             onClick={() => onChange(opt.key)}
             className={
               "ds-press ds-focus flex-1 min-h-[44px] px-3 " +

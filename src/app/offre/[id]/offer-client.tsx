@@ -362,12 +362,30 @@ export function OfferClient({
                     <div
                       role="tablist"
                       aria-label="Type de compte"
+                      onKeyDown={(e) => {
+                        // Fleches gauche/droite : avec deux onglets, les deux
+                        // touches basculent vers l'autre — c'est le bouclage.
+                        //
+                        // Le focus doit etre deplace explicitement : changer
+                        // l'etat React ne bouge pas le focus du DOM, et le
+                        // bouton focalise passerait a tabIndex={-1} apres le
+                        // rendu, desynchronisant la navigation. On vise le
+                        // bouton voisin dans le conteneur plutot que d'ajouter
+                        // deux refs a ce fichier de 570 lignes.
+                        if (e.key !== "ArrowLeft" && e.key !== "ArrowRight") return;
+                        e.preventDefault();
+                        const onglets = e.currentTarget.querySelectorAll<HTMLButtonElement>('[role="tab"]');
+                        const suivant = authMode === "register" ? onglets[1] : onglets[0];
+                        setAuthMode(authMode === "register" ? "login" : "register");
+                        suivant?.focus();
+                      }}
                       className="mb-4 flex gap-1 rounded-[var(--radius-pill)] bg-rose-soft p-1"
                     >
                       <button
                         type="button"
                         role="tab"
                         aria-selected={authMode === "register"}
+                        tabIndex={authMode === "register" ? 0 : -1}
                         onClick={() => setAuthMode("register")}
                         className={`ds-press ds-focus min-h-[44px] flex-1 rounded-[var(--radius-pill)] px-3 text-sm font-semibold ${
                           authMode === "register"
@@ -381,6 +399,7 @@ export function OfferClient({
                         type="button"
                         role="tab"
                         aria-selected={authMode === "login"}
+                        tabIndex={authMode === "login" ? 0 : -1}
                         onClick={() => setAuthMode("login")}
                         className={`ds-press ds-focus min-h-[44px] flex-1 rounded-[var(--radius-pill)] px-3 text-sm font-semibold ${
                           authMode === "login"
