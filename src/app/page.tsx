@@ -404,21 +404,30 @@ export default async function Home() {
       </section>
 
       {/* FOOTER */}
-      <footer className="bg-brand-ink text-white border-t border-white/10">
+      <footer className="border-t border-white/10 bg-prune text-white">
         <div className="mx-auto flex max-w-7xl flex-col items-center justify-between gap-5 px-6 py-8 sm:flex-row md:px-12">
           <Logo tone="light" className="text-xl" />
-          <div className="flex items-center gap-5 text-xs text-white/60">
-            <Link href="/offres" className="hover:text-brand-gold transition-colors">
+          <div className="flex items-center gap-2 text-sm">
+            <Link
+              href="/offres"
+              className="ds-press ds-focus inline-flex min-h-[44px] items-center rounded-[var(--radius-pill)] px-3 text-white/70 hover:text-white"
+            >
               Offres
             </Link>
-            <Link href="/login" className="hover:text-brand-gold transition-colors">
+            <Link
+              href="/login"
+              className="ds-press ds-focus inline-flex min-h-[44px] items-center rounded-[var(--radius-pill)] px-3 text-white/70 hover:text-white"
+            >
               Connexion
             </Link>
-            <Link href="/register" className="hover:text-brand-gold transition-colors">
+            <Link
+              href="/register"
+              className="ds-press ds-focus inline-flex min-h-[44px] items-center rounded-[var(--radius-pill)] px-3 text-white/70 hover:text-white"
+            >
               Inscription
             </Link>
           </div>
-          <p className="text-[10px] text-white/30">
+          <p className="text-xs text-white/40">
             © 2026 · Fait en Tunisie
           </p>
         </div>
