@@ -312,18 +312,18 @@ export default async function Home() {
 
       {/* SALONS NEAR YOU CTA */}
       <section className="mt-6 px-0">
-        <div className="mx-4 flex items-center justify-between gap-3 rounded-2xl bg-brand-sand p-4">
+        <div className="mx-4 flex items-center justify-between gap-3 rounded-[var(--radius-panel)] border-2 border-hairline bg-white p-4">
           <div className="min-w-0">
-            <p className="text-sm font-semibold text-brand-ink">
+            <p className="text-base font-semibold text-prune">
               Salons près de toi 📍
             </p>
-            <p className="text-xs text-brand-ink-soft">
+            <p className="text-sm text-prune-soft">
               Disponibles maintenant
             </p>
           </div>
           <Link
             href="/offres"
-            className="shrink-0 text-sm font-semibold text-brand-gold"
+            className="ds-press ds-focus inline-flex min-h-[44px] shrink-0 items-center rounded-[var(--radius-pill)] px-3 text-base font-semibold text-rose"
           >
             Voir →
           </Link>
@@ -331,39 +331,39 @@ export default async function Home() {
       </section>
 
       {/* PRO CTA — kept compact, stacked on mobile */}
-      <section className="mt-8 bg-brand-ink text-white">
+      <section className="mt-8 bg-prune text-white">
         <div className="mx-auto max-w-7xl">
           <Link
             href="/register"
-            className="block border-b border-white/10 p-6 sm:p-10"
+            className="ds-press ds-focus block border-b border-white/10 p-6 sm:p-10"
           >
-            <p className="mb-2 text-[11px] tracking-widest uppercase text-brand-gold-soft">
+            <p className="mb-2 text-sm font-semibold uppercase tracking-[0.12em] text-white/60">
               Prestataire
             </p>
-            <h3 className="luxury-heading text-xl sm:text-3xl">
-              Vous avez un <span className="italic">salon</span> ?
+            <h3 className="ds-display text-xl sm:text-3xl">
+              Tu as un <span className="italic">salon</span> ?
             </h3>
-            <p className="mt-2 text-sm text-white/60">
-              Recevez des réservations qualifiées chaque jour.
+            <p className="mt-2 text-base text-white/70">
+              Reçois des réservations qualifiées chaque jour.
             </p>
-            <span className="mt-3 inline-block text-sm font-semibold text-brand-gold-soft">
+            <span className="mt-4 inline-flex min-h-[44px] items-center rounded-[var(--radius-pill)] bg-rose px-5 text-base font-semibold text-white">
               Rejoindre →
             </span>
           </Link>
           <Link
             href="/register"
-            className="block p-6 sm:p-10"
+            className="ds-press ds-focus block p-6 sm:p-10"
           >
-            <p className="mb-2 text-[11px] tracking-widest uppercase text-brand-gold-soft">
+            <p className="mb-2 text-sm font-semibold uppercase tracking-[0.12em] text-white/60">
               Influenceuse
             </p>
-            <h3 className="luxury-heading text-xl sm:text-3xl">
-              Monétisez votre <span className="italic">audience</span>
+            <h3 className="ds-display text-xl sm:text-3xl">
+              Monétise ton <span className="italic">audience</span>
             </h3>
-            <p className="mt-2 text-sm text-white/60">
+            <p className="mt-2 text-base text-white/70">
               10% de commission sur chaque réservation.
             </p>
-            <span className="mt-3 inline-block text-sm font-semibold text-brand-gold-soft">
+            <span className="mt-4 inline-flex min-h-[44px] items-center rounded-[var(--radius-pill)] bg-rose px-5 text-base font-semibold text-white">
               Devenir partenaire →
             </span>
           </Link>
@@ -375,26 +375,26 @@ export default async function Home() {
           question balisee doit etre visible sur la page. */}
       <section className="mt-10 px-6 md:px-12" aria-labelledby="faq-titre">
         <div className="mx-auto max-w-3xl">
-          <p className="mb-2 text-[11px] tracking-widest uppercase text-brand-bordeaux/40">
+          <p className="mb-2 text-sm font-semibold uppercase tracking-[0.12em] text-prune-soft">
             Questions fréquentes
           </p>
-          <h2 id="faq-titre" className="luxury-heading mb-6 text-2xl sm:text-3xl">
+          <h2 id="faq-titre" className="ds-display mb-6 text-2xl text-prune sm:text-3xl">
             Tout savoir sur <span className="italic">Salonista</span>
           </h2>
 
-          <div className="divide-y divide-brand-gold/20 border-y border-brand-gold/20">
+          <div className="divide-y divide-hairline border-y border-hairline">
             {FAQ_ITEMS.map((item) => (
               <details key={item.question} className="group py-4">
-                <summary className="flex cursor-pointer items-center justify-between gap-4 text-sm font-medium text-brand-bordeaux marker:content-['']">
+                <summary className="ds-focus flex min-h-[44px] cursor-pointer items-center justify-between gap-4 text-base font-semibold text-prune marker:content-['']">
                   {item.question}
                   <span
                     aria-hidden="true"
-                    className="shrink-0 text-brand-gold transition-transform group-open:rotate-45"
+                    className="shrink-0 text-xl text-rose transition-transform group-open:rotate-45"
                   >
                     +
                   </span>
                 </summary>
-                <p className="mt-3 text-sm leading-relaxed text-brand-bordeaux/70">
+                <p className="mt-3 text-base leading-relaxed text-prune-soft">
                   {item.answer}
                 </p>
               </details>
@@ -404,21 +404,30 @@ export default async function Home() {
       </section>
 
       {/* FOOTER */}
-      <footer className="bg-brand-ink text-white border-t border-white/10">
+      <footer className="border-t border-white/10 bg-prune text-white">
         <div className="mx-auto flex max-w-7xl flex-col items-center justify-between gap-5 px-6 py-8 sm:flex-row md:px-12">
           <Logo tone="light" className="text-xl" />
-          <div className="flex items-center gap-5 text-xs text-white/60">
-            <Link href="/offres" className="hover:text-brand-gold transition-colors">
+          <div className="flex items-center gap-2 text-sm">
+            <Link
+              href="/offres"
+              className="ds-press ds-focus inline-flex min-h-[44px] items-center rounded-[var(--radius-pill)] px-3 text-white/70 hover:text-white"
+            >
               Offres
             </Link>
-            <Link href="/login" className="hover:text-brand-gold transition-colors">
+            <Link
+              href="/login"
+              className="ds-press ds-focus inline-flex min-h-[44px] items-center rounded-[var(--radius-pill)] px-3 text-white/70 hover:text-white"
+            >
               Connexion
             </Link>
-            <Link href="/register" className="hover:text-brand-gold transition-colors">
+            <Link
+              href="/register"
+              className="ds-press ds-focus inline-flex min-h-[44px] items-center rounded-[var(--radius-pill)] px-3 text-white/70 hover:text-white"
+            >
               Inscription
             </Link>
           </div>
-          <p className="text-[10px] text-white/30">
+          <p className="text-xs text-white/40">
             © 2026 · Fait en Tunisie
           </p>
         </div>
