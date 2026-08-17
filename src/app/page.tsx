@@ -331,39 +331,39 @@ export default async function Home() {
       </section>
 
       {/* PRO CTA — kept compact, stacked on mobile */}
-      <section className="mt-8 bg-brand-ink text-white">
+      <section className="mt-8 bg-prune text-white">
         <div className="mx-auto max-w-7xl">
           <Link
             href="/register"
-            className="block border-b border-white/10 p-6 sm:p-10"
+            className="ds-press ds-focus block border-b border-white/10 p-6 sm:p-10"
           >
-            <p className="mb-2 text-[11px] tracking-widest uppercase text-brand-gold-soft">
+            <p className="mb-2 text-sm font-semibold uppercase tracking-[0.12em] text-white/60">
               Prestataire
             </p>
-            <h3 className="luxury-heading text-xl sm:text-3xl">
-              Vous avez un <span className="italic">salon</span> ?
+            <h3 className="ds-display text-xl sm:text-3xl">
+              Tu as un <span className="italic">salon</span> ?
             </h3>
-            <p className="mt-2 text-sm text-white/60">
-              Recevez des réservations qualifiées chaque jour.
+            <p className="mt-2 text-base text-white/70">
+              Reçois des réservations qualifiées chaque jour.
             </p>
-            <span className="mt-3 inline-block text-sm font-semibold text-brand-gold-soft">
+            <span className="mt-4 inline-flex min-h-[44px] items-center rounded-[var(--radius-pill)] bg-rose px-5 text-base font-semibold text-white">
               Rejoindre →
             </span>
           </Link>
           <Link
             href="/register"
-            className="block p-6 sm:p-10"
+            className="ds-press ds-focus block p-6 sm:p-10"
           >
-            <p className="mb-2 text-[11px] tracking-widest uppercase text-brand-gold-soft">
+            <p className="mb-2 text-sm font-semibold uppercase tracking-[0.12em] text-white/60">
               Influenceuse
             </p>
-            <h3 className="luxury-heading text-xl sm:text-3xl">
-              Monétisez votre <span className="italic">audience</span>
+            <h3 className="ds-display text-xl sm:text-3xl">
+              Monétise ton <span className="italic">audience</span>
             </h3>
-            <p className="mt-2 text-sm text-white/60">
+            <p className="mt-2 text-base text-white/70">
               10% de commission sur chaque réservation.
             </p>
-            <span className="mt-3 inline-block text-sm font-semibold text-brand-gold-soft">
+            <span className="mt-4 inline-flex min-h-[44px] items-center rounded-[var(--radius-pill)] bg-rose px-5 text-base font-semibold text-white">
               Devenir partenaire →
             </span>
           </Link>
