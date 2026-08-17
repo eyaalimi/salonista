@@ -369,8 +369,11 @@ export function SalonClient({ salon }: { salon: Salon }) {
                                 inCart ? "border-rose bg-rose" : "border-hairline"
                               }`}
                             >
+                              {/* La coche est en prune, pas en blanc : c'est un
+                                  indicateur d'etat, soumis au seuil de 3:1 de
+                                  WCAG 1.4.11. Blanc sur rose donne 2,94:1. */}
                               {inCart && (
-                                <svg className="h-4 w-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <svg className="h-4 w-4 text-prune" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
                                 </svg>
                               )}
