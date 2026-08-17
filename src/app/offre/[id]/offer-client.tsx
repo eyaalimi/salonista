@@ -6,6 +6,7 @@ import Link from "next/link";
 import { BookingCalendar } from "@/components/booking-calendar";
 import { Logo } from "@/components/logo";
 import { UploadedImage } from "@/components/uploaded-image";
+import { Badge } from "@/components/ui/badge";
 
 interface Slot {
   id: string;
@@ -47,7 +48,7 @@ function StarRating({ rating, size = "sm" }: { rating: number; size?: "sm" | "lg
   return (
     <span className={`${sizeClass} tracking-wider`}>
       {[1, 2, 3, 4, 5].map((i) => (
-        <span key={i} className={i <= rating ? "text-brand-gold" : "text-brand-gold/20"}>
+        <span key={i} className={i <= rating ? "text-rose" : "text-hairline"}>
           ★
         </span>
       ))}
@@ -222,12 +223,15 @@ export function OfferClient({
   }
 
   return (
-    <div className="min-h-screen bg-brand-cream">
+    <div className="min-h-screen bg-creme">
       {/* Nav */}
-      <nav className="bg-white/80 backdrop-blur-md border-b border-brand-gold/15 sticky top-0 z-50">
-        <div className="max-w-7xl mx-auto px-6 md:px-12 flex items-center justify-between h-16">
+      <nav className="sticky top-0 z-40 border-b border-hairline bg-creme">
+        <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-6 md:px-12">
           <Logo className="text-xl" />
-          <Link href="/offres" className="text-sm font-medium text-brand-ink-soft hover:text-brand-gold transition-colors">
+          <Link
+            href="/offres"
+            className="ds-focus rounded-[var(--radius-pill)] px-2 py-1 text-base text-prune-soft hover:text-rose"
+          >
             Toutes les offres
           </Link>
         </div>
@@ -237,7 +241,7 @@ export function OfferClient({
         <div className="grid grid-cols-1 md:grid-cols-2 gap-12 md:gap-16">
           {/* Image */}
           <div className="space-y-3">
-            <div className="relative aspect-[4/5] bg-gradient-to-br from-brand-nude to-brand-peach flex items-center justify-center overflow-hidden luxury-image-reveal">
+            <div className="relative flex aspect-[4/5] items-center justify-center overflow-hidden rounded-[var(--radius-card)] bg-rose-soft">
               {offer.photos.length > 0 ? (
                 <UploadedImage src={offer.photos[selectedPhoto]} alt={offer.title} fill sizes="(max-width: 768px) 100vw, 50vw" className="object-cover" />
               ) : (
@@ -251,7 +255,11 @@ export function OfferClient({
                     key={photo}
                     type="button"
                     onClick={() => setSelectedPhoto(i)}
-                    className={`relative aspect-square overflow-hidden border-2 transition-colors ${i === selectedPhoto ? "border-brand-gold" : "border-transparent hover:border-brand-gold/30"}`}
+                    aria-label={`Voir la photo ${i + 1}`}
+                    aria-pressed={i === selectedPhoto}
+                    className={`ds-press ds-focus relative aspect-square overflow-hidden rounded-[var(--radius-panel)] border-2 ${
+                      i === selectedPhoto ? "border-rose" : "border-transparent hover:border-rose"
+                    }`}
                   >
                     <UploadedImage src={photo} alt={`Photo ${i + 1}`} fill sizes="100px" className="object-cover" />
                   </button>
@@ -264,51 +272,47 @@ export function OfferClient({
           <div className="flex flex-col justify-center">
             {/* Salon + quartier — above the fold on mobile */}
             <div className="mb-3 flex items-center gap-2">
-              <span className="rounded-full bg-brand-sand px-3 py-1 text-xs font-medium text-brand-ink">
-                {offer.category}
-              </span>
+              <Badge tone="prune">{offer.category}</Badge>
               {reviews.length > 0 && (
                 <div className="flex items-center gap-1">
                   <StarRating rating={Math.round(avgRating)} />
-                  <span className="text-xs text-brand-ink-soft">
+                  <span className="text-sm text-prune-soft">
                     {avgRating.toFixed(1)} · {reviews.length} avis
                   </span>
                 </div>
               )}
             </div>
 
-            <p className="text-base font-semibold text-brand-ink">
+            <p className="text-base font-semibold text-prune">
               {offer.provider.salonName}
             </p>
             {offer.provider.city && (
-              <p className="mt-0.5 text-sm text-brand-ink-soft">
+              <p className="mt-0.5 text-sm text-prune-soft">
                 📍 {offer.provider.city}
               </p>
             )}
 
-            <h1 className="luxury-heading mt-4 text-2xl text-brand-ink md:text-4xl">
+            <h1 className="ds-display mt-4 text-2xl text-prune md:text-4xl">
               {offer.title}
             </h1>
 
             {/* Price */}
-            <div className="mt-5 mb-6 border-b border-brand-line pb-6">
+            <div className="mt-5 mb-6 border-b border-hairline pb-6">
               <div className="flex items-baseline gap-3">
-                <span className="luxury-heading text-3xl text-brand-gold sm:text-4xl">
-                  {offer.discountPrice.toFixed(0)} DT
+                <span className="ds-display text-3xl text-prune sm:text-4xl">
+                  {offer.discountPrice.toFixed(0)} TND
                 </span>
                 {offer.originalPrice > offer.discountPrice && (
                   <>
-                    <span className="text-base text-gray-400 line-through sm:text-lg">
-                      {offer.originalPrice.toFixed(0)} DT
+                    <span className="text-base text-prune-soft line-through sm:text-lg">
+                      {offer.originalPrice.toFixed(0)} TND
                     </span>
-                    <span className="rounded-full bg-brand-ink px-2.5 py-0.5 text-xs font-bold text-[#FBFAF7]">
-                      -{discount}%
-                    </span>
+                    <Badge tone="rose">-{discount}%</Badge>
                   </>
                 )}
               </div>
-              <p className="mt-1 text-[11px] uppercase tracking-[0.18em] text-brand-ink-soft">
-                TVA incluse: {Number(offer.taxRate ?? 19)}%
+              <p className="mt-2 text-sm text-prune-soft">
+                TVA incluse : {Number(offer.taxRate ?? 19)}%
               </p>
             </div>
 
