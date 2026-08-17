@@ -107,8 +107,12 @@ export function mulMoney(a: Money, multiplier: number): string {
 /**
  * Tunisian Dinar formatting for human display.
  *
- * "12,500 DT" (3 decimals, comma decimal separator, " DT" suffix).
- * Negative amounts show as "-1,500 DT".
+ * "12,500 TND" (3 decimals, comma decimal separator, " TND" suffix).
+ * Negative amounts show as "-1,500 TND".
+ *
+ * Le nom `formatDT` est conserve volontairement : le renommer toucherait
+ * 132 sites d'appel pour un gain de lisibilite seul. "DT" et "TND"
+ * designent la meme monnaie, le dinar tunisien.
  */
 export function formatDT(amount: Money): string {
   const m = toMillimes(amount);
@@ -116,5 +120,5 @@ export function formatDT(amount: Money): string {
   const abs = Math.abs(m);
   const whole = Math.floor(abs / MILLIMES_PER_DT);
   const frac = abs % MILLIMES_PER_DT;
-  return `${sign}${whole},${String(frac).padStart(3, "0")} DT`;
+  return `${sign}${whole},${String(frac).padStart(3, "0")} TND`;
 }
