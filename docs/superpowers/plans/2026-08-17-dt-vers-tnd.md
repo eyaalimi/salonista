@@ -40,8 +40,8 @@ Un `sed` sur « DT » casserait quatre choses :
 |---|---|---|
 | `formatDT` (132×) | nom de fonction | code cassé |
 | `MILLIMES_PER_DT` | constante de `money.ts` | code cassé |
-| `CDTBQAAtQoAINQFAAC…` | chaîne encodée dans `booking-detail-drawer.tsx` et `src/generated/` | **donnée corrompue** |
-| `DDTHH` | format de date ISO | horodatages faussés |
+| `CDTBQAAtQoAINQFAAC…` | chaîne encodée dans `src/generated/prisma/internal/class.ts` | **donnée corrompue** |
+| `YYYY-MM-DDTHH:mm` | format de date, `booking-detail-drawer.tsx:88` | **horodatages faussés** |
 
 **Le motif sûr**, vérifié : `[0-9)}\`"'] DT` — un « DT » précédé d'un chiffre, d'une accolade fermante, d'un backtick ou d'un guillemet. Il isole l'affichage et ne touche **aucune** occurrence dans `src/generated/`.
 
@@ -89,8 +89,8 @@ sont mises a jour avec la fonction, en tache 1.
 | Élément | Emplacement | Raison |
 |---|---|---|
 | `formatDT`, `MILLIMES_PER_DT` | partout | identifiants — ne pas renommer |
-| Chaînes encodées | `booking-detail-drawer.tsx`, `src/generated/` | données binaires |
-| `DDTHH` | formats de date | horodatages |
+| Chaînes encodées | `src/generated/prisma/internal/class.ts` | données binaires |
+| `YYYY-MM-DDTHH:mm` | `booking-detail-drawer.tsx:88` | format de date |
 | Commentaires `// … DT` | `rewards.test.ts` (8), `offer-publish.test.ts`, `program.ts` (2), `pos-sale-create.ts`, `offer-publish.ts` | invisibles à l'écran |
 | Libellé de test | `rewards.test.ts:179` | invisible pour l'utilisateur |
 | `src/generated/prisma/` | tout le dossier | régénéré à chaque build |
@@ -352,7 +352,11 @@ grep -rn "[0-9)}\`\"'] DT\b" src/components/pos src/app/api src/app/verification
 
 Remplace « DT » par « TND » à chacun de ces emplacements.
 
-**Attention particulière sur `booking-detail-drawer.tsx` :** ce fichier contient une chaîne encodée du type `CDTBQAAtQoAINQFAAC…`. Le motif ne la capture pas (pas d'espace avant « DT »), mais ne t'en approche pas. Si un doute survient, vérifie que la ligne modifiée affiche bien un montant.
+**Attention particulière sur `booking-detail-drawer.tsx` :** sa ligne 88 contient
+`prompt("Nouvelle heure (YYYY-MM-DDTHH:mm):")` — un **format de date**, pas une
+monnaie. Le motif ne le capture pas (le « DT » y est precede d'un `D`, pas d'un
+chiffre ou d'un guillemet), mais ne le modifie sous aucun pretexte : le casser
+fausserait la saisie d'horodatage.
 
 - [ ] **Étape 2 : vérifier que la chaîne encodée est intacte**
 
@@ -363,7 +367,7 @@ npx tsc --noEmit 2>&1 | grep -E "components/pos|api/pos|verification"
 npm test 2>&1 | grep -E "Tests "
 ```
 
-Attendu : le premier ≥ 1 (**la chaîne encodée existe toujours**) ; le deuxième aucune sortie ; le troisième aucune sortie ; **180 tests au vert**.
+Attendu : le premier ≥ 1 (**le format de date est intact**) ; le deuxième aucune sortie ; le troisième aucune sortie ; **180 tests au vert**.
 
 - [ ] **Étape 3 : commit**
 
@@ -395,11 +399,11 @@ Toute autre ligne signalerait un oubli.
 ```bash
 grep -rc "formatDT" src/lib/money.ts
 grep -c "MILLIMES_PER_DT" src/lib/money.ts
-grep -c "CDTBQAAtQoAINQFAAC" src/components/pos/booking-detail-drawer.tsx
+grep -c "YYYY-MM-DDTHH:mm" src/components/pos/booking-detail-drawer.tsx
 git diff main..HEAD --name-only | grep -c "generated/"
 ```
 
-Attendu : `formatDT` ≥ 1 (**la fonction garde son nom**), `MILLIMES_PER_DT` ≥ 3, la chaîne encodée ≥ 1, et **0** fichier de `src/generated/` modifié.
+Attendu : `formatDT` ≥ 1 (**la fonction garde son nom**), `MILLIMES_PER_DT` ≥ 3, le format de date ≥ 1, et **0** fichier de `src/generated/` modifié.
 
 - [ ] **Étape 3 : les commentaires n'ont pas été touchés**
 
