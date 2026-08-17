@@ -507,6 +507,43 @@ Sur chaque écran, navigue **uniquement au clavier** :
 
 ---
 
+## Deux defauts du plan, trouves par la revue finale
+
+Le plan decrivait un pattern qui, tel qu'ecrit, **ne fonctionnait pas**.
+
+### 1. Le focus ne suivait pas la selection
+
+Le plan annoncait « le focus suit la selection » et se contentait d'appeler
+`setTab` / `setAuthMode`. **Changer l'etat React ne deplace pas le focus du
+DOM.** Apres le rendu, le bouton qui avait le focus passait a `tabIndex={-1}` :
+la navigation se desynchronisait des la deuxieme fleche.
+
+Correction : un `.focus()` explicite sur l'onglet cible, dans les deux
+selecteurs. Dans `settings-tabs` via un `useRef` indexe par identifiant ; dans
+`offer-client` en visant le bouton voisin par `querySelectorAll('[role="tab"]')`,
+pour ne pas ajouter deux refs a un fichier de 570 lignes.
+
+**La lecon :** un pattern ARIA ne se resume pas a ses attributs. `tabIndex`
+mobile sans `.focus()` est un demi-pattern, et un demi-pattern clavier ne
+fonctionne pas.
+
+### 2. `aria-controls` pointait dans le vide
+
+Les deux onglets de `settings-tabs` referencaient `panneau-salon` et
+`panneau-horaires`, mais **un seul panneau etait monte a la fois** — l'onglet
+inactif pointait donc vers un `id` absent du DOM.
+
+Correction : les deux panneaux sont rendus en permanence, l'inactif masque par
+`hidden`. C'est le pattern APG standard, et il apporte un benefice non prevu —
+les formulaires ne sont plus demontes a chaque bascule, donc **une saisie en
+cours survit au changement d'onglet**.
+
+### Ce que la revue a valide
+
+`role="group"` + `aria-pressed` sur `role-tabs` est le bon choix : trois options
+mutuellement exclusives qui ne pilotent aucun panneau. `radiogroup` aurait
+impose une navigation par fleches dont ce selecteur n'a pas besoin.
+
 ## Ce que ce plan ne fait pas
 
 - Il ne change **aucune apparence** : pas une couleur, pas une taille, pas un espacement.
