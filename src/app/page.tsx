@@ -312,18 +312,18 @@ export default async function Home() {
 
       {/* SALONS NEAR YOU CTA */}
       <section className="mt-6 px-0">
-        <div className="mx-4 flex items-center justify-between gap-3 rounded-2xl bg-brand-sand p-4">
+        <div className="mx-4 flex items-center justify-between gap-3 rounded-[var(--radius-panel)] border-2 border-hairline bg-white p-4">
           <div className="min-w-0">
-            <p className="text-sm font-semibold text-brand-ink">
+            <p className="text-base font-semibold text-prune">
               Salons près de toi 📍
             </p>
-            <p className="text-xs text-brand-ink-soft">
+            <p className="text-sm text-prune-soft">
               Disponibles maintenant
             </p>
           </div>
           <Link
             href="/offres"
-            className="shrink-0 text-sm font-semibold text-brand-gold"
+            className="ds-press ds-focus inline-flex min-h-[44px] shrink-0 items-center rounded-[var(--radius-pill)] px-3 text-base font-semibold text-rose"
           >
             Voir →
           </Link>
