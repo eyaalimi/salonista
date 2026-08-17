@@ -135,6 +135,26 @@ texte blanc — les deux options sont exclusives l'une de l'autre.
 
 ---
 
+## Un cas limite trouvé après coup : la coche de service
+
+La revue finale a signalé, sans le chiffrer, un `text-white` restant dans
+`salon-client.tsx` : la **coche SVG** à l'intérieur du cercle rose qui marque un
+service sélectionné.
+
+Ce n'était pas du texte — donc légitimement hors du périmètre initial, qui ne
+visait que le contraste de **texte** (WCAG 1.4.3, seuil 4,5:1).
+
+Mais le calcul montre qu'il tombait sous une **autre règle** : WCAG **1.4.11**,
+qui impose **3:1** aux composants non textuels porteurs d'information. Une coche
+qui dit « ce service est dans ton panier » en fait partie.
+
+Blanc sur rose donne **2,94:1** — à 0,06 point du seuil. Passée en prune, elle
+atteint 5,59:1.
+
+**Les autres pastilles restent inchangées** : le point « aujourd'hui » et les
+carrés de légende sont des repères de couleur pure, sans forme à distinguer —
+c'est leur présence, pas leur dessin, qui porte l'information.
+
 ## Réserve honnête
 
 **Ce changement modifie l'apparence de tous les boutons principaux du site.**
