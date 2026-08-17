@@ -367,7 +367,11 @@ function ModuleCard({
           )}
           {sub.pricingSnapshot?.monthlyPrice && (
             <p>
-              {sub.pricingSnapshot.monthlyPrice} {sub.pricingSnapshot.currency ?? "TND"}{" "}
+              {/* Litteral et non `currency` : le champ vaut "DT" en base (ligne 323,
+                  valeur persistee laissee inchangee faute de migration). L'afficher
+                  brut reintroduirait « DT » a l'ecran. La monnaie est toujours le
+                  dinar tunisien, donc l'affichage est fixe. */}
+              {sub.pricingSnapshot.monthlyPrice} TND{" "}
               / mois
             </p>
           )}
