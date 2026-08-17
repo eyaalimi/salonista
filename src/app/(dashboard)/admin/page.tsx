@@ -41,7 +41,7 @@ export default function AdminDashboard() {
     { label: "Utilisateurs", value: stats.totalUsers, href: "/admin/utilisateurs", sub: `+${stats.recentUsers} ce mois` },
     { label: "Offres actives", value: stats.activeOffers, href: "/admin/offres", sub: `${stats.totalOffers} au total` },
     { label: "Reservations", value: stats.totalBookings, href: "/admin/reservations", sub: `${stats.pendingBookings} en attente` },
-    { label: "Revenus plateforme", value: `${stats.platformRevenue.toFixed(0)} DT`, href: "/admin/commissions", sub: `${stats.totalRevenue.toFixed(0)} DT volume total` },
+    { label: "Revenus plateforme", value: `${stats.platformRevenue.toFixed(0)} TND`, href: "/admin/commissions", sub: `${stats.totalRevenue.toFixed(0)} TND volume total` },
   ];
 
   const userBreakdown = [

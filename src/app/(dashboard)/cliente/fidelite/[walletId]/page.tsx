@@ -92,7 +92,7 @@ export default function WalletDetailPage({
 
       <div className="rounded-2xl bg-white border border-brand-line p-4 mb-6 text-sm">
         <p className="luxury-badge mb-2">Règles du programme</p>
-        <p>1 DT dépensé = {ppd.toFixed(0)} pts • {Math.round(1 / dpp)} pts = 1 DT</p>
+        <p>1 TND dépensé = {ppd.toFixed(0)} pts • {Math.round(1 / dpp)} pts = 1 TND</p>
         <p>Min échange: {data.program.minPointsToRedeem} pts • Max {data.program.maxRedemptionPctPerSale}% par achat</p>
         {data.program.inactivityExpireMonths && (
           <p className="text-xs text-brand-ink-soft mt-2">

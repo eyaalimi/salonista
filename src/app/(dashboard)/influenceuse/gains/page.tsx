@@ -52,11 +52,11 @@ export default function InfluencerGains() {
       <div className="grid grid-cols-2 gap-4 mb-10">
         <div className="bg-white p-6 border border-brand-gold/20">
           <p className="text-[10px] tracking-[0.15em] uppercase text-brand-bordeaux/40 mb-2">En attente</p>
-          <p className="luxury-heading text-3xl text-brand-bordeaux">{totalPending.toFixed(0)} DT</p>
+          <p className="luxury-heading text-3xl text-brand-bordeaux">{totalPending.toFixed(0)} TND</p>
         </div>
         <div className="bg-white p-6 border border-brand-gold/20">
           <p className="text-[10px] tracking-[0.15em] uppercase text-brand-bordeaux/40 mb-2">Total paye</p>
-          <p className="luxury-heading text-3xl text-emerald-700">{totalPaid.toFixed(0)} DT</p>
+          <p className="luxury-heading text-3xl text-emerald-700">{totalPaid.toFixed(0)} TND</p>
         </div>
       </div>
 
@@ -94,7 +94,7 @@ export default function InfluencerGains() {
                   {statusLabels[c.status] || c.status}
                 </span>
                 <span className="luxury-heading text-lg text-brand-gold">
-                  +{Number(c.influencerAmount).toFixed(0)} DT
+                  +{Number(c.influencerAmount).toFixed(0)} TND
                 </span>
               </div>
             </div>

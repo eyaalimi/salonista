@@ -37,8 +37,8 @@ export default function InfluencerDashboard() {
     { label: "Clics totaux", value: stats.totalClicks },
     { label: "Conversions", value: stats.totalConversions },
     { label: "Taux conversion", value: `${stats.conversionRate}%` },
-    { label: "Gains totaux", value: `${stats.totalEarnings.toFixed(0)} DT` },
-    { label: "Solde en attente", value: `${stats.pendingBalance.toFixed(0)} DT` },
+    { label: "Gains totaux", value: `${stats.totalEarnings.toFixed(0)} TND` },
+    { label: "Solde en attente", value: `${stats.pendingBalance.toFixed(0)} TND` },
   ];
 
   return (

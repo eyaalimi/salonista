@@ -112,11 +112,11 @@ export default function InfluencerCollaborations() {
                           <div className="flex-1 min-w-0">
                             <p className="text-sm text-brand-bordeaux truncate">{co.offer.title}</p>
                             <p className="text-[10px] text-brand-bordeaux/40">
-                              {co.offer.durationMinutes} min · prix {price.toFixed(0)} DT
+                              {co.offer.durationMinutes} min · prix {price.toFixed(0)} TND
                             </p>
                           </div>
                           <div className="text-right shrink-0">
-                            <p className="text-sm text-brand-gold font-medium">+{earning.toFixed(1)} DT</p>
+                            <p className="text-sm text-brand-gold font-medium">+{earning.toFixed(1)} TND</p>
                             <p className="text-[10px] tracking-wider uppercase text-brand-bordeaux/40">par vente</p>
                           </div>
                         </div>

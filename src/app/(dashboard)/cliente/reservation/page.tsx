@@ -157,7 +157,7 @@ function ReservationDetailPageInner() {
           <div className="flex justify-between">
             <span className="text-brand-bordeaux/40">Montant paye</span>
             <span className="luxury-heading text-xl text-brand-gold">
-              {Number(data.booking.totalPrice).toFixed(0)} DT
+              {Number(data.booking.totalPrice).toFixed(0)} TND
             </span>
           </div>
           <div className="flex justify-between">

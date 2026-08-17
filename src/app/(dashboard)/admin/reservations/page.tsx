@@ -119,14 +119,14 @@ export default function AdminBookingsPage() {
                   )}
                 </div>
                 <div className="text-right">
-                  <p className="luxury-heading text-xl text-brand-gold">{Number(b.totalPrice).toFixed(0)} DT</p>
+                  <p className="luxury-heading text-xl text-brand-gold">{Number(b.totalPrice).toFixed(0)} TND</p>
                   {b.commission && (
                     <div className="text-[10px] text-brand-bordeaux/30 mt-1 tracking-wider">
-                      <p>Prest. {Number(b.commission.providerAmount).toFixed(0)} DT</p>
+                      <p>Prest. {Number(b.commission.providerAmount).toFixed(0)} TND</p>
                       {b.commission.influencerAmount && (
-                        <p>Infl. {Number(b.commission.influencerAmount).toFixed(0)} DT</p>
+                        <p>Infl. {Number(b.commission.influencerAmount).toFixed(0)} TND</p>
                       )}
-                      <p>Platef. {Number(b.commission.platformAmount).toFixed(0)} DT</p>
+                      <p>Platef. {Number(b.commission.platformAmount).toFixed(0)} TND</p>
                     </div>
                   )}
                 </div>
