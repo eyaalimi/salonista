@@ -489,22 +489,22 @@ export function OfferClient({
         </div>
 
         {/* Provider info */}
-        <div className="mt-16 md:mt-24 p-8 md:p-12 border border-brand-gold/15 bg-white">
-          <p className="luxury-badge mb-4">Le salon</p>
-          <h2 className="luxury-heading text-xl text-brand-bordeaux mb-3">
+        <div className="mt-16 rounded-[var(--radius-card)] border-2 border-hairline bg-white p-8 md:mt-24 md:p-12">
+          <p className="mb-4 text-sm font-semibold uppercase tracking-[0.12em] text-prune-soft">Le salon</p>
+          <h2 className="ds-display mb-3 text-xl text-prune">
             {offer.provider.salonName}
           </h2>
           {offer.provider.description && (
-            <p className="text-brand-bordeaux/60 leading-relaxed">{offer.provider.description}</p>
+            <p className="text-base leading-relaxed text-prune-soft">{offer.provider.description}</p>
           )}
           {offer.provider.city && (
-            <p className="text-xs tracking-[0.15em] uppercase text-brand-bordeaux/40 mt-4">
+            <p className="mt-4 text-sm text-prune-soft">
               {offer.provider.city}
             </p>
           )}
           <Link
             href={`/salon/${offer.provider.id}`}
-            className="inline-block mt-6 px-6 py-3 text-xs tracking-[0.2em] uppercase border border-brand-gold text-brand-bordeaux hover:bg-brand-gold hover:text-white transition-colors duration-500"
+            className="ds-press ds-focus mt-6 inline-flex min-h-[48px] items-center justify-center rounded-[var(--radius-pill)] border-2 border-hairline px-6 text-base font-semibold text-prune hover:border-rose"
           >
             Voir le salon
           </Link>
@@ -512,32 +512,32 @@ export function OfferClient({
 
         {/* Reviews section */}
         <div className="mt-16 md:mt-24">
-          <div className="text-center mb-10">
-            <p className="luxury-badge mb-4">Avis clients</p>
+          <div className="mb-10 text-center">
+            <p className="mb-4 text-sm font-semibold uppercase tracking-[0.12em] text-prune-soft">Avis clients</p>
             {reviews.length > 0 ? (
               <div className="flex items-center justify-center gap-3">
                 <StarRating rating={Math.round(avgRating)} size="lg" />
-                <span className="luxury-heading text-2xl text-brand-bordeaux">{avgRating.toFixed(1)}</span>
-                <span className="text-sm text-brand-bordeaux/40">/ 5</span>
-                <span className="text-xs text-brand-bordeaux/30 ml-2">({reviews.length} avis)</span>
+                <span className="ds-display text-2xl text-prune">{avgRating.toFixed(1)}</span>
+                <span className="text-base text-prune-soft">/ 5</span>
+                <span className="ml-2 text-sm text-prune-soft">({reviews.length} avis)</span>
               </div>
             ) : (
-              <p className="text-sm text-brand-bordeaux/40">Aucun avis pour le moment</p>
+              <p className="text-base text-prune-soft">Aucun avis pour le moment</p>
             )}
-            <div className="luxury-divider mt-6" />
+            <div className="mx-auto mt-6 h-px w-10 bg-hairline" />
           </div>
 
-          <div className="space-y-4 max-w-2xl mx-auto">
+          <div className="mx-auto max-w-2xl space-y-4">
             {reviews.map((review) => (
-              <div key={review.id} className="bg-white border border-brand-gold/15 p-6">
-                <div className="flex items-center justify-between mb-3">
+              <div key={review.id} className="rounded-[var(--radius-card)] border-2 border-hairline bg-white p-6">
+                <div className="mb-3 flex items-center justify-between">
                   <div className="flex items-center gap-3">
-                    <div className="w-8 h-8 bg-brand-nude flex items-center justify-center text-xs text-brand-bordeaux/60 font-medium">
+                    <div className="flex h-10 w-10 items-center justify-center rounded-full bg-rose-soft text-sm font-bold text-prune">
                       {review.clientName.charAt(0).toUpperCase()}
                     </div>
                     <div>
-                      <p className="text-sm text-brand-bordeaux font-medium">{review.clientName}</p>
-                      <p className="text-[10px] text-brand-bordeaux/30">
+                      <p className="text-sm font-semibold text-prune">{review.clientName}</p>
+                      <p className="text-xs text-prune-soft">
                         {new Date(review.createdAt).toLocaleDateString("fr-TN", {
                           day: "numeric",
                           month: "long",
@@ -549,7 +549,7 @@ export function OfferClient({
                   <StarRating rating={review.rating} />
                 </div>
                 {review.comment && (
-                  <p className="text-sm text-brand-bordeaux/70 leading-relaxed">{review.comment}</p>
+                  <p className="text-sm leading-relaxed text-prune-soft">{review.comment}</p>
                 )}
               </div>
             ))}
@@ -557,15 +557,17 @@ export function OfferClient({
         </div>
       </div>
 
-      {/* Mobile sticky CTA — sits above the BottomNav (60px tall) */}
+      {/* Barre fixe mobile — se pose au-dessus de BottomNav, qui occupe
+          fixed bottom-0 z-50 h-[60px] avec la safe-area. Sans le calc(),
+          la barre passe SOUS la navigation sur les iPhone a encoche. */}
       {!showBooking && (
-        <div className="fixed bottom-[60px] left-0 right-0 z-40 border-t border-brand-line bg-white p-4 md:hidden">
-          <button
-            onClick={() => setShowBooking(true)}
-            className="flex w-full min-h-[52px] items-center justify-center gap-2 rounded-2xl bg-brand-ink text-base font-semibold text-white transition-colors hover:bg-brand-gold"
-          >
-            Réserver maintenant — {offer.discountPrice.toFixed(0)} DT
-          </button>
+        <div
+          className="fixed left-0 right-0 z-40 border-t border-hairline bg-white p-4 md:hidden"
+          style={{ bottom: "calc(60px + env(safe-area-inset-bottom))" }}
+        >
+          <Button onClick={() => setShowBooking(true)} fullWidth>
+            Réserver maintenant — {offer.discountPrice.toFixed(0)} TND
+          </Button>
         </div>
       )}
     </div>
