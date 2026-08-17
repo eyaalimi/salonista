@@ -3,6 +3,7 @@
 import { use, useEffect, useState } from "react";
 import Link from "next/link";
 import { formatDT, fromMillimes } from "@/lib/money";
+import { Button } from "@/components/ui/button";
 
 type Detail = {
   id: string;
@@ -51,12 +52,35 @@ export default function WalletDetailPage({
 }) {
   const { walletId } = use(params);
   const [data, setData] = useState<Detail | null>(null);
+  // L'historique s'accumule : chaque « Voir plus » AJOUTE une page a la liste
+  // au lieu de la remplacer. `data.transactions.items` ne sert donc que pour
+  // la premiere page.
+  const [items, setItems] = useState<Detail["transactions"]["items"]>([]);
+  const [page, setPage] = useState(1);
+  const [loadingMore, setLoadingMore] = useState(false);
 
   useEffect(() => {
     fetch(`/api/cliente/fidelite/${walletId}`)
       .then((r) => (r.ok ? r.json() : null))
-      .then(setData);
+      .then((d: Detail | null) => {
+        setData(d);
+        setItems(d?.transactions.items ?? []);
+        setPage(1);
+      });
   }, [walletId]);
+
+  async function chargerPlus() {
+    if (!data) return;
+    setLoadingMore(true);
+    const suivante = page + 1;
+    const res = await fetch(`/api/cliente/fidelite/${walletId}?page=${suivante}`);
+    if (res.ok) {
+      const d: Detail = await res.json();
+      setItems((prev) => [...prev, ...d.transactions.items]);
+      setPage(suivante);
+    }
+    setLoadingMore(false);
+  }
 
   if (!data) return <p className="p-6 text-base text-prune-soft">Chargement…</p>;
 
@@ -106,32 +130,49 @@ export default function WalletDetailPage({
 
       <p className="mb-3 text-sm font-semibold uppercase tracking-[0.12em] text-prune-soft">Historique</p>
       <ul className="space-y-2">
-        {data.transactions.items.length === 0 && (
-          <p className="text-sm text-brand-ink-soft">Aucune transaction.</p>
+        {items.length === 0 && (
+          <p className="text-base text-prune-soft">Aucune transaction.</p>
         )}
-        {data.transactions.items.map((t) => (
-          <li key={t.id} className="rounded-2xl border border-brand-line bg-white p-4">
-            <div className="flex justify-between mb-1">
-              <span className="text-xs uppercase tracking-[0.18em] text-brand-ink-soft">
+        {items.map((t) => (
+          <li key={t.id} className="rounded-[var(--radius-card)] border-2 border-hairline bg-white p-4">
+            <div className="mb-1 flex items-center justify-between gap-3">
+              <span className="text-sm font-semibold uppercase tracking-[0.12em] text-prune-soft">
                 {REASON_LABELS[t.reason] ?? t.reason}
               </span>
+              {/* Gain en menthe-deep, retrait en prune : un echange de points
+                  n'est PAS une erreur. Le rose, seule couleur d'alerte du
+                  systeme, serait un contresens. */}
               <span
                 className={
-                  t.delta < 0 ? "text-amber-700 font-semibold" : "text-emerald-700 font-semibold"
+                  t.delta < 0 ? "font-semibold text-prune" : "font-semibold text-menthe-deep"
                 }
               >
                 {t.delta > 0 ? "+" : ""}
                 {t.delta} pts
               </span>
             </div>
-            <p className="text-xs text-brand-ink-soft">
-              {new Date(t.createdAt).toLocaleString("fr-FR")} · solde après: {t.balanceAfter} pts
+            <p className="text-sm text-prune-soft">
+              {new Date(t.createdAt).toLocaleString("fr-FR")} · solde après : {t.balanceAfter} pts
               {t.sale && ` · Reçu ${t.sale.receiptNumber}`}
             </p>
-            {t.note && <p className="text-xs text-brand-ink mt-1">« {t.note} »</p>}
+            {t.note && <p className="mt-1 text-sm text-prune">« {t.note} »</p>}
           </li>
         ))}
       </ul>
+
+      {/* Le bouton ne s'affiche que s'il reste des transactions a charger.
+          Sur un jeu de donnees de test (moins de 20 transactions), il sera
+          absent — c'est le comportement correct, pas une panne. */}
+      {items.length < data.transactions.total && (
+        <div className="mt-4 text-center">
+          <Button variant="ghost" onClick={chargerPlus} disabled={loadingMore}>
+            {loadingMore ? "Chargement…" : "Voir plus"}
+          </Button>
+          <p className="mt-2 text-sm text-prune-soft">
+            {items.length} sur {data.transactions.total} transactions
+          </p>
+        </div>
+      )}
     </div>
   );
 }
