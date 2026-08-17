@@ -1176,6 +1176,26 @@ publiques refaites et « DT » ailleurs, y compris dans ce que Google indexe.
 
 ---
 
+### Le pattern ARIA tablist est incomplet — volontairement
+
+La revue finale a relevé que nos onglets portent bien `role="tablist"`,
+`role="tab"` et `aria-selected`, mais **pas la navigation clavier par flèches**
+que décrit le pattern APG (onglet inactif en `tabIndex={-1}`, flèches
+gauche/droite pour circuler).
+
+Vérification faite avant de décider : **`RoleTabs` ne l'implémente pas non plus**
+— le primitif déjà livré et validé sur les pages Connexion et Inscription.
+
+Le corriger ici créerait un écart : deux sélecteurs d'apparence identique au
+comportement clavier différent, ce qui est pire que deux sélecteurs
+imparfaits mais cohérents. À traiter d'un seul geste sur les deux, dans un lot
+d'accessibilité dédié.
+
+Rien n'est cassé : un lecteur d'écran annonce correctement « onglet,
+sélectionné », et les deux boutons restent atteignables au Tab.
+
+---
+
 ## Ce que ce plan ne fait pas
 
 - Le bas de l'accueil (lot 6).
