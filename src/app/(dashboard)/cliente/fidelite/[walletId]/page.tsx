@@ -114,7 +114,11 @@ export default function WalletDetailPage({
           bloc rose non cliquable induirait en erreur. */}
       <div className="mb-6 rounded-[var(--radius-card)] bg-menthe p-8 text-center">
         <p className="ds-display text-5xl text-menthe-deep">{data.balance} pts</p>
-        <p className="mt-2 text-base text-menthe-deep">≈ {formatDT(fromMillimes(valueM))}</p>
+        {/* `prune` et non `menthe-deep` : sur fond menthe, menthe-deep donne
+            3,73:1 — au-dessus du seuil de 3:1 qui s'applique au solde en 48px,
+            mais en dessous des 4,5:1 qu'exige cette ligne en 16px. Le prune y
+            atteint 11,63:1. */}
+        <p className="mt-2 text-base font-semibold text-prune">≈ {formatDT(fromMillimes(valueM))}</p>
       </div>
 
       <div className="mb-6 rounded-[var(--radius-card)] border-2 border-hairline bg-white p-5">

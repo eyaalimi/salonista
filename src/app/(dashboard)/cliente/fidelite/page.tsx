@@ -65,7 +65,11 @@ export default function ClienteFidelitePage() {
                 </div>
                 <div className="rounded-[var(--radius-panel)] bg-menthe p-4 text-center">
                   <p className="ds-display text-3xl text-menthe-deep">{w.balance} pts</p>
-                  <p className="mt-1 text-sm text-menthe-deep">≈ {formatDT(fromMillimes(valueM))}</p>
+                  {/* `prune` et non `menthe-deep` : sur fond menthe, menthe-deep
+                      donne 3,73:1 — suffisant pour le solde en 30px (seuil 3:1
+                      pour du texte large) mais PAS pour cette ligne en 14px,
+                      qui exige 4,5:1. Le prune y atteint 11,63:1. */}
+                  <p className="mt-1 text-sm font-semibold text-prune">≈ {formatDT(fromMillimes(valueM))}</p>
                 </div>
                 <p className="mt-4 text-sm text-prune-soft">
                   Dernière activité : {new Date(w.lastActivityAt).toLocaleDateString("fr-FR")}
