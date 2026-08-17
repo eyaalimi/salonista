@@ -587,6 +587,54 @@ Aucun outil automatique ne dit si une page est réussie. À vérifier à l'œil,
 
 ---
 
+## Piège rencontré : un serveur fantôme sert un ancien build
+
+**À lire avant tout contrôle du HTML servi.**
+
+Le contrôle a d'abord semblé montrer un échec complet : le HTML servi contenait
+encore `luxury-heading` et « Vous avez un salon ? », alors que le code source
+était propre. Un rebuild complet, `.next` supprimé compris, n'a rien changé.
+
+La cause n'était ni le code ni un cache : **trois processus `next start`
+d'anciennes sessions de vérification écoutaient encore le port 3000**, et l'un
+d'eux répondait à la place du nouveau. Il servait le build d'un lot précédent.
+
+Le signe qui a permis de trancher :
+
+```bash
+grep -rln "Vous avez un" src/    # aucune sortie
+```
+
+Le HTML contenait un texte **absent des sources** — impossible pour un build à
+jour. À ce stade, ce n'est plus un problème de code.
+
+Diagnostic et remède :
+
+```bash
+# Qui ecoute vraiment sur le port ?
+powershell -NoProfile -Command "Get-NetTCPConnection -LocalPort 3000 -State Listen | Select OwningProcess"
+powershell -NoProfile -Command "Stop-Process -Id <pid1>,<pid2> -Force"
+```
+
+`kill %1` ne suffit pas : il ne tue que le job du shell courant, pas les
+processus laissés par les sessions précédentes.
+
+**Toujours vérifier que le port est libre avant de démarrer**, sinon le contrôle
+porte sur un build inconnu.
+
+## Deux artefacts de mesure, pas des défauts
+
+Deux chiffres du HTML servi paraissent faux et ne le sont pas :
+
+- **`grep -o 'application/ld+json' | wc -l` renvoie 6, pas 3.** Le flux React
+  répète chaque bloc sous forme échappée. Le compte réel s'obtient avec
+  `grep -o '<script type="application/ld+json"'`, qui donne bien **3**.
+- **`luxury-heading` apparaît 3 fois.** Il vient du composant `<Logo>`, présent
+  dans l'en-tête et le pied de page, plus l'écho du flux. `<Logo>` est **hors
+  périmètre** : il s'affiche sur toutes les pages du site, y compris la caisse.
+
+---
+
 ## Ce que ce plan ne fait pas
 
 - Il ne supprime aucune section de la page.
