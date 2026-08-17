@@ -622,6 +622,17 @@ processus laissés par les sessions précédentes.
 **Toujours vérifier que le port est libre avant de démarrer**, sinon le contrôle
 porte sur un build inconnu.
 
+## Un vouvoiement laissé volontairement
+
+`page.tsx:445` contient encore « Réservez vos soins beauté en ligne » — dans la
+`description` du bloc JSON-LD `WebSite`.
+
+Ce n'est **pas** de l'interface : c'est du texte SEO destiné à Google, et il se
+trouve dans une zone que ce lot protège explicitement. Le modifier pour une
+raison de style contredirait la règle principale du lot.
+
+À traiter, si on le souhaite, avec le chantier SEO — jamais dans un lot visuel.
+
 ## Deux artefacts de mesure, pas des défauts
 
 Deux chiffres du HTML servi paraissent faux et ne le sont pas :
