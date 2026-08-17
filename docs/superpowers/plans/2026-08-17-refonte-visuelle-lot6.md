@@ -60,7 +60,7 @@ C'est **cette** sortie qui doit être vide.
 | Fichier | Responsabilité | État de départ |
 |---|---|---|
 | `src/app/page.tsx` | Accueil complet ; seules les lignes 313-425 sont concernées | 467 lignes, **18** `brand-*`, **3** `luxury-*` |
-| `src/components/promo-banner.tsx` | Bannière promo (utilisée **uniquement** par l'accueil) | 19 lignes, **4** `brand-*` |
+| `src/components/promo-banner.tsx` | Bannière promo (utilisée **uniquement** par l'accueil) | 19 lignes, **4** occurrences `brand-*` sur 3 lignes |
 
 ### Bonne nouvelle : pas d'interstice possible
 
@@ -110,7 +110,12 @@ grep -c "brand-" src/components/promo-banner.tsx
 grep -c "application/ld+json" src/app/page.tsx
 ```
 
-Attendu : `18`, `3`, `4`, et **`3`** pour les blocs JSON-LD. Les trois premiers doivent valoir **0** à la fin ; le quatrième doit rester **3**.
+Attendu : `18`, `3`, **`3`**, et **`3`** pour les blocs JSON-LD.
+
+**Attention :** `grep -c` compte les **lignes** contenant un motif, pas les
+occurrences. `promo-banner.tsx` a **4 occurrences** de `brand-*` reparties sur
+**3 lignes** (une ligne en contient deux). Le critere de fin reste le meme —
+zero — mais ne t'etonne pas de l'ecart entre les deux facons de compter. Les trois premiers doivent valoir **0** à la fin ; le quatrième doit rester **3**.
 
 ---
 
