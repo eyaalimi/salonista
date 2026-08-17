@@ -355,7 +355,7 @@ function ProgramCard({
               className="mt-1 w-full px-3 py-2 border border-pos-border rounded text-sm pos-mono"
             />
             <span className="text-[10px] text-pos-ink-3">
-              ex. 3% = 3 pts par DT dépensé, 100 pts = 1 TND
+              ex. 3% = 3 pts par TND dépensé, 100 pts = 1 TND
             </span>
           </label>
           <label className="block">

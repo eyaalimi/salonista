@@ -97,7 +97,7 @@ export function Step4Loyalty({
                   max={1000}
                   className="w-full px-3 py-2.5 border border-brand-line rounded-lg bg-white text-sm pos-mono text-right focus:border-pos-accent focus:outline-none"
                 />
-                <span className="text-xs text-brand-ink-soft shrink-0">DT</span>
+                <span className="text-xs text-brand-ink-soft shrink-0">TND</span>
               </div>
             </div>
 
@@ -111,7 +111,7 @@ export function Step4Loyalty({
                   onChange={(e) => setPointValue(e.target.value)}
                   className="w-full px-3 py-2.5 border border-brand-line rounded-lg bg-white text-sm pos-mono text-right focus:border-pos-accent focus:outline-none"
                 />
-                <span className="text-xs text-brand-ink-soft shrink-0">DT</span>
+                <span className="text-xs text-brand-ink-soft shrink-0">TND</span>
               </div>
             </div>
 

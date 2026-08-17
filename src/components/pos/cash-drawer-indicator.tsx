@@ -323,7 +323,7 @@ function CloseModal({
         <p className="luxury-badge mb-2">Fermer caisse</p>
         <p className="text-sm text-brand-ink-soft mb-4">Attendu: {expectedCash} TND</p>
         <label className="block text-[10px] uppercase tracking-[0.18em] text-brand-ink-soft mb-1">
-          Cash compté (DT)
+          Cash compté (TND)
         </label>
         <input
           type="number"

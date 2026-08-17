@@ -105,10 +105,10 @@ export function ReceptionModal({
 
         <label className="block mb-3">
           <span className="text-[10px] uppercase tracking-[0.18em] text-brand-ink-soft">
-            Prix d&apos;achat HT (DT)
+            Prix d&apos;achat HT (TND)
           </span>
           <input
-            aria-label="Prix d'achat HT en DT"
+            aria-label="Prix d'achat HT en TND"
             type="number"
             step="0.001"
             min="0"

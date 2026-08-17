@@ -367,7 +367,7 @@ function ModuleCard({
           )}
           {sub.pricingSnapshot?.monthlyPrice && (
             <p>
-              {sub.pricingSnapshot.monthlyPrice} {sub.pricingSnapshot.currency ?? "DT"}{" "}
+              {sub.pricingSnapshot.monthlyPrice} {sub.pricingSnapshot.currency ?? "TND"}{" "}
               / mois
             </p>
           )}
@@ -439,7 +439,7 @@ function ModuleCard({
             step="1"
             value={form.monthlyPrice}
             onChange={(e) => setForm({ ...form, monthlyPrice: e.target.value })}
-            placeholder="Prix mensuel (DT)"
+            placeholder="Prix mensuel (TND)"
             className="w-full rounded-lg border border-brand-line bg-white px-3 py-2 text-sm"
           />
           <textarea

@@ -380,7 +380,7 @@ function LineDiscountEditor({
           onClick={() => setIsPercent(false)}
           className={`px-2 py-1 text-[11px] ${!isPercent ? "bg-pos-accent text-white" : "bg-white text-pos-ink-2"}`}
         >
-          DT
+          TND
         </button>
       </div>
       <input

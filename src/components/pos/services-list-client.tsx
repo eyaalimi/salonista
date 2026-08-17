@@ -248,7 +248,7 @@ export function ServicesListClient({ initialOffers }: { initialOffers: Offer[] }
             className="md:col-span-2 px-2 py-2 md:py-1 rounded border border-pos-border bg-white text-sm w-full"
             type="number"
             step="0.001"
-            placeholder="Prix DT"
+            placeholder="Prix TND"
             value={qaPrice}
             onChange={(e) => setQaPrice(e.target.value)}
             onKeyDown={(e) => {
