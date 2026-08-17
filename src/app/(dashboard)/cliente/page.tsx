@@ -275,24 +275,27 @@ export default function ClienteReservations() {
 
       {/* Review modal */}
       {reviewBooking && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm px-4">
-          <div className="bg-white border border-brand-gold/20 p-8 max-w-md w-full">
-            <p className="luxury-badge mb-3">Votre avis</p>
-            <h3 className="luxury-heading text-xl text-brand-bordeaux mb-1">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-prune/50 px-4">
+          <div className="w-full max-w-md rounded-[var(--radius-card)] border-2 border-hairline bg-white p-8">
+            <p className="mb-3 text-sm font-semibold uppercase tracking-[0.12em] text-prune-soft">Ton avis</p>
+            <h3 className="ds-display mb-1 text-xl text-prune">
               {reviewBooking.items.map((i) => i.offer.title).join(", ")}
             </h3>
-            <p className="text-xs text-brand-bordeaux/40 mb-6">
+            <p className="mb-6 text-sm text-prune-soft">
               {reviewBooking.items[0]?.offer.provider.salonName}
             </p>
 
             {/* Star selector */}
-            <div className="flex gap-1 mb-6 justify-center">
+            <div className="mb-6 flex justify-center gap-1">
               {[1, 2, 3, 4, 5].map((star) => (
                 <button
                   key={star}
                   type="button"
                   onClick={() => setReviewRating(star)}
-                  className={`text-3xl transition-colors ${star <= reviewRating ? "text-brand-gold" : "text-brand-gold/20"} hover:text-brand-gold`}
+                  aria-label={`${star} étoile${star > 1 ? "s" : ""}`}
+                  className={`ds-press ds-focus flex h-11 w-11 items-center justify-center rounded-[var(--radius-pill)] text-3xl ${
+                    star <= reviewRating ? "text-rose" : "text-hairline"
+                  } hover:text-rose`}
                 >
                   ★
                 </button>
@@ -303,24 +306,19 @@ export default function ClienteReservations() {
               value={reviewComment}
               onChange={(e) => setReviewComment(e.target.value)}
               rows={3}
-              placeholder="Partagez votre experience... (optionnel)"
-              className="w-full px-4 py-3 border border-brand-gold/20 text-brand-bordeaux text-sm focus:outline-none focus:border-brand-gold transition-colors bg-transparent mb-6"
+              placeholder="Partage ton expérience… (optionnel)"
+              className="ds-focus mb-6 w-full rounded-[var(--radius-panel)] border-2 border-hairline bg-white px-4 py-3 text-base text-prune placeholder:text-prune-soft/50"
             />
 
-            <div className="flex gap-3">
-              <button
-                onClick={submitReview}
-                disabled={reviewLoading}
-                className="flex-1 py-3 text-xs tracking-[0.2em] uppercase bg-brand-bordeaux text-white hover:bg-brand-gold transition-colors duration-500 disabled:opacity-50"
-              >
-                {reviewLoading ? "Envoi..." : "Envoyer"}
-              </button>
-              <button
-                onClick={() => setReviewBooking(null)}
-                className="px-6 py-3 text-xs tracking-[0.15em] uppercase border border-brand-gold/20 text-brand-bordeaux/60 hover:border-brand-gold transition-colors duration-500"
-              >
+            <div className="flex flex-col gap-3 sm:flex-row">
+              <div className="flex-1">
+                <Button onClick={submitReview} disabled={reviewLoading} fullWidth>
+                  {reviewLoading ? "Envoi…" : "Envoyer"}
+                </Button>
+              </div>
+              <Button variant="ghost" onClick={() => setReviewBooking(null)}>
                 Annuler
-              </button>
+              </Button>
             </div>
           </div>
         </div>
