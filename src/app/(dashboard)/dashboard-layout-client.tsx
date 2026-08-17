@@ -57,11 +57,15 @@ export default function DashboardLayoutClient({ children, activeModules }: Props
   return (
     <div className="flex min-h-screen bg-creme">
       {/* Sidebar */}
-      <aside className="hidden flex-col border-r border-hairline bg-white md:flex md:w-64">
-        <div className="border-b border-hairline p-6">
+      {/* `sticky` + `h-screen` : la barre tient dans la hauteur de l'ecran et
+          c'est la NAV qui defile, pas la page. Sans cela, un prestataire avec
+          ses 7 entrees repousse le pied (avatar + Deconnexion) hors de vue sur
+          un ecran court. */}
+      <aside className="sticky top-0 hidden h-screen flex-col border-r border-hairline bg-white md:flex md:w-64">
+        <div className="shrink-0 border-b border-hairline p-6">
           <Logo className="text-xl" />
         </div>
-        <nav className="flex-1 space-y-1 px-4 py-6">
+        <nav className="flex-1 space-y-1 overflow-y-auto px-4 py-6">
           {items.map((item) => {
             const active = pathname === item.href || (item.href !== "/" && pathname.startsWith(item.href + "/"));
             return (
@@ -79,7 +83,7 @@ export default function DashboardLayoutClient({ children, activeModules }: Props
             );
           })}
         </nav>
-        <div className="border-t border-hairline p-4">
+        <div className="shrink-0 border-t border-hairline p-4">
           <div className="mb-4 flex items-center gap-3">
             <div className="flex h-10 w-10 items-center justify-center rounded-full bg-rose-soft text-sm font-bold text-prune">
               {session?.user?.name?.[0]?.toUpperCase() || "?"}
