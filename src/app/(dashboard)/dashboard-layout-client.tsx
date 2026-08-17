@@ -102,8 +102,12 @@ export default function DashboardLayoutClient({ children, activeModules }: Props
         </div>
       </aside>
 
-      {/* Mobile header */}
-      <div className="flex flex-1 flex-col">
+      {/* `min-w-0` : un enfant flex a `min-width: auto` par defaut, donc il
+          refuse de retrecir sous la largeur de son contenu. Sans lui, la barre
+          de filtres (5 elements `whitespace-nowrap`) imposait sa largeur a
+          TOUTE la page — l'en-tete et les stats se retrouvaient coupes a
+          droite sur mobile. */}
+      <div className="flex min-w-0 flex-1 flex-col">
         <header className="flex items-center justify-between border-b border-hairline bg-white p-4 md:hidden">
           <Logo className="text-lg" />
           <button
@@ -147,7 +151,7 @@ export default function DashboardLayoutClient({ children, activeModules }: Props
           </div>
         )}
 
-        <main className="flex-1 bg-creme p-6 md:p-10">{children}</main>
+        <main className="min-w-0 flex-1 bg-creme p-6 md:p-10">{children}</main>
       </div>
     </div>
   );
