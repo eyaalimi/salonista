@@ -6,6 +6,9 @@ import Link from "next/link";
 import { BookingCalendar } from "@/components/booking-calendar";
 import { Logo } from "@/components/logo";
 import { UploadedImage } from "@/components/uploaded-image";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 
 interface Slot {
   id: string;
@@ -47,7 +50,7 @@ function StarRating({ rating, size = "sm" }: { rating: number; size?: "sm" | "lg
   return (
     <span className={`${sizeClass} tracking-wider`}>
       {[1, 2, 3, 4, 5].map((i) => (
-        <span key={i} className={i <= rating ? "text-brand-gold" : "text-brand-gold/20"}>
+        <span key={i} className={i <= rating ? "text-rose" : "text-hairline"}>
           ★
         </span>
       ))}
@@ -117,7 +120,7 @@ export function OfferClient({
     setError("");
 
     if (!selectedSlot) {
-      setError("Veuillez choisir un créneau");
+      setError("Choisis un créneau");
       return;
     }
     const slotObj = offer.slots.find((s) => s.id === selectedSlot);
@@ -143,7 +146,7 @@ export function OfferClient({
       }
 
       if (authMode === "register") {
-        if (!authName) throw new Error("Veuillez entrer votre nom");
+        if (!authName) throw new Error("Entre ton nom");
         const regRes = await fetch("/api/register", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -171,7 +174,7 @@ export function OfferClient({
         throw new Error(
           authMode === "login"
             ? "Email ou mot de passe incorrect"
-            : "Compte créé mais connexion impossible. Réessayez."
+            : "Compte créé mais connexion impossible. Réessaie."
         );
       }
 
@@ -190,28 +193,28 @@ export function OfferClient({
 
   if (success) {
     return (
-      <div className="min-h-screen bg-brand-cream flex items-center justify-center px-6">
-        <div className="bg-white p-12 md:p-16 max-w-md w-full text-center border border-brand-gold/20">
-          <div className="w-16 h-16 border border-brand-gold/30 flex items-center justify-center mx-auto mb-6">
-            <svg className="w-8 h-8 text-brand-gold" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M5 13l4 4L19 7" />
+      <div className="flex min-h-screen items-center justify-center bg-creme px-6">
+        <div className="w-full max-w-md rounded-[var(--radius-card)] border-2 border-hairline bg-white p-12 text-center md:p-16">
+          <div className="mx-auto mb-6 flex h-16 w-16 items-center justify-center rounded-full bg-menthe">
+            <svg className="h-8 w-8 text-menthe-deep" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
             </svg>
           </div>
-          <h2 className="luxury-heading text-2xl text-brand-bordeaux mb-3">Reservation enregistree</h2>
-          <p className="text-sm text-brand-bordeaux/50 mb-8 leading-relaxed">
-            Votre reservation pour <strong>{offer.title}</strong> a ete enregistree.
-            Procedez au paiement pour recevoir votre QR code de confirmation.
+          <h2 className="ds-display mb-3 text-2xl text-prune">Réservation enregistrée</h2>
+          <p className="mb-8 text-base leading-relaxed text-prune-soft">
+            Ta réservation pour <strong className="font-semibold text-prune">{offer.title}</strong> a été enregistrée.
+            Procède au paiement pour recevoir ton QR code de confirmation.
           </p>
           <div className="flex flex-col gap-3">
             <Link
               href={`/cliente/paiement?bookingId=${bookingId}`}
-              className="inline-block px-8 py-4 text-xs tracking-[0.2em] uppercase bg-brand-bordeaux text-white hover:bg-brand-gold transition-colors duration-500"
+              className="ds-press ds-focus inline-flex min-h-[48px] w-full items-center justify-center rounded-[var(--radius-pill)] bg-rose px-6 text-base font-semibold text-white hover:bg-[#F04A79]"
             >
               Payer maintenant
             </Link>
             <Link
               href="/cliente"
-              className="inline-block px-8 py-3 text-xs tracking-[0.2em] uppercase border border-brand-gold/20 text-brand-bordeaux/60 hover:border-brand-gold transition-colors duration-500"
+              className="ds-press ds-focus inline-flex min-h-[48px] w-full items-center justify-center rounded-[var(--radius-pill)] border-2 border-hairline px-6 text-base font-semibold text-prune hover:border-rose"
             >
               Payer plus tard
             </Link>
@@ -222,12 +225,15 @@ export function OfferClient({
   }
 
   return (
-    <div className="min-h-screen bg-brand-cream">
+    <div className="min-h-screen bg-creme">
       {/* Nav */}
-      <nav className="bg-white/80 backdrop-blur-md border-b border-brand-gold/15 sticky top-0 z-50">
-        <div className="max-w-7xl mx-auto px-6 md:px-12 flex items-center justify-between h-16">
+      <nav className="sticky top-0 z-40 border-b border-hairline bg-creme">
+        <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-6 md:px-12">
           <Logo className="text-xl" />
-          <Link href="/offres" className="text-sm font-medium text-brand-ink-soft hover:text-brand-gold transition-colors">
+          <Link
+            href="/offres"
+            className="ds-focus rounded-[var(--radius-pill)] px-2 py-1 text-base text-prune-soft hover:text-rose"
+          >
             Toutes les offres
           </Link>
         </div>
@@ -237,7 +243,7 @@ export function OfferClient({
         <div className="grid grid-cols-1 md:grid-cols-2 gap-12 md:gap-16">
           {/* Image */}
           <div className="space-y-3">
-            <div className="relative aspect-[4/5] bg-gradient-to-br from-brand-nude to-brand-peach flex items-center justify-center overflow-hidden luxury-image-reveal">
+            <div className="relative flex aspect-[4/5] items-center justify-center overflow-hidden rounded-[var(--radius-card)] bg-rose-soft">
               {offer.photos.length > 0 ? (
                 <UploadedImage src={offer.photos[selectedPhoto]} alt={offer.title} fill sizes="(max-width: 768px) 100vw, 50vw" className="object-cover" />
               ) : (
@@ -251,7 +257,11 @@ export function OfferClient({
                     key={photo}
                     type="button"
                     onClick={() => setSelectedPhoto(i)}
-                    className={`relative aspect-square overflow-hidden border-2 transition-colors ${i === selectedPhoto ? "border-brand-gold" : "border-transparent hover:border-brand-gold/30"}`}
+                    aria-label={`Voir la photo ${i + 1}`}
+                    aria-pressed={i === selectedPhoto}
+                    className={`ds-press ds-focus relative aspect-square overflow-hidden rounded-[var(--radius-panel)] border-2 ${
+                      i === selectedPhoto ? "border-rose" : "border-transparent hover:border-rose"
+                    }`}
                   >
                     <UploadedImage src={photo} alt={`Photo ${i + 1}`} fill sizes="100px" className="object-cover" />
                   </button>
@@ -264,75 +274,72 @@ export function OfferClient({
           <div className="flex flex-col justify-center">
             {/* Salon + quartier — above the fold on mobile */}
             <div className="mb-3 flex items-center gap-2">
-              <span className="rounded-full bg-brand-sand px-3 py-1 text-xs font-medium text-brand-ink">
-                {offer.category}
-              </span>
+              <Badge tone="prune">{offer.category}</Badge>
               {reviews.length > 0 && (
                 <div className="flex items-center gap-1">
                   <StarRating rating={Math.round(avgRating)} />
-                  <span className="text-xs text-brand-ink-soft">
+                  <span className="text-sm text-prune-soft">
                     {avgRating.toFixed(1)} · {reviews.length} avis
                   </span>
                 </div>
               )}
             </div>
 
-            <p className="text-base font-semibold text-brand-ink">
+            <p className="text-base font-semibold text-prune">
               {offer.provider.salonName}
             </p>
             {offer.provider.city && (
-              <p className="mt-0.5 text-sm text-brand-ink-soft">
+              <p className="mt-0.5 text-sm text-prune-soft">
                 📍 {offer.provider.city}
               </p>
             )}
 
-            <h1 className="luxury-heading mt-4 text-2xl text-brand-ink md:text-4xl">
+            <h1 className="ds-display mt-4 text-2xl text-prune md:text-4xl">
               {offer.title}
             </h1>
 
             {/* Price */}
-            <div className="mt-5 mb-6 border-b border-brand-line pb-6">
+            <div className="mt-5 mb-6 border-b border-hairline pb-6">
               <div className="flex items-baseline gap-3">
-                <span className="luxury-heading text-3xl text-brand-gold sm:text-4xl">
-                  {offer.discountPrice.toFixed(0)} DT
+                <span className="ds-display text-3xl text-prune sm:text-4xl">
+                  {offer.discountPrice.toFixed(0)} TND
                 </span>
                 {offer.originalPrice > offer.discountPrice && (
                   <>
-                    <span className="text-base text-gray-400 line-through sm:text-lg">
-                      {offer.originalPrice.toFixed(0)} DT
+                    <span className="text-base text-prune-soft line-through sm:text-lg">
+                      {offer.originalPrice.toFixed(0)} TND
                     </span>
-                    <span className="rounded-full bg-brand-ink px-2.5 py-0.5 text-xs font-bold text-[#FBFAF7]">
-                      -{discount}%
-                    </span>
+                    <Badge tone="rose">-{discount}%</Badge>
                   </>
                 )}
               </div>
-              <p className="mt-1 text-[11px] uppercase tracking-[0.18em] text-brand-ink-soft">
-                TVA incluse: {Number(offer.taxRate ?? 19)}%
+              <p className="mt-2 text-sm text-prune-soft">
+                TVA incluse : {Number(offer.taxRate ?? 19)}%
               </p>
             </div>
 
             {offer.description && (
-              <p className="mb-8 leading-relaxed text-brand-ink-soft">{offer.description}</p>
+              <p className="mb-8 text-base leading-relaxed text-prune-soft">{offer.description}</p>
             )}
 
             {/* CTA — desktop button (mobile uses the sticky bar at bottom) */}
             {!showBooking ? (
-              <button
-                onClick={() => setShowBooking(true)}
-                className="hidden w-full rounded-2xl bg-brand-ink py-4 text-base font-semibold text-white transition-colors hover:bg-brand-gold md:block"
-              >
-                Réserver maintenant
-              </button>
+              <div className="hidden md:block">
+                <Button onClick={() => setShowBooking(true)} fullWidth>
+                  Réserver maintenant
+                </Button>
+              </div>
             ) : (
-              <form onSubmit={handleBook} className="space-y-6 p-6 border border-brand-gold/20 bg-white">
+              <form onSubmit={handleBook} className="space-y-6 rounded-[var(--radius-card)] border-2 border-hairline bg-white p-6">
                 {error && (
-                  <div className="p-3 text-sm text-red-600 bg-red-50 border border-red-100">{error}</div>
+                  <div className="rounded-[var(--radius-panel)] border-2 border-rose bg-rose-soft p-3 text-sm font-semibold text-prune">
+                    {error}
+                  </div>
                 )}
 
                 {/* 1. Slot picker */}
                 <div>
-                  <p className="text-[10px] tracking-[0.15em] uppercase text-brand-bordeaux/60 mb-3">
+                  <p className="mb-3 text-xs font-semibold uppercase tracking-[0.12em] text-prune-soft">
                     1. Choisir un créneau
                   </p>
                   <BookingCalendar
@@ -344,81 +351,96 @@ export function OfferClient({
 
                 {/* 2. Inline auth — only if not signed in */}
                 {!session && (
-                  <div className="pt-5 border-t border-brand-gold/15">
-                    <p className="text-[10px] tracking-[0.15em] uppercase text-brand-bordeaux/60 mb-3">
-                      2. Vos coordonnées
+                  <div className="border-t border-hairline pt-5">
+                    <p className="mb-3 text-xs font-semibold uppercase tracking-[0.12em] text-prune-soft">
+                      2. Tes coordonnées
                     </p>
 
-                    <div className="flex gap-2 mb-4 text-[10px] tracking-[0.15em] uppercase">
+                    {/* Onglets refaits a la main : RoleTabs est code en dur pour
+                        les trois roles (CLIENT/PROVIDER/INFLUENCER) et ne peut
+                        pas porter cet axe-ci. On reprend son apparence. */}
+                    <div
+                      role="tablist"
+                      aria-label="Type de compte"
+                      className="mb-4 flex gap-1 rounded-[var(--radius-pill)] bg-rose-soft p-1"
+                    >
                       <button
                         type="button"
+                        role="tab"
+                        aria-selected={authMode === "register"}
                         onClick={() => setAuthMode("register")}
-                        className={`flex-1 py-2.5 transition-colors ${
+                        className={`ds-press ds-focus min-h-[44px] flex-1 rounded-[var(--radius-pill)] px-3 text-sm font-semibold ${
                           authMode === "register"
-                            ? "bg-brand-bordeaux text-white"
-                            : "border border-brand-gold/20 text-brand-bordeaux/60 hover:border-brand-gold"
+                            ? "bg-rose text-white"
+                            : "bg-transparent text-prune hover:bg-white/60"
                         }`}
                       >
                         Nouveau client
                       </button>
                       <button
                         type="button"
+                        role="tab"
+                        aria-selected={authMode === "login"}
                         onClick={() => setAuthMode("login")}
-                        className={`flex-1 py-2.5 transition-colors ${
+                        className={`ds-press ds-focus min-h-[44px] flex-1 rounded-[var(--radius-pill)] px-3 text-sm font-semibold ${
                           authMode === "login"
-                            ? "bg-brand-bordeaux text-white"
-                            : "border border-brand-gold/20 text-brand-bordeaux/60 hover:border-brand-gold"
+                            ? "bg-rose text-white"
+                            : "bg-transparent text-prune hover:bg-white/60"
                         }`}
                       >
                         J&apos;ai déjà un compte
                       </button>
                     </div>
 
-                    <div className="space-y-3">
+                    <div className="space-y-4">
                       {authMode === "register" && (
                         <>
-                          <input
+                          <Input
+                            label="Nom complet"
+                            id="auth-name"
                             type="text"
                             value={authName}
                             onChange={(e) => setAuthName(e.target.value)}
-                            placeholder="Nom complet *"
+                            placeholder="Ton nom"
                             required={authMode === "register"}
                             autoComplete="name"
-                            className="w-full px-4 py-3 border border-brand-gold/20 text-brand-bordeaux text-sm placeholder:text-brand-bordeaux/30 focus:outline-none focus:border-brand-gold transition-colors bg-transparent"
                           />
-                          <input
+                          <Input
+                            label="Téléphone (optionnel)"
+                            id="auth-phone"
                             type="tel"
                             value={authPhone}
                             onChange={(e) => setAuthPhone(e.target.value)}
-                            placeholder="Téléphone (optionnel)"
+                            placeholder="00 000 000"
                             autoComplete="tel"
-                            className="w-full px-4 py-3 border border-brand-gold/20 text-brand-bordeaux text-sm placeholder:text-brand-bordeaux/30 focus:outline-none focus:border-brand-gold transition-colors bg-transparent"
                           />
                         </>
                       )}
-                      <input
+                      <Input
+                        label="Email"
+                        id="auth-email"
                         type="email"
                         value={authEmail}
                         onChange={(e) => setAuthEmail(e.target.value)}
-                        placeholder="Email *"
+                        placeholder="toi@exemple.com"
                         required
                         autoComplete="email"
-                        className="w-full px-4 py-3 border border-brand-gold/20 text-brand-bordeaux text-sm placeholder:text-brand-bordeaux/30 focus:outline-none focus:border-brand-gold transition-colors bg-transparent"
                       />
-                      <input
+                      <Input
+                        label={authMode === "register" ? "Mot de passe (min. 6 caractères)" : "Mot de passe"}
+                        id="auth-password"
                         type="password"
                         value={authPassword}
                         onChange={(e) => setAuthPassword(e.target.value)}
-                        placeholder={authMode === "register" ? "Mot de passe (min. 6 caractères) *" : "Mot de passe *"}
+                        placeholder="••••••"
                         required
                         minLength={authMode === "register" ? 6 : undefined}
                         autoComplete={authMode === "register" ? "new-password" : "current-password"}
-                        className="w-full px-4 py-3 border border-brand-gold/20 text-brand-bordeaux text-sm placeholder:text-brand-bordeaux/30 focus:outline-none focus:border-brand-gold transition-colors bg-transparent"
                       />
                       {authMode === "login" && (
                         <Link
                           href="/forgot-password"
-                          className="block text-[10px] tracking-[0.15em] uppercase text-brand-bordeaux/50 hover:text-brand-gold transition-colors"
+                          className="ds-focus inline-flex min-h-[44px] items-center rounded-[var(--radius-pill)] text-sm font-semibold text-prune-soft hover:text-rose"
                         >
                           Mot de passe oublié ?
                         </Link>
@@ -428,36 +450,38 @@ export function OfferClient({
                 )}
 
                 {/* 3. Notes */}
-                <div className="pt-5 border-t border-brand-gold/15">
-                  <p className="text-[10px] tracking-[0.15em] uppercase text-brand-bordeaux/60 mb-2">
+                <div className="border-t border-hairline pt-5">
+                  <label
+                    htmlFor="booking-notes"
+                    className="mb-2 block text-xs font-semibold uppercase tracking-[0.12em] text-prune-soft"
+                  >
                     {session ? "2." : "3."} Notes (optionnel)
-                  </p>
+                  </label>
                   <textarea
+                    id="booking-notes"
                     value={bookingNotes}
                     onChange={(e) => setBookingNotes(e.target.value)}
                     rows={2}
-                    className="w-full px-4 py-3 border border-brand-gold/20 text-brand-bordeaux text-sm focus:outline-none focus:border-brand-gold transition-colors bg-transparent"
-                    placeholder="Précisions, préférences..."
+                    className="ds-focus w-full rounded-[var(--radius-panel)] border-2 border-hairline bg-white px-4 py-3 text-base text-prune placeholder:text-prune-soft/50"
+                    placeholder="Précisions, préférences…"
                   />
                 </div>
 
-                <div className="flex gap-3">
-                  <button
-                    type="submit"
-                    disabled={loading}
-                    className="flex-1 py-3.5 text-xs tracking-[0.2em] uppercase bg-brand-bordeaux text-white hover:bg-brand-gold transition-colors duration-500 disabled:opacity-50"
-                  >
-                    {loading
-                      ? "Traitement…"
-                      : `Réserver · ${offer.discountPrice.toFixed(0)} DT`}
-                  </button>
-                  <button
+                <div className="flex flex-col gap-3 sm:flex-row">
+                  <div className="flex-1">
+                    <Button type="submit" disabled={loading} fullWidth>
+                      {loading
+                        ? "Traitement…"
+                        : `Réserver · ${offer.discountPrice.toFixed(0)} TND`}
+                    </Button>
+                  </div>
+                  <Button
                     type="button"
+                    variant="ghost"
                     onClick={() => setShowBooking(false)}
-                    className="px-6 py-3.5 text-xs tracking-[0.15em] uppercase border border-brand-gold/20 text-brand-bordeaux/60 hover:border-brand-gold transition-colors duration-500"
                   >
                     Annuler
-                  </button>
+                  </Button>
                 </div>
               </form>
             )}
@@ -465,22 +489,22 @@ export function OfferClient({
         </div>
 
         {/* Provider info */}
-        <div className="mt-16 md:mt-24 p-8 md:p-12 border border-brand-gold/15 bg-white">
-          <p className="luxury-badge mb-4">Le salon</p>
-          <h2 className="luxury-heading text-xl text-brand-bordeaux mb-3">
+        <div className="mt-16 rounded-[var(--radius-card)] border-2 border-hairline bg-white p-8 md:mt-24 md:p-12">
+          <p className="mb-4 text-sm font-semibold uppercase tracking-[0.12em] text-prune-soft">Le salon</p>
+          <h2 className="ds-display mb-3 text-xl text-prune">
             {offer.provider.salonName}
           </h2>
           {offer.provider.description && (
-            <p className="text-brand-bordeaux/60 leading-relaxed">{offer.provider.description}</p>
+            <p className="text-base leading-relaxed text-prune-soft">{offer.provider.description}</p>
           )}
           {offer.provider.city && (
-            <p className="text-xs tracking-[0.15em] uppercase text-brand-bordeaux/40 mt-4">
+            <p className="mt-4 text-sm text-prune-soft">
               {offer.provider.city}
             </p>
           )}
           <Link
             href={`/salon/${offer.provider.id}`}
-            className="inline-block mt-6 px-6 py-3 text-xs tracking-[0.2em] uppercase border border-brand-gold text-brand-bordeaux hover:bg-brand-gold hover:text-white transition-colors duration-500"
+            className="ds-press ds-focus mt-6 inline-flex min-h-[48px] items-center justify-center rounded-[var(--radius-pill)] border-2 border-hairline px-6 text-base font-semibold text-prune hover:border-rose"
           >
             Voir le salon
           </Link>
@@ -488,32 +512,32 @@ export function OfferClient({
 
         {/* Reviews section */}
         <div className="mt-16 md:mt-24">
-          <div className="text-center mb-10">
-            <p className="luxury-badge mb-4">Avis clients</p>
+          <div className="mb-10 text-center">
+            <p className="mb-4 text-sm font-semibold uppercase tracking-[0.12em] text-prune-soft">Avis clients</p>
             {reviews.length > 0 ? (
               <div className="flex items-center justify-center gap-3">
                 <StarRating rating={Math.round(avgRating)} size="lg" />
-                <span className="luxury-heading text-2xl text-brand-bordeaux">{avgRating.toFixed(1)}</span>
-                <span className="text-sm text-brand-bordeaux/40">/ 5</span>
-                <span className="text-xs text-brand-bordeaux/30 ml-2">({reviews.length} avis)</span>
+                <span className="ds-display text-2xl text-prune">{avgRating.toFixed(1)}</span>
+                <span className="text-base text-prune-soft">/ 5</span>
+                <span className="ml-2 text-sm text-prune-soft">({reviews.length} avis)</span>
               </div>
             ) : (
-              <p className="text-sm text-brand-bordeaux/40">Aucun avis pour le moment</p>
+              <p className="text-base text-prune-soft">Aucun avis pour le moment</p>
             )}
-            <div className="luxury-divider mt-6" />
+            <div className="mx-auto mt-6 h-px w-10 bg-hairline" />
           </div>
 
-          <div className="space-y-4 max-w-2xl mx-auto">
+          <div className="mx-auto max-w-2xl space-y-4">
             {reviews.map((review) => (
-              <div key={review.id} className="bg-white border border-brand-gold/15 p-6">
-                <div className="flex items-center justify-between mb-3">
+              <div key={review.id} className="rounded-[var(--radius-card)] border-2 border-hairline bg-white p-6">
+                <div className="mb-3 flex items-center justify-between">
                   <div className="flex items-center gap-3">
-                    <div className="w-8 h-8 bg-brand-nude flex items-center justify-center text-xs text-brand-bordeaux/60 font-medium">
+                    <div className="flex h-10 w-10 items-center justify-center rounded-full bg-rose-soft text-sm font-bold text-prune">
                       {review.clientName.charAt(0).toUpperCase()}
                     </div>
                     <div>
-                      <p className="text-sm text-brand-bordeaux font-medium">{review.clientName}</p>
-                      <p className="text-[10px] text-brand-bordeaux/30">
+                      <p className="text-sm font-semibold text-prune">{review.clientName}</p>
+                      <p className="text-xs text-prune-soft">
                         {new Date(review.createdAt).toLocaleDateString("fr-TN", {
                           day: "numeric",
                           month: "long",
@@ -525,7 +549,7 @@ export function OfferClient({
                   <StarRating rating={review.rating} />
                 </div>
                 {review.comment && (
-                  <p className="text-sm text-brand-bordeaux/70 leading-relaxed">{review.comment}</p>
+                  <p className="text-sm leading-relaxed text-prune-soft">{review.comment}</p>
                 )}
               </div>
             ))}
@@ -533,15 +557,17 @@ export function OfferClient({
         </div>
       </div>
 
-      {/* Mobile sticky CTA — sits above the BottomNav (60px tall) */}
+      {/* Barre fixe mobile — se pose au-dessus de BottomNav, qui occupe
+          fixed bottom-0 z-50 h-[60px] avec la safe-area. Sans le calc(),
+          la barre passe SOUS la navigation sur les iPhone a encoche. */}
       {!showBooking && (
-        <div className="fixed bottom-[60px] left-0 right-0 z-40 border-t border-brand-line bg-white p-4 md:hidden">
-          <button
-            onClick={() => setShowBooking(true)}
-            className="flex w-full min-h-[52px] items-center justify-center gap-2 rounded-2xl bg-brand-ink text-base font-semibold text-white transition-colors hover:bg-brand-gold"
-          >
-            Réserver maintenant — {offer.discountPrice.toFixed(0)} DT
-          </button>
+        <div
+          className="fixed left-0 right-0 z-40 border-t border-hairline bg-white p-4 md:hidden"
+          style={{ bottom: "calc(60px + env(safe-area-inset-bottom))" }}
+        >
+          <Button onClick={() => setShowBooking(true)} fullWidth>
+            Réserver maintenant — {offer.discountPrice.toFixed(0)} TND
+          </Button>
         </div>
       )}
     </div>
