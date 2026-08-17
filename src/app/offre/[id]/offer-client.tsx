@@ -7,6 +7,8 @@ import { BookingCalendar } from "@/components/booking-calendar";
 import { Logo } from "@/components/logo";
 import { UploadedImage } from "@/components/uploaded-image";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 
 interface Slot {
   id: string;
@@ -322,21 +324,22 @@ export function OfferClient({
 
             {/* CTA — desktop button (mobile uses the sticky bar at bottom) */}
             {!showBooking ? (
-              <button
-                onClick={() => setShowBooking(true)}
-                className="hidden w-full rounded-2xl bg-brand-ink py-4 text-base font-semibold text-white transition-colors hover:bg-brand-gold md:block"
-              >
-                Réserver maintenant
-              </button>
+              <div className="hidden md:block">
+                <Button onClick={() => setShowBooking(true)} fullWidth>
+                  Réserver maintenant
+                </Button>
+              </div>
             ) : (
-              <form onSubmit={handleBook} className="space-y-6 p-6 border border-brand-gold/20 bg-white">
+              <form onSubmit={handleBook} className="space-y-6 rounded-[var(--radius-card)] border-2 border-hairline bg-white p-6">
                 {error && (
-                  <div className="p-3 text-sm text-red-600 bg-red-50 border border-red-100">{error}</div>
+                  <div className="rounded-[var(--radius-panel)] border-2 border-rose bg-rose-soft p-3 text-sm font-semibold text-prune">
+                    {error}
+                  </div>
                 )}
 
                 {/* 1. Slot picker */}
                 <div>
-                  <p className="text-[10px] tracking-[0.15em] uppercase text-brand-bordeaux/60 mb-3">
+                  <p className="mb-3 text-xs font-semibold uppercase tracking-[0.12em] text-prune-soft">
                     1. Choisir un créneau
                   </p>
                   <BookingCalendar
@@ -348,81 +351,96 @@ export function OfferClient({
 
                 {/* 2. Inline auth — only if not signed in */}
                 {!session && (
-                  <div className="pt-5 border-t border-brand-gold/15">
-                    <p className="text-[10px] tracking-[0.15em] uppercase text-brand-bordeaux/60 mb-3">
-                      2. Vos coordonnées
+                  <div className="border-t border-hairline pt-5">
+                    <p className="mb-3 text-xs font-semibold uppercase tracking-[0.12em] text-prune-soft">
+                      2. Tes coordonnées
                     </p>
 
-                    <div className="flex gap-2 mb-4 text-[10px] tracking-[0.15em] uppercase">
+                    {/* Onglets refaits a la main : RoleTabs est code en dur pour
+                        les trois roles (CLIENT/PROVIDER/INFLUENCER) et ne peut
+                        pas porter cet axe-ci. On reprend son apparence. */}
+                    <div
+                      role="tablist"
+                      aria-label="Type de compte"
+                      className="mb-4 flex gap-1 rounded-[var(--radius-pill)] bg-rose-soft p-1"
+                    >
                       <button
                         type="button"
+                        role="tab"
+                        aria-selected={authMode === "register"}
                         onClick={() => setAuthMode("register")}
-                        className={`flex-1 py-2.5 transition-colors ${
+                        className={`ds-press ds-focus min-h-[44px] flex-1 rounded-[var(--radius-pill)] px-3 text-sm font-semibold ${
                           authMode === "register"
-                            ? "bg-brand-bordeaux text-white"
-                            : "border border-brand-gold/20 text-brand-bordeaux/60 hover:border-brand-gold"
+                            ? "bg-rose text-white"
+                            : "bg-transparent text-prune hover:bg-white/60"
                         }`}
                       >
                         Nouveau client
                       </button>
                       <button
                         type="button"
+                        role="tab"
+                        aria-selected={authMode === "login"}
                         onClick={() => setAuthMode("login")}
-                        className={`flex-1 py-2.5 transition-colors ${
+                        className={`ds-press ds-focus min-h-[44px] flex-1 rounded-[var(--radius-pill)] px-3 text-sm font-semibold ${
                           authMode === "login"
-                            ? "bg-brand-bordeaux text-white"
-                            : "border border-brand-gold/20 text-brand-bordeaux/60 hover:border-brand-gold"
+                            ? "bg-rose text-white"
+                            : "bg-transparent text-prune hover:bg-white/60"
                         }`}
                       >
                         J&apos;ai déjà un compte
                       </button>
                     </div>
 
-                    <div className="space-y-3">
+                    <div className="space-y-4">
                       {authMode === "register" && (
                         <>
-                          <input
+                          <Input
+                            label="Nom complet"
+                            id="auth-name"
                             type="text"
                             value={authName}
                             onChange={(e) => setAuthName(e.target.value)}
-                            placeholder="Nom complet *"
+                            placeholder="Ton nom"
                             required={authMode === "register"}
                             autoComplete="name"
-                            className="w-full px-4 py-3 border border-brand-gold/20 text-brand-bordeaux text-sm placeholder:text-brand-bordeaux/30 focus:outline-none focus:border-brand-gold transition-colors bg-transparent"
                           />
-                          <input
+                          <Input
+                            label="Téléphone (optionnel)"
+                            id="auth-phone"
                             type="tel"
                             value={authPhone}
                             onChange={(e) => setAuthPhone(e.target.value)}
-                            placeholder="Téléphone (optionnel)"
+                            placeholder="00 000 000"
                             autoComplete="tel"
-                            className="w-full px-4 py-3 border border-brand-gold/20 text-brand-bordeaux text-sm placeholder:text-brand-bordeaux/30 focus:outline-none focus:border-brand-gold transition-colors bg-transparent"
                           />
                         </>
                       )}
-                      <input
+                      <Input
+                        label="Email"
+                        id="auth-email"
                         type="email"
                         value={authEmail}
                         onChange={(e) => setAuthEmail(e.target.value)}
-                        placeholder="Email *"
+                        placeholder="toi@exemple.com"
                         required
                         autoComplete="email"
-                        className="w-full px-4 py-3 border border-brand-gold/20 text-brand-bordeaux text-sm placeholder:text-brand-bordeaux/30 focus:outline-none focus:border-brand-gold transition-colors bg-transparent"
                       />
-                      <input
+                      <Input
+                        label={authMode === "register" ? "Mot de passe (min. 6 caractères)" : "Mot de passe"}
+                        id="auth-password"
                         type="password"
                         value={authPassword}
                         onChange={(e) => setAuthPassword(e.target.value)}
-                        placeholder={authMode === "register" ? "Mot de passe (min. 6 caractères) *" : "Mot de passe *"}
+                        placeholder="••••••"
                         required
                         minLength={authMode === "register" ? 6 : undefined}
                         autoComplete={authMode === "register" ? "new-password" : "current-password"}
-                        className="w-full px-4 py-3 border border-brand-gold/20 text-brand-bordeaux text-sm placeholder:text-brand-bordeaux/30 focus:outline-none focus:border-brand-gold transition-colors bg-transparent"
                       />
                       {authMode === "login" && (
                         <Link
                           href="/forgot-password"
-                          className="block text-[10px] tracking-[0.15em] uppercase text-brand-bordeaux/50 hover:text-brand-gold transition-colors"
+                          className="ds-focus inline-flex min-h-[44px] items-center rounded-[var(--radius-pill)] text-sm font-semibold text-prune-soft hover:text-rose"
                         >
                           Mot de passe oublié ?
                         </Link>
@@ -432,36 +450,38 @@ export function OfferClient({
                 )}
 
                 {/* 3. Notes */}
-                <div className="pt-5 border-t border-brand-gold/15">
-                  <p className="text-[10px] tracking-[0.15em] uppercase text-brand-bordeaux/60 mb-2">
+                <div className="border-t border-hairline pt-5">
+                  <label
+                    htmlFor="booking-notes"
+                    className="mb-2 block text-xs font-semibold uppercase tracking-[0.12em] text-prune-soft"
+                  >
                     {session ? "2." : "3."} Notes (optionnel)
-                  </p>
+                  </label>
                   <textarea
+                    id="booking-notes"
                     value={bookingNotes}
                     onChange={(e) => setBookingNotes(e.target.value)}
                     rows={2}
-                    className="w-full px-4 py-3 border border-brand-gold/20 text-brand-bordeaux text-sm focus:outline-none focus:border-brand-gold transition-colors bg-transparent"
-                    placeholder="Précisions, préférences..."
+                    className="ds-focus w-full rounded-[var(--radius-panel)] border-2 border-hairline bg-white px-4 py-3 text-base text-prune placeholder:text-prune-soft/50"
+                    placeholder="Précisions, préférences…"
                   />
                 </div>
 
-                <div className="flex gap-3">
-                  <button
-                    type="submit"
-                    disabled={loading}
-                    className="flex-1 py-3.5 text-xs tracking-[0.2em] uppercase bg-brand-bordeaux text-white hover:bg-brand-gold transition-colors duration-500 disabled:opacity-50"
-                  >
-                    {loading
-                      ? "Traitement…"
-                      : `Réserver · ${offer.discountPrice.toFixed(0)} DT`}
-                  </button>
-                  <button
+                <div className="flex flex-col gap-3 sm:flex-row">
+                  <div className="flex-1">
+                    <Button type="submit" disabled={loading} fullWidth>
+                      {loading
+                        ? "Traitement…"
+                        : `Réserver · ${offer.discountPrice.toFixed(0)} TND`}
+                    </Button>
+                  </div>
+                  <Button
                     type="button"
+                    variant="ghost"
                     onClick={() => setShowBooking(false)}
-                    className="px-6 py-3.5 text-xs tracking-[0.15em] uppercase border border-brand-gold/20 text-brand-bordeaux/60 hover:border-brand-gold transition-colors duration-500"
                   >
                     Annuler
-                  </button>
+                  </Button>
                 </div>
               </form>
             )}
