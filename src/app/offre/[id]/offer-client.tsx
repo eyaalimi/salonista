@@ -362,12 +362,22 @@ export function OfferClient({
                     <div
                       role="tablist"
                       aria-label="Type de compte"
+                      onKeyDown={(e) => {
+                        // Fleches gauche/droite avec bouclage : le pattern APG
+                        // attend qu'on circule entre onglets sans sortir du
+                        // groupe. L'activation est automatique — le focus suit
+                        // la selection, pas besoin de valider par Entree.
+                        if (e.key !== "ArrowLeft" && e.key !== "ArrowRight") return;
+                        e.preventDefault();
+                        setAuthMode(authMode === "register" ? "login" : "register");
+                      }}
                       className="mb-4 flex gap-1 rounded-[var(--radius-pill)] bg-rose-soft p-1"
                     >
                       <button
                         type="button"
                         role="tab"
                         aria-selected={authMode === "register"}
+                        tabIndex={authMode === "register" ? 0 : -1}
                         onClick={() => setAuthMode("register")}
                         className={`ds-press ds-focus min-h-[44px] flex-1 rounded-[var(--radius-pill)] px-3 text-sm font-semibold ${
                           authMode === "register"
@@ -381,6 +391,7 @@ export function OfferClient({
                         type="button"
                         role="tab"
                         aria-selected={authMode === "login"}
+                        tabIndex={authMode === "login" ? 0 : -1}
                         onClick={() => setAuthMode("login")}
                         className={`ds-press ds-focus min-h-[44px] flex-1 rounded-[var(--radius-pill)] px-3 text-sm font-semibold ${
                           authMode === "login"
