@@ -120,7 +120,7 @@ export function OfferClient({
     setError("");
 
     if (!selectedSlot) {
-      setError("Veuillez choisir un créneau");
+      setError("Choisis un créneau");
       return;
     }
     const slotObj = offer.slots.find((s) => s.id === selectedSlot);
@@ -146,7 +146,7 @@ export function OfferClient({
       }
 
       if (authMode === "register") {
-        if (!authName) throw new Error("Veuillez entrer votre nom");
+        if (!authName) throw new Error("Entre ton nom");
         const regRes = await fetch("/api/register", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -174,7 +174,7 @@ export function OfferClient({
         throw new Error(
           authMode === "login"
             ? "Email ou mot de passe incorrect"
-            : "Compte créé mais connexion impossible. Réessayez."
+            : "Compte créé mais connexion impossible. Réessaie."
         );
       }
 
