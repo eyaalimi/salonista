@@ -363,13 +363,21 @@ export function OfferClient({
                       role="tablist"
                       aria-label="Type de compte"
                       onKeyDown={(e) => {
-                        // Fleches gauche/droite avec bouclage : le pattern APG
-                        // attend qu'on circule entre onglets sans sortir du
-                        // groupe. L'activation est automatique — le focus suit
-                        // la selection, pas besoin de valider par Entree.
+                        // Fleches gauche/droite : avec deux onglets, les deux
+                        // touches basculent vers l'autre — c'est le bouclage.
+                        //
+                        // Le focus doit etre deplace explicitement : changer
+                        // l'etat React ne bouge pas le focus du DOM, et le
+                        // bouton focalise passerait a tabIndex={-1} apres le
+                        // rendu, desynchronisant la navigation. On vise le
+                        // bouton voisin dans le conteneur plutot que d'ajouter
+                        // deux refs a ce fichier de 570 lignes.
                         if (e.key !== "ArrowLeft" && e.key !== "ArrowRight") return;
                         e.preventDefault();
+                        const onglets = e.currentTarget.querySelectorAll<HTMLButtonElement>('[role="tab"]');
+                        const suivant = authMode === "register" ? onglets[1] : onglets[0];
                         setAuthMode(authMode === "register" ? "login" : "register");
+                        suivant?.focus();
                       }}
                       className="mb-4 flex gap-1 rounded-[var(--radius-pill)] bg-rose-soft p-1"
                     >
