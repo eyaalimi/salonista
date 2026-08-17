@@ -218,7 +218,7 @@ export function AnalyticsClient() {
             Marge produits — estimation
           </p>
           <p className="luxury-heading text-2xl text-brand-ink mt-1">
-            {Number(margin.total).toFixed(3)} DT
+            {Number(margin.total).toFixed(3)} TND
           </p>
           {margin.excludedCount > 0 && (
             <p className="mt-1 text-[10px] uppercase tracking-[0.18em] text-brand-ink-soft">
@@ -245,7 +245,7 @@ export function AnalyticsClient() {
                 <Tooltip
                   formatter={(value) => {
                     const n = typeof value === "number" ? value : Number(value);
-                    return [`${n.toFixed(3)} DT`, "Revenu"];
+                    return [`${n.toFixed(3)} TND`, "Revenu"];
                   }}
                   contentStyle={{ fontSize: 12 }}
                 />
@@ -404,7 +404,7 @@ function TopChart({ title, data }: { title: string; data: TopRow[] }) {
                 formatter={(value, _name, props) => {
                   const n = typeof value === "number" ? value : Number(value);
                   const qty = (props.payload as { quantity?: number }).quantity ?? 0;
-                  return [`${n.toFixed(3)} DT (qté ${qty})`, "Revenu"];
+                  return [`${n.toFixed(3)} TND (qté ${qty})`, "Revenu"];
                 }}
                 contentStyle={{ fontSize: 12 }}
               />
@@ -447,7 +447,7 @@ function Heatmap({ cells }: { cells: HeatmapCell[] }) {
                 return (
                   <td
                     key={h}
-                    title={cell ? `${cell.count} ventes — ${cell.revenue} DT` : "0"}
+                    title={cell ? `${cell.count} ventes — ${cell.revenue} TND` : "0"}
                     style={{
                       background: opacity > 0 ? `rgba(212,165,116,${opacity})` : "transparent",
                     }}

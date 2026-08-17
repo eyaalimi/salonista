@@ -367,7 +367,11 @@ function ModuleCard({
           )}
           {sub.pricingSnapshot?.monthlyPrice && (
             <p>
-              {sub.pricingSnapshot.monthlyPrice} {sub.pricingSnapshot.currency ?? "DT"}{" "}
+              {/* Litteral et non `currency` : le champ vaut "DT" en base (ligne 323,
+                  valeur persistee laissee inchangee faute de migration). L'afficher
+                  brut reintroduirait « DT » a l'ecran. La monnaie est toujours le
+                  dinar tunisien, donc l'affichage est fixe. */}
+              {sub.pricingSnapshot.monthlyPrice} TND{" "}
               / mois
             </p>
           )}
@@ -439,7 +443,7 @@ function ModuleCard({
             step="1"
             value={form.monthlyPrice}
             onChange={(e) => setForm({ ...form, monthlyPrice: e.target.value })}
-            placeholder="Prix mensuel (DT)"
+            placeholder="Prix mensuel (TND)"
             className="w-full rounded-lg border border-brand-line bg-white px-3 py-2 text-sm"
           />
           <textarea

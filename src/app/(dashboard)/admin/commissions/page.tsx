@@ -68,15 +68,15 @@ export default function AdminCommissionsPage() {
       <div className="grid grid-cols-3 gap-4 mb-10">
         <div className="bg-white p-6 border border-brand-gold/20">
           <p className="text-[10px] tracking-[0.15em] uppercase text-brand-bordeaux/40 mb-2">Revenus plateforme</p>
-          <p className="luxury-heading text-3xl text-brand-gold">{totalPlatform.toFixed(0)} DT</p>
+          <p className="luxury-heading text-3xl text-brand-gold">{totalPlatform.toFixed(0)} TND</p>
         </div>
         <div className="bg-white p-6 border border-brand-gold/20">
           <p className="text-[10px] tracking-[0.15em] uppercase text-brand-bordeaux/40 mb-2">En attente</p>
-          <p className="luxury-heading text-3xl text-brand-bordeaux">{totalPending.toFixed(0)} DT</p>
+          <p className="luxury-heading text-3xl text-brand-bordeaux">{totalPending.toFixed(0)} TND</p>
         </div>
         <div className="bg-white p-6 border border-brand-gold/20">
           <p className="text-[10px] tracking-[0.15em] uppercase text-brand-bordeaux/40 mb-2">Paye</p>
-          <p className="luxury-heading text-3xl text-emerald-700">{totalPaid.toFixed(0)} DT</p>
+          <p className="luxury-heading text-3xl text-emerald-700">{totalPaid.toFixed(0)} TND</p>
         </div>
       </div>
 
@@ -118,15 +118,15 @@ export default function AdminCommissionsPage() {
                     {c.booking.items[0]?.offer.provider.salonName} · Client: {c.booking.client.name || c.booking.client.email}
                   </p>
                   <p className="text-xs text-brand-bordeaux/30 mt-1">
-                    Total reservation: {Number(c.booking.totalPrice).toFixed(0)} DT · {new Date(c.createdAt).toLocaleDateString("fr-TN")}
+                    Total reservation: {Number(c.booking.totalPrice).toFixed(0)} TND · {new Date(c.createdAt).toLocaleDateString("fr-TN")}
                   </p>
                 </div>
 
                 <div className="flex items-center gap-4">
                   <div className="text-right text-[10px] text-brand-bordeaux/40 tracking-wider">
-                    <p>Prest. {Number(c.providerAmount).toFixed(0)} DT</p>
-                    {c.influencerAmount && <p>Infl. {Number(c.influencerAmount).toFixed(0)} DT</p>}
-                    <p className="text-brand-gold font-medium">Platef. {Number(c.platformAmount).toFixed(0)} DT</p>
+                    <p>Prest. {Number(c.providerAmount).toFixed(0)} TND</p>
+                    {c.influencerAmount && <p>Infl. {Number(c.influencerAmount).toFixed(0)} TND</p>}
+                    <p className="text-brand-gold font-medium">Platef. {Number(c.platformAmount).toFixed(0)} TND</p>
                   </div>
 
                   <span className={`px-3 py-1 border text-[10px] tracking-[0.1em] uppercase font-medium ${

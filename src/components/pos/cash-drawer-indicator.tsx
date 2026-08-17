@@ -297,13 +297,13 @@ function CloseModal({
         <div className="w-full max-w-sm rounded-2xl bg-brand-cream p-6 text-center">
           <p className="luxury-badge mb-2">Caisse fermée</p>
           <p className="text-sm text-brand-ink-soft">Attendu</p>
-          <p className="text-lg">{expectedCash} DT</p>
+          <p className="text-lg">{expectedCash} TND</p>
           <p className="text-sm text-brand-ink-soft mt-3">Compté</p>
-          <p className="text-lg">{closingCount} DT</p>
+          <p className="text-lg">{closingCount} TND</p>
           <p className="text-sm text-brand-ink-soft mt-3">Variance</p>
           <p className={`text-2xl font-semibold ${color}`}>
             {v > 0 ? "+" : ""}
-            {variance} DT
+            {variance} TND
           </p>
           <button
             type="button"
@@ -321,9 +321,9 @@ function CloseModal({
     <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4">
       <div className="w-full max-w-sm rounded-2xl bg-brand-cream p-6">
         <p className="luxury-badge mb-2">Fermer caisse</p>
-        <p className="text-sm text-brand-ink-soft mb-4">Attendu: {expectedCash} DT</p>
+        <p className="text-sm text-brand-ink-soft mb-4">Attendu: {expectedCash} TND</p>
         <label className="block text-[10px] uppercase tracking-[0.18em] text-brand-ink-soft mb-1">
-          Cash compté (DT)
+          Cash compté (TND)
         </label>
         <input
           type="number"
@@ -337,7 +337,7 @@ function CloseModal({
           value={closingNotes}
           onChange={(e) => setClosingNotes(e.target.value)}
           rows={2}
-          placeholder="Notes (obligatoires si variance ≥ 5 DT)"
+          placeholder="Notes (obligatoires si variance ≥ 5 TND)"
           className="w-full rounded border border-brand-line bg-white px-3 py-2 text-sm mb-3"
         />
         {error && <p className="text-xs text-red-600 mb-3">{error}</p>}

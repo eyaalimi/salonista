@@ -248,7 +248,7 @@ export function ServicesListClient({ initialOffers }: { initialOffers: Offer[] }
             className="md:col-span-2 px-2 py-2 md:py-1 rounded border border-pos-border bg-white text-sm w-full"
             type="number"
             step="0.001"
-            placeholder="Prix DT"
+            placeholder="Prix TND"
             value={qaPrice}
             onChange={(e) => setQaPrice(e.target.value)}
             onKeyDown={(e) => {
@@ -324,7 +324,7 @@ export function ServicesListClient({ initialOffers }: { initialOffers: Offer[] }
               >
                 <td className="px-3 py-2">{o.title}</td>
                 <td className="px-3 py-2 text-right whitespace-nowrap">
-                  {Number(o.discountPrice).toFixed(3)} DT
+                  {Number(o.discountPrice).toFixed(3)} TND
                 </td>
                 <td className="px-3 py-2 text-right whitespace-nowrap">{o.durationMinutes} min</td>
                 <td className="px-3 py-2 text-right" onClick={(e) => e.stopPropagation()}>
@@ -373,7 +373,7 @@ export function ServicesListClient({ initialOffers }: { initialOffers: Offer[] }
               <div className="min-w-0 flex-1">
                 <p className="font-medium text-pos-ink truncate">{o.title}</p>
                 <p className="text-xs text-pos-ink-3 mt-0.5">
-                  {Number(o.discountPrice).toFixed(3)} DT · {o.durationMinutes} min
+                  {Number(o.discountPrice).toFixed(3)} TND · {o.durationMinutes} min
                 </p>
               </div>
               <label

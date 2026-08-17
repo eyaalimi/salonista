@@ -56,7 +56,7 @@ function fmtMoney(v: string) {
   return `${Number(v).toLocaleString("fr-FR", {
     minimumFractionDigits: 3,
     maximumFractionDigits: 3,
-  })} DT`;
+  })} TND`;
 }
 
 export function CommissionsClient() {

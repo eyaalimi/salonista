@@ -142,7 +142,7 @@ export function ProductsListClient({ canManage }: { canManage: boolean }) {
                         {formatDT(p.salePrice)}
                         {p.costPrice && Number(p.costPrice) > 0 && (
                           <span className="text-xs px-2 py-0.5 rounded bg-green-50 text-green-800">
-                            Marge {(Number(p.salePrice) - Number(p.costPrice)).toFixed(3)} DT
+                            Marge {(Number(p.salePrice) - Number(p.costPrice)).toFixed(3)} TND
                             ({Number(p.salePrice) > 0 ? (((Number(p.salePrice) - Number(p.costPrice)) / Number(p.salePrice)) * 100).toFixed(0) : "0"}%)
                           </span>
                         )}
@@ -235,7 +235,7 @@ export function ProductsListClient({ canManage }: { canManage: boolean }) {
                 </div>
                 {p.costPrice && Number(p.costPrice) > 0 && (
                   <p className="text-[11px] px-2 py-0.5 rounded bg-green-50 text-green-800 inline-block mb-2">
-                    Marge {(Number(p.salePrice) - Number(p.costPrice)).toFixed(3)} DT
+                    Marge {(Number(p.salePrice) - Number(p.costPrice)).toFixed(3)} TND
                     ({Number(p.salePrice) > 0 ? (((Number(p.salePrice) - Number(p.costPrice)) / Number(p.salePrice)) * 100).toFixed(0) : "0"}%)
                   </p>
                 )}

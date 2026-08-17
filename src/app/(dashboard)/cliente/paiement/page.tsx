@@ -169,7 +169,7 @@ function PaiementPageInner() {
             <div className="flex justify-between">
               <span className="text-brand-bordeaux/40">Montant paye</span>
               <span className="luxury-heading text-xl text-brand-gold">
-                {Number(result.booking.totalPrice).toFixed(0)} DT
+                {Number(result.booking.totalPrice).toFixed(0)} TND
               </span>
             </div>
           </div>
@@ -245,7 +245,7 @@ function PaiementPageInner() {
           )}
           <div className="mt-4 pt-4 border-t border-brand-gold/10 flex justify-between items-center">
             <span className="text-[10px] tracking-[0.15em] uppercase text-brand-bordeaux/40">Total a payer</span>
-            <span className="luxury-heading text-2xl text-brand-gold">{Number(booking.totalPrice).toFixed(0)} DT</span>
+            <span className="luxury-heading text-2xl text-brand-gold">{Number(booking.totalPrice).toFixed(0)} TND</span>
           </div>
 
           {booking.paymentStatus === "PAID" && (
@@ -346,7 +346,7 @@ function PaiementPageInner() {
             disabled={loading}
             className="w-full py-4 text-xs tracking-[0.2em] uppercase bg-brand-bordeaux text-white hover:bg-brand-gold transition-colors duration-500 disabled:opacity-50"
           >
-            {loading ? "Traitement..." : `Payer ${booking ? Number(booking.totalPrice).toFixed(0) : ""} DT`}
+            {loading ? "Traitement..." : `Payer ${booking ? Number(booking.totalPrice).toFixed(0) : ""} TND`}
           </button>
         </form>
       )}

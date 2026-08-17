@@ -165,7 +165,7 @@ function VerificationPageInner() {
           <div className="flex justify-between">
             <span className="text-brand-ink-soft">Montant</span>
             <span className="luxury-heading text-xl text-brand-gold">
-              {Number(data.booking.totalPrice).toFixed(0)} DT
+              {Number(data.booking.totalPrice).toFixed(0)} TND
             </span>
           </div>
         </div>

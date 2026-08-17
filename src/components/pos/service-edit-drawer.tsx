@@ -235,7 +235,7 @@ export function ServiceEditDrawer({
               <div className="grid grid-cols-2 gap-3">
                 <label className="block">
                   <span className="block text-xs uppercase tracking-wider text-pos-ink-3 mb-1">
-                    Prix (DT)
+                    Prix (TND)
                   </span>
                   <input
                     type="number"

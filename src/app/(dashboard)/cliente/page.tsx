@@ -201,7 +201,7 @@ export default function ClienteReservations() {
 
                 <div className="flex items-center gap-3 flex-wrap justify-end">
                   <span className="luxury-heading text-xl text-brand-gold">
-                    {Number(booking.totalPrice).toFixed(0)} DT
+                    {Number(booking.totalPrice).toFixed(0)} TND
                   </span>
 
                   {/* Payment status badge */}

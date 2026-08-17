@@ -215,7 +215,7 @@ export function Step3Products({
                 className="w-20 text-xs text-right bg-white border border-brand-line rounded px-2 py-1 pos-mono disabled:opacity-60"
                 aria-label="Prix"
               />
-              <span className="text-[10px] text-brand-ink-soft -ml-1">DT</span>
+              <span className="text-[10px] text-brand-ink-soft -ml-1">TND</span>
               {l.custom && (
                 <button
                   type="button"

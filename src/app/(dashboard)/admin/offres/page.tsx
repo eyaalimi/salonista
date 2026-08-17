@@ -110,8 +110,8 @@ export default function AdminOffersPage() {
                   <div className="flex items-center gap-6">
                     <div className="text-right">
                       <div className="flex items-baseline gap-2">
-                        <span className="text-brand-bordeaux/30 line-through text-sm">{Number(offer.originalPrice).toFixed(0)} DT</span>
-                        <span className="luxury-heading text-xl text-brand-gold">{Number(offer.discountPrice).toFixed(0)} DT</span>
+                        <span className="text-brand-bordeaux/30 line-through text-sm">{Number(offer.originalPrice).toFixed(0)} TND</span>
+                        <span className="luxury-heading text-xl text-brand-gold">{Number(offer.discountPrice).toFixed(0)} TND</span>
                         <span className="text-[10px] tracking-[0.1em] uppercase text-brand-gold">-{discount}%</span>
                       </div>
                     </div>

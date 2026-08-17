@@ -97,7 +97,7 @@ export function Step4Loyalty({
                   max={1000}
                   className="w-full px-3 py-2.5 border border-brand-line rounded-lg bg-white text-sm pos-mono text-right focus:border-pos-accent focus:outline-none"
                 />
-                <span className="text-xs text-brand-ink-soft shrink-0">DT</span>
+                <span className="text-xs text-brand-ink-soft shrink-0">TND</span>
               </div>
             </div>
 
@@ -111,7 +111,7 @@ export function Step4Loyalty({
                   onChange={(e) => setPointValue(e.target.value)}
                   className="w-full px-3 py-2.5 border border-brand-line rounded-lg bg-white text-sm pos-mono text-right focus:border-pos-accent focus:outline-none"
                 />
-                <span className="text-xs text-brand-ink-soft shrink-0">DT</span>
+                <span className="text-xs text-brand-ink-soft shrink-0">TND</span>
               </div>
             </div>
 
@@ -144,12 +144,12 @@ export function Step4Loyalty({
                 </div>
                 <p className="text-sm text-brand-ink leading-relaxed">
                   Pour une vente de{" "}
-                  <strong>{examplePurchase} DT</strong>, la cliente gagne{" "}
+                  <strong>{examplePurchase} TND</strong>, la cliente gagne{" "}
                   <strong>{pointsEarned} points</strong>.
                 </p>
                 <p className="text-sm text-brand-ink-soft mt-1.5 leading-relaxed">
                   Dès <strong>{minPoints} points</strong>, elle peut les utiliser
-                  pour <strong>{dinarValueOfMin} DT</strong> de réduction.
+                  pour <strong>{dinarValueOfMin} TND</strong> de réduction.
                 </p>
               </div>
             </div>

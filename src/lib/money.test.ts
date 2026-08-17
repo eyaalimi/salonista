@@ -113,11 +113,11 @@ describe("addMoney / subMoney / mulMoney", () => {
 
 describe("formatDT", () => {
   it("formats with comma decimal separator", () => {
-    expect(formatDT("12.500")).toBe("12,500 DT");
-    expect(formatDT("0.000")).toBe("0,000 DT");
-    expect(formatDT("1234.567")).toBe("1234,567 DT");
+    expect(formatDT("12.500")).toBe("12,500 TND");
+    expect(formatDT("0.000")).toBe("0,000 TND");
+    expect(formatDT("1234.567")).toBe("1234,567 TND");
   });
   it("formats negatives", () => {
-    expect(formatDT("-5.000")).toBe("-5,000 DT");
+    expect(formatDT("-5.000")).toBe("-5,000 TND");
   });
 });
