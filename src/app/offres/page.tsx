@@ -96,7 +96,7 @@ export default async function OffresPage({
             />
             <button
               type="submit"
-              className="ds-press ds-focus shrink-0 min-h-[52px] px-6 rounded-[var(--radius-pill)] bg-rose text-base font-semibold text-white hover:bg-[#F04A79]"
+              className="ds-press ds-focus shrink-0 min-h-[52px] px-6 rounded-[var(--radius-pill)] bg-rose text-base font-semibold text-prune hover:bg-[#F04A79]"
             >
               Rechercher
             </button>

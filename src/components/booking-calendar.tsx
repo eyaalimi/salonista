@@ -161,7 +161,7 @@ export function BookingCalendar({ slots, selectedSlotId, onSelect }: Props) {
             if (isPast) {
               classes = "text-prune-soft/30 cursor-not-allowed";
             } else if (isSelected) {
-              classes = "bg-rose text-white cursor-pointer font-semibold";
+              classes = "bg-rose text-prune cursor-pointer font-semibold";
             } else if (isAvailable) {
               classes = "bg-menthe text-menthe-deep cursor-pointer font-semibold hover:bg-menthe-deep hover:text-white";
             } else {
@@ -227,7 +227,7 @@ export function BookingCalendar({ slots, selectedSlotId, onSelect }: Props) {
                     onClick={() => onSelect(s.id)}
                     className={`ds-press ds-focus min-h-[44px] rounded-[var(--radius-panel)] border-2 px-3 py-2 text-sm ${
                       active
-                        ? "border-rose bg-rose text-white"
+                        ? "border-rose bg-rose text-prune"
                         : full
                         ? "cursor-not-allowed border-hairline bg-creme text-prune-soft"
                         : "border-hairline text-prune hover:border-rose"

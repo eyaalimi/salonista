@@ -25,7 +25,7 @@ export function Chip({
         // 44px de cible tactile : la regle du design system.
         "min-h-[44px] px-4 rounded-[var(--radius-pill)] text-sm font-semibold " +
         (active
-          ? "bg-rose text-white"
+          ? "bg-rose text-prune"
           : "bg-white text-prune border-2 border-hairline hover:border-rose")
       }
     >

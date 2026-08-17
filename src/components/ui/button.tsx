@@ -27,7 +27,9 @@ export function Button({
     "text-base font-semibold border-2 border-transparent";
 
   const variants: Record<string, string> = {
-    primary: "bg-rose text-white hover:bg-[#F04A79]",
+    // Texte prune et non blanc : blanc sur rose donne 2,94:1, sous le seuil
+    // AA de 4,5:1. Le prune donne 5,59:1 (4,66:1 sur le survol #F04A79).
+    primary: "bg-rose text-prune hover:bg-[#F04A79]",
     secondary: "bg-prune text-white hover:bg-[#4E1832]",
     ghost: "bg-transparent text-prune border-hairline hover:bg-creme",
   };

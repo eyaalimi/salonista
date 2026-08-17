@@ -19,7 +19,7 @@ export function Badge({
 }) {
   const tones: Record<string, string> = {
     menthe: "bg-menthe text-menthe-deep",
-    rose: "bg-rose text-white",
+    rose: "bg-rose text-prune",
     prune: "bg-prune text-white",
   };
 

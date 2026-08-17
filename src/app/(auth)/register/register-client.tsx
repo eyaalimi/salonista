@@ -126,7 +126,7 @@ function RegisterPageInner() {
 
           <Link
             href={callbackUrl ? `/login?callbackUrl=${encodeURIComponent(callbackUrl)}` : "/login"}
-            className="ds-press ds-focus inline-flex items-center justify-center min-h-[48px] px-6 rounded-[var(--radius-pill)] bg-rose text-white text-base font-semibold hover:bg-[#F04A79]"
+            className="ds-press ds-focus inline-flex items-center justify-center min-h-[48px] px-6 rounded-[var(--radius-pill)] bg-rose text-prune text-base font-semibold hover:bg-[#F04A79]"
           >
             Aller à la connexion
           </Link>

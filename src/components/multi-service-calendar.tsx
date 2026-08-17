@@ -185,7 +185,7 @@ export function MultiServiceCalendar({ selectedOffers, selectedStart, onSelect }
                 if (isPast) {
                   classes = "text-prune-soft/30 cursor-not-allowed";
                 } else if (isPicked) {
-                  classes = "bg-rose text-white cursor-pointer font-semibold";
+                  classes = "bg-rose text-prune cursor-pointer font-semibold";
                 } else if (isAvailable) {
                   classes = "bg-menthe text-menthe-deep cursor-pointer font-semibold hover:bg-menthe-deep hover:text-white";
                 } else {
@@ -249,7 +249,7 @@ export function MultiServiceCalendar({ selectedOffers, selectedStart, onSelect }
                         onClick={() => onSelect(iso)}
                         className={`ds-press ds-focus min-h-[44px] rounded-[var(--radius-pill)] border-2 px-3 text-sm font-semibold ${
                           active
-                            ? "border-rose bg-rose text-white"
+                            ? "border-rose bg-rose text-prune"
                             : "border-hairline text-prune hover:border-rose"
                         }`}
                       >
