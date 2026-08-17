@@ -503,6 +503,19 @@ Decision : **l'affichage passe a TND, l'ecriture reste « DT ».** Changer la
 valeur ecrite creerait deux notations dans les donnees — les anciens abonnements
 en « DT », les nouveaux en « TND » — sans migration pour les harmoniser.
 
+**Le raisonnement s'etait arrete a mi-chemin, et la revue finale l'a rattrape.**
+La ligne 370 affichait `{sub.pricingSnapshot.currency ?? "TND"}`. Le `??` ne
+s'applique **que si la valeur est absente** : des qu'un abonnement est
+enregistre, `currency` vaut `"DT"` — et c'est cette valeur qui s'affichait.
+
+Le chantier reintroduisait donc « DT » a l'ecran, dans la page admin qu'il
+venait d'uniformiser. Corrige : l'affichage est desormais un **litteral `TND`**,
+independant de ce qui est stocke.
+
+**La lecon :** proteger une donnee en ecriture ne suffit pas. Il faut retracer
+**tout chemin de lecture** de cette donnee, sinon la valeur protegee ressort a
+l'affichage.
+
 A traiter avec une migration dediee si le besoin se presente.
 
 ## Ce que ce plan ne fait pas
