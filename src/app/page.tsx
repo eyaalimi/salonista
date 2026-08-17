@@ -375,26 +375,26 @@ export default async function Home() {
           question balisee doit etre visible sur la page. */}
       <section className="mt-10 px-6 md:px-12" aria-labelledby="faq-titre">
         <div className="mx-auto max-w-3xl">
-          <p className="mb-2 text-[11px] tracking-widest uppercase text-brand-bordeaux/40">
+          <p className="mb-2 text-sm font-semibold uppercase tracking-[0.12em] text-prune-soft">
             Questions fréquentes
           </p>
-          <h2 id="faq-titre" className="luxury-heading mb-6 text-2xl sm:text-3xl">
+          <h2 id="faq-titre" className="ds-display mb-6 text-2xl text-prune sm:text-3xl">
             Tout savoir sur <span className="italic">Salonista</span>
           </h2>
 
-          <div className="divide-y divide-brand-gold/20 border-y border-brand-gold/20">
+          <div className="divide-y divide-hairline border-y border-hairline">
             {FAQ_ITEMS.map((item) => (
               <details key={item.question} className="group py-4">
-                <summary className="flex cursor-pointer items-center justify-between gap-4 text-sm font-medium text-brand-bordeaux marker:content-['']">
+                <summary className="ds-focus flex min-h-[44px] cursor-pointer items-center justify-between gap-4 text-base font-semibold text-prune marker:content-['']">
                   {item.question}
                   <span
                     aria-hidden="true"
-                    className="shrink-0 text-brand-gold transition-transform group-open:rotate-45"
+                    className="shrink-0 text-xl text-rose transition-transform group-open:rotate-45"
                   >
                     +
                   </span>
                 </summary>
-                <p className="mt-3 text-sm leading-relaxed text-brand-bordeaux/70">
+                <p className="mt-3 text-base leading-relaxed text-prune-soft">
                   {item.answer}
                 </p>
               </details>
