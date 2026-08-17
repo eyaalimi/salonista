@@ -110,9 +110,11 @@ export default function ClienteReservations() {
           <p className="mb-3 text-sm font-semibold uppercase tracking-[0.12em] text-prune-soft">Mon espace</p>
           <h1 className="ds-display text-3xl text-prune">Mes réservations</h1>
         </div>
+        {/* Pleine largeur sous sm : a cote du titre, le libelle se faisait
+            couper sur un telephone. */}
         <Link
           href="/offres"
-          className="ds-press ds-focus inline-flex min-h-[48px] items-center rounded-[var(--radius-pill)] bg-rose px-6 text-base font-semibold text-prune hover:bg-[#F04A79]"
+          className="ds-press ds-focus inline-flex min-h-[48px] w-full items-center justify-center rounded-[var(--radius-pill)] bg-rose px-6 text-base font-semibold text-prune hover:bg-[#F04A79] sm:w-auto"
         >
           Découvrir les offres
         </Link>
