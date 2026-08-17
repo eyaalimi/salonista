@@ -90,6 +90,15 @@ export default function ClienteReservations() {
 
   const filtered = filter === "ALL" ? bookings : bookings.filter((b) => b.status === filter);
 
+  // Calcule une seule fois : la barre compacte (mobile) et les cartes (desktop)
+  // affichent les memes chiffres, seule leur mise en forme differe.
+  const stats = [
+    { label: "Total", value: bookings.length },
+    { label: "En attente", value: bookings.filter((b) => b.status === "PENDING").length },
+    { label: "Confirmées", value: bookings.filter((b) => b.status === "CONFIRMED").length },
+    { label: "Terminées", value: bookings.filter((b) => b.status === "COMPLETED").length },
+  ];
+
   if (loading) {
     return <div className="flex h-64 items-center justify-center text-base text-prune-soft">Chargement…</div>;
   }
@@ -109,14 +118,21 @@ export default function ClienteReservations() {
         </Link>
       </div>
 
-      {/* Stats cards */}
-      <div className="mb-8 grid grid-cols-2 gap-4 md:grid-cols-4">
-        {[
-          { label: "Total", value: bookings.length },
-          { label: "En attente", value: bookings.filter((b) => b.status === "PENDING").length },
-          { label: "Confirmées", value: bookings.filter((b) => b.status === "CONFIRMED").length },
-          { label: "Terminées", value: bookings.filter((b) => b.status === "COMPLETED").length },
-        ].map((s) => (
+      {/* Stats — une seule barre compacte sur mobile, des cartes au-dela de sm.
+          En 2x2, les quatre cartes occupaient tout l'ecran d'un telephone : il
+          fallait defiler pour voir la premiere reservation, qui est pourtant
+          l'objet de la page. */}
+      <div className="mb-6 flex divide-x divide-hairline rounded-[var(--radius-card)] border-2 border-hairline bg-white sm:hidden">
+        {stats.map((s) => (
+          <div key={s.label} className="flex-1 px-2 py-3 text-center">
+            <p className="ds-display text-xl text-prune">{s.value}</p>
+            <p className="mt-0.5 text-xs leading-tight text-prune-soft">{s.label}</p>
+          </div>
+        ))}
+      </div>
+
+      <div className="mb-8 hidden gap-4 sm:grid sm:grid-cols-4">
+        {stats.map((s) => (
           <div key={s.label} className="rounded-[var(--radius-card)] border-2 border-hairline bg-white p-5 text-center">
             <p className="ds-display text-2xl text-prune">{s.value}</p>
             <p className="mt-1 text-sm text-prune-soft">{s.label}</p>
@@ -237,6 +253,15 @@ export default function ClienteReservations() {
                     >
                       Laisser un avis
                     </button>
+                  )}
+                  {/* L'avis n'est possible qu'une fois la prestation terminee —
+                      c'est le salon qui marque la reservation comme telle, en
+                      scannant le QR code. Sans cette phrase, la cliente cherche
+                      un bouton absent sans comprendre pourquoi. */}
+                  {booking.status === "CONFIRMED" && (
+                    <span className="text-sm text-prune-soft">
+                      Tu pourras laisser un avis après ta visite
+                    </span>
                   )}
                   {booking.status === "COMPLETED" && booking.hasReview && (
                     <Badge tone="menthe">Avis donné</Badge>
