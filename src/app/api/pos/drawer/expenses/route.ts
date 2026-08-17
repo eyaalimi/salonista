@@ -26,7 +26,7 @@ export async function POST(req: NextRequest) {
     | null;
   const amount = Number(body?.amount ?? 0);
   if (!Number.isFinite(amount) || amount <= 0 || amount > 10000) {
-    return Response.json({ error: "Montant invalide (1 à 10 000 DT)" }, { status: 400 });
+    return Response.json({ error: "Montant invalide (1 à 10 000 TND)" }, { status: 400 });
   }
   const reason = String(body?.reason ?? "").trim();
   if (!reason) return Response.json({ error: "Motif requis" }, { status: 400 });

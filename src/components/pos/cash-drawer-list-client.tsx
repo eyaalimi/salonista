@@ -561,7 +561,7 @@ function CloseDrawerModal({
           <span className="text-sm text-brand-ink">Écart</span>
           <span className={`pos-mono font-semibold ${valid ? varColor : "text-brand-ink-soft"}`}>
             {valid
-              ? `${variance > 0 ? "+" : ""}${variance.toFixed(3)} DT`
+              ? `${variance > 0 ? "+" : ""}${variance.toFixed(3)} TND`
               : "—"}
           </span>
         </div>

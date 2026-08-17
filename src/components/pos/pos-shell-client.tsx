@@ -321,7 +321,7 @@ export function PosShellClient({ employee }: { employee: EmployeeProp }) {
             <span className="flex flex-col items-end leading-tight">
               <span className="text-[10px] uppercase tracking-[0.14em] text-pos-bg/70">Total</span>
               <span className="pos-mono text-lg font-semibold">
-                {formatCartTotal(totals.total)} DT
+                {formatCartTotal(totals.total)} TND
               </span>
             </span>
           </button>
@@ -462,7 +462,7 @@ export function PosShellClient({ employee }: { employee: EmployeeProp }) {
           <div className="flex-1">
             <div className="font-semibold text-sm">Paiement encaissé</div>
             <div className="text-xs opacity-90 pos-mono">
-              {successToast.receiptNumber} · {successToast.total} DT
+              {successToast.receiptNumber} · {successToast.total} TND
             </div>
           </div>
           {successToast.whatsappUrl && (

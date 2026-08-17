@@ -262,7 +262,7 @@ export function CashDrawerDetailClient({
       {expenses.length > 0 && (
         <div className="rounded-2xl border border-brand-line bg-white p-6 mt-6">
           <h2 className="luxury-heading text-lg text-brand-ink mb-3">
-            Dépenses ({expenses.length}) — Total {Number(expensesTotal).toFixed(3)} DT
+            Dépenses ({expenses.length}) — Total {Number(expensesTotal).toFixed(3)} TND
           </h2>
           <ul className="space-y-2">
             {expenses.map((e) => (
@@ -272,7 +272,7 @@ export function CashDrawerDetailClient({
               >
                 <div>
                   <p className="text-brand-ink">
-                    {e.category} — {Number(e.amount).toFixed(3)} DT
+                    {e.category} — {Number(e.amount).toFixed(3)} TND
                   </p>
                   <p className="text-xs text-brand-ink-soft">
                     {e.reason} · {new Date(e.createdAt).toLocaleTimeString("fr-FR")} · {e.employee.displayName}

@@ -144,12 +144,12 @@ export function Step4Loyalty({
                 </div>
                 <p className="text-sm text-brand-ink leading-relaxed">
                   Pour une vente de{" "}
-                  <strong>{examplePurchase} DT</strong>, la cliente gagne{" "}
+                  <strong>{examplePurchase} TND</strong>, la cliente gagne{" "}
                   <strong>{pointsEarned} points</strong>.
                 </p>
                 <p className="text-sm text-brand-ink-soft mt-1.5 leading-relaxed">
                   Dès <strong>{minPoints} points</strong>, elle peut les utiliser
-                  pour <strong>{dinarValueOfMin} DT</strong> de réduction.
+                  pour <strong>{dinarValueOfMin} TND</strong> de réduction.
                 </p>
               </div>
             </div>
