@@ -58,50 +58,53 @@ export default function WalletDetailPage({
       .then(setData);
   }, [walletId]);
 
-  if (!data) return <p className="p-6 text-sm text-brand-ink-soft">Chargement…</p>;
+  if (!data) return <p className="p-6 text-base text-prune-soft">Chargement…</p>;
 
   const dpp = Number(data.program.dinarPerPoint);
   const valueM = Math.round(data.balance * dpp * 1000);
   const ppd = Number(data.program.pointsPerDinar);
 
   return (
-    <div className="p-6 max-w-3xl mx-auto">
+    <div className="mx-auto max-w-3xl p-6">
       <Link
         href="/cliente/fidelite"
-        className="text-xs uppercase tracking-[0.18em] text-brand-ink-soft hover:text-brand-ink mb-4 inline-block"
+        className="ds-press ds-focus mb-4 inline-flex min-h-[44px] items-center rounded-[var(--radius-pill)] text-base font-semibold text-prune-soft hover:text-rose"
       >
         ← Mes cartes
       </Link>
 
-      <div className="flex items-center gap-4 mb-6">
-        <div className="w-16 h-16 rounded-full bg-brand-sand border border-brand-line flex items-center justify-center text-2xl font-semibold text-brand-ink">
+      <div className="mb-6 flex items-center gap-4">
+        <div className="flex h-16 w-16 items-center justify-center rounded-full bg-rose-soft text-2xl font-bold text-prune">
           {data.provider.salonName.charAt(0)}
         </div>
-        <div>
-          <h1 className="luxury-heading text-2xl text-brand-ink">{data.provider.salonName}</h1>
+        <div className="min-w-0">
+          <h1 className="ds-display truncate text-2xl text-prune">{data.provider.salonName}</h1>
           {data.provider.city && (
-            <p className="text-sm text-brand-ink-soft">{data.provider.city}</p>
+            <p className="text-base text-prune-soft">{data.provider.city}</p>
           )}
         </div>
       </div>
 
-      <div className="rounded-2xl bg-brand-gold-soft/40 border-2 border-brand-gold p-8 text-center mb-6">
-        <p className="luxury-heading text-5xl text-brand-ink">{data.balance} pts</p>
-        <p className="text-sm text-brand-ink-soft mt-2">≈ {formatDT(fromMillimes(valueM))}</p>
+      {/* Le solde en menthe : le design system reserve cette couleur aux
+          economies et aux gains. Le rose est la couleur d'ACTION — un grand
+          bloc rose non cliquable induirait en erreur. */}
+      <div className="mb-6 rounded-[var(--radius-card)] bg-menthe p-8 text-center">
+        <p className="ds-display text-5xl text-menthe-deep">{data.balance} pts</p>
+        <p className="mt-2 text-base text-menthe-deep">≈ {formatDT(fromMillimes(valueM))}</p>
       </div>
 
-      <div className="rounded-2xl bg-white border border-brand-line p-4 mb-6 text-sm">
-        <p className="luxury-badge mb-2">Règles du programme</p>
-        <p>1 TND dépensé = {ppd.toFixed(0)} pts • {Math.round(1 / dpp)} pts = 1 TND</p>
-        <p>Min échange: {data.program.minPointsToRedeem} pts • Max {data.program.maxRedemptionPctPerSale}% par achat</p>
+      <div className="mb-6 rounded-[var(--radius-card)] border-2 border-hairline bg-white p-5">
+        <p className="mb-2 text-sm font-semibold uppercase tracking-[0.12em] text-prune-soft">Règles du programme</p>
+        <p className="text-base text-prune">1 TND dépensé = {ppd.toFixed(0)} pts • {Math.round(1 / dpp)} pts = 1 TND</p>
+        <p className="text-base text-prune">Min échange : {data.program.minPointsToRedeem} pts • Max {data.program.maxRedemptionPctPerSale}% par achat</p>
         {data.program.inactivityExpireMonths && (
-          <p className="text-xs text-brand-ink-soft mt-2">
-            Vos points expirent après {data.program.inactivityExpireMonths} mois d&apos;inactivité.
+          <p className="mt-2 text-sm text-prune-soft">
+            Tes points expirent après {data.program.inactivityExpireMonths} mois d&apos;inactivité.
           </p>
         )}
       </div>
 
-      <p className="luxury-badge mb-3">Historique</p>
+      <p className="mb-3 text-sm font-semibold uppercase tracking-[0.12em] text-prune-soft">Historique</p>
       <ul className="space-y-2">
         {data.transactions.items.length === 0 && (
           <p className="text-sm text-brand-ink-soft">Aucune transaction.</p>
