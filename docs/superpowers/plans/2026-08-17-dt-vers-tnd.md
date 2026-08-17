@@ -474,6 +474,37 @@ git push -u origin fix-dt-vers-tnd
 
 ---
 
+## L'angle mort du motif — decouvert en cours d'execution
+
+**Le motif `[0-9)}\`"'] DT` a manque douze occurrences affichees.** Il exigeait
+un chiffre, une accolade ou un guillemet avant « DT » ; ces cas-la avaient un
+espace ou une parenthese :
+
+- `Prix (DT)`, `Cash compte (DT)`, `Prix d'achat HT (DT)` — libelles de champs
+- `placeholder="Prix DT"` et un `aria-label`
+- cinq `<span>DT</span>` isoles, dans la caisse et l'onboarding
+- `admin/subscriptions/` — **un fichier entierement absent du plan**
+
+Le cas le plus parlant : `loyalty-client.tsx:358` affichait « 3 pts par DT
+depense, 100 pts = 1 TND » — **les deux notations dans la meme phrase**.
+
+**La lecon :** un motif etroit protege des faux positifs mais cree des angles
+morts. Le controle de fin doit etre plus large que le motif de recherche —
+`grep "DT"` en excluant explicitement les identifiants connus (`formatDT`,
+`MILLIMES_PER_DT`, `DDTHH`, `baseDT`) plutot qu'en exigeant un prefixe.
+
+## Une ecriture en base laissee volontairement
+
+`admin/subscriptions/subscriptions-client.tsx:323` ecrit `currency: "DT"` dans
+le JSON `pricingSnapshot`. Ce n'est pas un libelle : c'est une **donnee
+persistee**.
+
+Decision : **l'affichage passe a TND, l'ecriture reste « DT ».** Changer la
+valeur ecrite creerait deux notations dans les donnees — les anciens abonnements
+en « DT », les nouveaux en « TND » — sans migration pour les harmoniser.
+
+A traiter avec une migration dediee si le besoin se presente.
+
 ## Ce que ce plan ne fait pas
 
 - **Il ne renomme pas `formatDT`** en `formatTND` : 132 sites d'appel pour un gain de lisibilité seul.
