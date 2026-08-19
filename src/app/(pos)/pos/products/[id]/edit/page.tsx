@@ -2,6 +2,7 @@ import { ProductForm } from "@/components/pos/product-form";
 import { prisma } from "@/lib/prisma";
 import { requirePermission, toResponse } from "@/lib/employee-session";
 import { notFound, redirect } from "next/navigation";
+import { ModuleGate } from "@/components/module-gate";
 
 export const metadata = { title: "Modifier produit — Salonista" };
 
@@ -24,24 +25,26 @@ export default async function EditProductPage({
   if (!product || product.providerId !== employee.providerId) notFound();
 
   return (
-    <ProductForm
-      mode="edit"
-      initial={{
-        id: product.id,
-        name: product.name,
-        description: product.description,
-        category: product.category,
-        sku: product.sku,
-        barcode: product.barcode,
-        purchasePrice: String(product.purchasePrice),
-        costPrice: product.costPrice != null ? String(product.costPrice) : "",
-        salePrice: String(product.salePrice),
-        taxRate: String(product.taxRate),
-        stockQuantity: product.stockQuantity,
-        lowStockThreshold: product.lowStockThreshold,
-        photo: product.photo,
-        active: product.active,
-      }}
-    />
+    <ModuleGate module="POS" providerId={employee.providerId}>
+      <ProductForm
+        mode="edit"
+        initial={{
+          id: product.id,
+          name: product.name,
+          description: product.description,
+          category: product.category,
+          sku: product.sku,
+          barcode: product.barcode,
+          purchasePrice: String(product.purchasePrice),
+          costPrice: product.costPrice != null ? String(product.costPrice) : "",
+          salePrice: String(product.salePrice),
+          taxRate: String(product.taxRate),
+          stockQuantity: product.stockQuantity,
+          lowStockThreshold: product.lowStockThreshold,
+          photo: product.photo,
+          active: product.active,
+        }}
+      />
+    </ModuleGate>
   );
 }

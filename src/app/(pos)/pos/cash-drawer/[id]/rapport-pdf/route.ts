@@ -1,6 +1,7 @@
 import { NextRequest } from "next/server";
 import { getCurrentEmployee } from "@/lib/employee-session";
 import { buildDetailReport, renderDetailReportHtml } from "@/lib/cash-drawer-detail-report";
+import { hasModule } from "@/lib/modules";
 
 /**
  * Serves an A4-sized HTML page that auto-opens the print dialog.
@@ -14,6 +15,9 @@ export async function GET(_req: NextRequest, ctx: { params: Promise<{ id: string
   }
   if (!employee.permissions["pos.cash_drawer"]) {
     return new Response("Forbidden", { status: 403 });
+  }
+  if (!(await hasModule(employee.providerId, "POS"))) {
+    return new Response("Module non activé", { status: 403 });
   }
   const { id } = await ctx.params;
   const report = await buildDetailReport(id, employee.providerId);

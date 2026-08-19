@@ -1,6 +1,7 @@
 import { SaleDetailClient } from "@/components/pos/sale-detail-client";
 import { getCurrentEmployee } from "@/lib/employee-session";
 import { redirect } from "next/navigation";
+import { ModuleGate } from "@/components/module-gate";
 
 export const metadata = { title: "Détail vente — Salonista" };
 
@@ -14,9 +15,11 @@ export default async function SaleDetailPage({
   if (!employee) redirect("/salon-pin");
 
   return (
-    <SaleDetailClient
-      saleId={id}
-      canRefund={!!employee.permissions["pos.refund"]}
-    />
+    <ModuleGate module="POS" providerId={employee.providerId}>
+      <SaleDetailClient
+        saleId={id}
+        canRefund={!!employee.permissions["pos.refund"]}
+      />
+    </ModuleGate>
   );
 }
