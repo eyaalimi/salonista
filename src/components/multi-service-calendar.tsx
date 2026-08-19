@@ -1,6 +1,8 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { formatDateLongue, formatHeure } from "@/lib/datetime";
+import { scrollToElement } from "@/lib/scroll-to";
 
 export interface SimpleSlot {
   id: string;
@@ -51,6 +53,13 @@ export function MultiServiceCalendar({ selectedOffers, selectedStart, onSelect }
   }, []);
   const [viewMonth, setViewMonth] = useState<Date>(() => startOfMonth(new Date()));
   const [pickedDate, setPickedDate] = useState<string | null>(null);
+  const horairesRef = useRef<HTMLDivElement>(null);
+
+  // Choisir une date amene aux horaires. Via un effet : au premier choix le
+  // panneau n'est pas encore monte, la ref serait vide.
+  useEffect(() => {
+    if (pickedDate) scrollToElement(horairesRef.current);
+  }, [pickedDate]);
 
   // Compute candidate start times: for each slot of the FIRST offer,
   // verify the subsequent offers have a slot starting at the cumulative offset.
@@ -227,10 +236,13 @@ export function MultiServiceCalendar({ selectedOffers, selectedStart, onSelect }
 
           {/* Time slots */}
           {pickedDate && (
-            <div className="rounded-[var(--radius-card)] border-2 border-hairline bg-white p-5 md:p-6">
+            <div
+              ref={horairesRef}
+              className="scroll-mt-4 rounded-[var(--radius-card)] border-2 border-hairline bg-white p-5 md:p-6"
+            >
               <p className="mb-1 text-xs font-semibold uppercase tracking-[0.12em] text-prune-soft">Heure de début</p>
               <h3 className="ds-display mb-1 text-lg text-prune">
-                {new Date(pickedDate).toLocaleDateString("fr-TN", { weekday: "long", day: "numeric", month: "long" })}
+                {formatDateLongue(pickedDate)}
               </h3>
               <p className="mb-4 text-sm text-prune-soft">
                 Durée totale : {formatDuration(totalDuration)}
@@ -253,7 +265,7 @@ export function MultiServiceCalendar({ selectedOffers, selectedStart, onSelect }
                             : "border-hairline text-prune hover:border-rose"
                         }`}
                       >
-                        {t.toLocaleTimeString("fr-TN", { hour: "2-digit", minute: "2-digit" })}
+                        {formatHeure(t)}
                       </button>
                     );
                   })}

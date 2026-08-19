@@ -17,7 +17,14 @@
  * produits, ventes, sessions de caisse, cartes de fidelite).
  */
 
-import { prisma } from "../src/lib/prisma";
+// `tsx` ne charge pas `.env` comme le fait Next.js : sans ces deux lignes,
+// DATABASE_URL est absente et pg echoue sur « client password must be a
+// string ». Meme amorce que `scripts/create-admin.ts`.
+import { config } from "dotenv";
+config();
+
+import { PrismaClient } from "../src/generated/prisma/client";
+import { PrismaPg } from "@prisma/adapter-pg";
 
 const email = process.argv[2]?.trim().toLowerCase();
 const apply = process.argv.includes("--apply");
@@ -26,6 +33,20 @@ if (!email) {
   console.error("Usage : npx tsx scripts/fix-admin-salon.ts <email> [--apply]");
   process.exit(1);
 }
+
+// Verifie AVANT de construire le client : sinon pg echoue plus loin sur un
+// « client password must be a string » qui n'apprend rien.
+if (!process.env.DATABASE_URL) {
+  console.error(
+    "DATABASE_URL introuvable. Lance le script depuis le dossier qui contient" +
+      "\nle fichier .env (/home/ubuntu/salonista en production).",
+  );
+  process.exit(1);
+}
+
+const prisma = new PrismaClient({
+  adapter: new PrismaPg(process.env.DATABASE_URL),
+});
 
 async function main() {
   const user = await prisma.user.findUnique({
@@ -91,8 +112,9 @@ async function main() {
   if (hasRealActivity && !process.argv.includes("--force")) {
     console.error(
       "\nARRET : ce salon a des ventes ou des offres — il ne ressemble pas a" +
-        "\nune inscription faite par erreur. Verifie qu'il s'agit bien du bon" +
-        "\ncompte, puis relance avec --force si tu confirmes la suppression.",
+        "\nune inscription faite par erreur. Verifie ci-dessus qu'il s'agit bien" +
+        "\ndu salon a supprimer, puis relance en ajoutant --force :" +
+        `\n\n  npx tsx scripts/fix-admin-salon.ts ${email} --apply --force\n`,
     );
     process.exit(1);
   }

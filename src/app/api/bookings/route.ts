@@ -3,6 +3,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { sendBookingConfirmationEmail, sendNewBookingToProvider } from "@/lib/mail";
+import { formatHeure } from "@/lib/datetime";
 
 // New input shape: an ordered list of offer IDs and a single starting time.
 // The server allocates consecutive slots back-to-back for each offer.
@@ -61,7 +62,7 @@ export async function POST(req: NextRequest) {
         });
         if (!slot) {
           throw new Error(
-            `Aucun créneau pour « ${offer.title} » à ${new Date(cursor).toLocaleTimeString("fr-TN", { hour: "2-digit", minute: "2-digit" })}`
+            `Aucun créneau pour « ${offer.title} » à ${formatHeure(new Date(cursor))}`
           );
         }
         if (slot.bookedCount >= slot.capacity) {
