@@ -25,7 +25,7 @@ interface BookingDetail {
 
 export default function ReservationDetailPage() {
   return (
-    <Suspense fallback={<div className="min-h-screen bg-brand-cream" />}>
+    <Suspense fallback={<div className="min-h-screen bg-creme" />}>
       <ReservationDetailPageInner />
     </Suspense>
   );
@@ -55,22 +55,32 @@ function ReservationDetailPageInner() {
 
   if (!bookingId) {
     return (
-      <div className="text-center py-20">
-        <p className="text-brand-bordeaux/40 text-sm">Aucune reservation selectionnee</p>
-        <Link href="/cliente" className="inline-block mt-4 px-6 py-3 text-xs tracking-[0.2em] uppercase bg-brand-bordeaux text-white">Retour</Link>
+      <div className="py-20 text-center">
+        <p className="text-base text-prune-soft">Aucune réservation sélectionnée</p>
+        <Link
+          href="/cliente"
+          className="ds-press ds-focus mt-4 inline-flex min-h-[48px] items-center rounded-[var(--radius-pill)] border-2 border-hairline px-6 text-base font-semibold text-prune hover:border-rose"
+        >
+          Retour
+        </Link>
       </div>
     );
   }
 
   if (loading) {
-    return <div className="flex items-center justify-center h-64 text-brand-bordeaux/40 text-xs tracking-[0.2em] uppercase">Chargement...</div>;
+    return <div className="flex h-64 items-center justify-center text-base text-prune-soft">Chargement…</div>;
   }
 
   if (error) {
     return (
-      <div className="text-center py-20">
-        <p className="text-red-500 text-sm mb-4">{error}</p>
-        <Link href="/cliente" className="inline-block px-6 py-3 text-xs tracking-[0.2em] uppercase bg-brand-bordeaux text-white">Retour</Link>
+      <div className="py-20 text-center">
+        <p className="mb-4 text-base font-semibold text-rose">{error}</p>
+        <Link
+          href="/cliente"
+          className="ds-press ds-focus inline-flex min-h-[48px] items-center rounded-[var(--radius-pill)] border-2 border-hairline px-6 text-base font-semibold text-prune hover:border-rose"
+        >
+          Retour
+        </Link>
       </div>
     );
   }
@@ -78,44 +88,50 @@ function ReservationDetailPageInner() {
   if (!data) return null;
 
   return (
-    <div className="max-w-lg mx-auto">
+    <div className="mx-auto max-w-lg">
       <div className="mb-8">
-        <Link href="/cliente" className="text-[10px] tracking-[0.2em] uppercase text-brand-gold hover:text-brand-bordeaux transition-colors duration-500 mb-4 inline-block">
-          Retour aux reservations
+        <Link
+          href="/cliente"
+          className="ds-press ds-focus mb-4 inline-flex min-h-[44px] items-center rounded-[var(--radius-pill)] text-base font-semibold text-prune-soft hover:text-rose"
+        >
+          Retour aux réservations
         </Link>
-        <p className="luxury-badge mb-3">Ma reservation</p>
-        <h1 className="luxury-heading text-2xl text-brand-bordeaux">{data.booking.offerTitle}</h1>
+        <p className="mb-3 text-sm font-semibold uppercase tracking-[0.12em] text-prune-soft">Ma réservation</p>
+        <h1 className="ds-display text-2xl text-prune">{data.booking.offerTitle}</h1>
       </div>
 
-      <div className="bg-white border border-brand-gold/20 p-8">
+      <div className="rounded-[var(--radius-card)] border-2 border-hairline bg-white p-8">
         {/* Status */}
-        <div className="text-center mb-6">
+        <div className="mb-6 text-center">
           {data.verified ? (
-            <div className="inline-flex items-center gap-2 px-4 py-2 border border-emerald-300">
-              <svg className="w-4 h-4 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <span className="inline-flex items-center gap-2 rounded-[var(--radius-pill)] bg-menthe px-4 py-2">
+              <svg className="h-4 w-4 text-menthe-deep" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
               </svg>
-              <span className="text-[10px] tracking-[0.15em] uppercase text-emerald-700 font-medium">Verifie par le salon</span>
-            </div>
+              <span className="text-sm font-semibold text-menthe-deep">Vérifié par le salon</span>
+            </span>
           ) : (
-            <div className="inline-flex items-center gap-2 px-4 py-2 border border-brand-gold/30">
-              <span className="text-[10px] tracking-[0.15em] uppercase text-brand-gold font-medium">Paye — en attente de visite</span>
-            </div>
+            <span className="inline-flex items-center rounded-[var(--radius-pill)] border-2 border-hairline px-4 py-2 text-sm font-semibold text-prune">
+              Payé — en attente de visite
+            </span>
           )}
         </div>
 
         {/* QR Code */}
-        <div className="text-center mb-6">
-          <p className="text-[10px] tracking-[0.15em] uppercase text-brand-bordeaux/40 mb-4">
-            {data.verified ? "QR code utilise" : "Presentez ce code au salon"}
+        <div className="mb-6 text-center">
+          <p className="mb-4 text-sm font-semibold uppercase tracking-[0.12em] text-prune-soft">
+            {data.verified ? "QR code utilisé" : "Présente ce code au salon"}
           </p>
-          <div className={`inline-block p-4 border ${data.verified ? "border-emerald-200 opacity-60" : "border-brand-gold/20"}`}>
+          {/* Le cadre est restyle, PAS l'image : un QR altere devient illisible
+              au scanner. `w-56 h-56`, le fond blanc et l'`opacity-60` d'un code
+              deja utilise restent inchanges. */}
+          <div className={`inline-block rounded-[var(--radius-panel)] border-2 bg-white p-4 ${data.verified ? "border-menthe opacity-60" : "border-hairline"}`}>
             <img src={data.qrCode} alt="QR Code" className="w-56 h-56" />
           </div>
-          <p className="text-xs text-brand-bordeaux/30 mt-3 font-mono">{data.qrToken}</p>
+          <p className="mt-3 font-mono text-sm text-prune-soft">{data.qrToken}</p>
           {data.verified && data.verifiedAt && (
-            <p className="text-xs text-emerald-600 mt-2">
-              Verifie le {new Date(data.verifiedAt).toLocaleDateString("fr-TN", {
+            <p className="mt-2 text-sm text-menthe-deep">
+              Vérifié le {new Date(data.verifiedAt).toLocaleDateString("fr-TN", {
                 day: "numeric",
                 month: "long",
                 year: "numeric",
@@ -126,26 +142,26 @@ function ReservationDetailPageInner() {
           )}
         </div>
 
-        <div className="luxury-divider my-6" />
+        <div className="my-6 h-px bg-hairline" />
 
         {/* Details */}
-        <div className="space-y-3 text-sm">
-          <div className="flex justify-between">
-            <span className="text-brand-bordeaux/40">Salon</span>
-            <span className="text-brand-bordeaux font-medium">{data.booking.salonName}</span>
+        <div className="space-y-3 text-base">
+          <div className="flex justify-between gap-3">
+            <span className="text-prune-soft">Salon</span>
+            <span className="text-right font-semibold text-prune">{data.booking.salonName}</span>
           </div>
           {data.booking.address && (
-            <div className="flex justify-between">
-              <span className="text-brand-bordeaux/40">Adresse</span>
-              <span className="text-brand-bordeaux text-right">
+            <div className="flex justify-between gap-3">
+              <span className="text-prune-soft">Adresse</span>
+              <span className="text-right text-prune">
                 {data.booking.address}
                 {data.booking.city && `, ${data.booking.city}`}
               </span>
             </div>
           )}
-          <div className="flex justify-between">
-            <span className="text-brand-bordeaux/40">Date du rendez-vous</span>
-            <span className="text-brand-bordeaux">
+          <div className="flex justify-between gap-3">
+            <span className="text-prune-soft">Date du rendez-vous</span>
+            <span className="text-right text-prune">
               {new Date(data.booking.bookedFor).toLocaleDateString("fr-TN", {
                 weekday: "long",
                 day: "numeric",
@@ -154,15 +170,15 @@ function ReservationDetailPageInner() {
               })}
             </span>
           </div>
-          <div className="flex justify-between">
-            <span className="text-brand-bordeaux/40">Montant paye</span>
-            <span className="luxury-heading text-xl text-brand-gold">
+          <div className="flex justify-between gap-3">
+            <span className="text-prune-soft">Montant payé</span>
+            <span className="ds-display text-xl text-prune">
               {Number(data.booking.totalPrice).toFixed(0)} TND
             </span>
           </div>
-          <div className="flex justify-between">
-            <span className="text-brand-bordeaux/40">Paye le</span>
-            <span className="text-brand-bordeaux">
+          <div className="flex justify-between gap-3">
+            <span className="text-prune-soft">Payé le</span>
+            <span className="text-right text-prune">
               {new Date(data.booking.paidAt).toLocaleDateString("fr-TN", {
                 day: "numeric",
                 month: "long",
@@ -174,13 +190,13 @@ function ReservationDetailPageInner() {
           </div>
         </div>
 
-        <div className="luxury-divider my-6" />
+        <div className="my-6 h-px bg-hairline" />
 
-        <div className="bg-brand-cream/50 p-4 text-center">
-          <p className="text-xs text-brand-bordeaux/50 leading-relaxed">
+        <div className="rounded-[var(--radius-panel)] bg-creme p-4 text-center">
+          <p className="text-sm leading-relaxed text-prune-soft">
             {data.verified
-              ? "Votre visite a ete confirmee. Merci de votre confiance."
-              : "Montrez ce QR code au prestataire a votre arrivee au salon. Il sera scanne pour valider votre reservation."}
+              ? "Ta visite a été confirmée. Merci de ta confiance."
+              : "Montre ce QR code au prestataire à ton arrivée au salon. Il sera scanné pour valider ta réservation."}
           </p>
         </div>
       </div>
