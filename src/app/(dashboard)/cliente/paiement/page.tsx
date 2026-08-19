@@ -114,55 +114,57 @@ function PaiementPageInner() {
   // Success — show QR code
   if (step === "success" && result) {
     return (
-      <div className="max-w-lg mx-auto">
-        <div className="text-center mb-8">
-          <div className="w-16 h-16 mx-auto mb-4 border-2 border-emerald-500 flex items-center justify-center">
-            <svg className="w-8 h-8 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <div className="mx-auto max-w-lg">
+        <div className="mb-8 text-center">
+          <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-menthe">
+            <svg className="h-8 w-8 text-menthe-deep" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
             </svg>
           </div>
-          <p className="luxury-badge mb-3">Paiement confirme</p>
-          <h1 className="luxury-heading text-2xl text-brand-bordeaux">Merci pour votre paiement</h1>
+          <p className="mb-3 text-sm font-semibold uppercase tracking-[0.12em] text-prune-soft">Paiement confirmé</p>
+          <h1 className="ds-display text-2xl text-prune">Merci pour ton paiement</h1>
         </div>
 
-        <div className="bg-white border border-brand-gold/20 p-8">
+        <div className="rounded-[var(--radius-card)] border-2 border-hairline bg-white p-8">
           {/* QR Code */}
-          <div className="text-center mb-6">
-            <p className="text-[10px] tracking-[0.15em] uppercase text-brand-bordeaux/40 mb-4">
-              Votre code QR de confirmation
+          <div className="mb-6 text-center">
+            <p className="mb-4 text-sm font-semibold uppercase tracking-[0.12em] text-prune-soft">
+              Ton QR code de confirmation
             </p>
-            <div className="inline-block p-4 border border-brand-gold/20">
+            {/* Le cadre est restyle, PAS l'image : un QR altere devient
+                illisible au scanner. `w-64 h-64` et le fond blanc restent. */}
+            <div className="inline-block rounded-[var(--radius-panel)] border-2 border-hairline bg-white p-4">
               <img src={result.qrCode} alt="QR Code" className="w-64 h-64" />
             </div>
-            <p className="text-xs text-brand-bordeaux/40 mt-3">
+            <p className="mt-3 text-sm text-prune-soft">
               Code : {result.qrToken}
             </p>
           </div>
 
-          <div className="luxury-divider my-6" />
+          <div className="my-6 h-px bg-hairline" />
 
           {/* Booking details */}
-          <div className="space-y-3 text-sm">
-            <div className="flex justify-between">
-              <span className="text-brand-bordeaux/40">Service</span>
-              <span className="text-brand-bordeaux font-medium">{result.booking.offer.title}</span>
+          <div className="space-y-3 text-base">
+            <div className="flex justify-between gap-3">
+              <span className="text-prune-soft">Service</span>
+              <span className="text-right font-semibold text-prune">{result.booking.offer.title}</span>
             </div>
-            <div className="flex justify-between">
-              <span className="text-brand-bordeaux/40">Salon</span>
-              <span className="text-brand-bordeaux">{result.booking.offer.provider.salonName}</span>
+            <div className="flex justify-between gap-3">
+              <span className="text-prune-soft">Salon</span>
+              <span className="text-right text-prune">{result.booking.offer.provider.salonName}</span>
             </div>
             {result.booking.offer.provider.address && (
-              <div className="flex justify-between">
-                <span className="text-brand-bordeaux/40">Adresse</span>
-                <span className="text-brand-bordeaux text-right">
+              <div className="flex justify-between gap-3">
+                <span className="text-prune-soft">Adresse</span>
+                <span className="text-right text-prune">
                   {result.booking.offer.provider.address}
                   {result.booking.offer.provider.city && `, ${result.booking.offer.provider.city}`}
                 </span>
               </div>
             )}
-            <div className="flex justify-between">
-              <span className="text-brand-bordeaux/40">Date</span>
-              <span className="text-brand-bordeaux">
+            <div className="flex justify-between gap-3">
+              <span className="text-prune-soft">Date</span>
+              <span className="text-right text-prune">
                 {new Date(result.booking.bookedFor).toLocaleDateString("fr-TN", {
                   weekday: "long",
                   day: "numeric",
@@ -171,34 +173,34 @@ function PaiementPageInner() {
                 })}
               </span>
             </div>
-            <div className="flex justify-between">
-              <span className="text-brand-bordeaux/40">Montant paye</span>
-              <span className="luxury-heading text-xl text-brand-gold">
+            <div className="flex justify-between gap-3">
+              <span className="text-prune-soft">Montant payé</span>
+              <span className="ds-display text-xl text-prune">
                 {Number(result.booking.totalPrice).toFixed(0)} TND
               </span>
             </div>
           </div>
 
-          <div className="luxury-divider my-6" />
+          <div className="my-6 h-px bg-hairline" />
 
-          <div className="bg-brand-cream/50 p-4 text-center">
-            <p className="text-xs text-brand-bordeaux/60 leading-relaxed">
-              Presentez ce QR code au salon lors de votre visite.
-              Le prestataire le scannera pour confirmer votre reservation.
+          <div className="rounded-[var(--radius-panel)] bg-creme p-4 text-center">
+            <p className="text-sm leading-relaxed text-prune-soft">
+              Présente ce QR code au salon lors de ta visite.
+              Le prestataire le scannera pour confirmer ta réservation.
             </p>
           </div>
         </div>
 
-        <div className="flex gap-3 mt-6">
+        <div className="mt-6 flex flex-col gap-3 sm:flex-row">
           <Link
             href="/cliente"
-            className="flex-1 text-center px-6 py-3 text-xs tracking-[0.2em] uppercase border border-brand-gold/20 text-brand-bordeaux hover:border-brand-gold transition-colors duration-500"
+            className="ds-press ds-focus inline-flex min-h-[48px] flex-1 items-center justify-center rounded-[var(--radius-pill)] border-2 border-hairline px-6 text-base font-semibold text-prune hover:border-rose"
           >
-            Mes reservations
+            Mes réservations
           </Link>
           <Link
             href={`/cliente/reservation?id=${result.booking.id}`}
-            className="flex-1 text-center px-6 py-3 text-xs tracking-[0.2em] uppercase bg-brand-bordeaux text-white hover:bg-brand-gold transition-colors duration-500"
+            className="ds-press ds-focus inline-flex min-h-[48px] flex-1 items-center justify-center rounded-[var(--radius-pill)] bg-rose px-6 text-base font-semibold text-prune hover:bg-[#F04A79]"
           >
             Voir le QR code
           </Link>
