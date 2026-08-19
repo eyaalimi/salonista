@@ -11,7 +11,21 @@ import { NextBookingTicker } from "@/components/pos/next-booking-ticker";
 type Provider = { salonName: string; city: string | null };
 type Employee = { id: string; displayName: string; role: string; permissions: Record<string, boolean> };
 
-export function PosTopbar({ provider, employee }: { provider: Provider | null; employee: Employee }) {
+export function PosTopbar({
+  provider,
+  employee,
+  hasPos = true,
+}: {
+  provider: Provider | null;
+  employee: Employee;
+  /**
+   * Sans le module caisse, deux widgets n'ont pas lieu d'etre : la recherche
+   * universelle (qui interroge produits et historique de ventes, et repondrait
+   * 403) et l'indicateur de tiroir. Le ticker de prochain RDV, lui, releve du
+   * metier et reste affiche.
+   */
+  hasPos?: boolean;
+}) {
   const [now, setNow] = useState<string>("--:--");
   const [menuOpen, setMenuOpen] = useState(false);
   const [loggingOut, setLoggingOut] = useState(false);
@@ -82,14 +96,14 @@ export function PosTopbar({ provider, employee }: { provider: Provider | null; e
       )}
 
       <div className="flex-1 flex justify-center">
-        <UniversalSearch />
+        {hasPos && <UniversalSearch />}
       </div>
 
       <div className="flex items-center gap-3 shrink-0">
         <NextBookingTicker />
         <OnlineStatusBadge />
         <span className="pos-mono text-xs text-pos-ink-4 hidden md:inline">{now}</span>
-        {employee.permissions["pos.cash_drawer"] && <CashDrawerIndicator canOpen={true} employeeName={employee.displayName} />}
+        {hasPos && employee.permissions["pos.cash_drawer"] && <CashDrawerIndicator canOpen={true} employeeName={employee.displayName} />}
 
         <div className="relative" ref={menuRef}>
           <button
