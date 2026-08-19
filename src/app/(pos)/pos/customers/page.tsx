@@ -7,7 +7,7 @@ export const metadata = { title: "Clients — Salonista" };
 export default async function CustomersPage() {
   const employee = await getCurrentEmployee();
   if (!employee) redirect("/salon-pin");
-  if (!employee.permissions["customers.view"]) redirect("/pos");
+  if (!employee.permissions["customers.view"]) redirect("/pos/calendar");
   return (
     <CustomersListClient
       canEdit={!!employee.permissions["customers.edit"]}

@@ -2,13 +2,14 @@ import { getCurrentEmployee } from "@/lib/employee-session";
 import { prisma } from "@/lib/prisma";
 import { redirect } from "next/navigation";
 import { ReceptionBulkClient } from "@/components/pos/reception-bulk-client";
+import { ModuleGate } from "@/components/module-gate";
 
 export const dynamic = "force-dynamic";
 
 export default async function ReceptionBulkPage() {
   const employee = await getCurrentEmployee();
   if (!employee) redirect("/salon-pin");
-  if (!employee.permissions["products.manage"]) redirect("/pos");
+  if (!employee.permissions["products.manage"]) redirect("/pos/calendar");
 
   const products = await prisma.product.findMany({
     where: { providerId: employee.providerId, active: true },
@@ -22,5 +23,9 @@ export default async function ReceptionBulkPage() {
     } as never,
   });
 
-  return <ReceptionBulkClient products={products as never} />;
+  return (
+    <ModuleGate module="POS" providerId={employee.providerId}>
+      <ReceptionBulkClient products={products as never} />
+    </ModuleGate>
+  );
 }

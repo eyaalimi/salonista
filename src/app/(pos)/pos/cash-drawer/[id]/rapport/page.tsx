@@ -3,13 +3,14 @@ import { prisma } from "@/lib/prisma";
 import { notFound, redirect } from "next/navigation";
 import { Decimal } from "@prisma/client/runtime/client";
 import { ZReportPrintFrame } from "@/components/pos/thermal/z-report-content";
+import { ModuleGate } from "@/components/module-gate";
 
 export const dynamic = "force-dynamic";
 
 export default async function ZReportPage({ params }: { params: Promise<{ id: string }> }) {
   const employee = await getCurrentEmployee();
   if (!employee) redirect("/salon-pin");
-  if (!employee.permissions["pos.cash_drawer"]) redirect("/pos");
+  if (!employee.permissions["pos.cash_drawer"]) redirect("/pos/calendar");
 
   const { id } = await params;
 
@@ -104,5 +105,9 @@ export default async function ZReportPage({ params }: { params: Promise<{ id: st
     variance: session.variance ? String(session.variance) : null,
   };
 
-  return <ZReportPrintFrame data={data} />;
+  return (
+    <ModuleGate module="POS" providerId={employee.providerId}>
+      <ZReportPrintFrame data={data} />
+    </ModuleGate>
+  );
 }
