@@ -3,6 +3,8 @@
 import { Suspense, useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 
 interface PaymentResult {
   success: boolean;
@@ -28,7 +30,7 @@ interface ClientBooking {
 
 export default function PaiementPage() {
   return (
-    <Suspense fallback={<div className="min-h-screen bg-brand-cream" />}>
+    <Suspense fallback={<div className="min-h-screen bg-creme" />}>
       <PaiementPageInner />
     </Suspense>
   );
@@ -89,7 +91,7 @@ function PaiementPageInner() {
       setResult(data);
       setStep("success");
     } catch {
-      setError("Erreur serveur, veuillez reessayer");
+      setError("Erreur serveur, réessaie dans un instant");
       setStep("form");
     }
     setLoading(false);
@@ -97,9 +99,12 @@ function PaiementPageInner() {
 
   if (!bookingId) {
     return (
-      <div className="text-center py-20">
-        <p className="text-brand-bordeaux/40 text-sm">Aucune reservation selectionnee</p>
-        <Link href="/cliente" className="inline-block mt-4 px-6 py-3 text-xs tracking-[0.2em] uppercase bg-brand-bordeaux text-white">
+      <div className="py-20 text-center">
+        <p className="text-base text-prune-soft">Aucune réservation sélectionnée</p>
+        <Link
+          href="/cliente"
+          className="ds-press ds-focus mt-4 inline-flex min-h-[48px] items-center rounded-[var(--radius-pill)] border-2 border-hairline px-6 text-base font-semibold text-prune hover:border-rose"
+        >
           Retour
         </Link>
       </div>
@@ -109,55 +114,57 @@ function PaiementPageInner() {
   // Success — show QR code
   if (step === "success" && result) {
     return (
-      <div className="max-w-lg mx-auto">
-        <div className="text-center mb-8">
-          <div className="w-16 h-16 mx-auto mb-4 border-2 border-emerald-500 flex items-center justify-center">
-            <svg className="w-8 h-8 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <div className="mx-auto max-w-lg">
+        <div className="mb-8 text-center">
+          <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-menthe">
+            <svg className="h-8 w-8 text-menthe-deep" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
             </svg>
           </div>
-          <p className="luxury-badge mb-3">Paiement confirme</p>
-          <h1 className="luxury-heading text-2xl text-brand-bordeaux">Merci pour votre paiement</h1>
+          <p className="mb-3 text-sm font-semibold uppercase tracking-[0.12em] text-prune-soft">Paiement confirmé</p>
+          <h1 className="ds-display text-2xl text-prune">Merci pour ton paiement</h1>
         </div>
 
-        <div className="bg-white border border-brand-gold/20 p-8">
+        <div className="rounded-[var(--radius-card)] border-2 border-hairline bg-white p-8">
           {/* QR Code */}
-          <div className="text-center mb-6">
-            <p className="text-[10px] tracking-[0.15em] uppercase text-brand-bordeaux/40 mb-4">
-              Votre code QR de confirmation
+          <div className="mb-6 text-center">
+            <p className="mb-4 text-sm font-semibold uppercase tracking-[0.12em] text-prune-soft">
+              Ton QR code de confirmation
             </p>
-            <div className="inline-block p-4 border border-brand-gold/20">
+            {/* Le cadre est restyle, PAS l'image : un QR altere devient
+                illisible au scanner. `w-64 h-64` et le fond blanc restent. */}
+            <div className="inline-block rounded-[var(--radius-panel)] border-2 border-hairline bg-white p-4">
               <img src={result.qrCode} alt="QR Code" className="w-64 h-64" />
             </div>
-            <p className="text-xs text-brand-bordeaux/40 mt-3">
+            <p className="mt-3 text-sm text-prune-soft">
               Code : {result.qrToken}
             </p>
           </div>
 
-          <div className="luxury-divider my-6" />
+          <div className="my-6 h-px bg-hairline" />
 
           {/* Booking details */}
-          <div className="space-y-3 text-sm">
-            <div className="flex justify-between">
-              <span className="text-brand-bordeaux/40">Service</span>
-              <span className="text-brand-bordeaux font-medium">{result.booking.offer.title}</span>
+          <div className="space-y-3 text-base">
+            <div className="flex justify-between gap-3">
+              <span className="text-prune-soft">Service</span>
+              <span className="text-right font-semibold text-prune">{result.booking.offer.title}</span>
             </div>
-            <div className="flex justify-between">
-              <span className="text-brand-bordeaux/40">Salon</span>
-              <span className="text-brand-bordeaux">{result.booking.offer.provider.salonName}</span>
+            <div className="flex justify-between gap-3">
+              <span className="text-prune-soft">Salon</span>
+              <span className="text-right text-prune">{result.booking.offer.provider.salonName}</span>
             </div>
             {result.booking.offer.provider.address && (
-              <div className="flex justify-between">
-                <span className="text-brand-bordeaux/40">Adresse</span>
-                <span className="text-brand-bordeaux text-right">
+              <div className="flex justify-between gap-3">
+                <span className="text-prune-soft">Adresse</span>
+                <span className="text-right text-prune">
                   {result.booking.offer.provider.address}
                   {result.booking.offer.provider.city && `, ${result.booking.offer.provider.city}`}
                 </span>
               </div>
             )}
-            <div className="flex justify-between">
-              <span className="text-brand-bordeaux/40">Date</span>
-              <span className="text-brand-bordeaux">
+            <div className="flex justify-between gap-3">
+              <span className="text-prune-soft">Date</span>
+              <span className="text-right text-prune">
                 {new Date(result.booking.bookedFor).toLocaleDateString("fr-TN", {
                   weekday: "long",
                   day: "numeric",
@@ -166,34 +173,34 @@ function PaiementPageInner() {
                 })}
               </span>
             </div>
-            <div className="flex justify-between">
-              <span className="text-brand-bordeaux/40">Montant paye</span>
-              <span className="luxury-heading text-xl text-brand-gold">
+            <div className="flex justify-between gap-3">
+              <span className="text-prune-soft">Montant payé</span>
+              <span className="ds-display text-xl text-prune">
                 {Number(result.booking.totalPrice).toFixed(0)} TND
               </span>
             </div>
           </div>
 
-          <div className="luxury-divider my-6" />
+          <div className="my-6 h-px bg-hairline" />
 
-          <div className="bg-brand-cream/50 p-4 text-center">
-            <p className="text-xs text-brand-bordeaux/60 leading-relaxed">
-              Presentez ce QR code au salon lors de votre visite.
-              Le prestataire le scannera pour confirmer votre reservation.
+          <div className="rounded-[var(--radius-panel)] bg-creme p-4 text-center">
+            <p className="text-sm leading-relaxed text-prune-soft">
+              Présente ce QR code au salon lors de ta visite.
+              Le prestataire le scannera pour confirmer ta réservation.
             </p>
           </div>
         </div>
 
-        <div className="flex gap-3 mt-6">
+        <div className="mt-6 flex flex-col gap-3 sm:flex-row">
           <Link
             href="/cliente"
-            className="flex-1 text-center px-6 py-3 text-xs tracking-[0.2em] uppercase border border-brand-gold/20 text-brand-bordeaux hover:border-brand-gold transition-colors duration-500"
+            className="ds-press ds-focus inline-flex min-h-[48px] flex-1 items-center justify-center rounded-[var(--radius-pill)] border-2 border-hairline px-6 text-base font-semibold text-prune hover:border-rose"
           >
-            Mes reservations
+            Mes réservations
           </Link>
           <Link
             href={`/cliente/reservation?id=${result.booking.id}`}
-            className="flex-1 text-center px-6 py-3 text-xs tracking-[0.2em] uppercase bg-brand-bordeaux text-white hover:bg-brand-gold transition-colors duration-500"
+            className="ds-press ds-focus inline-flex min-h-[48px] flex-1 items-center justify-center rounded-[var(--radius-pill)] bg-rose px-6 text-base font-semibold text-prune hover:bg-[#F04A79]"
           >
             Voir le QR code
           </Link>
@@ -205,55 +212,70 @@ function PaiementPageInner() {
   // Processing animation
   if (step === "processing") {
     return (
-      <div className="max-w-lg mx-auto text-center py-20">
-        <div className="w-16 h-16 mx-auto mb-6 border border-brand-gold/30 flex items-center justify-center animate-pulse">
-          <svg className="w-8 h-8 text-brand-gold" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <div className="mx-auto max-w-lg py-20 text-center">
+        {/* `animate-pulse` est CONSERVE : le design system interdit les
+            animations d'APPARITION, pas les indicateurs d'activite. Le
+            paiement simule 2 secondes — sans retour visuel, la cliente croit
+            que rien ne se passe, sur l'ecran le plus anxiogene du parcours. */}
+        <div className="mx-auto mb-6 flex h-16 w-16 animate-pulse items-center justify-center rounded-full bg-rose-soft">
+          <svg className="h-8 w-8 text-prune" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
           </svg>
         </div>
-        <p className="luxury-heading text-xl text-brand-bordeaux mb-2">Traitement en cours</p>
-        <p className="text-xs text-brand-bordeaux/40 tracking-wider">Veuillez patienter...</p>
+        <p className="ds-display mb-2 text-xl text-prune">Traitement en cours</p>
+        <p className="text-base text-prune-soft">Un instant…</p>
       </div>
     );
   }
 
   // Payment form
   return (
-    <div className="max-w-lg mx-auto">
+    <div className="mx-auto max-w-lg">
       <div className="mb-8">
-        <p className="luxury-badge mb-3">Paiement securise</p>
-        <h1 className="luxury-heading text-2xl text-brand-bordeaux">Finaliser le paiement</h1>
+        {/* Le surtitre « Paiement securise » a ete retire : le formulaire
+            n'envoie aucune donnee bancaire (le POST ne transmet que
+            bookingId), promettre la securite serait trompeur. */}
+        <h1 className="ds-display text-2xl text-prune">Finaliser le paiement</h1>
       </div>
 
       {/* Booking summary */}
       {booking && (
-        <div className="bg-white border border-brand-gold/20 p-5 mb-6">
-          <p className="text-[10px] tracking-[0.15em] uppercase text-brand-bordeaux/40 mb-3">Resume</p>
-          <h3 className="luxury-heading text-lg text-brand-bordeaux">
+        <div className="mb-6 rounded-[var(--radius-card)] border-2 border-hairline bg-white p-5">
+          <p className="mb-3 text-sm font-semibold uppercase tracking-[0.12em] text-prune-soft">Résumé</p>
+          <h3 className="ds-display text-lg text-prune">
             {booking.items.map((i) => i.offer.title).join(", ")}
           </h3>
-          <p className="text-xs text-brand-bordeaux/40 mt-1">{booking.items[0]?.offer.provider.salonName}</p>
+          <p className="mt-1 text-sm text-prune-soft">{booking.items[0]?.offer.provider.salonName}</p>
+          {/* L'HEURE remplace l'annee : sur un ecran de paiement, savoir qu'on
+              paie pour « jeudi 20 aout a 16:00 » est plus utile que l'annee,
+              qui est presque toujours l'annee en cours. La page du QR, elle,
+              garde l'annee : c'est un justificatif qu'on peut relire plus
+              tard. Changement de contenu assume, pas un effet de bord. */}
           {booking.items[0]?.slot && (
-            <p className="text-xs text-brand-bordeaux/30 mt-1">
+            <p className="mt-1 text-sm text-prune-soft">
               {new Date(booking.items[0].slot.startTime).toLocaleDateString("fr-TN", {
                 weekday: "long",
                 day: "numeric",
                 month: "long",
-                year: "numeric",
+                hour: "2-digit",
+                minute: "2-digit",
               })}
             </p>
           )}
-          <div className="mt-4 pt-4 border-t border-brand-gold/10 flex justify-between items-center">
-            <span className="text-[10px] tracking-[0.15em] uppercase text-brand-bordeaux/40">Total a payer</span>
-            <span className="luxury-heading text-2xl text-brand-gold">{Number(booking.totalPrice).toFixed(0)} TND</span>
+          <div className="mt-4 flex items-center justify-between border-t border-hairline pt-4">
+            <span className="text-sm font-semibold uppercase tracking-[0.12em] text-prune-soft">Total à payer</span>
+            <span className="ds-display text-2xl text-prune">{Number(booking.totalPrice).toFixed(0)} TND</span>
           </div>
 
           {booking.paymentStatus === "PAID" && (
-            <div className="mt-4 p-3 bg-emerald-50 border border-emerald-200 text-center">
-              <p className="text-xs text-emerald-700 tracking-wider uppercase">Deja payee</p>
+            <div className="mt-4 rounded-[var(--radius-panel)] bg-menthe p-3 text-center">
+              {/* `prune` et non `menthe-deep` : sur fond menthe, menthe-deep
+                  donne 3,73:1 — sous le seuil de 4,5:1 qu'exige ce texte de
+                  14px. Le prune y atteint 11,63:1. */}
+              <p className="text-sm font-semibold uppercase tracking-[0.1em] text-prune">Déjà payée</p>
               <Link
                 href={`/cliente/reservation?id=${booking.id}`}
-                className="inline-block mt-2 text-xs text-emerald-600 underline"
+                className="ds-press ds-focus mt-2 inline-block text-sm font-semibold text-prune underline"
               >
                 Voir mon QR code
               </Link>
@@ -263,50 +285,41 @@ function PaiementPageInner() {
       )}
 
       {booking?.paymentStatus !== "PAID" && (
-        <form onSubmit={handlePayment} className="bg-white border border-brand-gold/20 p-6 space-y-5">
-          <p className="text-[10px] tracking-[0.15em] uppercase text-brand-bordeaux/40 mb-2">Informations de paiement</p>
-
+        <>
           {error && (
-            <div className="p-3 border border-red-300 text-red-600 text-xs tracking-wider">{error}</div>
+            <div className="mb-6 rounded-[var(--radius-panel)] border-2 border-rose bg-rose-soft p-4 text-sm font-semibold text-prune">
+              {error}
+            </div>
           )}
 
-          <div>
-            <label className="block text-[10px] tracking-[0.15em] uppercase text-brand-bordeaux/50 mb-2">
-              Nom sur la carte
-            </label>
-            <input
+          <form onSubmit={handlePayment} className="space-y-5 rounded-[var(--radius-card)] border-2 border-hairline bg-white p-8">
+            <Input
+              label="Nom sur la carte"
+              id="carte-nom"
               type="text"
               value={cardName}
               onChange={(e) => setCardName(e.target.value)}
+              placeholder="Comme inscrit sur la carte"
               required
-              placeholder="ALIMI EYA"
-              className="w-full px-4 py-3 border border-brand-gold/20 bg-transparent text-brand-bordeaux text-sm placeholder:text-brand-bordeaux/20 focus:outline-none focus:border-brand-gold transition-colors"
             />
-          </div>
 
-          <div>
-            <label className="block text-[10px] tracking-[0.15em] uppercase text-brand-bordeaux/50 mb-2">
-              Numero de carte
-            </label>
-            <input
+            <Input
+              label="Numéro de carte"
+              id="carte-numero"
               type="text"
               value={cardNumber}
               onChange={(e) => {
                 const v = e.target.value.replace(/\D/g, "").slice(0, 16);
                 setCardNumber(v.replace(/(\d{4})/g, "$1 ").trim());
               }}
+              placeholder="0000 0000 0000 0000"
               required
-              placeholder="4242 4242 4242 4242"
-              className="w-full px-4 py-3 border border-brand-gold/20 bg-transparent text-brand-bordeaux text-sm placeholder:text-brand-bordeaux/20 focus:outline-none focus:border-brand-gold transition-colors font-mono"
             />
-          </div>
 
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="block text-[10px] tracking-[0.15em] uppercase text-brand-bordeaux/50 mb-2">
-                Expiration
-              </label>
-              <input
+            <div className="grid grid-cols-2 gap-4">
+              <Input
+                label="Expiration"
+                id="carte-expiration"
                 type="text"
                 value={expiry}
                 onChange={(e) => {
@@ -314,41 +327,32 @@ function PaiementPageInner() {
                   if (v.length > 2) v = v.slice(0, 2) + "/" + v.slice(2);
                   setExpiry(v);
                 }}
-                required
                 placeholder="MM/AA"
-                className="w-full px-4 py-3 border border-brand-gold/20 bg-transparent text-brand-bordeaux text-sm placeholder:text-brand-bordeaux/20 focus:outline-none focus:border-brand-gold transition-colors font-mono"
+                required
               />
-            </div>
-            <div>
-              <label className="block text-[10px] tracking-[0.15em] uppercase text-brand-bordeaux/50 mb-2">
-                CVV
-              </label>
-              <input
+              <Input
+                label="CVV"
+                id="carte-cvv"
                 type="text"
                 value={cvv}
                 onChange={(e) => setCvv(e.target.value.replace(/\D/g, "").slice(0, 3))}
-                required
                 placeholder="123"
-                className="w-full px-4 py-3 border border-brand-gold/20 bg-transparent text-brand-bordeaux text-sm placeholder:text-brand-bordeaux/20 focus:outline-none focus:border-brand-gold transition-colors font-mono"
+                required
               />
             </div>
-          </div>
 
-          <div className="bg-brand-cream/50 p-4 text-center">
-            <p className="text-[10px] text-brand-bordeaux/40 leading-relaxed">
-              Paiement simule — aucune carte reelle ne sera debitee.
-              En production, integration avec Flouci ou Konnect.
+            <Button type="submit" disabled={loading} fullWidth>
+              {loading ? "Traitement…" : `Payer ${booking ? Number(booking.totalPrice).toFixed(0) : ""} TND`}
+            </Button>
+
+            {/* Mention honnete : le POST /api/payment n'envoie que { bookingId },
+                aucun de ces champs n'est transmis. Sans cette phrase, une testeuse
+                pourrait croire qu'un vrai encaissement a lieu. */}
+            <p className="text-center text-sm text-prune-soft">
+              Paiement de démonstration — aucune donnée bancaire n&apos;est transmise.
             </p>
-          </div>
-
-          <button
-            type="submit"
-            disabled={loading}
-            className="w-full py-4 text-xs tracking-[0.2em] uppercase bg-brand-bordeaux text-white hover:bg-brand-gold transition-colors duration-500 disabled:opacity-50"
-          >
-            {loading ? "Traitement..." : `Payer ${booking ? Number(booking.totalPrice).toFixed(0) : ""} TND`}
-          </button>
-        </form>
+          </form>
+        </>
       )}
     </div>
   );
