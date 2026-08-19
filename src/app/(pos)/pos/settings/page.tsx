@@ -16,7 +16,7 @@ export const metadata = { title: "Profil du salon — Salonista" };
 export default async function SettingsPage() {
   const employee = await getCurrentEmployee();
   if (!employee) redirect("/salon-pin");
-  if (!employee.permissions["settings.manage"]) redirect("/pos");
+  if (!employee.permissions["settings.manage"]) redirect("/pos/calendar");
 
   const provider = (await prisma.providerProfile.findUnique({
     where: { id: employee.providerId },
@@ -49,7 +49,7 @@ export default async function SettingsPage() {
     openingHours: unknown;
   } | null;
 
-  if (!provider) redirect("/pos");
+  if (!provider) redirect("/pos/calendar");
 
   const hours = isValidOpeningHours(provider.openingHours)
     ? (provider.openingHours as OpeningHours)

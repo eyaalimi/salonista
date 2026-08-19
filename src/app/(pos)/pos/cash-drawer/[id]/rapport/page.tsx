@@ -10,7 +10,7 @@ export const dynamic = "force-dynamic";
 export default async function ZReportPage({ params }: { params: Promise<{ id: string }> }) {
   const employee = await getCurrentEmployee();
   if (!employee) redirect("/salon-pin");
-  if (!employee.permissions["pos.cash_drawer"]) redirect("/pos");
+  if (!employee.permissions["pos.cash_drawer"]) redirect("/pos/calendar");
 
   const { id } = await params;
 

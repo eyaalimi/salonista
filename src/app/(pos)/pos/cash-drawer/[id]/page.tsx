@@ -12,7 +12,7 @@ export default async function CashDrawerDetailPage({
 }) {
   const employee = await getCurrentEmployee();
   if (!employee) redirect("/salon-pin");
-  if (!employee.permissions["pos.cash_drawer"]) redirect("/pos");
+  if (!employee.permissions["pos.cash_drawer"]) redirect("/pos/calendar");
   const { id } = await params;
   return (
     <ModuleGate module="POS" providerId={employee.providerId}>

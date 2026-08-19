@@ -10,7 +10,7 @@ export const metadata = { title: "Services — Salonista" };
 export default async function ServicesPage() {
   const employee = await getCurrentEmployee();
   if (!employee) redirect("/salon-pin");
-  if (!employee.permissions["products.manage"]) redirect("/pos");
+  if (!employee.permissions["products.manage"]) redirect("/pos/calendar");
 
   const offers = await prisma.offer.findMany({
     where: { providerId: employee.providerId },

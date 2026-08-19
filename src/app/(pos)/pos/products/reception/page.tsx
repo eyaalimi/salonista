@@ -9,7 +9,7 @@ export const dynamic = "force-dynamic";
 export default async function ReceptionBulkPage() {
   const employee = await getCurrentEmployee();
   if (!employee) redirect("/salon-pin");
-  if (!employee.permissions["products.manage"]) redirect("/pos");
+  if (!employee.permissions["products.manage"]) redirect("/pos/calendar");
 
   const products = await prisma.product.findMany({
     where: { providerId: employee.providerId, active: true },

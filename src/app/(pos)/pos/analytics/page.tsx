@@ -8,7 +8,7 @@ export const metadata = { title: "Analytique — Salonista" };
 export default async function AnalyticsPage() {
   const employee = await getCurrentEmployee();
   if (!employee) redirect("/salon-pin");
-  if (!employee.permissions["analytics.view"]) redirect("/pos");
+  if (!employee.permissions["analytics.view"]) redirect("/pos/calendar");
   return (
     <Suspense fallback={null}>
       <AnalyticsClient />
