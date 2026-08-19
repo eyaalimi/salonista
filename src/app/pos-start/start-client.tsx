@@ -88,6 +88,18 @@ export default function StartClient() {
             </div>
           </div>
 
+          {/* Sans cette mention, le salon ignore qu'un second acces existe et
+              se croit perdu s'il oublie son PIN. */}
+          <div className="bg-brand-cream rounded-2xl p-4 mb-6 text-left">
+            <div className="text-[11px] text-brand-ink-soft leading-relaxed">
+              Un e-mail vient de partir à{" "}
+              <span className="font-semibold text-brand-ink">{email}</span>{" "}
+              pour choisir votre mot de passe. Il vous permettra d&apos;ouvrir
+              votre espace depuis n&apos;importe quel navigateur, même sans
+              votre PIN.
+            </div>
+          </div>
+
           <button
             type="button"
             onClick={enterPos}
