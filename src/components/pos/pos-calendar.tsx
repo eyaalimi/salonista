@@ -10,6 +10,7 @@
 // have to branch on `mode` for almost every render — hence two components.
 
 import { useEffect, useMemo, useRef, useState, useCallback } from "react";
+import { bookingClientName } from "@/lib/booking-client-name";
 
 const HOURS_START = 8;
 const HOURS_END = 22;
@@ -104,6 +105,7 @@ export function PosCalendar({ initialDate, onCreateAt, onOpenBooking }: Props) {
           offer: { title: string };
         }>;
         customer: { firstName: string | null; lastName: string | null } | null;
+        client: { name: string | null; email: string } | null;
         assignedEmployeeId: string | null;
         sale: { id: string } | null;
         createdAt: string;
@@ -125,8 +127,7 @@ export function PosCalendar({ initialDate, onCreateAt, onOpenBooking }: Props) {
           walkIn: b.walkIn,
           phantom: b.phantom,
           createdViaPos: b.createdViaPos,
-          customerName:
-            [b.customer?.firstName, b.customer?.lastName].filter(Boolean).join(" ") || null,
+          customerName: bookingClientName(b.customer, b.client, "") || null,
           serviceName: b.items.map((it) => it.offer.title).join(" + ") || "Walk-in",
           assignedEmployeeId: b.assignedEmployeeId,
           saleId: b.sale?.id ?? null,

@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { formatDT } from "@/lib/money";
+import { bookingClientName } from "@/lib/booking-client-name";
 
 type Booking = {
   id: string;
@@ -12,6 +13,7 @@ type Booking = {
   notes: string | null;
   createdAt: string;
   customer: { firstName: string | null; lastName: string | null; phone: string } | null;
+  client: { name: string | null; email: string } | null;
   assignedEmployee: { displayName: string } | null;
   items: Array<{
     id: string;
@@ -139,11 +141,7 @@ export function BookingDetailDrawer({
           <div className="space-y-4">
             <div>
               <p className="luxury-heading text-lg text-brand-ink">
-                {booking.customer
-                  ? [booking.customer.firstName, booking.customer.lastName]
-                      .filter(Boolean)
-                      .join(" ") || booking.customer.phone
-                  : "Sans client"}
+                {bookingClientName(booking.customer, booking.client, "Sans client")}
               </p>
               {booking.assignedEmployee && (
                 <p className="text-xs text-brand-ink-soft">

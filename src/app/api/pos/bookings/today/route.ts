@@ -33,6 +33,9 @@ export async function GET() {
     },
     include: {
       customer: { select: { id: true, phone: true, firstName: true, lastName: true } },
+      // Voir `api/pos/bookings/route.ts` : une reservation venue de la
+      // marketplace n'a pas de fiche client, seulement un compte User.
+      client: { select: { name: true, email: true } },
       items: {
         include: {
           slot: { select: { startTime: true, endTime: true } },
@@ -74,6 +77,7 @@ export async function GET() {
         status: b.status,
         saleId: b.sale?.id ?? null,
         customer: b.customer,
+        client: b.client,
         items: b.items.map((it) => ({
           offerId: it.offer.id,
           name: it.offer.title,
