@@ -28,7 +28,7 @@ interface ClientBooking {
 
 export default function PaiementPage() {
   return (
-    <Suspense fallback={<div className="min-h-screen bg-brand-cream" />}>
+    <Suspense fallback={<div className="min-h-screen bg-creme" />}>
       <PaiementPageInner />
     </Suspense>
   );
@@ -97,9 +97,12 @@ function PaiementPageInner() {
 
   if (!bookingId) {
     return (
-      <div className="text-center py-20">
-        <p className="text-brand-bordeaux/40 text-sm">Aucune reservation selectionnee</p>
-        <Link href="/cliente" className="inline-block mt-4 px-6 py-3 text-xs tracking-[0.2em] uppercase bg-brand-bordeaux text-white">
+      <div className="py-20 text-center">
+        <p className="text-base text-prune-soft">Aucune réservation sélectionnée</p>
+        <Link
+          href="/cliente"
+          className="ds-press ds-focus mt-4 inline-flex min-h-[48px] items-center rounded-[var(--radius-pill)] border-2 border-hairline px-6 text-base font-semibold text-prune hover:border-rose"
+        >
           Retour
         </Link>
       </div>
@@ -205,14 +208,18 @@ function PaiementPageInner() {
   // Processing animation
   if (step === "processing") {
     return (
-      <div className="max-w-lg mx-auto text-center py-20">
-        <div className="w-16 h-16 mx-auto mb-6 border border-brand-gold/30 flex items-center justify-center animate-pulse">
-          <svg className="w-8 h-8 text-brand-gold" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <div className="mx-auto max-w-lg py-20 text-center">
+        {/* `animate-pulse` est CONSERVE : le design system interdit les
+            animations d'APPARITION, pas les indicateurs d'activite. Le
+            paiement simule 2 secondes — sans retour visuel, la cliente croit
+            que rien ne se passe, sur l'ecran le plus anxiogene du parcours. */}
+        <div className="mx-auto mb-6 flex h-16 w-16 animate-pulse items-center justify-center rounded-full bg-rose-soft">
+          <svg className="h-8 w-8 text-prune" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
           </svg>
         </div>
-        <p className="luxury-heading text-xl text-brand-bordeaux mb-2">Traitement en cours</p>
-        <p className="text-xs text-brand-bordeaux/40 tracking-wider">Veuillez patienter...</p>
+        <p className="ds-display mb-2 text-xl text-prune">Traitement en cours</p>
+        <p className="text-base text-prune-soft">Un instant…</p>
       </div>
     );
   }
