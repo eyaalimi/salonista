@@ -3,6 +3,8 @@
 import { Suspense, useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 
 interface PaymentResult {
   success: boolean;
@@ -226,41 +228,44 @@ function PaiementPageInner() {
 
   // Payment form
   return (
-    <div className="max-w-lg mx-auto">
+    <div className="mx-auto max-w-lg">
       <div className="mb-8">
-        <p className="luxury-badge mb-3">Paiement securise</p>
-        <h1 className="luxury-heading text-2xl text-brand-bordeaux">Finaliser le paiement</h1>
+        {/* Le surtitre « Paiement securise » a ete retire : le formulaire
+            n'envoie aucune donnee bancaire (le POST ne transmet que
+            bookingId), promettre la securite serait trompeur. */}
+        <h1 className="ds-display text-2xl text-prune">Finaliser le paiement</h1>
       </div>
 
       {/* Booking summary */}
       {booking && (
-        <div className="bg-white border border-brand-gold/20 p-5 mb-6">
-          <p className="text-[10px] tracking-[0.15em] uppercase text-brand-bordeaux/40 mb-3">Resume</p>
-          <h3 className="luxury-heading text-lg text-brand-bordeaux">
+        <div className="mb-6 rounded-[var(--radius-card)] border-2 border-hairline bg-white p-5">
+          <p className="mb-3 text-sm font-semibold uppercase tracking-[0.12em] text-prune-soft">Résumé</p>
+          <h3 className="ds-display text-lg text-prune">
             {booking.items.map((i) => i.offer.title).join(", ")}
           </h3>
-          <p className="text-xs text-brand-bordeaux/40 mt-1">{booking.items[0]?.offer.provider.salonName}</p>
+          <p className="mt-1 text-sm text-prune-soft">{booking.items[0]?.offer.provider.salonName}</p>
           {booking.items[0]?.slot && (
-            <p className="text-xs text-brand-bordeaux/30 mt-1">
+            <p className="mt-1 text-sm text-prune-soft">
               {new Date(booking.items[0].slot.startTime).toLocaleDateString("fr-TN", {
                 weekday: "long",
                 day: "numeric",
                 month: "long",
-                year: "numeric",
+                hour: "2-digit",
+                minute: "2-digit",
               })}
             </p>
           )}
-          <div className="mt-4 pt-4 border-t border-brand-gold/10 flex justify-between items-center">
-            <span className="text-[10px] tracking-[0.15em] uppercase text-brand-bordeaux/40">Total a payer</span>
-            <span className="luxury-heading text-2xl text-brand-gold">{Number(booking.totalPrice).toFixed(0)} TND</span>
+          <div className="mt-4 flex items-center justify-between border-t border-hairline pt-4">
+            <span className="text-sm font-semibold uppercase tracking-[0.12em] text-prune-soft">Total à payer</span>
+            <span className="ds-display text-2xl text-prune">{Number(booking.totalPrice).toFixed(0)} TND</span>
           </div>
 
           {booking.paymentStatus === "PAID" && (
-            <div className="mt-4 p-3 bg-emerald-50 border border-emerald-200 text-center">
-              <p className="text-xs text-emerald-700 tracking-wider uppercase">Deja payee</p>
+            <div className="mt-4 rounded-[var(--radius-panel)] bg-menthe p-3 text-center">
+              <p className="text-sm font-semibold uppercase tracking-[0.1em] text-menthe-deep">Déjà payée</p>
               <Link
                 href={`/cliente/reservation?id=${booking.id}`}
-                className="inline-block mt-2 text-xs text-emerald-600 underline"
+                className="ds-press ds-focus mt-2 inline-block text-sm font-semibold text-menthe-deep underline"
               >
                 Voir mon QR code
               </Link>
@@ -270,50 +275,41 @@ function PaiementPageInner() {
       )}
 
       {booking?.paymentStatus !== "PAID" && (
-        <form onSubmit={handlePayment} className="bg-white border border-brand-gold/20 p-6 space-y-5">
-          <p className="text-[10px] tracking-[0.15em] uppercase text-brand-bordeaux/40 mb-2">Informations de paiement</p>
-
+        <>
           {error && (
-            <div className="p-3 border border-red-300 text-red-600 text-xs tracking-wider">{error}</div>
+            <div className="mb-6 rounded-[var(--radius-panel)] border-2 border-rose bg-rose-soft p-4 text-sm font-semibold text-prune">
+              {error}
+            </div>
           )}
 
-          <div>
-            <label className="block text-[10px] tracking-[0.15em] uppercase text-brand-bordeaux/50 mb-2">
-              Nom sur la carte
-            </label>
-            <input
+          <form onSubmit={handlePayment} className="space-y-5 rounded-[var(--radius-card)] border-2 border-hairline bg-white p-8">
+            <Input
+              label="Nom sur la carte"
+              id="carte-nom"
               type="text"
               value={cardName}
               onChange={(e) => setCardName(e.target.value)}
+              placeholder="Comme inscrit sur la carte"
               required
-              placeholder="ALIMI EYA"
-              className="w-full px-4 py-3 border border-brand-gold/20 bg-transparent text-brand-bordeaux text-sm placeholder:text-brand-bordeaux/20 focus:outline-none focus:border-brand-gold transition-colors"
             />
-          </div>
 
-          <div>
-            <label className="block text-[10px] tracking-[0.15em] uppercase text-brand-bordeaux/50 mb-2">
-              Numero de carte
-            </label>
-            <input
+            <Input
+              label="Numéro de carte"
+              id="carte-numero"
               type="text"
               value={cardNumber}
               onChange={(e) => {
                 const v = e.target.value.replace(/\D/g, "").slice(0, 16);
                 setCardNumber(v.replace(/(\d{4})/g, "$1 ").trim());
               }}
+              placeholder="0000 0000 0000 0000"
               required
-              placeholder="4242 4242 4242 4242"
-              className="w-full px-4 py-3 border border-brand-gold/20 bg-transparent text-brand-bordeaux text-sm placeholder:text-brand-bordeaux/20 focus:outline-none focus:border-brand-gold transition-colors font-mono"
             />
-          </div>
 
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="block text-[10px] tracking-[0.15em] uppercase text-brand-bordeaux/50 mb-2">
-                Expiration
-              </label>
-              <input
+            <div className="grid grid-cols-2 gap-4">
+              <Input
+                label="Expiration"
+                id="carte-expiration"
                 type="text"
                 value={expiry}
                 onChange={(e) => {
@@ -321,41 +317,32 @@ function PaiementPageInner() {
                   if (v.length > 2) v = v.slice(0, 2) + "/" + v.slice(2);
                   setExpiry(v);
                 }}
-                required
                 placeholder="MM/AA"
-                className="w-full px-4 py-3 border border-brand-gold/20 bg-transparent text-brand-bordeaux text-sm placeholder:text-brand-bordeaux/20 focus:outline-none focus:border-brand-gold transition-colors font-mono"
+                required
               />
-            </div>
-            <div>
-              <label className="block text-[10px] tracking-[0.15em] uppercase text-brand-bordeaux/50 mb-2">
-                CVV
-              </label>
-              <input
+              <Input
+                label="CVV"
+                id="carte-cvv"
                 type="text"
                 value={cvv}
                 onChange={(e) => setCvv(e.target.value.replace(/\D/g, "").slice(0, 3))}
-                required
                 placeholder="123"
-                className="w-full px-4 py-3 border border-brand-gold/20 bg-transparent text-brand-bordeaux text-sm placeholder:text-brand-bordeaux/20 focus:outline-none focus:border-brand-gold transition-colors font-mono"
+                required
               />
             </div>
-          </div>
 
-          <div className="bg-brand-cream/50 p-4 text-center">
-            <p className="text-[10px] text-brand-bordeaux/40 leading-relaxed">
-              Paiement simule — aucune carte reelle ne sera debitee.
-              En production, integration avec Flouci ou Konnect.
+            <Button type="submit" disabled={loading} fullWidth>
+              {loading ? "Traitement…" : `Payer ${booking ? Number(booking.totalPrice).toFixed(0) : ""} TND`}
+            </Button>
+
+            {/* Mention honnete : le POST /api/payment n'envoie que { bookingId },
+                aucun de ces champs n'est transmis. Sans cette phrase, une testeuse
+                pourrait croire qu'un vrai encaissement a lieu. */}
+            <p className="text-center text-sm text-prune-soft">
+              Paiement de démonstration — aucune donnée bancaire n&apos;est transmise.
             </p>
-          </div>
-
-          <button
-            type="submit"
-            disabled={loading}
-            className="w-full py-4 text-xs tracking-[0.2em] uppercase bg-brand-bordeaux text-white hover:bg-brand-gold transition-colors duration-500 disabled:opacity-50"
-          >
-            {loading ? "Traitement..." : `Payer ${booking ? Number(booking.totalPrice).toFixed(0) : ""} TND`}
-          </button>
-        </form>
+          </form>
+        </>
       )}
     </div>
   );
