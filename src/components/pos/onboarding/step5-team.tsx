@@ -130,7 +130,7 @@ export function Step5Team({
                 <button
                   type="button"
                   onClick={() => remove(i)}
-                  className="text-brand-ink-soft hover:text-red-600 shrink-0"
+                  className="text-brand-ink-soft hover:text-pos-danger shrink-0"
                   aria-label="Supprimer"
                 >
                   <Trash2 size={16} />
@@ -169,13 +169,13 @@ export function Step5Team({
       </button>
 
       {error && (
-        <div className="text-sm text-red-600 bg-red-50 border border-red-100 rounded-lg px-3 py-2">
+        <div className="text-sm text-pos-danger bg-pos-danger-soft border border-pos-danger rounded-lg px-3 py-2">
           {error}
         </div>
       )}
 
       {employees.length > 0 && !allValid && (
-        <p className="text-[11px] text-amber-700 bg-amber-50 px-3 py-2 rounded">
+        <p className="text-[11px] text-pos-warn bg-pos-highlight px-3 py-2 rounded">
           Chaque membre doit avoir un nom et un PIN à 4 chiffres.
         </p>
       )}
@@ -192,7 +192,7 @@ export function Step5Team({
           type="button"
           onClick={save}
           disabled={busy || (employees.length > 0 && !allValid)}
-          className="px-8 py-4 rounded-xl bg-emerald-600 text-white font-semibold hover:bg-emerald-700 disabled:opacity-50 shadow-md shadow-emerald-600/30"
+          className="px-8 py-4 rounded-xl bg-pos-accent text-white font-semibold hover:bg-pos-accent disabled:opacity-50 shadow-md shadow-emerald-600/30"
         >
           {busy ? "Activation…" : "🎉  Ouvrir ma caisse"}
         </button>

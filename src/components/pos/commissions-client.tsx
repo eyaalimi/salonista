@@ -199,28 +199,28 @@ export function CommissionsClient() {
       </div>
 
       {flash && (
-        <div className="mb-4 px-4 py-2 rounded-lg bg-emerald-50 text-emerald-700 text-sm inline-flex items-center gap-2">
+        <div className="mb-4 px-4 py-2 rounded-lg bg-pos-accent-soft text-pos-accent text-sm inline-flex items-center gap-2">
           <CheckCircle2 size={16} /> {flash}
         </div>
       )}
 
       {error && (
-        <p className="mb-4 text-sm text-red-600 bg-red-50 px-3 py-2 rounded">{error}</p>
+        <p className="mb-4 text-sm text-pos-danger bg-pos-danger-soft px-3 py-2 rounded">{error}</p>
       )}
 
       {/* KPI totals */}
       {data && (
         <div className="grid grid-cols-2 gap-3 mb-6 md:max-w-md">
-          <div className="rounded-xl border border-amber-300 bg-amber-50/60 md:p-4 p-3">
-            <div className="text-[10px] uppercase tracking-[0.18em] text-amber-800 font-semibold mb-1">
+          <div className="rounded-xl border border-pos-warn bg-pos-highlight/60 md:p-4 p-3">
+            <div className="text-[10px] uppercase tracking-[0.18em] text-pos-warn font-semibold mb-1">
               À payer
             </div>
             <div className="md:text-2xl text-lg font-semibold text-pos-ink pos-mono">
               {fmtMoney(data.totals.pending)}
             </div>
           </div>
-          <div className="rounded-xl border border-emerald-300 bg-emerald-50/60 md:p-4 p-3">
-            <div className="text-[10px] uppercase tracking-[0.18em] text-emerald-800 font-semibold mb-1">
+          <div className="rounded-xl border border-pos-accent bg-pos-accent-soft/60 md:p-4 p-3">
+            <div className="text-[10px] uppercase tracking-[0.18em] text-pos-accent font-semibold mb-1">
               Déjà payé
             </div>
             <div className="md:text-2xl text-lg font-semibold text-pos-ink pos-mono">
@@ -269,10 +269,10 @@ export function CommissionsClient() {
                   <td className="px-4 py-3 text-right pos-mono text-pos-ink-2">
                     {fmtMoney(r.baseHT)}
                   </td>
-                  <td className="px-4 py-3 text-right pos-mono text-emerald-700">
+                  <td className="px-4 py-3 text-right pos-mono text-pos-accent">
                     {fmtMoney(r.commissionPaid)}
                   </td>
-                  <td className="px-4 py-3 text-right pos-mono font-semibold text-amber-800">
+                  <td className="px-4 py-3 text-right pos-mono font-semibold text-pos-warn">
                     {fmtMoney(r.commissionPending)}
                   </td>
                   <td className="px-4 py-3 text-right">
@@ -282,7 +282,7 @@ export function CommissionsClient() {
                         Number(r.commissionPending) <= 0 || payingId === r.employeeId
                       }
                       onClick={() => void markPaid(r)}
-                      className="px-3 py-1.5 rounded-md bg-emerald-600 text-white text-xs font-medium hover:bg-emerald-700 disabled:opacity-40 disabled:cursor-not-allowed"
+                      className="px-3 py-1.5 rounded-md bg-pos-accent text-white text-xs font-medium hover:bg-pos-accent disabled:opacity-40 disabled:cursor-not-allowed"
                     >
                       {payingId === r.employeeId ? "…" : "Marquer payée"}
                     </button>
@@ -310,8 +310,8 @@ export function CommissionsClient() {
                     </p>
                   </div>
                   <div className="text-right shrink-0">
-                    <p className="text-[10px] uppercase tracking-wider text-amber-800">À payer</p>
-                    <p className="pos-mono font-semibold text-amber-800">
+                    <p className="text-[10px] uppercase tracking-wider text-pos-warn">À payer</p>
+                    <p className="pos-mono font-semibold text-pos-warn">
                       {fmtMoney(r.commissionPending)}
                     </p>
                   </div>
@@ -327,14 +327,14 @@ export function CommissionsClient() {
                   </div>
                   <div>
                     <p className="text-pos-ink-3">Payé</p>
-                    <p className="pos-mono text-emerald-700">{fmtMoney(r.commissionPaid)}</p>
+                    <p className="pos-mono text-pos-accent">{fmtMoney(r.commissionPaid)}</p>
                   </div>
                 </div>
                 <button
                   type="button"
                   disabled={!canPay || payingId === r.employeeId}
                   onClick={() => void markPaid(r)}
-                  className="w-full px-3 py-2 rounded-md bg-emerald-600 text-white text-xs font-medium hover:bg-emerald-700 disabled:opacity-40 disabled:cursor-not-allowed"
+                  className="w-full px-3 py-2 rounded-md bg-pos-accent text-white text-xs font-medium hover:bg-pos-accent disabled:opacity-40 disabled:cursor-not-allowed"
                 >
                   {payingId === r.employeeId ? "…" : "Marquer payée"}
                 </button>

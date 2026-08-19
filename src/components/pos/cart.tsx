@@ -96,7 +96,7 @@ export function Cart({
               type="button"
               onClick={onOpenSide}
               title="Voir les RDV du jour"
-              className="inline-flex items-center gap-1 px-2 py-1 rounded-full bg-amber-50 text-amber-700 border border-amber-200 text-[11px] font-semibold hover:bg-amber-100"
+              className="inline-flex items-center gap-1 px-2 py-1 rounded-full bg-pos-highlight text-pos-warn border border-pos-warn text-[11px] font-semibold hover:bg-pos-highlight"
             >
               <Calendar size={11} />
               RDV {bookingsTodayCount}
@@ -306,7 +306,7 @@ export function Cart({
         type="button"
         onClick={onCharge}
         disabled={cart.length === 0 || toMillimes(totals.total) <= 0}
-        className="bg-emerald-600 text-white flex items-center justify-between px-4 h-14 text-base font-semibold hover:bg-emerald-700 active:bg-emerald-800 disabled:opacity-40 disabled:hover:bg-emerald-600 shadow-md shadow-emerald-600/30 transition"
+        className="bg-pos-accent text-white flex items-center justify-between px-4 h-14 text-base font-semibold hover:bg-pos-accent active:bg-pos-accent disabled:opacity-40 disabled:hover:bg-pos-accent shadow-md shadow-emerald-600/30 transition"
       >
         <span className="flex items-center gap-2">
           <span className="inline-flex items-center justify-center w-7 h-7 rounded-full bg-white/20 text-base">

@@ -202,7 +202,7 @@ export function CustomerDetailDrawer({
           {loading ? (
             <p className="text-sm text-pos-ink-3">Chargement…</p>
           ) : error || !data ? (
-            <p className="text-sm text-red-600">{error ?? "Erreur"}</p>
+            <p className="text-sm text-pos-danger">{error ?? "Erreur"}</p>
           ) : (
             <>
               {/* Identity */}
@@ -338,17 +338,17 @@ export function CustomerDetailDrawer({
 
               {/* Loyalty card */}
               {data.loyalty && data.loyalty.lifetimeEarned > 0 && (
-                <div className="border border-amber-200 bg-amber-50/50 rounded-lg p-4 mb-6">
+                <div className="border border-pos-warn bg-pos-highlight/50 rounded-lg p-4 mb-6">
                   <div className="flex items-center justify-between">
                     <div>
-                      <p className="text-xs text-amber-800 uppercase tracking-wider font-medium">
+                      <p className="text-xs text-pos-warn uppercase tracking-wider font-medium">
                         ★ Points fidélité
                       </p>
-                      <p className="text-2xl font-semibold text-amber-700 pos-mono mt-1">
+                      <p className="text-2xl font-semibold text-pos-warn pos-mono mt-1">
                         {data.loyalty.balance} pts
                       </p>
                     </div>
-                    <div className="text-right text-xs text-amber-800">
+                    <div className="text-right text-xs text-pos-warn">
                       <p>
                         Gagnés (vie) :{" "}
                         <span className="pos-mono font-semibold">
@@ -434,7 +434,7 @@ export function CustomerDetailDrawer({
                   <button
                     type="button"
                     onClick={() => setConfirmDelete(true)}
-                    className="inline-flex items-center gap-2 px-3 py-2 border border-red-300 text-red-600 rounded text-sm hover:bg-red-50"
+                    className="inline-flex items-center gap-2 px-3 py-2 border border-pos-danger text-pos-danger rounded text-sm hover:bg-pos-danger-soft"
                   >
                     <Trash2 size={14} />
                   </button>
@@ -474,7 +474,7 @@ export function CustomerDetailDrawer({
                 type="button"
                 onClick={remove}
                 disabled={busy}
-                className="px-4 py-2 bg-red-600 text-white rounded text-sm font-medium hover:bg-red-700 disabled:opacity-50"
+                className="px-4 py-2 bg-pos-danger text-white rounded text-sm font-medium hover:bg-pos-danger disabled:opacity-50"
               >
                 {busy ? "…" : "Supprimer"}
               </button>

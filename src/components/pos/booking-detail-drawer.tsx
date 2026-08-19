@@ -136,7 +136,7 @@ export function BookingDetailDrawer({
         {loading ? (
           <p className="text-sm text-brand-ink-soft">Chargement…</p>
         ) : !booking ? (
-          <p className="text-sm text-red-600">{error ?? "Introuvable"}</p>
+          <p className="text-sm text-pos-danger">{error ?? "Introuvable"}</p>
         ) : (
           <div className="space-y-4">
             <div>
@@ -195,7 +195,7 @@ export function BookingDetailDrawer({
               </a>
             )}
 
-            {error && <p className="text-xs text-red-600">{error}</p>}
+            {error && <p className="text-xs text-pos-danger">{error}</p>}
 
             {booking.status !== "CANCELLED" && booking.status !== "COMPLETED" && (
               <div className="flex flex-wrap gap-2 pt-3 border-t border-brand-line">
@@ -223,7 +223,7 @@ export function BookingDetailDrawer({
                     type="button"
                     onClick={cancel}
                     disabled={busy}
-                    className="rounded border border-red-200 bg-white px-4 py-2 text-[10px] uppercase tracking-[0.18em] text-red-700 hover:border-red-400 disabled:opacity-50"
+                    className="rounded border border-pos-danger bg-white px-4 py-2 text-[10px] uppercase tracking-[0.18em] text-pos-danger hover:border-pos-danger disabled:opacity-50"
                   >
                     Annuler
                   </button>

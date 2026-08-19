@@ -121,17 +121,17 @@ export function CashDrawerDetailClient({
   }
 
   if (loading) return <p className="p-6 text-sm text-brand-ink-soft">Chargement…</p>;
-  if (!session) return <p className="p-6 text-sm text-red-600">Session introuvable</p>;
+  if (!session) return <p className="p-6 text-sm text-pos-danger">Session introuvable</p>;
 
   const v = session.variance === null ? null : Number(session.variance);
   const varColor =
     v === null
       ? ""
       : v === 0
-        ? "text-emerald-700"
+        ? "text-pos-accent"
         : Math.abs(v) < 5
-          ? "text-amber-700"
-          : "text-red-700";
+          ? "text-pos-warn"
+          : "text-pos-danger";
 
   return (
     <div className="md:p-6 p-4 max-w-3xl mx-auto">
@@ -220,7 +220,7 @@ export function CashDrawerDetailClient({
         </div>
       )}
 
-      {error && <p className="mb-4 text-sm text-red-600">{error}</p>}
+      {error && <p className="mb-4 text-sm text-pos-danger">{error}</p>}
 
       {canReconcile && session.status === "CLOSED" && (
         <button

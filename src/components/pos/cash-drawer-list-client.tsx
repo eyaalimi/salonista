@@ -123,10 +123,10 @@ export function CashDrawerListClient() {
                   v === null
                     ? ""
                     : v === 0
-                      ? "text-emerald-700"
+                      ? "text-pos-accent"
                       : Math.abs(v) < 5
-                        ? "text-amber-700"
-                        : "text-red-700";
+                        ? "text-pos-warn"
+                        : "text-pos-danger";
                 return (
                   <Link
                     key={s.id}
@@ -267,7 +267,7 @@ function ActiveSessionCard({
     <div className="bg-white border border-brand-line rounded-2xl p-6">
       <div className="flex flex-wrap items-start justify-between gap-4 mb-4">
         <div>
-          <p className="text-[10px] uppercase tracking-[0.18em] text-emerald-700 font-semibold mb-1">
+          <p className="text-[10px] uppercase tracking-[0.18em] text-pos-accent font-semibold mb-1">
             ● Session ouverte
           </p>
           <div className="text-base font-semibold text-brand-ink">
@@ -341,7 +341,7 @@ function Kpi({
 }) {
   return (
     <div
-      className={`rounded-xl border px-4 py-3 ${highlight ? "border-amber-300 bg-amber-50/50" : "border-brand-line bg-brand-cream/40"}`}
+      className={`rounded-xl border px-4 py-3 ${highlight ? "border-pos-warn bg-pos-highlight/50" : "border-brand-line bg-brand-cream/40"}`}
     >
       <div className="text-[10px] uppercase tracking-[0.18em] text-brand-ink-soft mb-1">
         {label}
@@ -513,10 +513,10 @@ function CloseDrawerModal({
   const variance = valid ? num - Number(expectedCash) : 0;
   const varColor =
     variance === 0
-      ? "text-emerald-700"
+      ? "text-pos-accent"
       : Math.abs(variance) < 5
-        ? "text-amber-700"
-        : "text-red-600";
+        ? "text-pos-warn"
+        : "text-pos-danger";
 
   return (
     <div

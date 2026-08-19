@@ -75,7 +75,7 @@ export function EmployeesListClient() {
       {loading ? (
         <p className="text-sm text-pos-ink-3">Chargement…</p>
       ) : error ? (
-        <p className="text-sm text-red-600">{error}</p>
+        <p className="text-sm text-pos-danger">{error}</p>
       ) : rows.length === 0 ? (
         <p className="text-sm text-pos-ink-3 text-center py-12">
           Aucun employé pour le moment.
@@ -115,11 +115,11 @@ export function EmployeesListClient() {
                   </td>
                   <td className="px-4 py-3">
                     {e.hasPin ? (
-                      <span className="inline-block px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 text-[10px] font-semibold">
+                      <span className="inline-block px-2 py-0.5 rounded-full bg-pos-accent-soft text-pos-accent text-[10px] font-semibold">
                         Défini
                       </span>
                     ) : (
-                      <span className="inline-block px-2 py-0.5 rounded-full bg-amber-50 text-amber-700 text-[10px] font-semibold">
+                      <span className="inline-block px-2 py-0.5 rounded-full bg-pos-highlight text-pos-warn text-[10px] font-semibold">
                         Non défini
                       </span>
                     )}
@@ -133,7 +133,7 @@ export function EmployeesListClient() {
                     <span
                       className={`inline-block px-2 py-0.5 rounded-full text-[10px] font-semibold ${
                         e.active
-                          ? "bg-emerald-50 text-emerald-700"
+                          ? "bg-pos-accent-soft text-pos-accent"
                           : "bg-pos-bg text-pos-ink-3"
                       }`}
                     >
@@ -173,7 +173,7 @@ export function EmployeesListClient() {
                           }
                         }}
                         title="Supprimer"
-                        className="p-1.5 text-red-600 hover:bg-red-50 rounded"
+                        className="p-1.5 text-pos-danger hover:bg-pos-danger-soft rounded"
                       >
                         <Trash2 size={14} />
                       </button>
@@ -469,7 +469,7 @@ function EmployeeFormModal({
           )}
 
           {error && (
-            <p className="text-sm text-red-600 bg-red-50 px-3 py-2 rounded">{error}</p>
+            <p className="text-sm text-pos-danger bg-pos-danger-soft px-3 py-2 rounded">{error}</p>
           )}
         </div>
 
@@ -560,7 +560,7 @@ function PinModal({
           className="w-full px-3 py-3 border border-pos-border rounded text-lg pos-mono tracking-widest text-center"
         />
         {error && (
-          <p className="mt-3 text-sm text-red-600 bg-red-50 px-3 py-2 rounded">{error}</p>
+          <p className="mt-3 text-sm text-pos-danger bg-pos-danger-soft px-3 py-2 rounded">{error}</p>
         )}
         <div className="mt-6 flex justify-between">
           {employee.hasPin && (
@@ -568,7 +568,7 @@ function PinModal({
               type="button"
               onClick={() => save(true)}
               disabled={busy}
-              className="text-sm text-red-600 hover:underline disabled:opacity-50"
+              className="text-sm text-pos-danger hover:underline disabled:opacity-50"
             >
               Supprimer le PIN
             </button>

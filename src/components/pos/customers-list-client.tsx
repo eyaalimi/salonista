@@ -106,7 +106,7 @@ export function CustomersListClient({ canEdit }: { canEdit: boolean }) {
       {loading ? (
         <p className="text-sm text-pos-ink-3">Chargement…</p>
       ) : error ? (
-        <p className="text-sm text-red-600">{error}</p>
+        <p className="text-sm text-pos-danger">{error}</p>
       ) : visible.length === 0 ? (
         <p className="text-sm text-pos-ink-3 text-center py-12">
           {rows.length === 0
@@ -161,7 +161,7 @@ export function CustomersListClient({ canEdit }: { canEdit: boolean }) {
                     </td>
                     <td className="px-4 py-3 text-right">
                       {c.loyaltyPoints > 0 ? (
-                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-amber-50 text-amber-700 text-xs font-semibold pos-mono">
+                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-pos-highlight text-pos-warn text-xs font-semibold pos-mono">
                           ★ {c.loyaltyPoints}
                         </span>
                       ) : (
@@ -201,7 +201,7 @@ export function CustomersListClient({ canEdit }: { canEdit: boolean }) {
                     </p>
                   </div>
                   {c.loyaltyPoints > 0 && (
-                    <span className="shrink-0 inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-amber-50 text-amber-700 text-xs font-semibold pos-mono">
+                    <span className="shrink-0 inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-pos-highlight text-pos-warn text-xs font-semibold pos-mono">
                       ★ {c.loyaltyPoints}
                     </span>
                   )}
@@ -325,7 +325,7 @@ function NewCustomerModal({
 
           <label className="block">
             <span className="text-xs text-pos-ink-2">
-              Téléphone <span className="text-red-500">*</span>
+              Téléphone <span className="text-pos-danger">*</span>
             </span>
             <input
               type="tel"
@@ -351,7 +351,7 @@ function NewCustomerModal({
           </label>
 
           {error && (
-            <p className="text-sm text-red-600 bg-red-50 px-3 py-2 rounded">
+            <p className="text-sm text-pos-danger bg-pos-danger-soft px-3 py-2 rounded">
               {error}
             </p>
           )}

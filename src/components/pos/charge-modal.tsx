@@ -295,7 +295,7 @@ export function ChargeModal({
             <p className="text-sm text-brand-ink-soft mb-6">
               Restant: <span className="font-semibold">{formatDT(remaining)}</span>
               {paidM > totalM && (
-                <span className="ml-3 text-emerald-700">
+                <span className="ml-3 text-pos-accent">
                   Rendu: {formatDT(change)}
                 </span>
               )}
@@ -330,7 +330,7 @@ export function ChargeModal({
                   <button
                     type="button"
                     onClick={() => removePayment(i)}
-                    className="text-brand-ink-soft hover:text-red-600 text-xs"
+                    className="text-brand-ink-soft hover:text-pos-danger text-xs"
                   >
                     ✕
                   </button>
@@ -560,7 +560,7 @@ export function ChargeModal({
                 />
               )}
             </div>
-            {error && <p className="text-sm text-red-600 mb-4">{error}</p>}
+            {error && <p className="text-sm text-pos-danger mb-4">{error}</p>}
             <div className="flex justify-between">
               <button
                 type="button"

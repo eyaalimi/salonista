@@ -196,7 +196,7 @@ export function SalesListClient() {
                       {STATUS_LABELS[s.status] ?? s.status}
                     </p>
                     {Number(s.refundedTotal) > 0 && (
-                      <p className="text-[11px] text-red-600 mt-0.5">
+                      <p className="text-[11px] text-pos-danger mt-0.5">
                         -{formatDT(s.refundedTotal)}
                       </p>
                     )}

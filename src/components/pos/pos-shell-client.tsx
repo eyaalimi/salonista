@@ -454,7 +454,7 @@ export function PosShellClient({ employee }: { employee: EmployeeProp }) {
         <div
           role="status"
           aria-live="polite"
-          className="fixed bottom-6 right-6 z-50 flex items-center gap-3 px-5 py-4 rounded-xl bg-emerald-600 text-white shadow-xl animate-in fade-in slide-in-from-bottom-4"
+          className="fixed bottom-6 right-6 z-50 flex items-center gap-3 px-5 py-4 rounded-xl bg-pos-accent text-white shadow-xl animate-in fade-in slide-in-from-bottom-4"
         >
           <span className="inline-flex items-center justify-center w-8 h-8 rounded-full bg-white/20 text-lg">
             ✓
@@ -471,7 +471,7 @@ export function PosShellClient({ employee }: { employee: EmployeeProp }) {
               target="_blank"
               rel="noopener noreferrer"
               onClick={() => setSuccessToast(null)}
-              className="ml-2 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white text-emerald-700 text-xs font-semibold hover:bg-emerald-50"
+              className="ml-2 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white text-pos-accent text-xs font-semibold hover:bg-pos-accent-soft"
             >
               <MessageCircle size={14} /> WhatsApp
             </a>

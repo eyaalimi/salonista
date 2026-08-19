@@ -316,7 +316,7 @@ function CustomerBlock() {
             />
           </div>
           {newError && (
-            <p className="text-[11px] text-red-600 bg-red-50 px-2 py-1 rounded">
+            <p className="text-[11px] text-pos-danger bg-pos-danger-soft px-2 py-1 rounded">
               {newError}
             </p>
           )}

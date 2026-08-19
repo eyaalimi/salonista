@@ -222,7 +222,7 @@ export function SaleDetailClient({
                     <p className="text-xs text-brand-ink-soft">par {it.assignedEmployee.displayName}</p>
                   )}
                   {it.refundedQuantity > 0 && (
-                    <p className="text-xs text-amber-700">
+                    <p className="text-xs text-pos-warn">
                       {it.refundedQuantity} remboursé(s)
                     </p>
                   )}
@@ -259,7 +259,7 @@ export function SaleDetailClient({
             <span>{formatDT(sale.total)}</span>
           </div>
           {Number(sale.refundedTotal) > 0 && (
-            <div className="flex justify-between text-red-700">
+            <div className="flex justify-between text-pos-danger">
               <span>Remboursé</span>
               <span>-{formatDT(sale.refundedTotal)}</span>
             </div>

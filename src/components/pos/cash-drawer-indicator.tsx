@@ -58,7 +58,7 @@ export function CashDrawerIndicator({ canOpen, employeeName }: { canOpen: boolea
         }
       >
         <span
-          className={`h-2 w-2 rounded-full ${isOpen ? "bg-emerald-400" : "bg-red-400"}`}
+          className={`h-2 w-2 rounded-full ${isOpen ? "bg-pos-accent" : "bg-pos-danger"}`}
         />
         {isOpen && session ? (
           <span className="flex items-center gap-2">
@@ -228,7 +228,7 @@ function OpenModal({ onClose, onOpened }: { onClose: () => void; onOpened: () =>
           placeholder="Notes (optionnel)"
           className="w-full rounded border border-brand-line bg-white px-3 py-2 text-sm mb-3"
         />
-        {error && <p className="text-xs text-red-600 mb-3">{error}</p>}
+        {error && <p className="text-xs text-pos-danger mb-3">{error}</p>}
         <div className="flex gap-2 justify-end">
           <button
             type="button"
@@ -291,7 +291,7 @@ function CloseModal({
 
   if (variance !== null) {
     const v = Number(variance);
-    const color = v === 0 ? "text-emerald-700" : Math.abs(v) < 5 ? "text-amber-700" : "text-red-700";
+    const color = v === 0 ? "text-pos-accent" : Math.abs(v) < 5 ? "text-pos-warn" : "text-pos-danger";
     return (
       <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4">
         <div className="w-full max-w-sm rounded-2xl bg-brand-cream p-6 text-center">
@@ -340,7 +340,7 @@ function CloseModal({
           placeholder="Notes (obligatoires si variance ≥ 5 TND)"
           className="w-full rounded border border-brand-line bg-white px-3 py-2 text-sm mb-3"
         />
-        {error && <p className="text-xs text-red-600 mb-3">{error}</p>}
+        {error && <p className="text-xs text-pos-danger mb-3">{error}</p>}
         <div className="flex gap-2 justify-end">
           <button
             type="button"

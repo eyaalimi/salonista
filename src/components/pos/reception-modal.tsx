@@ -85,7 +85,7 @@ export function ReceptionModal({
         </header>
         <h2 className="luxury-heading text-lg text-brand-ink mb-4">{productName}</h2>
 
-        {error && <p className="text-xs text-red-600 mb-3">{error}</p>}
+        {error && <p className="text-xs text-pos-danger mb-3">{error}</p>}
 
         <label className="block mb-3">
           <span className="text-[10px] uppercase tracking-[0.18em] text-brand-ink-soft">

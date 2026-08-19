@@ -234,7 +234,7 @@ export function RefundModal({
           <span className="luxury-heading text-xl text-brand-ink">{formatDT(total)}</span>
         </div>
 
-        {error && <p className="text-sm text-red-600 mb-3">{error}</p>}
+        {error && <p className="text-sm text-pos-danger mb-3">{error}</p>}
 
         <div className="flex justify-end gap-2">
           <button

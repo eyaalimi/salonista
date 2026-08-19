@@ -103,10 +103,10 @@ export function SalonForm({ initial }: { initial: SalonProfile }) {
   return (
     <div className="space-y-5">
       {error && (
-        <div className="rounded bg-red-50 px-3 py-2 text-sm text-red-800">{error}</div>
+        <div className="rounded bg-pos-danger-soft px-3 py-2 text-sm text-pos-danger">{error}</div>
       )}
       {ok && (
-        <div className="rounded bg-green-50 px-3 py-2 text-sm text-green-800">
+        <div className="rounded bg-pos-accent-soft px-3 py-2 text-sm text-pos-accent">
           Profil enregistré.
         </div>
       )}
@@ -228,7 +228,7 @@ export function SalonForm({ initial }: { initial: SalonProfile }) {
       <label className="block">
         <span className="mb-1 flex items-center justify-between text-xs uppercase tracking-wider text-pos-ink-3">
           <span>Pied de ticket</span>
-          <span className={footerTrop ? "text-red-600" : ""}>
+          <span className={footerTrop ? "text-pos-danger" : ""}>
             {form.receiptFooter.length}/{FOOTER_MAX}
           </span>
         </span>
