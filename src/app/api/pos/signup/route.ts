@@ -1,7 +1,16 @@
 /**
  * Silent POS signup — creates a User + ProviderProfile + OWNER SalonEmployee
- * in one go. No password is shown to the salon; future re-logins go through
- * a magic link sent to the email captured here.
+ * in one go.
+ *
+ * Aucun mot de passe n'est saisi ni montre : on en genere un aleatoire, que
+ * personne ne connait. Le salon recoit donc un email de bienvenue avec un
+ * lien pour choisir le sien, sans quoi il ne pourrait jamais se connecter
+ * ailleurs que sur la tablette avec son code PIN — et se retrouverait enferme
+ * dehors en le perdant.
+ *
+ * (Une version precedente de ce commentaire promettait un « magic link » :
+ * il n'a jamais existe. On reutilise le mecanisme de reinitialisation de mot
+ * de passe, deja en place et eprouve.)
  *
  * Designed for the door-to-door go-to-market: the commercial enters their
  * email on the tablet, gets a 4-digit PIN for the owner, and lands in the
@@ -12,8 +21,10 @@
 import { NextRequest } from "next/server";
 import { randomBytes, randomInt } from "crypto";
 import { hash } from "bcryptjs";
+import { nanoid } from "nanoid";
 import { prisma } from "@/lib/prisma";
 import { mergePermissions } from "@/lib/permissions";
+import { sendSalonWelcomeEmail } from "@/lib/mail";
 
 type Body = {
   email?: string;
@@ -65,18 +76,30 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  // Generate a random, never-shown password. Future logins use magic links.
+  // Mot de passe aleatoire jamais montre : le salon definit le sien via le
+  // lien de l'email de bienvenue (voir plus bas).
   const randomPwd = randomBytes(32).toString("hex");
   const passwordHash = await hash(randomPwd, 10);
+  // 7 jours, la ou une reinitialisation classique dure 1 heure : un salon qui
+  // s'inscrit au comptoir ne consulte pas sa boite mail dans la foulee.
+  const welcomeToken = nanoid(32);
+  const welcomeExpires = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
   const ownerPin = genPin4();
   const ownerPinHash = await hash(ownerPin, 10);
 
   const result = await prisma.$transaction(async (tx) => {
     // Promote/create the User as a PROVIDER.
+    // Le jeton est pose dans les deux cas : un compte existant promu en salon
+    // n'a pas plus de moyen de se connecter qu'un compte neuf.
     const user = existing
       ? await tx.user.update({
           where: { id: existing.id },
-          data: { role: "PROVIDER", emailVerified: new Date() },
+          data: {
+            role: "PROVIDER",
+            emailVerified: new Date(),
+            passwordResetToken: welcomeToken,
+            passwordResetExpires: welcomeExpires,
+          } as never,
         })
       : await tx.user.create({
           data: {
@@ -84,7 +107,9 @@ export async function POST(req: NextRequest) {
             passwordHash,
             role: "PROVIDER",
             emailVerified: new Date(),
-          },
+            passwordResetToken: welcomeToken,
+            passwordResetExpires: welcomeExpires,
+          } as never,
         });
 
     // Create the ProviderProfile, flagged POS-only.
@@ -125,6 +150,13 @@ export async function POST(req: NextRequest) {
 
     return { user, provider, owner };
   });
+
+  // Apres la transaction, jamais dedans : un SMTP indisponible ne doit pas
+  // annuler la creation du salon. En cas d'echec le salon garde son PIN, et
+  // « mot de passe oublie » reste disponible.
+  sendSalonWelcomeEmail(email, result.provider.salonName, welcomeToken).catch(
+    console.error,
+  );
 
   return Response.json(
     {
