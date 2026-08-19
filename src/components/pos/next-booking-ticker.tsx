@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { Calendar } from "lucide-react";
+import { bookingClientName } from "@/lib/booking-client-name";
 
 type Booking = {
   id: string;
@@ -9,14 +10,12 @@ type Booking = {
   status: string;
   saleId: string | null;
   customer: { firstName: string | null; lastName: string | null } | null;
+  client: { name: string | null; email: string } | null;
   items: Array<{ name: string }>;
 };
 
 function customerName(b: Booking) {
-  const first = b.customer?.firstName?.trim() ?? "";
-  const last = b.customer?.lastName?.trim() ?? "";
-  const full = `${first} ${last}`.trim();
-  return full || "Client passager";
+  return bookingClientName(b.customer, b.client, "Client passager");
 }
 
 function formatTime(iso: string) {

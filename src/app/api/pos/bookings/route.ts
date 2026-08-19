@@ -61,6 +61,11 @@ export async function GET(req: NextRequest) {
       customer: {
         select: { id: true, firstName: true, lastName: true, phone: true },
       },
+      // Une reservation prise sur la marketplace n'a pas de `customer` (fiche
+      // client du salon) : la personne est le `client`, un User. Sans cette
+      // relation le calendrier affichait « Sans client » pour toute
+      // reservation venue du site.
+      client: { select: { id: true, name: true, email: true, phone: true } },
       assignedEmployee: { select: { id: true, displayName: true } },
       sale: { select: { id: true, receiptNumber: true, status: true } },
     },
