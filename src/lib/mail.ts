@@ -115,59 +115,6 @@ export async function sendPasswordResetEmail(email: string, name: string, token:
   });
 }
 
-// ─── Bienvenue salon (apres inscription a la caisse) ───
-
-/**
- * Envoye a l'inscription d'un salon depuis la tablette.
- *
- * L'inscription genere un mot de passe aleatoire que personne ne voit : sans
- * cet email, le salon ne peut se connecter qu'avec son code PIN sur la
- * tablette, et se retrouve enferme dehors s'il le perd ou s'il veut ouvrir
- * son espace depuis un navigateur.
- *
- * Le lien reutilise le mecanisme de reinitialisation existant, avec une
- * validite de 7 jours : un salon qui s'inscrit au comptoir ne consulte pas
- * forcement sa boite mail dans l'heure.
- */
-export async function sendSalonWelcomeEmail(
-  email: string,
-  salonName: string,
-  token: string,
-) {
-  const url = `${process.env.NEXTAUTH_URL}/reset-password?token=${token}`;
-  const html = layout(`
-    <h2 style="margin:0 0 8px;font-family:Georgia,'Times New Roman',serif;font-size:22px;color:#1F1A1C;font-weight:normal;">
-      Bienvenue sur Salonista
-    </h2>
-    <p style="margin:0 0 24px;font-size:14px;color:#1F1A1C;opacity:0.5;">
-      ${salonName}
-    </p>
-    <p style="margin:0 0 24px;font-size:14px;color:#1F1A1C;opacity:0.6;line-height:1.6;">
-      Votre salon est cr&eacute;&eacute;. Choisissez votre mot de passe pour acc&eacute;der
-      &agrave; votre espace depuis n&rsquo;importe quel navigateur : vos rendez-vous,
-      vos offres et votre profil.
-    </p>
-    <table cellpadding="0" cellspacing="0" style="margin:0 auto 24px;">
-      <tr><td style="background:#1F1A1C;padding:14px 32px;">
-        <a href="${url}" style="color:#FFFFFF;font-size:12px;letter-spacing:0.2em;text-transform:uppercase;text-decoration:none;font-family:'Helvetica Neue',Helvetica,Arial,sans-serif;">
-          Choisir mon mot de passe
-        </a>
-      </td></tr>
-    </table>
-    <p style="margin:0;font-size:12px;color:#1F1A1C;opacity:0.3;line-height:1.5;">
-      Ce lien expire dans 7 jours. Sur la tablette, votre code PIN continue de
-      fonctionner comme d&rsquo;habitude.
-    </p>
-  `);
-
-  await transporter.sendMail({
-    from,
-    to: email,
-    subject: "Bienvenue sur Salonista — choisissez votre mot de passe",
-    html,
-  });
-}
-
 // ─── Booking confirmation (for client) ───
 
 export async function sendBookingConfirmationEmail(

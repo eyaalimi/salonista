@@ -1,16 +1,14 @@
 /**
- * Silent POS signup — creates a User + ProviderProfile + OWNER SalonEmployee
- * in one go.
+ * POS signup — creates a User + ProviderProfile + OWNER SalonEmployee in one go.
  *
- * Aucun mot de passe n'est saisi ni montre : on en genere un aleatoire, que
- * personne ne connait. Le salon recoit donc un email de bienvenue avec un
- * lien pour choisir le sien, sans quoi il ne pourrait jamais se connecter
- * ailleurs que sur la tablette avec son code PIN — et se retrouverait enferme
- * dehors en le perdant.
+ * Le salon choisit son mot de passe ici meme. Il obtient donc deux acces avec
+ * les memes identifiants qu'il vient de saisir :
+ *   - la caisse sur la tablette, via son code PIN a 4 chiffres ;
+ *   - son espace Salonista dans un navigateur, via email + mot de passe.
  *
- * (Une version precedente de ce commentaire promettait un « magic link » :
- * il n'a jamais existe. On reutilise le mecanisme de reinitialisation de mot
- * de passe, deja en place et eprouve.)
+ * (Une version precedente generait un mot de passe aleatoire jamais montre,
+ * en promettant un « magic link » qui n'a jamais existe : le salon ne pouvait
+ * alors plus jamais se connecter ailleurs que sur la tablette.)
  *
  * Designed for the door-to-door go-to-market: the commercial enters their
  * email on the tablet, gets a 4-digit PIN for the owner, and lands in the
@@ -19,16 +17,18 @@
  */
 
 import { NextRequest } from "next/server";
-import { randomBytes, randomInt } from "crypto";
+import { randomInt } from "crypto";
 import { hash } from "bcryptjs";
-import { nanoid } from "nanoid";
 import { prisma } from "@/lib/prisma";
 import { mergePermissions } from "@/lib/permissions";
-import { sendSalonWelcomeEmail } from "@/lib/mail";
+
+/** Meme minimum que la reinitialisation de mot de passe, pour rester coherent. */
+const MIN_PASSWORD_LENGTH = 6;
 
 type Body = {
   email?: string;
   salonName?: string;
+  password?: string;
 };
 
 function isValidEmail(s: string): boolean {
@@ -52,9 +52,16 @@ export async function POST(req: NextRequest) {
   const body = (await req.json().catch(() => null)) as Body | null;
   const email = body?.email?.trim().toLowerCase() ?? "";
   const salonName = body?.salonName?.trim() ?? "Mon salon";
+  const password = body?.password ?? "";
 
   if (!email || !isValidEmail(email)) {
     return Response.json({ error: "Email invalide" }, { status: 400 });
+  }
+  if (password.length < MIN_PASSWORD_LENGTH) {
+    return Response.json(
+      { error: `Mot de passe trop court (min. ${MIN_PASSWORD_LENGTH} caractères)` },
+      { status: 400 },
+    );
   }
 
   // If a User already exists with this email, we either resume their existing
@@ -76,30 +83,21 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  // Mot de passe aleatoire jamais montre : le salon definit le sien via le
-  // lien de l'email de bienvenue (voir plus bas).
-  const randomPwd = randomBytes(32).toString("hex");
-  const passwordHash = await hash(randomPwd, 10);
-  // 7 jours, la ou une reinitialisation classique dure 1 heure : un salon qui
-  // s'inscrit au comptoir ne consulte pas sa boite mail dans la foulee.
-  const welcomeToken = nanoid(32);
-  const welcomeExpires = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
+  // Le mot de passe choisi par le salon : c'est celui qu'il utilisera pour se
+  // connecter sur salonista.tn. Cout 12, comme la reinitialisation.
+  const passwordHash = await hash(password, 12);
   const ownerPin = genPin4();
   const ownerPinHash = await hash(ownerPin, 10);
 
   const result = await prisma.$transaction(async (tx) => {
     // Promote/create the User as a PROVIDER.
-    // Le jeton est pose dans les deux cas : un compte existant promu en salon
-    // n'a pas plus de moyen de se connecter qu'un compte neuf.
+    // Le mot de passe est pose dans les deux cas : un compte existant promu en
+    // salon doit pouvoir se connecter avec ce qu'il vient de saisir, pas avec
+    // un ancien mot de passe qu'il ne se rappelle peut-etre plus.
     const user = existing
       ? await tx.user.update({
           where: { id: existing.id },
-          data: {
-            role: "PROVIDER",
-            emailVerified: new Date(),
-            passwordResetToken: welcomeToken,
-            passwordResetExpires: welcomeExpires,
-          } as never,
+          data: { role: "PROVIDER", emailVerified: new Date(), passwordHash },
         })
       : await tx.user.create({
           data: {
@@ -107,9 +105,7 @@ export async function POST(req: NextRequest) {
             passwordHash,
             role: "PROVIDER",
             emailVerified: new Date(),
-            passwordResetToken: welcomeToken,
-            passwordResetExpires: welcomeExpires,
-          } as never,
+          },
         });
 
     // Create the ProviderProfile, flagged POS-only.
@@ -150,13 +146,6 @@ export async function POST(req: NextRequest) {
 
     return { user, provider, owner };
   });
-
-  // Apres la transaction, jamais dedans : un SMTP indisponible ne doit pas
-  // annuler la creation du salon. En cas d'echec le salon garde son PIN, et
-  // « mot de passe oublie » reste disponible.
-  sendSalonWelcomeEmail(email, result.provider.salonName, welcomeToken).catch(
-    console.error,
-  );
 
   return Response.json(
     {
