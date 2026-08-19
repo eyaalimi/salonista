@@ -5,9 +5,13 @@ import { useRouter } from "next/navigation";
 import { signIn } from "next-auth/react";
 import { Logo } from "@/components/logo";
 
+/** Doit rester aligne sur la verification du serveur (`api/pos/signup`). */
+const MIN_PASSWORD_LENGTH = 6;
+
 export default function StartClient() {
   const router = useRouter();
   const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
   const [salonName, setSalonName] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -25,6 +29,7 @@ export default function StartClient() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           email: email.trim(),
+          password,
           salonName: salonName.trim() || undefined,
         }),
       });
@@ -85,6 +90,16 @@ export default function StartClient() {
             <div className="text-[11px] text-brand-ink-soft mt-3">
               Conservez-le précieusement. Pas de SMS — c&apos;est le seul
               écran où il s&apos;affiche.
+            </div>
+          </div>
+
+          {/* Le salon vient de saisir un mot de passe : sans cette mention il
+              ne saurait pas qu'il ouvre aussi son espace sur le site. */}
+          <div className="bg-brand-cream rounded-2xl p-4 mb-6 text-left">
+            <div className="text-[11px] text-brand-ink-soft leading-relaxed">
+              Sur salonista.tn, connectez-vous avec{" "}
+              <span className="font-semibold text-brand-ink">{email}</span> et
+              le mot de passe que vous venez de choisir.
             </div>
           </div>
 
@@ -155,9 +170,30 @@ export default function StartClient() {
               placeholder="vous@exemple.tn"
               className="w-full rounded-xl border border-brand-line bg-brand-cream/50 px-4 py-3 text-base text-brand-ink placeholder:text-brand-ink-soft/60 focus:border-brand-gold focus:outline-none"
             />
+          </div>
+
+          <div>
+            <label
+              htmlFor="password"
+              className="block text-[10px] uppercase tracking-[0.18em] text-brand-ink-soft mb-1.5"
+            >
+              Votre mot de passe
+            </label>
+            <input
+              id="password"
+              type="password"
+              required
+              minLength={MIN_PASSWORD_LENGTH}
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              placeholder="6 caractères minimum"
+              autoComplete="new-password"
+              className="w-full rounded-xl border border-brand-line bg-brand-cream/50 px-4 py-3 text-base text-brand-ink placeholder:text-brand-ink-soft/60 focus:border-brand-gold focus:outline-none"
+            />
             <p className="text-[11px] text-brand-ink-soft mt-1.5">
-              Pour vous reconnecter depuis n&apos;importe quel appareil. Pas de
-              mot de passe à retenir.
+              Avec votre email, il vous ouvre votre espace Salonista depuis
+              n&apos;importe quel navigateur — vos rendez-vous, vos offres,
+              votre profil.
             </p>
           </div>
 
@@ -169,7 +205,7 @@ export default function StartClient() {
 
           <button
             type="submit"
-            disabled={busy || !email.trim()}
+            disabled={busy || !email.trim() || password.length < MIN_PASSWORD_LENGTH}
             className="w-full py-4 rounded-xl bg-brand-ink text-white text-base font-semibold hover:bg-brand-ink-soft disabled:opacity-50"
           >
             {busy ? "Activation…" : "Activer ma caisse gratuite →"}

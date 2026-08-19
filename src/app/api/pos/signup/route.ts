@@ -1,7 +1,14 @@
 /**
- * Silent POS signup — creates a User + ProviderProfile + OWNER SalonEmployee
- * in one go. No password is shown to the salon; future re-logins go through
- * a magic link sent to the email captured here.
+ * POS signup — creates a User + ProviderProfile + OWNER SalonEmployee in one go.
+ *
+ * Le salon choisit son mot de passe ici meme. Il obtient donc deux acces avec
+ * les memes identifiants qu'il vient de saisir :
+ *   - la caisse sur la tablette, via son code PIN a 4 chiffres ;
+ *   - son espace Salonista dans un navigateur, via email + mot de passe.
+ *
+ * (Une version precedente generait un mot de passe aleatoire jamais montre,
+ * en promettant un « magic link » qui n'a jamais existe : le salon ne pouvait
+ * alors plus jamais se connecter ailleurs que sur la tablette.)
  *
  * Designed for the door-to-door go-to-market: the commercial enters their
  * email on the tablet, gets a 4-digit PIN for the owner, and lands in the
@@ -10,14 +17,18 @@
  */
 
 import { NextRequest } from "next/server";
-import { randomBytes, randomInt } from "crypto";
+import { randomInt } from "crypto";
 import { hash } from "bcryptjs";
 import { prisma } from "@/lib/prisma";
 import { mergePermissions } from "@/lib/permissions";
 
+/** Meme minimum que la reinitialisation de mot de passe, pour rester coherent. */
+const MIN_PASSWORD_LENGTH = 6;
+
 type Body = {
   email?: string;
   salonName?: string;
+  password?: string;
 };
 
 function isValidEmail(s: string): boolean {
@@ -41,9 +52,16 @@ export async function POST(req: NextRequest) {
   const body = (await req.json().catch(() => null)) as Body | null;
   const email = body?.email?.trim().toLowerCase() ?? "";
   const salonName = body?.salonName?.trim() ?? "Mon salon";
+  const password = body?.password ?? "";
 
   if (!email || !isValidEmail(email)) {
     return Response.json({ error: "Email invalide" }, { status: 400 });
+  }
+  if (password.length < MIN_PASSWORD_LENGTH) {
+    return Response.json(
+      { error: `Mot de passe trop court (min. ${MIN_PASSWORD_LENGTH} caractères)` },
+      { status: 400 },
+    );
   }
 
   // If a User already exists with this email, we either resume their existing
@@ -65,18 +83,21 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  // Generate a random, never-shown password. Future logins use magic links.
-  const randomPwd = randomBytes(32).toString("hex");
-  const passwordHash = await hash(randomPwd, 10);
+  // Le mot de passe choisi par le salon : c'est celui qu'il utilisera pour se
+  // connecter sur salonista.tn. Cout 12, comme la reinitialisation.
+  const passwordHash = await hash(password, 12);
   const ownerPin = genPin4();
   const ownerPinHash = await hash(ownerPin, 10);
 
   const result = await prisma.$transaction(async (tx) => {
     // Promote/create the User as a PROVIDER.
+    // Le mot de passe est pose dans les deux cas : un compte existant promu en
+    // salon doit pouvoir se connecter avec ce qu'il vient de saisir, pas avec
+    // un ancien mot de passe qu'il ne se rappelle peut-etre plus.
     const user = existing
       ? await tx.user.update({
           where: { id: existing.id },
-          data: { role: "PROVIDER", emailVerified: new Date() },
+          data: { role: "PROVIDER", emailVerified: new Date(), passwordHash },
         })
       : await tx.user.create({
           data: {
