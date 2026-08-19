@@ -12,6 +12,7 @@ import { isValidCoords } from "@/lib/coords";
 import dynamic from "next/dynamic";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { formatDateHeure } from "@/lib/datetime";
 
 // Leaflet manipule le DOM et n'existe pas cote serveur : sans ssr:false, le
 // build echoue sur « window is not defined ».
@@ -477,13 +478,7 @@ export function SalonClient({ salon }: { salon: Salon }) {
                       <div className="mt-2 flex items-center justify-between border-t border-hairline pt-2 text-sm">
                         <span className="text-prune-soft">Début</span>
                         <span className="font-semibold text-prune">
-                          {new Date(selectedStart).toLocaleString("fr-TN", {
-                            weekday: "short",
-                            day: "numeric",
-                            month: "short",
-                            hour: "2-digit",
-                            minute: "2-digit",
-                          })}
+                          {formatDateHeure(selectedStart)}
                         </span>
                       </div>
                     )}

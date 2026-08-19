@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { useSession } from "next-auth/react";
 import Link from "next/link";
 import { Logo } from "@/components/logo";
+import { formatDateHeureComplete } from "@/lib/datetime";
 
 interface VerificationData {
   valid: boolean;
@@ -132,7 +133,7 @@ function VerificationPageInner() {
           )}
           {data.verified && data.verifiedAt && (
             <p className="text-[10px] tracking-[0.15em] uppercase text-brand-ink-soft mt-0.5">
-              {new Date(data.verifiedAt).toLocaleString("fr-TN")}
+              {formatDateHeureComplete(data.verifiedAt)}
             </p>
           )}
         </div>

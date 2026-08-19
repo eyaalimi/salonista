@@ -1,6 +1,8 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { formatDateLongue, formatHeure } from "@/lib/datetime";
+import { scrollToElement } from "@/lib/scroll-to";
 
 interface Slot {
   id: string;
@@ -48,6 +50,16 @@ export function BookingCalendar({ slots, selectedSlotId, onSelect }: Props) {
 
   const [viewMonth, setViewMonth] = useState<Date>(() => startOfMonth(new Date()));
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
+  const horairesRef = useRef<HTMLDivElement>(null);
+
+  // Choisir une date amene directement aux horaires : sur mobile ils
+  // apparaissent sous le pli, et rien ne signale qu'ils sont la.
+  //
+  // Via un effet et non dans le gestionnaire de clic : au premier choix le
+  // panneau des horaires n'est pas encore monte, la ref serait vide.
+  useEffect(() => {
+    if (selectedDate) scrollToElement(horairesRef.current);
+  }, [selectedDate]);
 
   // Group slots by day, only future slots with remaining capacity
   const slotsByDay = useMemo(() => {
@@ -201,14 +213,13 @@ export function BookingCalendar({ slots, selectedSlotId, onSelect }: Props) {
 
       {/* Time slots for selected date */}
       {selectedDate && (
-        <div className="rounded-[var(--radius-card)] border-2 border-hairline bg-white p-5 md:p-6">
+        <div
+          ref={horairesRef}
+          className="scroll-mt-4 rounded-[var(--radius-card)] border-2 border-hairline bg-white p-5 md:p-6"
+        >
           <p className="mb-1 text-xs font-semibold uppercase tracking-[0.12em] text-prune-soft">Horaires</p>
           <h3 className="ds-display mb-4 text-lg text-prune">
-            {new Date(selectedDate).toLocaleDateString("fr-TN", {
-              weekday: "long",
-              day: "numeric",
-              month: "long",
-            })}
+            {formatDateLongue(selectedDate)}
           </h3>
           {selectedSlots.length === 0 ? (
             <p className="py-3 text-sm text-prune-soft">Aucun horaire pour cette date</p>
@@ -234,9 +245,9 @@ export function BookingCalendar({ slots, selectedSlotId, onSelect }: Props) {
                     }`}
                   >
                     <div className="font-semibold">
-                      {start.toLocaleTimeString("fr-TN", { hour: "2-digit", minute: "2-digit" })}
+                      {formatHeure(start)}
                       {" — "}
-                      {end.toLocaleTimeString("fr-TN", { hour: "2-digit", minute: "2-digit" })}
+                      {formatHeure(end)}
                     </div>
                     <div className="mt-0.5 text-xs opacity-80">
                       {full ? "Complet" : `${s.capacity - s.bookedCount} place${s.capacity - s.bookedCount > 1 ? "s" : ""}`}

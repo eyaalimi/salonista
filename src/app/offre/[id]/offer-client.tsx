@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import { scrollToElement } from "@/lib/scroll-to";
 import { useSession, signIn } from "next-auth/react";
 import Link from "next/link";
 import { BookingCalendar } from "@/components/booking-calendar";
@@ -71,6 +72,14 @@ export function OfferClient({
 }) {
   const { data: session, update: updateSession } = useSession();
   const [showBooking, setShowBooking] = useState(false);
+  const formulaireRef = useRef<HTMLFormElement>(null);
+
+  // « Réserver » fait descendre au formulaire : sur mobile il s'ouvre sous le
+  // pli, et rien ne montre que le clic a fonctionne. Via un effet car le
+  // formulaire n'est pas encore monte au moment du clic.
+  useEffect(() => {
+    if (showBooking) scrollToElement(formulaireRef.current);
+  }, [showBooking]);
   const [selectedSlot, setSelectedSlot] = useState<string>("");
   const [bookingNotes, setBookingNotes] = useState("");
   const [loading, setLoading] = useState(false);
@@ -330,7 +339,7 @@ export function OfferClient({
                 </Button>
               </div>
             ) : (
-              <form onSubmit={handleBook} className="space-y-6 rounded-[var(--radius-card)] border-2 border-hairline bg-white p-6">
+              <form ref={formulaireRef} onSubmit={handleBook} className="scroll-mt-4 space-y-6 rounded-[var(--radius-card)] border-2 border-hairline bg-white p-6">
                 {error && (
                   <div className="rounded-[var(--radius-panel)] border-2 border-rose bg-rose-soft p-3 text-sm font-semibold text-prune">
                     {error}
