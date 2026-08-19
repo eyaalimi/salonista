@@ -2,7 +2,7 @@ import { redirect } from "next/navigation";
 import { IBM_Plex_Sans, IBM_Plex_Mono } from "next/font/google";
 import { SwRegister } from "@/components/sw-register";
 import { getCurrentEmployee } from "@/lib/employee-session";
-import { hasModule } from "@/lib/modules";
+import { getActiveModules } from "@/lib/modules";
 import { prisma } from "@/lib/prisma";
 import { OnlineStatusProvider } from "@/components/pos/online-status";
 import { PosTopbar } from "@/components/pos/topbar";
@@ -27,30 +27,10 @@ export default async function PosLayout({ children }: { children: React.ReactNod
   const employee = await getCurrentEmployee();
   if (!employee) redirect("/salon-pin");
 
-  const moduleActive = await hasModule(employee.providerId, "POS");
-  if (!moduleActive) {
-    return (
-      <div className="min-h-dvh bg-brand-cream flex items-center justify-center p-8">
-        <div className="max-w-md rounded-2xl border border-brand-line bg-brand-sand p-10 text-center">
-          <p className="luxury-badge mb-3">Caisse</p>
-          <h2 className="luxury-heading text-2xl text-brand-ink">Module non activé</h2>
-          <p className="mt-4 text-sm text-brand-ink-soft">
-            Le module POS n&apos;est pas activé pour ce salon.
-          </p>
-        </div>
-      </div>
-    );
-  }
-  if (!employee.permissions["pos.sell"]) {
-    return (
-      <div className="min-h-dvh bg-brand-cream flex items-center justify-center p-8">
-        <div className="max-w-md rounded-2xl border border-brand-line bg-brand-sand p-10 text-center">
-          <p className="luxury-badge mb-3">Accès refusé</p>
-          <h2 className="luxury-heading text-2xl text-brand-ink">Permission insuffisante</h2>
-        </div>
-      </div>
-    );
-  }
+  // Les modules ne bloquent plus l'acces a la PWA : un salon sans le module
+  // caisse garde son espace metier (RDV, clientes, services, profil). Le
+  // blocage est porte page par page, par les seules pages de caisse.
+  const activeModules = await getActiveModules(employee.providerId);
 
   const provider = await prisma.providerProfile.findUnique({
     where: { id: employee.providerId },
@@ -76,7 +56,7 @@ export default async function PosLayout({ children }: { children: React.ReactNod
               desktop. La bottom-bar mobile a ete abandonnee apres test sur
               iPhone — elle n'etait pas confortable a l'usage. */}
           <div className="flex-1 min-h-0 flex flex-row overflow-hidden">
-            <Rail permissions={employee.permissions} />
+            <Rail permissions={employee.permissions} activeModules={activeModules} />
             <main className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden">
               {children}
             </main>
