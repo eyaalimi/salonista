@@ -1,7 +1,16 @@
+import { redirect } from "next/navigation";
 import { SalesListClient } from "@/components/pos/sales-list-client";
+import { getCurrentEmployee } from "@/lib/employee-session";
+import { ModuleGate } from "@/components/module-gate";
 
 export const metadata = { title: "Ventes — Salonista" };
 
-export default function SalesPage() {
-  return <SalesListClient />;
+export default async function SalesPage() {
+  const employee = await getCurrentEmployee();
+  if (!employee) redirect("/salon-pin");
+  return (
+    <ModuleGate module="POS" providerId={employee.providerId}>
+      <SalesListClient />
+    </ModuleGate>
+  );
 }
