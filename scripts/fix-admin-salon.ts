@@ -91,8 +91,9 @@ async function main() {
   if (hasRealActivity && !process.argv.includes("--force")) {
     console.error(
       "\nARRET : ce salon a des ventes ou des offres — il ne ressemble pas a" +
-        "\nune inscription faite par erreur. Verifie qu'il s'agit bien du bon" +
-        "\ncompte, puis relance avec --force si tu confirmes la suppression.",
+        "\nune inscription faite par erreur. Verifie ci-dessus qu'il s'agit bien" +
+        "\ndu salon a supprimer, puis relance en ajoutant --force :" +
+        `\n\n  npx tsx scripts/fix-admin-salon.ts ${email} --apply --force\n`,
     );
     process.exit(1);
   }
