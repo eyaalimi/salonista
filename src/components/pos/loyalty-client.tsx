@@ -112,7 +112,7 @@ export function LoyaltyClient({ canEditSettings }: { canEditSettings: boolean })
     return (
       <div className="h-full overflow-y-auto p-6 max-w-2xl mx-auto">
         <h1 className="text-2xl font-semibold text-pos-ink mb-2">Fidélité</h1>
-        <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 text-sm text-amber-900">
+        <div className="bg-pos-highlight border border-pos-warn rounded-lg p-4 text-sm text-pos-warn">
           Le module Fidélité n&apos;est pas activé pour votre salon. Contactez Salonista pour
           l&apos;activer.
         </div>
@@ -177,7 +177,7 @@ export function LoyaltyClient({ canEditSettings }: { canEditSettings: boolean })
                     </td>
                     <td className="px-4 py-3 text-right">
                       <span className="inline-flex items-center gap-1 pos-mono font-semibold text-pos-ink">
-                        <Star size={12} className="text-amber-500" />
+                        <Star size={12} className="text-pos-warn" />
                         {w.balance}
                       </span>
                     </td>
@@ -226,7 +226,7 @@ function TopFidelesWidget({ items }: { items: TopItem[] }) {
   return (
     <aside className="bg-white border border-pos-border rounded-lg p-4 h-fit">
       <h3 className="text-sm font-semibold text-pos-ink flex items-center gap-1.5 mb-3">
-        <Trophy size={14} className="text-amber-500" /> Top 10 fidèles
+        <Trophy size={14} className="text-pos-warn" /> Top 10 fidèles
       </h3>
       {items.length === 0 ? (
         <p className="text-xs text-pos-ink-3 py-4 text-center">
@@ -399,7 +399,7 @@ function ProgramCard({
 
           <label className="block col-span-2">
             <span className="text-xs text-pos-ink-2 font-semibold flex items-center gap-1">
-              <MessageCircle size={12} className="text-emerald-600" /> Message WhatsApp
+              <MessageCircle size={12} className="text-pos-accent" /> Message WhatsApp
             </span>
             <textarea
               value={form.whatsappMessage}
@@ -416,7 +416,7 @@ function ProgramCard({
             </span>
           </label>
 
-          {error && <p className="col-span-2 text-sm text-red-600">{error}</p>}
+          {error && <p className="col-span-2 text-sm text-pos-danger">{error}</p>}
 
           <div className="col-span-2 flex justify-end gap-2 mt-2">
             <button
@@ -458,7 +458,7 @@ function ProgramCard({
           </div>
           <div className="col-span-2">
             <dt className="text-xs text-pos-ink-3 flex items-center gap-1">
-              <MessageCircle size={11} className="text-emerald-600" /> Message WhatsApp
+              <MessageCircle size={11} className="text-pos-accent" /> Message WhatsApp
             </dt>
             <dd className="text-pos-ink text-xs mt-0.5 italic">
               {program.whatsappMessage ?? "Non configuré"}
@@ -563,7 +563,7 @@ function AdjustModal({
         </label>
 
         {error && (
-          <p className="text-sm text-red-600 bg-red-50 px-3 py-2 rounded mb-3">{error}</p>
+          <p className="text-sm text-pos-danger bg-pos-danger-soft px-3 py-2 rounded mb-3">{error}</p>
         )}
 
         <div className="flex justify-end gap-2">

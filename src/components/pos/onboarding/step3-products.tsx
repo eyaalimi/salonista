@@ -220,7 +220,7 @@ export function Step3Products({
                 <button
                   type="button"
                   onClick={() => remove(i)}
-                  className="text-brand-ink-soft hover:text-red-600 shrink-0"
+                  className="text-brand-ink-soft hover:text-pos-danger shrink-0"
                   aria-label="Supprimer"
                 >
                   <Trash2 size={14} />
@@ -240,7 +240,7 @@ export function Step3Products({
       </button>
 
       {error && (
-        <div className="text-sm text-red-600 bg-red-50 border border-red-100 rounded-lg px-3 py-2">
+        <div className="text-sm text-pos-danger bg-pos-danger-soft border border-pos-danger rounded-lg px-3 py-2">
           {error}
         </div>
       )}

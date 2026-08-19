@@ -71,7 +71,7 @@ export function SyncIssuesClient() {
           {sales.map((s) => {
             const conflicts = Array.isArray(s.syncConflicts) ? (s.syncConflicts as Array<{ type: string }>) : [];
             return (
-              <li key={s.id} className="rounded-2xl border border-amber-300 bg-amber-50 p-4">
+              <li key={s.id} className="rounded-2xl border border-pos-warn bg-pos-highlight p-4">
                 <div className="flex justify-between mb-2">
                   <Link
                     href={`/pos/sales/${s.id}`}
@@ -85,7 +85,7 @@ export function SyncIssuesClient() {
                   {new Date(s.createdAt).toLocaleString("fr-FR")} —{" "}
                   {s.syncedAt ? `Synchronisé ${new Date(s.syncedAt).toLocaleString("fr-FR")}` : "Non synchronisé"}
                 </p>
-                <ul className="space-y-1 text-xs text-amber-900">
+                <ul className="space-y-1 text-xs text-pos-warn">
                   {conflicts.map((c, i) => (
                     <li key={i}>• {CONFLICT_LABELS[c.type] ?? c.type}</li>
                   ))}

@@ -81,10 +81,10 @@ export function HoursForm({ initial }: { initial: OpeningHours | null }) {
   return (
     <div className="space-y-5">
       {error && (
-        <div className="rounded bg-red-50 px-3 py-2 text-sm text-red-800">{error}</div>
+        <div className="rounded bg-pos-danger-soft px-3 py-2 text-sm text-pos-danger">{error}</div>
       )}
       {ok && (
-        <div className="rounded bg-green-50 px-3 py-2 text-sm text-green-800">
+        <div className="rounded bg-pos-accent-soft px-3 py-2 text-sm text-pos-accent">
           Horaires enregistrés.
         </div>
       )}

@@ -227,7 +227,7 @@ export function BookingCreateDrawer({
           </button>
         </div>
         {!online && (
-          <p className="mb-3 rounded bg-amber-50 border border-amber-200 px-3 py-2 text-xs text-amber-900">
+          <p className="mb-3 rounded bg-pos-highlight border border-pos-warn px-3 py-2 text-xs text-pos-warn">
             Création de réservation indisponible hors ligne.
           </p>
         )}
@@ -319,9 +319,9 @@ export function BookingCreateDrawer({
                 ) : loadingSlots ? (
                   <p className="text-xs text-brand-ink-soft px-1">Chargement…</p>
                 ) : slotError ? (
-                  <p className="text-xs text-red-600 px-1">{slotError}</p>
+                  <p className="text-xs text-pos-danger px-1">{slotError}</p>
                 ) : availableSlots.length === 0 ? (
-                  <p className="text-xs text-amber-800 bg-amber-50 border border-amber-200 rounded px-2 py-2">
+                  <p className="text-xs text-pos-warn bg-pos-highlight border border-pos-warn rounded px-2 py-2">
                     Aucun créneau disponible ce jour pour cette combinaison de
                     services. Choisissez un autre jour ou modifiez les services.
                   </p>
@@ -433,7 +433,7 @@ export function BookingCreateDrawer({
             />
           </div>
 
-          {error && <p className="text-xs text-red-600">{error}</p>}
+          {error && <p className="text-xs text-pos-danger">{error}</p>}
 
           <button
             type="submit"

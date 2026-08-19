@@ -121,10 +121,10 @@ export function ProductsListClient({ canManage }: { canManage: boolean }) {
               {filtered.map((p) => {
                 const stockColor =
                   p.stockQuantity <= 0
-                    ? "text-red-600"
+                    ? "text-pos-danger"
                     : p.stockQuantity <= p.lowStockThreshold
-                      ? "text-amber-700"
-                      : "text-emerald-700";
+                      ? "text-pos-warn"
+                      : "text-pos-accent";
                 return (
                   <tr key={p.id} className="border-t border-brand-line">
                     <td className="px-4 py-3">
@@ -141,7 +141,7 @@ export function ProductsListClient({ canManage }: { canManage: boolean }) {
                       <div className="flex flex-col items-end gap-1">
                         {formatDT(p.salePrice)}
                         {p.costPrice && Number(p.costPrice) > 0 && (
-                          <span className="text-xs px-2 py-0.5 rounded bg-green-50 text-green-800">
+                          <span className="text-xs px-2 py-0.5 rounded bg-pos-accent-soft text-pos-accent">
                             Marge {(Number(p.salePrice) - Number(p.costPrice)).toFixed(3)} TND
                             ({Number(p.salePrice) > 0 ? (((Number(p.salePrice) - Number(p.costPrice)) / Number(p.salePrice)) * 100).toFixed(0) : "0"}%)
                           </span>
@@ -151,7 +151,7 @@ export function ProductsListClient({ canManage }: { canManage: boolean }) {
                     <td className={`px-4 py-3 text-right ${stockColor}`}>{p.stockQuantity}</td>
                     <td className="px-4 py-3 text-xs">
                       {p.active ? (
-                        <span className="text-emerald-700">Actif</span>
+                        <span className="text-pos-accent">Actif</span>
                       ) : (
                         <span className="text-brand-ink-soft">Désactivé</span>
                       )}
@@ -176,7 +176,7 @@ export function ProductsListClient({ canManage }: { canManage: boolean }) {
                             <button
                               type="button"
                               onClick={() => deactivate(p.id)}
-                              className="text-xs text-red-600 hover:underline"
+                              className="text-xs text-pos-danger hover:underline"
                             >
                               Désactiver
                             </button>
@@ -202,10 +202,10 @@ export function ProductsListClient({ canManage }: { canManage: boolean }) {
           {filtered.map((p) => {
             const stockColor =
               p.stockQuantity <= 0
-                ? "text-red-600"
+                ? "text-pos-danger"
                 : p.stockQuantity <= p.lowStockThreshold
-                  ? "text-amber-700"
-                  : "text-emerald-700";
+                  ? "text-pos-warn"
+                  : "text-pos-accent";
             return (
               <div
                 key={p.id}
@@ -234,7 +234,7 @@ export function ProductsListClient({ canManage }: { canManage: boolean }) {
                   </div>
                 </div>
                 {p.costPrice && Number(p.costPrice) > 0 && (
-                  <p className="text-[11px] px-2 py-0.5 rounded bg-green-50 text-green-800 inline-block mb-2">
+                  <p className="text-[11px] px-2 py-0.5 rounded bg-pos-accent-soft text-pos-accent inline-block mb-2">
                     Marge {(Number(p.salePrice) - Number(p.costPrice)).toFixed(3)} TND
                     ({Number(p.salePrice) > 0 ? (((Number(p.salePrice) - Number(p.costPrice)) / Number(p.salePrice)) * 100).toFixed(0) : "0"}%)
                   </p>
@@ -258,7 +258,7 @@ export function ProductsListClient({ canManage }: { canManage: boolean }) {
                       <button
                         type="button"
                         onClick={() => deactivate(p.id)}
-                        className="text-xs text-red-600 hover:underline ml-auto"
+                        className="text-xs text-pos-danger hover:underline ml-auto"
                       >
                         Désactiver
                       </button>

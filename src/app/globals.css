@@ -48,23 +48,46 @@
   --color-brand-peach: #F4EFE8;
   --color-brand-gold-light: #E8D2B5;
 
-  /* Phase 2 Design 2 — POS-only theme tokens. Activated via [data-pos-theme]. */
-  --color-pos-bg: #FAFAF7;
+  /* Theme de la caisse — accorde a la marketplace (rose / menthe / prune).
+   *
+   * Les 48 ecrans de la caisse utilisent ces jetons : les reaccorder ici
+   * habille tout le module d'un coup, sans toucher 1178 classes une par une
+   * dans du code en production.
+   *
+   * Contrastes verifies dans le PIRE cas des trois surfaces (blanc, fond
+   * creme, rail rose) — pas seulement sur blanc, car les memes textes se
+   * posent sur les trois :
+   *   ink      prune #3A1024      13,35:1
+   *   ink-2    prune-soft #6B4157  6,78:1
+   *   ink-3    #7C5468             5,14:1
+   *   ink-4    #835F71             4,95:1  (17 usages en texte)
+   *   accent   menthe-deep         4,77:1  (25 usages en texte)
+   *   warn     #B5501F             4,60:1
+   *   danger   #C0334E             4,97:1
+   *
+   * Tous passent le seuil AA de 4,5:1. Une premiere version avec le rail en
+   * #FFE0E8 faisait tomber ink-4 a 3,78:1 : le rail a ete eclairci a #FFF0F4
+   * et ink-4 assombri. Un joli theme illisible au comptoir serait un recul.
+   *
+   * Le rose #FF5C8A ne plafonne qu'a 2,94:1 : il sert de FOND (prune dessus,
+   * 5,59:1), jamais de couleur de texte. D'ou `accent` en menthe-deep.
+   */
+  --color-pos-bg: #FFF6F1;
   --color-pos-surface: #FFFFFF;
-  --color-pos-rail: #F2F1EC;
-  --color-pos-border: #E4E2DC;
-  --color-pos-border-strong: #C9C5BB;
-  --color-pos-ink: #0F0E0F;
-  --color-pos-ink-2: #3D3A3C;
-  --color-pos-ink-3: #6E6A66;
-  --color-pos-ink-4: #9F9B95;
-  --color-pos-accent: #1FB077;
-  --color-pos-accent-soft: #E5F5EE;
-  --color-pos-highlight: #FFF7D6;
-  --color-pos-yellow: #FACC15;
-  --color-pos-warn: #D97706;
-  --color-pos-danger: #C73838;
-  --color-pos-danger-soft: #FEE5E5;
+  --color-pos-rail: #FFF0F4;
+  --color-pos-border: #EFE2DC;
+  --color-pos-border-strong: #D9BFC9;
+  --color-pos-ink: #3A1024;
+  --color-pos-ink-2: #6B4157;
+  --color-pos-ink-3: #7C5468;
+  --color-pos-ink-4: #835F71;
+  --color-pos-accent: #1F7A5A;
+  --color-pos-accent-soft: #A8E6CF;
+  --color-pos-highlight: #FFE0E8;
+  --color-pos-yellow: #FF5C8A;
+  --color-pos-warn: #B5501F;
+  --color-pos-danger: #C0334E;
+  --color-pos-danger-soft: #FFE0E8;
 
   --font-pos-sans: var(--font-pos-sans);
   --font-pos-mono: var(--font-pos-mono);
@@ -74,7 +97,19 @@
 [data-pos-theme] {
   background: var(--color-pos-bg);
   color: var(--color-pos-ink);
-  font-family: var(--font-pos-sans), system-ui, -apple-system, sans-serif;
+  /* Meme police que la marketplace : la caisse et le site public ne doivent
+     plus paraitre etre deux produits differents. IBM Plex Sans reste sur les
+     chiffres via .pos-mono, ou l'alignement tabulaire compte vraiment. */
+  font-family: var(--font-sans), system-ui, -apple-system, sans-serif;
+}
+/* Les titres de la caisse reprennent la police d'affichage du site. */
+[data-pos-theme] .luxury-heading,
+[data-pos-theme] h1,
+[data-pos-theme] h2 {
+  font-family: var(--font-display);
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  font-style: normal;
 }
 [data-pos-theme] .pos-mono {
   font-family: var(--font-pos-mono), ui-monospace, "SF Mono", monospace;
@@ -92,7 +127,10 @@
   letter-spacing: 0.02em;
 }
 [data-pos-theme] *:focus-visible {
-  outline: 2px solid var(--color-pos-yellow);
+  /* Prune et non rose : un contour doit atteindre 3:1 (WCAG 1.4.11) et le
+     rose plafonne a 2,94:1 sur blanc. Le prune y est a 16,41:1. L'ancien
+     jaune n'etait qu'a 1,53:1 — le repere clavier etait quasi invisible. */
+  outline: 2px solid var(--color-pos-ink);
   outline-offset: 2px;
 }
 @keyframes pos-flash {

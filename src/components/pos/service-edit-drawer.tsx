@@ -177,9 +177,9 @@ export function ServiceEditDrawer({
   const statut = !form
     ? null
     : form.publishedToMarketplace && hasPhoto
-      ? { label: "En ligne", cls: "bg-green-50 text-green-800" }
+      ? { label: "En ligne", cls: "bg-pos-accent-soft text-pos-accent" }
       : form.publishedToMarketplace
-        ? { label: "Incomplet", cls: "bg-amber-50 text-amber-800" }
+        ? { label: "Incomplet", cls: "bg-pos-highlight text-pos-warn" }
         : { label: "Hors ligne", cls: "bg-pos-border text-pos-ink-2" };
 
   return (
@@ -212,12 +212,12 @@ export function ServiceEditDrawer({
         {loading ? (
           <p className="p-5 text-sm text-pos-ink-3">Chargement…</p>
         ) : !form ? (
-          <p className="p-5 text-sm text-red-600">{error ?? "Erreur"}</p>
+          <p className="p-5 text-sm text-pos-danger">{error ?? "Erreur"}</p>
         ) : (
           <>
             <div className="flex-1 p-5 space-y-5">
               {error && (
-                <div className="px-3 py-2 rounded bg-red-50 text-red-800 text-sm">{error}</div>
+                <div className="px-3 py-2 rounded bg-pos-danger-soft text-pos-danger text-sm">{error}</div>
               )}
 
               {/* ---- Section essentiel : ce qu'une caissiere corrige au quotidien ---- */}
@@ -322,7 +322,7 @@ export function ServiceEditDrawer({
                         max={5}
                       />
                       {!hasPhoto && (
-                        <p className="mt-2 text-xs text-amber-700">
+                        <p className="mt-2 text-xs text-pos-warn">
                           Une photo est nécessaire pour apparaître sur salonista.tn.
                         </p>
                       )}

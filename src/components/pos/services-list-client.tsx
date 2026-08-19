@@ -32,7 +32,7 @@ function StatusBadge({ offer, compact }: { offer: Offer; compact?: boolean }) {
 
   if (published && hasPhoto) {
     return (
-      <span className="inline-flex items-center gap-1 rounded bg-green-50 px-2 py-0.5 text-xs text-green-800">
+      <span className="inline-flex items-center gap-1 rounded bg-pos-accent-soft px-2 py-0.5 text-xs text-pos-accent">
         En ligne
       </span>
     );
@@ -43,7 +43,7 @@ function StatusBadge({ offer, compact }: { offer: Offer; compact?: boolean }) {
       <Link
         href={`/pos/services?edit=${offer.id}`}
         scroll={false}
-        className="inline-flex items-center gap-1 rounded bg-amber-50 px-2 py-0.5 text-xs text-amber-800 hover:bg-amber-100"
+        className="inline-flex items-center gap-1 rounded bg-pos-highlight px-2 py-0.5 text-xs text-pos-warn hover:bg-pos-highlight"
       >
         {compact ? "Photo manquante" : "Ajouter une photo"}
       </Link>
@@ -222,7 +222,7 @@ export function ServicesListClient({ initialOffers }: { initialOffers: Offer[] }
       </header>
 
       {error && (
-        <div className="mb-4 px-3 py-2 rounded bg-red-50 text-red-800 text-sm">
+        <div className="mb-4 px-3 py-2 rounded bg-pos-danger-soft text-pos-danger text-sm">
           {error}
         </div>
       )}
@@ -335,7 +335,7 @@ export function ServicesListClient({ initialOffers }: { initialOffers: Offer[] }
                     title="Cliquer pour activer/désactiver la TVA"
                     className={`px-2 py-0.5 rounded text-xs font-semibold ${
                       Number(o.taxRate) > 0
-                        ? "bg-emerald-50 text-emerald-700 hover:bg-emerald-100"
+                        ? "bg-pos-accent-soft text-pos-accent hover:bg-pos-accent-soft"
                         : "bg-pos-bg text-pos-ink-3 hover:bg-pos-border/40"
                     }`}
                   >
@@ -397,7 +397,7 @@ export function ServicesListClient({ initialOffers }: { initialOffers: Offer[] }
                 disabled={toggling === o.id}
                 className={`px-2 py-1 rounded text-xs font-semibold ${
                   Number(o.taxRate) > 0
-                    ? "bg-emerald-50 text-emerald-700"
+                    ? "bg-pos-accent-soft text-pos-accent"
                     : "bg-pos-bg text-pos-ink-3 border border-pos-border"
                 }`}
               >

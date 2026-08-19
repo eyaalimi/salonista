@@ -55,7 +55,7 @@ function startOfWeek(d: Date): Date {
 
 function blockClass(b: CalendarBooking): string {
   if (b.status === "CANCELLED")
-    return "border border-gray-300 bg-gray-50 text-gray-400 line-through";
+    return "border border-pos-border-strong bg-pos-bg text-pos-ink-4 line-through";
   if (b.phantom || b.walkIn)
     return "border border-dashed border-brand-gold-soft text-brand-ink";
   if (b.createdViaPos)

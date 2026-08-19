@@ -140,7 +140,7 @@ export function Step1Info({
               <button
                 type="button"
                 onClick={() => setLogoUrl(null)}
-                className="inline-flex items-center gap-1 text-brand-ink-soft hover:text-red-600"
+                className="inline-flex items-center gap-1 text-brand-ink-soft hover:text-pos-danger"
               >
                 <X size={12} /> Retirer
               </button>
@@ -266,7 +266,7 @@ export function Step1Info({
       )}
 
       {error && (
-        <div className="text-sm text-red-600 bg-red-50 border border-red-100 rounded-lg px-3 py-2">
+        <div className="text-sm text-pos-danger bg-pos-danger-soft border border-pos-danger rounded-lg px-3 py-2">
           {error}
         </div>
       )}

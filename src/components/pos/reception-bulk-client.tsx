@@ -106,7 +106,7 @@ export function ReceptionBulkClient({ products }: { products: Product[] }) {
       </header>
 
       {error && (
-        <div className="mb-4 rounded border border-red-300 bg-red-50 px-3 py-2 text-sm text-red-800">
+        <div className="mb-4 rounded border border-pos-danger bg-pos-danger-soft px-3 py-2 text-sm text-pos-danger">
           {error}
         </div>
       )}

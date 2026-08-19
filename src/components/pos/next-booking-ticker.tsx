@@ -91,9 +91,9 @@ export function NextBookingTicker() {
 
   const pillClass = `flex items-center gap-2 rounded-full text-[11px] font-medium ${
     isNow
-      ? "bg-emerald-500/20 text-emerald-300 border border-emerald-400/40 animate-pulse"
+      ? "bg-pos-accent/20 text-pos-accent border border-pos-accent/40 animate-pulse"
       : isSoon
-        ? "bg-amber-500/15 text-amber-300 border border-amber-400/30"
+        ? "bg-pos-warn/15 text-pos-warn border border-pos-warn/30"
         : "bg-white/5 text-pos-ink-4 border border-white/10"
   }`;
   const title = `${formatTime(next.startTime)} — ${customerName(next)} · ${next.items.map((i) => i.name).join(", ")}`;

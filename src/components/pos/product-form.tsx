@@ -300,7 +300,7 @@ export function ProductForm(props: Props) {
           </label>
         )}
 
-        {error && <p className="text-sm text-red-600">{error}</p>}
+        {error && <p className="text-sm text-pos-danger">{error}</p>}
 
         <div className="flex justify-end gap-3 pt-2 border-t border-brand-line">
           <Link
