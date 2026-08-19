@@ -108,7 +108,11 @@ function ReservationDetailPageInner() {
               <svg className="h-4 w-4 text-menthe-deep" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
               </svg>
-              <span className="text-sm font-semibold text-menthe-deep">Vérifié par le salon</span>
+              {/* `prune` et non `menthe-deep` : sur fond menthe, menthe-deep
+                  donne 3,73:1 — sous les 4,5:1 qu'exige ce texte de 14px.
+                  Le prune y atteint 11,63:1. L'icone garde menthe-deep : un
+                  pictogramme releve du seuil de 3:1, qu'elle depasse. */}
+              <span className="text-sm font-semibold text-prune">Vérifié par le salon</span>
             </span>
           ) : (
             <span className="inline-flex items-center rounded-[var(--radius-pill)] border-2 border-hairline px-4 py-2 text-sm font-semibold text-prune">

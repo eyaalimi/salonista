@@ -246,6 +246,11 @@ function PaiementPageInner() {
             {booking.items.map((i) => i.offer.title).join(", ")}
           </h3>
           <p className="mt-1 text-sm text-prune-soft">{booking.items[0]?.offer.provider.salonName}</p>
+          {/* L'HEURE remplace l'annee : sur un ecran de paiement, savoir qu'on
+              paie pour « jeudi 20 aout a 16:00 » est plus utile que l'annee,
+              qui est presque toujours l'annee en cours. La page du QR, elle,
+              garde l'annee : c'est un justificatif qu'on peut relire plus
+              tard. Changement de contenu assume, pas un effet de bord. */}
           {booking.items[0]?.slot && (
             <p className="mt-1 text-sm text-prune-soft">
               {new Date(booking.items[0].slot.startTime).toLocaleDateString("fr-TN", {
@@ -264,10 +269,13 @@ function PaiementPageInner() {
 
           {booking.paymentStatus === "PAID" && (
             <div className="mt-4 rounded-[var(--radius-panel)] bg-menthe p-3 text-center">
-              <p className="text-sm font-semibold uppercase tracking-[0.1em] text-menthe-deep">Déjà payée</p>
+              {/* `prune` et non `menthe-deep` : sur fond menthe, menthe-deep
+                  donne 3,73:1 — sous le seuil de 4,5:1 qu'exige ce texte de
+                  14px. Le prune y atteint 11,63:1. */}
+              <p className="text-sm font-semibold uppercase tracking-[0.1em] text-prune">Déjà payée</p>
               <Link
                 href={`/cliente/reservation?id=${booking.id}`}
-                className="ds-press ds-focus mt-2 inline-block text-sm font-semibold text-menthe-deep underline"
+                className="ds-press ds-focus mt-2 inline-block text-sm font-semibold text-prune underline"
               >
                 Voir mon QR code
               </Link>
