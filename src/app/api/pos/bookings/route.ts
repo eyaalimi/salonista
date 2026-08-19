@@ -1,6 +1,5 @@
 import { NextRequest } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { requireModule } from "@/lib/modules";
 import { requirePermission, requireEmployee, toResponse } from "@/lib/employee-session";
 
 export async function GET(req: NextRequest) {
@@ -12,11 +11,10 @@ export async function GET(req: NextRequest) {
     if (r) return r;
     throw err;
   }
-  try {
-    await requireModule(employee.providerId, "POS");
-  } catch {
-    return Response.json({ error: "Module POS non activé" }, { status: 403 });
-  }
+  // Pas de garde de module ici : les rendez-vous sont du metier, pas de la
+  // caisse. Une reservation prise par une cliente sur la marketplace doit
+  // apparaitre dans le calendrier du salon meme sans le module caisse — sinon
+  // le salon ne voit jamais la cliente qu'il doit recevoir.
   if (!employee.permissions["bookings.view"]) {
     return Response.json({ error: "Permission insuffisante" }, { status: 403 });
   }
@@ -90,11 +88,7 @@ export async function POST(req: NextRequest) {
     if (r) return r;
     throw err;
   }
-  try {
-    await requireModule(employee.providerId, "POS");
-  } catch {
-    return Response.json({ error: "Module POS non activé" }, { status: 403 });
-  }
+  // Voir le GET : prendre un rendez-vous releve du metier, pas de la caisse.
 
   const body = (await req.json().catch(() => null)) as CreateBody | null;
   if (!body || !body.startTime) {

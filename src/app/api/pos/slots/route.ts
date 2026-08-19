@@ -17,7 +17,6 @@
 import { NextRequest } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireEmployee, toResponse } from "@/lib/employee-session";
-import { requireModule } from "@/lib/modules";
 
 export async function GET(req: NextRequest) {
   let employee;
@@ -28,11 +27,8 @@ export async function GET(req: NextRequest) {
     if (r) return r;
     throw err;
   }
-  try {
-    await requireModule(employee.providerId, "POS");
-  } catch {
-    return Response.json({ error: "Module POS non activé" }, { status: 403 });
-  }
+  // Pas de garde de module : proposer un creneau sert a prendre un rendez-vous,
+  // ce qui est du metier. Voir `api/pos/bookings/route.ts`.
   if (!employee.permissions["bookings.view"]) {
     return Response.json({ error: "Permission insuffisante" }, { status: 403 });
   }

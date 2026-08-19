@@ -50,6 +50,7 @@ export default async function PosLayout({ children }: { children: React.ReactNod
                 role: employee.role,
                 permissions: employee.permissions,
               }}
+              hasPos={activeModules.includes("POS")}
             />
           </div>
           {/* Rail lateral a toutes les tailles : 56px sur mobile, 80px sur
