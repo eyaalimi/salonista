@@ -26,23 +26,23 @@ export default function ClienteFidelitePage() {
   }, []);
 
   if (loading) {
-    return <p className="p-6 text-sm text-brand-ink-soft">Chargement…</p>;
+    return <p className="p-6 text-base text-prune-soft">Chargement…</p>;
   }
 
   return (
-    <div className="p-6 max-w-5xl mx-auto">
-      <p className="luxury-badge mb-2">Fidélité</p>
-      <h1 className="luxury-heading text-3xl text-brand-ink mb-6">Mes cartes de fidélité</h1>
+    <div className="mx-auto max-w-5xl p-6">
+      <p className="mb-2 text-sm font-semibold uppercase tracking-[0.12em] text-prune-soft">Fidélité</p>
+      <h1 className="ds-display mb-6 text-3xl text-prune">Mes cartes de fidélité</h1>
 
       {wallets.length === 0 ? (
-        <div className="rounded-2xl border border-brand-line bg-white p-10 text-center">
-          <p className="text-sm text-brand-ink mb-2">Vous n&apos;avez encore aucune carte de fidélité.</p>
-          <p className="text-xs text-brand-ink-soft">
-            Visitez un salon partenaire pour commencer à gagner des points.
+        <div className="rounded-[var(--radius-card)] border-2 border-hairline bg-white p-10 text-center">
+          <p className="mb-2 text-base text-prune">Tu n&apos;as encore aucune carte de fidélité.</p>
+          <p className="text-sm text-prune-soft">
+            Passe dans un salon partenaire pour commencer à gagner des points.
           </p>
         </div>
       ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {wallets.map((w) => {
             const dpp = Number(w.dinarPerPoint);
             const valueM = Math.round(w.balance * dpp * 1000);
@@ -50,25 +50,29 @@ export default function ClienteFidelitePage() {
               <Link
                 key={w.id}
                 href={`/cliente/fidelite/${w.id}`}
-                className="bg-white border border-brand-line rounded-2xl p-5 hover:border-brand-gold transition-colors"
+                className="ds-press ds-focus rounded-[var(--radius-card)] border-2 border-hairline bg-white p-5 hover:border-rose"
               >
-                <div className="flex items-center gap-3 mb-4">
-                  <div className="w-12 h-12 rounded-full bg-brand-sand border border-brand-line flex items-center justify-center text-lg font-semibold text-brand-ink">
+                <div className="mb-4 flex items-center gap-3">
+                  <div className="flex h-12 w-12 items-center justify-center rounded-full bg-rose-soft text-lg font-bold text-prune">
                     {w.provider.salonName.charAt(0)}
                   </div>
-                  <div>
-                    <p className="font-medium text-brand-ink">{w.provider.salonName}</p>
+                  <div className="min-w-0">
+                    <p className="truncate text-base font-semibold text-prune">{w.provider.salonName}</p>
                     {w.provider.city && (
-                      <p className="text-xs text-brand-ink-soft">{w.provider.city}</p>
+                      <p className="text-sm text-prune-soft">{w.provider.city}</p>
                     )}
                   </div>
                 </div>
-                <div className="border-t border-brand-line pt-4">
-                  <p className="luxury-heading text-3xl text-brand-ink">{w.balance} pts</p>
-                  <p className="text-xs text-brand-ink-soft">≈ {formatDT(fromMillimes(valueM))}</p>
+                <div className="rounded-[var(--radius-panel)] bg-menthe p-4 text-center">
+                  <p className="ds-display text-3xl text-menthe-deep">{w.balance} pts</p>
+                  {/* `prune` et non `menthe-deep` : sur fond menthe, menthe-deep
+                      donne 3,73:1 — suffisant pour le solde en 30px (seuil 3:1
+                      pour du texte large) mais PAS pour cette ligne en 14px,
+                      qui exige 4,5:1. Le prune y atteint 11,63:1. */}
+                  <p className="mt-1 text-sm font-semibold text-prune">≈ {formatDT(fromMillimes(valueM))}</p>
                 </div>
-                <p className="mt-4 text-xs text-brand-ink-soft">
-                  Dernière activité: {new Date(w.lastActivityAt).toLocaleDateString("fr-FR")}
+                <p className="mt-4 text-sm text-prune-soft">
+                  Dernière activité : {new Date(w.lastActivityAt).toLocaleDateString("fr-FR")}
                 </p>
               </Link>
             );
