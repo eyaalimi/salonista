@@ -91,7 +91,7 @@ function PaiementPageInner() {
       setResult(data);
       setStep("success");
     } catch {
-      setError("Erreur serveur, veuillez reessayer");
+      setError("Erreur serveur, réessaie dans un instant");
       setStep("form");
     }
     setLoading(false);
