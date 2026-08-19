@@ -1,468 +1,324 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
-import Link from "next/link";
-import {
-  ResponsiveContainer,
-  LineChart,
-  Line,
-  XAxis,
-  YAxis,
-  Tooltip,
-  CartesianGrid,
-  BarChart,
-  Bar,
-} from "recharts";
+/**
+ * Tableau de bord du salon — volontairement sans graphique.
+ *
+ * La version precedente affichait une courbe de revenu, deux diagrammes en
+ * barres et une carte de chaleur des heures, avec un vocabulaire de gestion
+ * (« revenu net », « ticket moyen », « heures d'affluence »). Pour une
+ * proprietaire qui n'a pas fait d'etudes de gestion, cela se lit comme un
+ * exercice de mathematiques : il faut dechiffrer avant de comprendre.
+ *
+ * Ici, chaque chiffre est accompagne de la phrase qui l'explique, en mots de
+ * tous les jours. On ne demande jamais de lire un axe ni d'interpreter une
+ * pente. Les donnees viennent des memes API qu'avant — seule la presentation
+ * change.
+ */
+
+import { useEffect, useState } from "react";
 import { formatDT } from "@/lib/money";
 
-type Range = { from: Date; to: Date };
+type Periode = "today" | "yesterday" | "7d" | "30d" | "thisMonth";
 
-type Summary = {
-  current: { netRevenue: string; paidCount: number; refundTotal: string; newCustomers: number; avgTicket: string | null };
-  previous: { netRevenue: string; paidCount: number; refundTotal: string; newCustomers: number };
-};
-
-type RevenuePoint = { key: string; revenue: string; transactions: number };
-type TopRow = { name: string; quantity: number; revenue: string };
-type EmployeeRow = { employeeId: string; name: string; sales: number; revenue: string; tips: string; itemsCount: number };
-type HeatmapCell = { dow: number; hour: number; count: number; revenue: string };
-type LowStockRow = { id: string; name: string; sku: string; stockQuantity: number; lowStockThreshold: number; lastSoldAt: string | null };
-
-const PRESETS = [
+const PERIODES: { value: Periode; label: string }[] = [
   { value: "today", label: "Aujourd'hui" },
   { value: "yesterday", label: "Hier" },
   { value: "7d", label: "7 derniers jours" },
   { value: "30d", label: "30 derniers jours" },
   { value: "thisMonth", label: "Ce mois" },
-  { value: "lastMonth", label: "Mois dernier" },
 ];
 
-function preset(value: string): Range {
+type Summary = {
+  current: {
+    netRevenue: string;
+    paidCount: number;
+    avgTicket: string | null;
+    newCustomers: number;
+  };
+  previous: { netRevenue: string; paidCount: number; newCustomers: number };
+};
+
+type Ligne = { name: string; quantity: number; revenue: string };
+type Produit = { id: string; name: string; stockQuantity: number };
+
+function bornes(p: Periode): { from: Date; to: Date } {
   const now = new Date();
-  const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-  const endOfToday = new Date(startOfToday.getTime() + 24 * 60 * 60 * 1000 - 1);
-  switch (value) {
+  const debutAujourdhui = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const finAujourdhui = new Date(debutAujourdhui.getTime() + 24 * 60 * 60 * 1000 - 1);
+  const jour = 24 * 60 * 60 * 1000;
+
+  switch (p) {
     case "today":
-      return { from: startOfToday, to: endOfToday };
-    case "yesterday": {
-      const f = new Date(startOfToday.getTime() - 24 * 60 * 60 * 1000);
-      const t = new Date(startOfToday.getTime() - 1);
-      return { from: f, to: t };
-    }
-    case "7d":
-      return { from: new Date(startOfToday.getTime() - 7 * 24 * 60 * 60 * 1000), to: endOfToday };
-    case "30d":
-      return { from: new Date(startOfToday.getTime() - 30 * 24 * 60 * 60 * 1000), to: endOfToday };
-    case "thisMonth":
-      return { from: new Date(now.getFullYear(), now.getMonth(), 1), to: endOfToday };
-    case "lastMonth":
+      return { from: debutAujourdhui, to: finAujourdhui };
+    case "yesterday":
       return {
-        from: new Date(now.getFullYear(), now.getMonth() - 1, 1),
-        to: new Date(now.getFullYear(), now.getMonth(), 0, 23, 59, 59, 999),
+        from: new Date(debutAujourdhui.getTime() - jour),
+        to: new Date(debutAujourdhui.getTime() - 1),
       };
-    default:
-      return { from: startOfToday, to: endOfToday };
+    case "7d":
+      return { from: new Date(debutAujourdhui.getTime() - 7 * jour), to: finAujourdhui };
+    case "30d":
+      return { from: new Date(debutAujourdhui.getTime() - 30 * jour), to: finAujourdhui };
+    case "thisMonth":
+      return { from: new Date(now.getFullYear(), now.getMonth(), 1), to: finAujourdhui };
   }
 }
 
-function deltaPct(curr: number, prev: number): { pct: number; sign: "+" | "−" | "" } {
-  if (prev === 0) return { pct: 0, sign: "" };
-  const diff = ((curr - prev) / prev) * 100;
-  return {
-    pct: Math.round(Math.abs(diff)),
-    sign: diff > 0 ? "+" : diff < 0 ? "−" : "",
-  };
+/**
+ * Compare deux periodes en une phrase, jamais en pourcentage seul.
+ *
+ * « +18 % » demande de savoir par rapport a quoi. « 45 TND de plus qu'hier »
+ * se comprend sans effort.
+ */
+function comparaison(actuel: number, precedent: number, periode: Periode): string | null {
+  if (precedent === 0) return null;
+  const ecart = actuel - precedent;
+  if (Math.abs(ecart) < 0.001) return `Comme ${motPrecedent(periode)}`;
+  const sens = ecart > 0 ? "de plus" : "de moins";
+  return `${formatDT(Math.abs(ecart).toFixed(3))} ${sens} ${motPrecedent(periode)}`;
+}
+
+function comparaisonNombre(actuel: number, precedent: number, periode: Periode): string | null {
+  if (precedent === 0) return null;
+  const ecart = actuel - precedent;
+  if (ecart === 0) return `Comme ${motPrecedent(periode)}`;
+  const sens = ecart > 0 ? "de plus" : "de moins";
+  return `${Math.abs(ecart)} ${sens} ${motPrecedent(periode)}`;
+}
+
+function motPrecedent(p: Periode): string {
+  switch (p) {
+    case "today":
+      return "qu'hier";
+    case "yesterday":
+      return "que l'avant-veille";
+    case "7d":
+      return "que les 7 jours d'avant";
+    case "30d":
+      return "que les 30 jours d'avant";
+    case "thisMonth":
+      return "que le mois dernier";
+  }
 }
 
 export function AnalyticsClient() {
-  const router = useRouter();
-  const search = useSearchParams();
-
-  const initialRange = useMemo(() => {
-    const fromStr = search.get("from");
-    const toStr = search.get("to");
-    if (fromStr && toStr) return { from: new Date(fromStr), to: new Date(toStr) };
-    return preset("7d");
-  }, [search]);
-
-  const [range, setRange] = useState<Range>(initialRange);
-  const [presetValue, setPresetValue] = useState("7d");
-
+  const [periode, setPeriode] = useState<Periode>("today");
   const [summary, setSummary] = useState<Summary | null>(null);
-  const [revenue, setRevenue] = useState<RevenuePoint[]>([]);
-  const [topServices, setTopServices] = useState<TopRow[]>([]);
-  const [topProducts, setTopProducts] = useState<TopRow[]>([]);
-  const [byEmployee, setByEmployee] = useState<EmployeeRow[]>([]);
-  const [heatmap, setHeatmap] = useState<HeatmapCell[]>([]);
-  const [lowStock, setLowStock] = useState<LowStockRow[]>([]);
-  const [margin, setMargin] = useState<{ total: string; excludedCount: number } | null>(null);
-  const [loading, setLoading] = useState(true);
-
-  const setPreset = (v: string) => {
-    setPresetValue(v);
-    setRange(preset(v));
-  };
-
-  const load = useCallback(async () => {
-    setLoading(true);
-    const params = new URLSearchParams({
-      from: range.from.toISOString(),
-      to: range.to.toISOString(),
-    });
-    // Reflect in URL for shareable links.
-    router.replace(`/pos/analytics?${params.toString()}`, { scroll: false });
-
-    try {
-      const [s, r, ts, tp, be, hm, ls, mg] = await Promise.all([
-        fetch(`/api/pos/analytics/summary?${params}`).then((r) => r.json()),
-        fetch(`/api/pos/analytics/revenue?${params}`).then((r) => r.json()),
-        fetch(`/api/pos/analytics/top-services?${params}`).then((r) => r.json()),
-        fetch(`/api/pos/analytics/top-products?${params}`).then((r) => r.json()),
-        fetch(`/api/pos/analytics/by-employee?${params}`).then((r) => r.json()),
-        fetch(`/api/pos/analytics/heatmap?${params}`).then((r) => r.json()),
-        fetch(`/api/pos/analytics/low-stock`).then((r) => r.json()),
-        fetch(`/api/pos/analytics/product-margin?${params}`).then((r) => r.ok ? r.json() : null).catch(() => null),
-      ]);
-      setSummary(s);
-      setRevenue(r.points ?? []);
-      setTopServices(ts.top ?? []);
-      setTopProducts(tp.top ?? []);
-      setByEmployee(be.rows ?? []);
-      setHeatmap(hm.cells?.flat() ?? []);
-      setLowStock(ls.products ?? []);
-      setMargin(mg ?? null);
-    } finally {
-      setLoading(false);
-    }
-  }, [range, router]);
+  const [services, setServices] = useState<Ligne[]>([]);
+  const [produits, setProduits] = useState<Ligne[]>([]);
+  const [stockFaible, setStockFaible] = useState<Produit[]>([]);
+  const [chargement, setChargement] = useState(true);
 
   useEffect(() => {
-    load();
-  }, [load]);
+    // `annule` evite d'ecrire l'etat d'une periode abandonnee : si la
+    // proprietaire change de periode pendant le chargement, la reponse lente
+    // de la precedente ecraserait sinon la nouvelle.
+    let annule = false;
+    const { from, to } = bornes(periode);
+    const q = `from=${from.toISOString()}&to=${to.toISOString()}`;
+
+    async function charger() {
+      try {
+        const [s, ts, tp, ls] = await Promise.all([
+          fetch(`/api/pos/analytics/summary?${q}`).then((r) => (r.ok ? r.json() : null)),
+          fetch(`/api/pos/analytics/top-services?${q}`).then((r) => (r.ok ? r.json() : null)),
+          fetch(`/api/pos/analytics/top-products?${q}`).then((r) => (r.ok ? r.json() : null)),
+          fetch(`/api/pos/analytics/low-stock`).then((r) => (r.ok ? r.json() : null)),
+        ]);
+        if (annule) return;
+        setSummary(s);
+        // Les deux routes renvoient `{ top }` — verifie dans le code des API,
+        // pas devine : une cle erronee afficherait des listes vides sans erreur.
+        setServices(ts?.top ?? []);
+        setProduits(tp?.top ?? []);
+        setStockFaible(ls?.products ?? []);
+      } finally {
+        if (!annule) setChargement(false);
+      }
+    }
+
+    charger();
+    return () => {
+      annule = true;
+    };
+  }, [periode]);
+
+  const gagne = summary ? Number(summary.current.netRevenue) : 0;
+  const clientes = summary?.current.paidCount ?? 0;
+  const moyenne = summary?.current.avgTicket;
+  const nouvelles = summary?.current.newCustomers ?? 0;
 
   return (
-    <div className="md:p-6 p-4 max-w-6xl mx-auto">
-      <div className="flex md:items-center items-start justify-between mb-4 md:mb-6 gap-3 flex-wrap">
-        <div className="min-w-0">
-          <p className="luxury-badge mb-2">Analytique</p>
-          <h1 className="luxury-heading md:text-3xl text-2xl text-brand-ink">Tableau de bord</h1>
+    <div className="min-h-full bg-creme p-5 md:p-8">
+      <div className="mx-auto max-w-3xl">
+        <h1 className="ds-display text-2xl text-prune md:text-3xl">Mon salon</h1>
+        <p className="mt-1 text-base text-prune-soft">
+          Voici comment marche ton salon.
+        </p>
+
+        {/* Choix de la periode — des boutons larges, pas un menu deroulant :
+            on voit toutes les options d'un coup et la cible fait 44px. */}
+        <div className="mt-5 flex flex-wrap gap-2">
+          {PERIODES.map((p) => {
+            const actif = p.value === periode;
+            return (
+              <button
+                key={p.value}
+                type="button"
+                onClick={() => {
+                  // Le voyant de chargement est arme ici, dans le clic, et non
+                  // dans l'effet : y appeler setState declenche un rendu en
+                  // cascade que React signale.
+                  if (p.value !== periode) {
+                    setChargement(true);
+                    setPeriode(p.value);
+                  }
+                }}
+                className={`ds-press ds-focus min-h-[44px] rounded-[var(--radius-pill)] border-2 px-4 text-sm font-semibold ${
+                  actif
+                    ? "border-rose bg-rose text-prune"
+                    : "border-hairline bg-white text-prune-soft hover:border-rose"
+                }`}
+              >
+                {p.label}
+              </button>
+            );
+          })}
         </div>
-        <Link
-          href="/pos"
-          className="text-xs uppercase tracking-[0.18em] text-brand-ink-soft hover:text-brand-ink shrink-0"
-        >
-          ← Caisse
-        </Link>
-      </div>
 
-      <div className="flex flex-wrap items-center gap-3 mb-6">
-        <select
-          value={presetValue}
-          onChange={(e) => setPreset(e.target.value)}
-          className="rounded border border-brand-line bg-white px-3 py-2 text-sm"
-        >
-          {PRESETS.map((p) => (
-            <option key={p.value} value={p.value}>{p.label}</option>
-          ))}
-        </select>
-        <a
-          href={`/api/pos/analytics/export.csv?from=${range.from.toISOString()}&to=${range.to.toISOString()}&type=sales`}
-          className="rounded-lg border border-brand-line bg-white px-3 py-2 text-xs uppercase tracking-[0.18em] text-brand-ink hover:border-brand-gold"
-        >
-          Export ventes (CSV)
-        </a>
-        <a
-          href={`/api/pos/analytics/export.csv?from=${range.from.toISOString()}&to=${range.to.toISOString()}&type=refunds`}
-          className="rounded-lg border border-brand-line bg-white px-3 py-2 text-xs uppercase tracking-[0.18em] text-brand-ink hover:border-brand-gold"
-        >
-          Export remboursements (CSV)
-        </a>
-        <a
-          href={`/api/pos/analytics/export.csv?from=${range.from.toISOString()}&to=${range.to.toISOString()}&type=drawer`}
-          className="rounded-lg border border-brand-line bg-white px-3 py-2 text-xs uppercase tracking-[0.18em] text-brand-ink hover:border-brand-gold"
-        >
-          Export caisse (CSV)
-        </a>
-      </div>
-
-      {/* KPI tiles */}
-      {summary && (
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-          <KpiTile
-            label="Revenu net"
-            value={formatDT(summary.current.netRevenue)}
-            delta={deltaPct(Number(summary.current.netRevenue), Number(summary.previous.netRevenue))}
-          />
-          <KpiTile
-            label="Ventes payées"
-            value={String(summary.current.paidCount)}
-            delta={deltaPct(summary.current.paidCount, summary.previous.paidCount)}
-          />
-          <KpiTile
-            label="Ticket moyen"
-            value={summary.current.avgTicket ? formatDT(summary.current.avgTicket) : "—"}
-          />
-          <KpiTile
-            label="Nouveaux clients"
-            value={String(summary.current.newCustomers)}
-            delta={deltaPct(summary.current.newCustomers, summary.previous.newCustomers)}
-          />
-        </div>
-      )}
-
-      {/* Product margin estimation card */}
-      {margin && (
-        <div className="rounded-2xl border border-brand-line bg-white p-5 mb-6">
-          <p className="text-[10px] uppercase tracking-[0.18em] text-brand-ink-soft">
-            Marge produits — estimation
-          </p>
-          <p className="luxury-heading text-2xl text-brand-ink mt-1">
-            {Number(margin.total).toFixed(3)} TND
-          </p>
-          {margin.excludedCount > 0 && (
-            <p className="mt-1 text-[10px] uppercase tracking-[0.18em] text-brand-ink-soft">
-              {margin.excludedCount} produit·s sans coût exclu·s du calcul
-            </p>
-          )}
-        </div>
-      )}
-
-      {/* Revenue chart */}
-      <div className="rounded-2xl border border-brand-line bg-white p-6 mb-6">
-        <h2 className="luxury-heading text-lg text-brand-ink mb-3">Revenu</h2>
-        {revenue.length === 0 ? (
-          <p className="text-sm text-brand-ink-soft py-12 text-center">
-            Aucune donnée pour cette période.
-          </p>
+        {chargement ? (
+          <p className="mt-8 text-base text-prune-soft">Chargement…</p>
         ) : (
-          <div style={{ height: 240 }}>
-            <ResponsiveContainer>
-              <LineChart data={revenue.map((p) => ({ ...p, revenueNum: Number(p.revenue) }))}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#E8E2D7" />
-                <XAxis dataKey="key" stroke="#4A4244" tick={{ fontSize: 11 }} />
-                <YAxis stroke="#4A4244" tick={{ fontSize: 11 }} />
-                <Tooltip
-                  formatter={(value) => {
-                    const n = typeof value === "number" ? value : Number(value);
-                    return [`${n.toFixed(3)} TND`, "Revenu"];
-                  }}
-                  contentStyle={{ fontSize: 12 }}
-                />
-                <Line
-                  type="monotone"
-                  dataKey="revenueNum"
-                  stroke="#D4A574"
-                  strokeWidth={2}
-                  dot={{ r: 3 }}
-                />
-              </LineChart>
-            </ResponsiveContainer>
-          </div>
+          <>
+            {/* Le chiffre qui compte, seul et en grand. */}
+            <div className="mt-6 rounded-[var(--radius-card)] border-2 border-hairline bg-menthe p-6 md:p-8">
+              <p className="text-base font-semibold text-prune">Tu as gagné</p>
+              <p className="ds-display mt-1 text-4xl text-prune md:text-5xl">
+                {formatDT(summary?.current.netRevenue ?? "0")}
+              </p>
+              {summary && (
+                <p className="mt-2 text-sm font-semibold text-prune">
+                  {comparaison(gagne, Number(summary.previous.netRevenue), periode) ??
+                    "Première période enregistrée"}
+                </p>
+              )}
+            </div>
+
+            <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2">
+              <Carte
+                titre="Clientes servies"
+                valeur={String(clientes)}
+                phrase={
+                  summary
+                    ? comparaisonNombre(clientes, summary.previous.paidCount, periode) ??
+                      "Sur cette période"
+                    : ""
+                }
+              />
+              <Carte
+                titre="Chaque cliente dépense en moyenne"
+                valeur={moyenne ? formatDT(moyenne) : "—"}
+                phrase={
+                  clientes > 0
+                    ? "En moyenne, par passage en caisse"
+                    : "Aucune vente sur cette période"
+                }
+              />
+              <Carte
+                titre="Nouvelles clientes"
+                valeur={String(nouvelles)}
+                phrase={
+                  summary
+                    ? comparaisonNombre(nouvelles, summary.previous.newCustomers, periode) ??
+                      "Elles viennent pour la première fois"
+                    : ""
+                }
+              />
+              <Carte
+                titre="Ton service le plus demandé"
+                valeur={services[0]?.name ?? "—"}
+                phrase={
+                  services[0]
+                    ? `${services[0].quantity} fois sur cette période`
+                    : "Aucun service vendu sur cette période"
+                }
+              />
+            </div>
+
+            <Palmares titre="Tes services les plus vendus" lignes={services} vide="Aucun service vendu sur cette période." />
+            <Palmares titre="Tes produits les plus vendus" lignes={produits} vide="Aucun produit vendu sur cette période." />
+
+            {/* Le seul bloc qui appelle une action : il est en rose. */}
+            {stockFaible.length > 0 && (
+              <div className="mt-6 rounded-[var(--radius-card)] border-2 border-rose bg-rose-soft p-5 md:p-6">
+                <h2 className="ds-display text-lg text-prune">
+                  Il faut racheter {stockFaible.length === 1 ? "ce produit" : "ces produits"}
+                </h2>
+                <p className="mt-1 text-sm text-prune-soft">
+                  Il t&apos;en reste très peu en boutique.
+                </p>
+                <ul className="mt-4 space-y-2">
+                  {stockFaible.map((p) => (
+                    <li
+                      key={p.id}
+                      className="flex items-center justify-between gap-3 rounded-[var(--radius-panel)] bg-white px-4 py-3"
+                    >
+                      <span className="min-w-0 truncate text-base text-prune">{p.name}</span>
+                      <span className="shrink-0 text-sm font-semibold text-prune">
+                        {p.stockQuantity === 0
+                          ? "Plus rien"
+                          : `${p.stockQuantity} restant${p.stockQuantity > 1 ? "s" : ""}`}
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+          </>
         )}
       </div>
-
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-        <TopChart title="Top services" data={topServices} />
-        <TopChart title="Top produits" data={topProducts} />
-      </div>
-
-      {/* Heatmap */}
-      <div className="rounded-2xl border border-brand-line bg-white p-6 mb-6">
-        <h2 className="luxury-heading text-lg text-brand-ink mb-3">
-          Heures d&apos;affluence
-        </h2>
-        <Heatmap cells={heatmap} />
-      </div>
-
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <div className="rounded-2xl border border-brand-line bg-white p-6">
-          <h2 className="luxury-heading text-lg text-brand-ink mb-3">Revenu par employé</h2>
-          {byEmployee.length === 0 ? (
-            <p className="text-sm text-brand-ink-soft">Aucune donnée.</p>
-          ) : (
-            <div className="overflow-x-auto">
-            <table className="w-full text-sm min-w-[420px]">
-              <thead className="text-left text-[10px] uppercase tracking-[0.18em] text-brand-ink-soft">
-                <tr>
-                  <th className="py-2">Employé·e</th>
-                  <th className="py-2 text-right">Ventes</th>
-                  <th className="py-2 text-right">Revenu</th>
-                  <th className="py-2 text-right">Pourboires</th>
-                </tr>
-              </thead>
-              <tbody>
-                {byEmployee.map((r) => (
-                  <tr key={r.employeeId} className="border-t border-brand-line">
-                    <td className="py-2">{r.name}</td>
-                    <td className="py-2 text-right">{r.sales}</td>
-                    <td className="py-2 text-right">{formatDT(r.revenue)}</td>
-                    <td className="py-2 text-right">{formatDT(r.tips)}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-            </div>
-          )}
-        </div>
-
-        <div className="rounded-2xl border border-brand-line bg-white p-6">
-          <h2 className="luxury-heading text-lg text-brand-ink mb-3">Stock faible</h2>
-          {lowStock.length === 0 ? (
-            <p className="text-sm text-brand-ink-soft">Aucun produit à réapprovisionner.</p>
-          ) : (
-            <ul className="space-y-2 text-sm">
-              {lowStock.map((p) => (
-                <li
-                  key={p.id}
-                  className="flex justify-between border-b border-brand-line pb-2 last:border-0"
-                >
-                  <div>
-                    <p className="font-medium">{p.name}</p>
-                    <p className="text-xs text-brand-ink-soft">SKU {p.sku}</p>
-                  </div>
-                  <div className="text-right">
-                    <p
-                      className={
-                        p.stockQuantity <= 0
-                          ? "text-red-600"
-                          : "text-amber-700"
-                      }
-                    >
-                      {p.stockQuantity} / seuil {p.lowStockThreshold}
-                    </p>
-                    <Link
-                      href={`/pos/products/${p.id}/edit`}
-                      className="text-[10px] text-brand-gold hover:underline"
-                    >
-                      Réapprovisionner →
-                    </Link>
-                  </div>
-                </li>
-              ))}
-            </ul>
-          )}
-        </div>
-      </div>
-      {loading && (
-        <p className="mt-4 text-center text-xs text-brand-ink-soft">Chargement…</p>
-      )}
     </div>
   );
 }
 
-function KpiTile({
-  label,
-  value,
-  delta,
-}: {
-  label: string;
-  value: string;
-  delta?: { pct: number; sign: "+" | "−" | "" };
-}) {
+function Carte({ titre, valeur, phrase }: { titre: string; valeur: string; phrase: string }) {
   return (
-    <div className="rounded-2xl border border-brand-line bg-white p-5">
-      <p className="text-[10px] uppercase tracking-[0.18em] text-brand-ink-soft">{label}</p>
-      <p className="luxury-heading text-2xl text-brand-ink mt-1">{value}</p>
-      {delta && delta.sign && (
-        <p
-          className={`mt-1 text-[10px] uppercase tracking-[0.18em] ${
-            delta.sign === "+" ? "text-emerald-700" : "text-red-700"
-          }`}
-        >
-          {delta.sign}
-          {delta.pct}% vs période précédente
-        </p>
-      )}
+    <div className="rounded-[var(--radius-card)] border-2 border-hairline bg-white p-5">
+      <p className="text-sm font-semibold text-prune-soft">{titre}</p>
+      <p className="ds-display mt-1 truncate text-2xl text-prune">{valeur}</p>
+      {phrase && <p className="mt-1 text-sm text-prune-soft">{phrase}</p>}
     </div>
   );
 }
 
-function TopChart({ title, data }: { title: string; data: TopRow[] }) {
+/**
+ * Un classement en liste numerotee plutot qu'en diagramme en barres : la
+ * longueur d'une barre se compare a l'oeil, un rang se lit.
+ */
+function Palmares({ titre, lignes, vide }: { titre: string; lignes: Ligne[]; vide: string }) {
   return (
-    <div className="rounded-2xl border border-brand-line bg-white p-6">
-      <h2 className="luxury-heading text-lg text-brand-ink mb-3">{title}</h2>
-      {data.length === 0 ? (
-        <p className="text-sm text-brand-ink-soft py-8 text-center">Aucune donnée.</p>
+    <div className="mt-6 rounded-[var(--radius-card)] border-2 border-hairline bg-white p-5 md:p-6">
+      <h2 className="ds-display text-lg text-prune">{titre}</h2>
+      {lignes.length === 0 ? (
+        <p className="mt-3 text-base text-prune-soft">{vide}</p>
       ) : (
-        <div style={{ height: 220 }}>
-          <ResponsiveContainer>
-            <BarChart
-              data={data.map((d) => ({ ...d, revenueNum: Number(d.revenue) }))}
-              layout="vertical"
-              margin={{ left: 20 }}
-            >
-              <XAxis type="number" stroke="#4A4244" tick={{ fontSize: 11 }} />
-              <YAxis
-                dataKey="name"
-                type="category"
-                stroke="#4A4244"
-                tick={{ fontSize: 11 }}
-                width={120}
-              />
-              <Tooltip
-                formatter={(value, _name, props) => {
-                  const n = typeof value === "number" ? value : Number(value);
-                  const qty = (props.payload as { quantity?: number }).quantity ?? 0;
-                  return [`${n.toFixed(3)} TND (qté ${qty})`, "Revenu"];
-                }}
-                contentStyle={{ fontSize: 12 }}
-              />
-              <Bar dataKey="revenueNum" fill="#D4A574" />
-            </BarChart>
-          </ResponsiveContainer>
-        </div>
-      )}
-    </div>
-  );
-}
-
-function Heatmap({ cells }: { cells: HeatmapCell[] }) {
-  const max = Math.max(1, ...cells.map((c) => c.count));
-  const days = ["Lun", "Mar", "Mer", "Jeu", "Ven", "Sam", "Dim"];
-
-  return (
-    <div className="overflow-x-auto">
-      <table className="text-xs">
-        <thead>
-          <tr>
-            <th className="px-1"></th>
-            {Array.from({ length: 24 }).map((_, h) => (
-              <th key={h} className="px-0.5 py-1 text-[9px] text-brand-ink-soft">
-                {h}
-              </th>
-            ))}
-          </tr>
-        </thead>
-        <tbody>
-          {days.map((day, dow) => (
-            <tr key={dow}>
-              <td className="px-1 text-[9px] uppercase tracking-[0.15em] text-brand-ink-soft">
-                {day}
-              </td>
-              {Array.from({ length: 24 }).map((_, h) => {
-                const cell = cells.find((c) => c.dow === dow && c.hour === h);
-                const intensity = cell ? cell.count / max : 0;
-                const opacity = intensity > 0 ? 0.15 + intensity * 0.85 : 0;
-                return (
-                  <td
-                    key={h}
-                    title={cell ? `${cell.count} ventes — ${cell.revenue} TND` : "0"}
-                    style={{
-                      background: opacity > 0 ? `rgba(212,165,116,${opacity})` : "transparent",
-                    }}
-                    className="h-6 w-6 border border-brand-line/30"
-                  >
-                    {cell && cell.count > 0 ? (
-                      <span className="block text-center text-[8px]">{cell.count}</span>
-                    ) : null}
-                  </td>
-                );
-              })}
-            </tr>
+        <ol className="mt-4 space-y-2">
+          {lignes.slice(0, 5).map((l, i) => (
+            <li key={`${l.name}-${i}`} className="flex items-center gap-3">
+              <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-rose-soft text-sm font-bold text-prune">
+                {i + 1}
+              </span>
+              <span className="min-w-0 flex-1 truncate text-base text-prune">{l.name}</span>
+              <span className="shrink-0 text-sm text-prune-soft">
+                {l.quantity} fois
+              </span>
+              <span className="shrink-0 text-base font-semibold text-prune">
+                {formatDT(l.revenue)}
+              </span>
+            </li>
           ))}
-        </tbody>
-      </table>
+        </ol>
+      )}
     </div>
   );
 }
