@@ -2,8 +2,7 @@ import { Metadata } from "next";
 import { prisma } from "@/lib/prisma";
 import Link from "next/link";
 import { UploadedImage } from "@/components/uploaded-image";
-import { NavAccount } from "@/components/nav-account";
-import { Logo } from "@/components/logo";
+import { HomeNav } from "@/components/home-nav";
 import { Chip } from "@/components/ui/chip";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
@@ -59,15 +58,13 @@ export default async function OffresPage({
 
   return (
     <div className="min-h-screen bg-creme">
-      {/* Nav */}
-      <nav className="bg-creme border-b border-hairline sticky top-0 z-50">
-        <div className="max-w-7xl mx-auto px-5 md:px-12 flex items-center justify-between h-16">
-          <Logo className="text-xl" />
-          <NavAccount />
-        </div>
-      </nav>
+      {/* La meme navigation que l'accueil : sans elle, cliquer sur « Offres »
+          faisait disparaitre les liens, et on ne pouvait plus revenir aux
+          salons ni a l'espace professionnel sans le bouton retour. */}
+      <HomeNav />
+      <div className="h-[104px] md:h-20" />
 
-      <div className="max-w-7xl mx-auto px-6 md:px-12 py-16 md:py-24">
+      <div className="mx-auto max-w-6xl px-4 py-10 md:py-16">
         <div className="text-center mb-10 flex flex-col gap-2">
           <h1 className="ds-display text-3xl md:text-4xl text-prune">
             {q ? (
