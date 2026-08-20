@@ -64,12 +64,14 @@ export function HomeNav() {
           >
             Espace professionnel
           </Link>
-          <a
-            href="#salons"
+          {/* `/#salons` et non `#salons` : cette navigation sert aussi sur
+              /offres, ou une ancre nue ne mene nulle part. */}
+          <Link
+            href="/#salons"
             className="ds-focus text-base text-prune-soft hover:text-rose rounded-[var(--radius-pill)] px-2 py-1"
           >
             Salons
-          </a>
+          </Link>
         </div>
 
         {/* Right-side: avatar (signed-in) or Connexion button */}
@@ -109,12 +111,12 @@ export function HomeNav() {
         >
           Offres
         </Link>
-        <a
-          href="#salons"
+        <Link
+          href="/#salons"
           className="ds-press ds-focus inline-flex min-h-[36px] shrink-0 items-center rounded-[var(--radius-pill)] border-2 border-hairline px-3 text-sm font-semibold text-prune-soft"
         >
           Salons
-        </a>
+        </Link>
         <Link
           href="/pro"
           className="ds-press ds-focus inline-flex min-h-[36px] shrink-0 items-center rounded-[var(--radius-pill)] border-2 border-hairline px-3 text-sm font-semibold text-prune-soft"
