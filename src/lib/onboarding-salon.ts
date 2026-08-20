@@ -44,7 +44,10 @@ export function etapesDemarrage(
     },
     {
       titre: "Ajoute ton premier service",
-      aide: "Une coupe, un soin, un massage — avec son prix et sa durée.",
+      // La photo est mentionnee parce qu'elle est OBLIGATOIRE pour etre
+      // visible : toutes les surfaces publiques filtrent sur elle. Un salon
+      // qui l'ignore publie une offre que personne ne trouvera.
+      aide: "Une coupe, un soin, un massage — avec son prix, sa durée et une photo.",
       href: "/pos/services",
       faite: nombreOffres > 0,
     },

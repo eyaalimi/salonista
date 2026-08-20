@@ -27,8 +27,18 @@ export default async function PosCalendarPage() {
     },
   });
 
+  // `photos: { isEmpty: false }` n'est pas un detail : TOUTES les surfaces
+  // publiques l'exigent (accueil, /offres, fiche salon, sitemap). Une offre
+  // sans photo est publiee mais introuvable. Sans ce filtre, l'etape se
+  // cochait, la carte disparaissait, et le salon se croyait en ligne alors
+  // qu'aucune cliente ne pouvait le trouver — exactement le piege que ce
+  // guide existe pour eviter.
   const nombreOffres = await prisma.offer.count({
-    where: { providerId: employee.providerId, publishedToMarketplace: true },
+    where: {
+      providerId: employee.providerId,
+      publishedToMarketplace: true,
+      photos: { isEmpty: false },
+    },
   });
 
   // La carte ne s'affiche ni pour un salon qui l'a masquee, ni pour un salon

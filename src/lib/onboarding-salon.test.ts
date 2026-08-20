@@ -46,6 +46,19 @@ describe("etapesDemarrage", () => {
     expect(e[1].faite).toBe(true);
   });
 
+  // `nombreOffres` doit etre compte AVEC le filtre `photos: { isEmpty: false }`
+  // (voir pos/calendar/page.tsx) : toutes les surfaces publiques l'exigent.
+  // Une offre sans photo ne compte donc pas, et l'appelant passe 0.
+  it("ne coche pas les services quand aucune offre n'est visible", () => {
+    const e = etapesDemarrage(PROFIL_COMPLET, 0);
+    expect(e[1].faite).toBe(false);
+  });
+
+  it("previent qu'une photo est necessaire", () => {
+    const e = etapesDemarrage(PROFIL_VIDE, 0);
+    expect(e[1].aide).toMatch(/photo/i);
+  });
+
   it("coche les horaires quand openingHours est renseigne", () => {
     const e = etapesDemarrage(PROFIL_COMPLET, 0);
     expect(e[2].faite).toBe(true);
