@@ -26,7 +26,9 @@ export default function ProPage() {
   return (
     <div className="min-h-screen bg-creme">
       <HomeNav />
-      <div className="h-14 md:h-20" />
+      {/* Compense la nav fixe : plus haute sur mobile depuis l'ajout de la
+          rangee de liens secondaires. */}
+      <div className="h-[104px] md:h-20" />
 
       <section className="mx-auto max-w-6xl px-4 pt-8">
         <p className="text-sm font-semibold uppercase tracking-[0.12em] text-prune-soft">

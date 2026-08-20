@@ -47,7 +47,10 @@ export function HomeNav() {
       <div className="mx-auto flex max-w-6xl items-center justify-between gap-3 px-4 min-h-[56px] md:h-20">
         <Logo className="text-xl md:text-2xl" />
 
-        {/* Desktop-only secondary links */}
+        {/* Liens secondaires — desktop. Leur version mobile est la rangee
+            defilante sous l'en-tete : la barre du bas ne mene ni aux salons
+            ni a l'espace professionnel, donc sans elle ces deux pages
+            etaient inatteignables au telephone. */}
         <div className="hidden md:flex items-center gap-8">
           <Link
             href="/offres"
@@ -59,7 +62,7 @@ export function HomeNav() {
             href="/pro"
             className="ds-focus text-base text-prune-soft hover:text-rose rounded-[var(--radius-pill)] px-2 py-1"
           >
-            Espace pro
+            Espace professionnel
           </Link>
           <a
             href="#salons"
@@ -93,6 +96,31 @@ export function HomeNav() {
             </Link>
           )}
         </div>
+      </div>
+
+      {/* Version mobile des liens secondaires. La barre du bas couvre
+          Accueil / Explorer / Mes RDV / Moi, mais ni les salons ni l'espace
+          professionnel : sans cette rangee, une proprietaire de salon au
+          telephone ne pouvait atteindre /pro par aucun chemin. */}
+      <div className="no-scrollbar flex gap-2 overflow-x-auto px-4 pb-2 md:hidden">
+        <Link
+          href="/offres"
+          className="ds-press ds-focus inline-flex min-h-[36px] shrink-0 items-center rounded-[var(--radius-pill)] border-2 border-hairline px-3 text-sm font-semibold text-prune-soft"
+        >
+          Offres
+        </Link>
+        <a
+          href="#salons"
+          className="ds-press ds-focus inline-flex min-h-[36px] shrink-0 items-center rounded-[var(--radius-pill)] border-2 border-hairline px-3 text-sm font-semibold text-prune-soft"
+        >
+          Salons
+        </a>
+        <Link
+          href="/pro"
+          className="ds-press ds-focus inline-flex min-h-[36px] shrink-0 items-center rounded-[var(--radius-pill)] border-2 border-hairline px-3 text-sm font-semibold text-prune-soft"
+        >
+          Espace professionnel
+        </Link>
       </div>
     </nav>
   );

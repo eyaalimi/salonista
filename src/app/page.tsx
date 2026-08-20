@@ -114,7 +114,9 @@ export default async function Home() {
       <HomeNav />
 
       {/* Spacer for fixed nav */}
-      <div className="h-14 md:h-20" />
+      {/* Compense la nav fixe : plus haute sur mobile depuis l'ajout de la
+          rangee de liens secondaires. */}
+      <div className="h-[104px] md:h-20" />
 
       {/* GREETING */}
       <Greeting />
