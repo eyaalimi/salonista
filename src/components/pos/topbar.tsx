@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { signOut } from "next-auth/react";
-import { LogOut } from "lucide-react";
+import { LogOut, Users } from "lucide-react";
 import { OnlineStatusBadge } from "@/components/pos/online-status-badge";
 import { CashDrawerIndicator } from "@/components/pos/cash-drawer-indicator";
 import { UniversalSearch } from "@/components/pos/universal-search";
@@ -51,6 +51,15 @@ export function PosTopbar({
   async function handleLogout() {
     setLoggingOut(true);
     await signOut({ redirect: false });
+    // Vers la connexion du site, pas vers l'ecran PIN : celui-ci sert a
+    // choisir un employe une fois le salon connecte, pas a se connecter. Y
+    // envoyer une proprietaire deconnectee lui demandait un code PIN alors
+    // qu'elle voulait simplement entrer avec son email.
+    window.location.href = "/login";
+  }
+
+  /** Bascule vers un autre membre de l'equipe, sans quitter le salon. */
+  function handleSwitchEmployee() {
     window.location.href = "/salon-pin";
   }
 
@@ -129,12 +138,24 @@ export function PosTopbar({
                   {employee.role}
                 </div>
               </div>
+              {/* Changer d'employe ne deconnecte pas le salon : c'est le
+                  geste courant quand une collegue prend le comptoir. La
+                  deconnexion, elle, ferme la session du salon entier. */}
+              <button
+                type="button"
+                role="menuitem"
+                onClick={handleSwitchEmployee}
+                className="w-full flex items-center gap-2 px-4 py-3 text-sm hover:bg-pos-highlight text-left"
+              >
+                <Users size={16} className="text-pos-ink-3" />
+                Basculer vers un autre membre
+              </button>
               <button
                 type="button"
                 role="menuitem"
                 onClick={handleLogout}
                 disabled={loggingOut}
-                className="w-full flex items-center gap-2 px-4 py-3 text-sm hover:bg-pos-highlight text-left disabled:opacity-50"
+                className="w-full flex items-center gap-2 border-t border-pos-border px-4 py-3 text-sm hover:bg-pos-highlight text-left disabled:opacity-50"
               >
                 <LogOut size={16} className="text-pos-danger" />
                 {loggingOut ? "Déconnexion…" : "Déconnexion"}
