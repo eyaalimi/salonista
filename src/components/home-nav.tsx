@@ -55,6 +55,12 @@ export function HomeNav() {
           >
             Offres
           </Link>
+          <Link
+            href="/pro"
+            className="ds-focus text-base text-prune-soft hover:text-rose rounded-[var(--radius-pill)] px-2 py-1"
+          >
+            Espace pro
+          </Link>
           <a
             href="#salons"
             className="ds-focus text-base text-prune-soft hover:text-rose rounded-[var(--radius-pill)] px-2 py-1"

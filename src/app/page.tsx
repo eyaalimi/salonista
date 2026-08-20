@@ -350,7 +350,7 @@ export default async function Home() {
       <section className="mt-8 bg-prune text-white">
         <div className="mx-auto max-w-6xl">
           <Link
-            href="/register"
+            href="/pro"
             className="ds-press ds-focus block border-b border-white/10 px-4 py-6 sm:py-10"
           >
             <p className="mb-2 text-sm font-semibold uppercase tracking-[0.12em] text-white/60">
