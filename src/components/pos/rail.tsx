@@ -81,6 +81,19 @@ export function Rail({
   const groupLocked: RailItem[] = [
     { href: "/pos/collab", label: "Collab", shortcut: "", icon: <Handshake size={20} />, locked: true },
     { href: "/pos/store", label: "Store", shortcut: "", icon: <ShoppingBag size={20} />, locked: true },
+    // Seulement pour les salons sans le module : un salon qui paie deja la
+    // caisse ne doit pas voir une publicite pour ce qu'il possede.
+    ...(activeModules.includes("POS")
+      ? []
+      : [
+          {
+            href: "/pos/caisse-offre",
+            label: "Caisse",
+            shortcut: "",
+            icon: <Wallet size={20} />,
+            locked: true,
+          } as RailItem,
+        ]),
   ];
 
   function renderItem(it: RailItem) {
