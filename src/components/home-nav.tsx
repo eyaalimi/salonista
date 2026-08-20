@@ -41,7 +41,10 @@ export function HomeNav() {
 
   return (
     <nav className="fixed top-0 left-0 right-0 z-50 bg-creme border-b border-hairline">
-      <div className="mx-auto flex max-w-7xl items-center justify-between gap-3 px-4 md:px-12 min-h-[56px] md:h-20">
+      {/* `max-w-6xl px-4` : la meme enveloppe que les sections de la page.
+          Avec max-w-7xl et md:px-12, le logo tombait plus a gauche que les
+          cartes — le decalage se voyait a chaque defilement. */}
+      <div className="mx-auto flex max-w-6xl items-center justify-between gap-3 px-4 min-h-[56px] md:h-20">
         <Logo className="text-xl md:text-2xl" />
 
         {/* Desktop-only secondary links */}

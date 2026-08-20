@@ -120,7 +120,7 @@ export default async function Home() {
       <Greeting />
 
       {/* SEARCH */}
-      <section className="px-4 pt-4">
+      <section className="mx-auto max-w-6xl px-4 pt-4">
         <form action="/offres" method="GET" className="relative">
           <svg
             className="pointer-events-none absolute left-5 top-1/2 h-5 w-5 -translate-y-1/2 text-prune-soft"
@@ -150,8 +150,8 @@ export default async function Home() {
 
       {/* CATEGORY CHIPS */}
       {categoryData.length > 0 && (
-        <section className="mt-5">
-          <div className="no-scrollbar flex gap-2 overflow-x-auto px-4 pb-1">
+        <section className="mx-auto mt-5 max-w-6xl px-4">
+          <div className="no-scrollbar flex gap-2 overflow-x-auto pb-1">
             <Chip href="/offres" active>
               Tout
             </Chip>
@@ -166,8 +166,8 @@ export default async function Home() {
 
       {/* OFFERS — horizontal rail of compact cards */}
       {offers.length > 0 && (
-        <section className="mx-auto mt-6 max-w-6xl">
-          <div className="flex items-center justify-between px-4 mb-3">
+        <section className="mx-auto mt-6 max-w-6xl px-4">
+          <div className="flex items-center justify-between mb-3">
             <h2 className="ds-display text-lg text-prune">Offres du jour</h2>
             <Link href="/offres" className="text-sm font-semibold text-rose">
               Voir tout
@@ -177,7 +177,7 @@ export default async function Home() {
           {/* Defilement horizontal sur mobile — le geste y est naturel et la
               rangee reste compacte. Sur ordinateur il n'y a pas de raison de
               cacher des offres derriere un defilement : grille de 5. */}
-          <div className="no-scrollbar flex gap-3 overflow-x-auto px-4 pb-2 md:grid md:grid-cols-5 md:overflow-visible">
+          <div className="no-scrollbar flex gap-3 overflow-x-auto pb-2 md:grid md:grid-cols-5 md:overflow-visible">
             {offers.map((offer, index) => {
               const original = Number(offer.originalPrice);
               const discounted = Number(offer.discountPrice);
@@ -327,8 +327,8 @@ export default async function Home() {
       )}
 
       {/* SALONS NEAR YOU CTA */}
-      <section className="mt-6 px-0">
-        <div className="mx-4 flex items-center justify-between gap-3 rounded-[var(--radius-panel)] border-2 border-hairline bg-white p-4">
+      <section className="mx-auto mt-6 max-w-6xl px-4">
+        <div className="flex items-center justify-between gap-3 rounded-[var(--radius-panel)] border-2 border-hairline bg-white p-4">
           <div className="min-w-0">
             <p className="text-base font-semibold text-prune">
               Salons près de toi 📍
@@ -348,10 +348,10 @@ export default async function Home() {
 
       {/* PRO CTA — kept compact, stacked on mobile */}
       <section className="mt-8 bg-prune text-white">
-        <div className="mx-auto max-w-7xl">
+        <div className="mx-auto max-w-6xl">
           <Link
             href="/register"
-            className="ds-press ds-focus block border-b border-white/10 p-6 sm:p-10"
+            className="ds-press ds-focus block border-b border-white/10 px-4 py-6 sm:py-10"
           >
             <p className="mb-2 text-sm font-semibold uppercase tracking-[0.12em] text-white/60">
               Prestataire
@@ -368,7 +368,7 @@ export default async function Home() {
           </Link>
           <Link
             href="/register"
-            className="ds-press ds-focus block p-6 sm:p-10"
+            className="ds-press ds-focus block px-4 py-6 sm:py-10"
           >
             <p className="mb-2 text-sm font-semibold uppercase tracking-[0.12em] text-white/60">
               Influenceuse
@@ -389,7 +389,7 @@ export default async function Home() {
       {/* FAQ — le contenu reste dans le HTML meme replie (details/summary
           natif, sans JS), ce qui satisfait l'exigence de Google : une
           question balisee doit etre visible sur la page. */}
-      <section className="mt-10 px-6 md:px-12" aria-labelledby="faq-titre">
+      <section className="mx-auto mt-10 max-w-6xl px-4" aria-labelledby="faq-titre">
         <div className="mx-auto max-w-3xl">
           <p className="mb-2 text-sm font-semibold uppercase tracking-[0.12em] text-prune-soft">
             Questions fréquentes
@@ -421,7 +421,7 @@ export default async function Home() {
 
       {/* FOOTER */}
       <footer className="border-t border-white/10 bg-prune text-white">
-        <div className="mx-auto flex max-w-7xl flex-col items-center justify-between gap-5 px-6 py-8 sm:flex-row md:px-12">
+        <div className="mx-auto flex max-w-6xl flex-col items-center justify-between gap-5 px-4 py-8 sm:flex-row">
           <Logo tone="light" className="text-xl" />
           <div className="flex items-center gap-2 text-sm">
             <Link

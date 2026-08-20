@@ -12,7 +12,7 @@ export function Greeting() {
   const showPersonalized = status === "authenticated" && firstName;
 
   return (
-    <section className="px-4 pt-4">
+    <section className="mx-auto max-w-6xl px-4 pt-4">
       <h1 className="text-2xl font-medium text-brand-ink">
         {showPersonalized ? (
           <>Ahla, {firstName} 👋</>
