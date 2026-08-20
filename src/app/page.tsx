@@ -166,7 +166,7 @@ export default async function Home() {
 
       {/* OFFERS — horizontal rail of compact cards */}
       {offers.length > 0 && (
-        <section className="mt-6">
+        <section className="mx-auto mt-6 max-w-6xl">
           <div className="flex items-center justify-between px-4 mb-3">
             <h2 className="ds-display text-lg text-prune">Offres du jour</h2>
             <Link href="/offres" className="text-sm font-semibold text-rose">
@@ -174,8 +174,11 @@ export default async function Home() {
             </Link>
           </div>
 
-          <div className="no-scrollbar flex gap-3 overflow-x-auto px-4 pb-2">
-            {offers.map((offer) => {
+          {/* Defilement horizontal sur mobile — le geste y est naturel et la
+              rangee reste compacte. Sur ordinateur il n'y a pas de raison de
+              cacher des offres derriere un defilement : grille de 5. */}
+          <div className="no-scrollbar flex gap-3 overflow-x-auto px-4 pb-2 md:grid md:grid-cols-5 md:overflow-visible">
+            {offers.map((offer, index) => {
               const original = Number(offer.originalPrice);
               const discounted = Number(offer.discountPrice);
               const discount =
@@ -187,7 +190,15 @@ export default async function Home() {
                 <Link
                   key={offer.id}
                   href={`/offre/${offer.id}`}
-                  className="ds-press w-[170px] shrink-0"
+                  // La largeur fixe sert au defilement mobile ; dans la grille
+                  // de bureau la cellule impose sa largeur.
+                  //
+                  // Au-dela de 10, les cartes formeraient une 3e rangee de
+                  // deux, bancale. Sur mobile elles restent toutes accessibles
+                  // par le defilement — « Voir tout » mene au reste.
+                  className={`ds-press w-[170px] shrink-0 md:w-auto md:shrink ${
+                    index >= 10 ? "md:hidden" : ""
+                  }`}
                 >
                   <Card>
                     <div className="relative h-[110px] w-full bg-rose-soft">
@@ -196,7 +207,7 @@ export default async function Home() {
                           src={offer.photos[0]}
                           alt={offer.title}
                           fill
-                          sizes="170px"
+                          sizes="(max-width: 768px) 170px, 220px"
                           className="object-cover"
                         />
                       ) : (
@@ -240,7 +251,9 @@ export default async function Home() {
 
       {/* SALONS */}
       {topSalons.length > 0 && (
-        <section id="salons" className="mt-8 px-4">
+        // `max-w-6xl` : sans largeur maximale, les cartes s'etirent sur toute
+        // la largeur d'un ecran d'ordinateur et deviennent des bandeaux.
+        <section id="salons" className="mx-auto mt-8 max-w-6xl px-4">
           <div className="flex items-center justify-between mb-3">
             <h2 className="ds-display text-lg text-prune">Salons populaires</h2>
             <Link href="/offres" className="text-sm font-semibold text-rose">
@@ -248,7 +261,10 @@ export default async function Home() {
             </Link>
           </div>
 
-          <div className="flex flex-col gap-4">
+          {/* Une colonne sur mobile, deux des 640px, trois sur ordinateur.
+              `items-start` empeche les cartes d'une meme rangee de s'etirer a
+              la hauteur de la plus haute. */}
+          <div className="grid grid-cols-1 items-start gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {topSalons.map((salon) => {
               const cover = salon.offers[0]?.photos[0];
               const extras = salonExtras.get(salon.id);
@@ -262,7 +278,7 @@ export default async function Home() {
                           src={cover}
                           alt={salon.salonName}
                           fill
-                          sizes="(max-width: 640px) 100vw, 420px"
+                          sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 380px"
                           className="object-cover"
                         />
                       ) : (
