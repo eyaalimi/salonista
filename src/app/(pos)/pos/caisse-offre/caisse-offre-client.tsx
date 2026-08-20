@@ -5,13 +5,15 @@ import { useState } from "react";
 /**
  * Bouton de demande du module caisse.
  *
- * Etat local uniquement (idle -> sending -> sent), sans `useEffect` : la
- * demande part sur un clic, jamais au montage. L'upsert cote serveur etant
- * idempotent, un rechargement de page qui remet le bouton a « idle » ne cree
- * pas de doublon.
+ * Sans `useEffect` : la demande part sur un clic, jamais au montage, et
+ * l'etat initial vient du serveur (`dejaDemande`) plutot que d'un appel au
+ * montage. Un salon qui a deja demande la caisse retrouve donc sa
+ * confirmation apres rechargement, sans que le bouton reparaisse.
  */
-export function CaisseOffreClient() {
-  const [state, setState] = useState<"idle" | "sending" | "sent">("idle");
+export function CaisseOffreClient({ dejaDemande }: { dejaDemande: boolean }) {
+  const [state, setState] = useState<"idle" | "sending" | "sent">(
+    dejaDemande ? "sent" : "idle",
+  );
   const [error, setError] = useState(false);
 
   async function demander() {
@@ -19,7 +21,13 @@ export function CaisseOffreClient() {
     setState("sending");
     setError(false);
     try {
-      const res = await fetch("/api/pos/caisse-interet", { method: "POST" });
+      // Route partagee avec les autres fonctionnalites non activees
+      // (Collab, Store) : un seul endroit ecrit dans FeatureInterest.
+      const res = await fetch("/api/pos/interest", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ feature: "POS" }),
+      });
       if (res.ok) {
         setState("sent");
       } else {

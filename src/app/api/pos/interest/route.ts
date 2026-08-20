@@ -1,18 +1,21 @@
 /**
- * Liste d'attente des fonctionnalites verrouillees (Collab, Store).
+ * Liste d'attente des fonctionnalites non activees (Collab, Store, Caisse).
  *
  * GET  -> { features: string[] } : ce que ce salon a deja demande, pour que
  *         le bouton s'affiche dans son etat "deja inscrit" apres rechargement.
  * POST -> { ok: true } : enregistre l'interet. Idempotent grace a la
  *         contrainte unique (providerId, feature) : un double clic ne cree
  *         pas de doublon et renvoie 200 dans les deux cas.
+ *
+ * Cette route N'ACTIVE RIEN : l'activation reste une decision commerciale,
+ * prise depuis l'espace admin.
  */
 
 import { NextRequest } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireEmployee, toResponse } from "@/lib/employee-session";
 
-const FEATURES = ["COLLAB", "STORE"] as const;
+const FEATURES = ["COLLAB", "STORE", "POS"] as const;
 type Feature = (typeof FEATURES)[number];
 
 function isFeature(v: unknown): v is Feature {

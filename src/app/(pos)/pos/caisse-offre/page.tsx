@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import { getCurrentEmployee } from "@/lib/employee-session";
 import { hasModule } from "@/lib/modules";
+import { prisma } from "@/lib/prisma";
 import { CaisseOffreClient } from "./caisse-offre-client";
 
 export const metadata = { title: "La caisse Salonista — Salonista" };
@@ -35,6 +36,15 @@ export default async function CaisseOffrePage() {
   // Inutile de vendre ce que le salon possede deja.
   if (await hasModule(employee.providerId, "POS")) redirect("/pos");
 
+  // Lu cote serveur : la confirmation survit ainsi a un rechargement, sans
+  // appel au montage cote client (donc sans `useEffect`).
+  const demande = await prisma.featureInterest.findUnique({
+    where: {
+      providerId_feature: { providerId: employee.providerId, feature: "POS" },
+    },
+    select: { id: true },
+  });
+
   return (
     <div className="h-full overflow-y-auto bg-creme md:p-8 p-4">
       <div className="mx-auto max-w-2xl pb-8">
@@ -68,7 +78,7 @@ export default async function CaisseOffrePage() {
             la présenter, sans engagement.
           </p>
           <div className="mt-4">
-            <CaisseOffreClient />
+            <CaisseOffreClient dejaDemande={demande !== null} />
           </div>
         </div>
       </div>
