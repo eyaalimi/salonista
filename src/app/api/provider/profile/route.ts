@@ -48,6 +48,7 @@ export async function PUT(req: NextRequest) {
     lat,
     lng,
     photos,
+    logo,
     openingHours,
     matriculeFiscal,
     receiptFooter,
@@ -106,6 +107,8 @@ export async function PUT(req: NextRequest) {
       ...(lng !== undefined ? { lng: lng === null ? null : Number(lng) } : {}),
       openingHours,
       ...(photos !== undefined ? { photos } : {}),
+      // Chaine vide -> null : un logo retire doit disparaitre, pas devenir "".
+      ...(logo !== undefined ? { logo: logo || null } : {}),
       ...(matriculeFiscal !== undefined ? { matriculeFiscal: matriculeFiscal || null } : {}),
       ...(receiptFooter !== undefined ? { receiptFooter: receiptFooter || null } : {}),
     },

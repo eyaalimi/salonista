@@ -23,6 +23,7 @@ export type SalonProfile = {
   lat: number | null;
   lng: number | null;
   photos: string[];
+  logo: string | null;
   matriculeFiscal: string | null;
   receiptFooter: string | null;
 };
@@ -49,6 +50,7 @@ export function SalonForm({ initial }: { initial: SalonProfile }) {
     lat: initial.lat,
     lng: initial.lng,
     photos: initial.photos ?? [],
+    logo: initial.logo ?? null,
     matriculeFiscal: initial.matriculeFiscal ?? "",
     receiptFooter: initial.receiptFooter ?? "",
   });
@@ -81,6 +83,7 @@ export function SalonForm({ initial }: { initial: SalonProfile }) {
           lat: form.lat,
           lng: form.lng,
           photos: form.photos,
+          logo: form.logo,
           matriculeFiscal: form.matriculeFiscal.trim() || null,
           receiptFooter: form.receiptFooter.trim() || null,
         }),
@@ -212,6 +215,23 @@ export function SalonForm({ initial }: { initial: SalonProfile }) {
           onChange={(e) => patch("description", e.target.value)}
         />
       </label>
+
+      <div>
+        <span className="mb-1 block text-xs uppercase tracking-wider text-pos-ink-3">
+          Logo du salon
+        </span>
+        <p className="mb-2 text-xs text-pos-ink-3">
+          Votre enseigne. Elle apparaît sur vos tickets et votre fiche.
+        </p>
+        {/* `max={1}` : un logo est unique. Le tableau n'est qu'un adaptateur
+            vers <ImageUpload>, qui travaille sur des listes. */}
+        <ImageUpload
+          images={form.logo ? [form.logo] : []}
+          onChange={(images) => patch("logo", images[0] ?? null)}
+          onUploadingChange={setUploading}
+          max={1}
+        />
+      </div>
 
       <div>
         <span className="mb-1 block text-xs uppercase tracking-wider text-pos-ink-3">

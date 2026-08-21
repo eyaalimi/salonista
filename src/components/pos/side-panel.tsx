@@ -443,6 +443,32 @@ function BookingsTodayBlock({ defaultEmployeeId }: { defaultEmployeeId: string }
     return () => clearInterval(t);
   }, []);
 
+  // Arrivee depuis « Encaisser » du calendrier : `/pos?bookingId=…`. On
+  // remplit le panier des que la liste du jour est chargee, puis on nettoie
+  // l'URL pour qu'un rafraichissement ne re-attache pas le meme rendez-vous.
+  //
+  // `attacheAuto` garde la trace du traitement : sans lui, l'effet se
+  // rejouerait a chaque rechargement de la liste (toutes les 60 s).
+  const attacheAuto = useRef(false);
+  useEffect(() => {
+    if (attacheAuto.current || bookings.length === 0) return;
+    const params = new URLSearchParams(window.location.search);
+    const vise = params.get("bookingId");
+    if (!vise) return;
+
+    const rdv = bookings.find((b) => b.id === vise);
+    attacheAuto.current = true;
+    if (rdv) handlePick(rdv);
+
+    params.delete("bookingId");
+    const reste = params.toString();
+    window.history.replaceState(
+      null,
+      "",
+      reste ? `${window.location.pathname}?${reste}` : window.location.pathname,
+    );
+  }, [bookings]);
+
   function handlePick(b: Booking) {
     // Guard against double-click attaching the same booking twice — the
     // second attach would orphan the first set of pre-filled lines (their

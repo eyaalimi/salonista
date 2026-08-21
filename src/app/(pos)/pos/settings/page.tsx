@@ -30,6 +30,7 @@ export default async function SettingsPage() {
       lat: true,
       lng: true,
       photos: true,
+      logo: true,
       matriculeFiscal: true,
       receiptFooter: true,
       openingHours: true,
@@ -44,6 +45,7 @@ export default async function SettingsPage() {
     lat: number | null;
     lng: number | null;
     photos: string[];
+    logo: string | null;
     matriculeFiscal: string | null;
     receiptFooter: string | null;
     openingHours: unknown;
@@ -74,6 +76,7 @@ export default async function SettingsPage() {
             lat: provider.lat,
             lng: provider.lng,
             photos: provider.photos ?? [],
+            logo: provider.logo ?? null,
             matriculeFiscal: provider.matriculeFiscal,
             receiptFooter: provider.receiptFooter,
           }}
