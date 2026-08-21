@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { signIn } from "next-auth/react";
 import { Logo } from "@/components/logo";
@@ -15,6 +16,12 @@ export default function StartClient() {
   const [salonName, setSalonName] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  /**
+   * L'email saisi appartient deja a un compte. C'est le seul cas ou l'on
+   * propose de se connecter : ailleurs, un lien vers /login n'aurait aucun
+   * sens et detournerait le commercial de son inscription.
+   */
+  const [dejaInscrit, setDejaInscrit] = useState(false);
   const [ownerPin, setOwnerPin] = useState<string | null>(null);
   const [employeeId, setEmployeeId] = useState<string | null>(null);
 
@@ -22,6 +29,7 @@ export default function StartClient() {
     e.preventDefault();
     if (busy) return;
     setError(null);
+    setDejaInscrit(false);
     setBusy(true);
     try {
       const res = await fetch("/api/pos/signup", {
@@ -36,6 +44,7 @@ export default function StartClient() {
       const data = await res.json();
       if (!res.ok) {
         setError(data?.error ?? "Erreur lors de l'activation");
+        setDejaInscrit(res.status === 409);
         return;
       }
       setOwnerPin(data.ownerPin);
@@ -199,7 +208,15 @@ export default function StartClient() {
 
           {error && (
             <div className="text-sm text-red-600 bg-red-50 border border-red-100 rounded-lg px-3 py-2">
-              {error}
+              <p>{error}</p>
+              {dejaInscrit && (
+                <Link
+                  href="/login"
+                  className="mt-2 inline-block font-semibold text-brand-ink underline underline-offset-2"
+                >
+                  Se connecter →
+                </Link>
+              )}
             </div>
           )}
 

@@ -14,6 +14,10 @@
  * email on the tablet, gets a 4-digit PIN for the owner, and lands in the
  * onboarding wizard. The marketplace concepts (photos, slots, public offers)
  * are NOT exposed yet — the profile is flagged POS-only.
+ *
+ * Route PUBLIQUE et SANS AUTHENTIFICATION : elle n'ecrit que des lignes
+ * neuves. Un email deja pris est refuse en 409 — jamais reutilise. Ne
+ * reintroduisez pas de `user.update` ici : voir pos-signup-decision.ts.
  */
 
 import { NextRequest } from "next/server";
@@ -21,6 +25,7 @@ import { randomInt } from "crypto";
 import { hash } from "bcryptjs";
 import { prisma } from "@/lib/prisma";
 import { mergePermissions } from "@/lib/permissions";
+import { decidePosSignup } from "@/lib/pos-signup-decision";
 
 /** Meme minimum que la reinitialisation de mot de passe, pour rester coherent. */
 const MIN_PASSWORD_LENGTH = 6;
@@ -64,22 +69,18 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  // If a User already exists with this email, we either resume their existing
-  // POS-only profile or bail if they own a real marketplace account.
+  // Cette route est publique : elle ne touche JAMAIS a un compte existant.
+  // Voir src/lib/pos-signup-decision.ts pour le detail du raisonnement.
   const existing = await prisma.user.findUnique({
     where: { email },
-    include: { providerProfile: { select: { id: true } } },
+    select: { id: true },
   });
 
-  if (existing?.providerProfile) {
-    // Already a provider — they should sign in, not create a duplicate.
+  const decision = decidePosSignup(existing !== null);
+  if (decision.action === "reject") {
     return Response.json(
-      {
-        error:
-          "Un salon existe déjà avec cet email. Connectez-vous depuis l'écran PIN.",
-        existing: true,
-      },
-      { status: 409 },
+      { error: decision.error, existing: true },
+      { status: decision.status },
     );
   }
 
@@ -90,23 +91,21 @@ export async function POST(req: NextRequest) {
   const ownerPinHash = await hash(ownerPin, 10);
 
   const result = await prisma.$transaction(async (tx) => {
-    // Promote/create the User as a PROVIDER.
-    // Le mot de passe est pose dans les deux cas : un compte existant promu en
-    // salon doit pouvoir se connecter avec ce qu'il vient de saisir, pas avec
-    // un ancien mot de passe qu'il ne se rappelle peut-etre plus.
-    const user = existing
-      ? await tx.user.update({
-          where: { id: existing.id },
-          data: { role: "PROVIDER", emailVerified: new Date(), passwordHash },
-        })
-      : await tx.user.create({
-          data: {
-            email,
-            passwordHash,
-            role: "PROVIDER",
-            emailVerified: new Date(),
-          },
-        });
+    // Toujours une creation : passe ce point, l'email est libre. Aucune
+    // ecriture sur une ligne existante n'est possible depuis cette route.
+    //
+    // Le mot de passe saisi est bien celui du nouveau compte : il ouvre la
+    // caisse ET l'espace Salonista. Ce qui a disparu, c'est la branche qui le
+    // posait sur un compte EXISTANT — elle laissait un inconnu s'approprier
+    // le compte d'une cliente en choisissant son mot de passe.
+    const user = await tx.user.create({
+      data: {
+        email,
+        passwordHash,
+        role: "PROVIDER",
+        emailVerified: new Date(),
+      },
+    });
 
     // Create the ProviderProfile, flagged POS-only.
     const provider = await (tx as never as {
