@@ -1,23 +1,21 @@
 "use client";
 
-// New dedicated calendar for the POS center panel.
-//
-// Why a new component instead of extending <MultiServiceCalendar>:
-// the public booking calendar walks consecutive offer slots for a single
-// cart, while the POS calendar shows ALL bookings of the day across all
-// employees and lets the cashier click empty space to open a drawer.
-// Their interaction models are different enough that one component would
-// have to branch on `mode` for almost every render — hence two components.
+/**
+ * Agenda du salon — une liste, pas une grille horaire.
+ *
+ * La version precedente etait une grille de 28 lignes par jour, avec une vue
+ * semaine sur sept colonnes : il fallait situer un bloc sur un axe pour
+ * savoir a quelle heure venait la cliente. Pour une proprietaire qui consulte
+ * son telephone entre deux clientes, c'est un effort de lecture inutile.
+ *
+ * Ici chaque rendez-vous est une ligne : l'heure, la cliente, la prestation.
+ * On lit de haut en bas, du matin au soir. Un jour a la fois, parce qu'un
+ * salon travaille par journee.
+ */
 
-import { useEffect, useMemo, useRef, useState, useCallback } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { bookingClientName } from "@/lib/booking-client-name";
-
-const HOURS_START = 8;
-const HOURS_END = 22;
-const ROW_MINUTES = 30;
-const ROW_HEIGHT_PX = 32;
-
-const DOW_LABELS = ["Lun", "Mar", "Mer", "Jeu", "Ven", "Sam", "Dim"];
+import { formatHeure } from "@/lib/datetime";
 
 export type CalendarBooking = {
   id: string;
@@ -33,67 +31,73 @@ export type CalendarBooking = {
   saleId: string | null;
 };
 
-type View = "day" | "week";
-
 type Props = {
   initialDate?: Date;
   onCreateAt: (start: Date) => void;
   onOpenBooking: (id: string) => void;
 };
 
-function isoDay(d: Date): string {
-  return new Date(d.getFullYear(), d.getMonth(), d.getDate()).toISOString();
+function memeJour(a: Date, b: Date): boolean {
+  return (
+    a.getFullYear() === b.getFullYear() &&
+    a.getMonth() === b.getMonth() &&
+    a.getDate() === b.getDate()
+  );
 }
 
-function startOfWeek(d: Date): Date {
-  const x = new Date(d.getFullYear(), d.getMonth(), d.getDate());
-  // Monday = 1
-  const dow = x.getDay() === 0 ? 6 : x.getDay() - 1;
-  x.setDate(x.getDate() - dow);
-  return x;
+function libelleJour(d: Date): string {
+  const aujourdhui = new Date();
+  const demain = new Date(aujourdhui);
+  demain.setDate(demain.getDate() + 1);
+  const hier = new Date(aujourdhui);
+  hier.setDate(hier.getDate() - 1);
+
+  if (memeJour(d, aujourdhui)) return "Aujourd'hui";
+  if (memeJour(d, demain)) return "Demain";
+  if (memeJour(d, hier)) return "Hier";
+  return d.toLocaleDateString("fr-FR", {
+    weekday: "long",
+    day: "numeric",
+    month: "long",
+  });
 }
 
-function blockClass(b: CalendarBooking): string {
-  if (b.status === "CANCELLED")
-    return "border border-pos-border-strong bg-pos-bg text-pos-ink-4 line-through";
-  if (b.phantom || b.walkIn)
-    return "border border-dashed border-brand-gold-soft text-brand-ink";
-  if (b.createdViaPos)
-    return "bg-brand-ink-soft text-brand-cream border border-brand-ink-soft";
-  return "bg-brand-gold text-brand-ink border border-brand-gold";
+/** Etat visuel d'un rendez-vous, en mots plutot qu'en code couleur seul. */
+function etat(b: CalendarBooking): { texte: string; classes: string } | null {
+  if (b.status === "CANCELLED") {
+    return { texte: "Annulé", classes: "bg-pos-danger-soft text-pos-danger" };
+  }
+  if (b.saleId) {
+    return { texte: "Encaissé", classes: "bg-pos-accent-soft text-pos-accent" };
+  }
+  if (b.walkIn) {
+    return { texte: "Sans rendez-vous", classes: "bg-pos-highlight text-pos-ink-2" };
+  }
+  return null;
 }
 
 export function PosCalendar({ initialDate, onCreateAt, onOpenBooking }: Props) {
-  const [view, setView] = useState<View>("day");
-  const [cursor, setCursor] = useState<Date>(
+  const [jour, setJour] = useState<Date>(() =>
     initialDate ? new Date(initialDate) : new Date(),
   );
   const [bookings, setBookings] = useState<CalendarBooking[]>([]);
-  const [loading, setLoading] = useState(false);
-  const containerRef = useRef<HTMLDivElement | null>(null);
+  const [chargement, setChargement] = useState(true);
 
-  const range = useMemo(() => {
-    if (view === "day") {
-      const start = new Date(cursor.getFullYear(), cursor.getMonth(), cursor.getDate());
-      const end = new Date(start);
-      end.setDate(end.getDate() + 1);
-      return { from: start, to: end };
-    }
-    const start = startOfWeek(cursor);
-    const end = new Date(start);
-    end.setDate(end.getDate() + 7);
-    return { from: start, to: end };
-  }, [view, cursor]);
+  const charger = useCallback(async () => {
+    const debut = new Date(jour.getFullYear(), jour.getMonth(), jour.getDate());
+    const fin = new Date(debut);
+    fin.setDate(fin.getDate() + 1);
 
-  const load = useCallback(async () => {
-    setLoading(true);
     try {
       const params = new URLSearchParams({
-        from: range.from.toISOString(),
-        to: range.to.toISOString(),
+        from: debut.toISOString(),
+        to: fin.toISOString(),
       });
-      const res = await fetch(`/api/pos/bookings?${params.toString()}`, { cache: "no-store" });
+      const res = await fetch(`/api/pos/bookings?${params.toString()}`, {
+        cache: "no-store",
+      });
       if (!res.ok) return;
+
       type Raw = {
         id: string;
         status: string;
@@ -109,17 +113,16 @@ export function PosCalendar({ initialDate, onCreateAt, onOpenBooking }: Props) {
         assignedEmployeeId: string | null;
         sale: { id: string } | null;
         createdAt: string;
-        totalPrice: string;
       };
+
       const raw = (await res.json()) as Raw[];
-      const out: CalendarBooking[] = [];
-      for (const b of raw) {
+      const out: CalendarBooking[] = raw.map((b) => {
         const slot = b.items[0]?.slot;
         const start = slot?.startTime ?? b.createdAt;
         const end =
           slot?.endTime ??
           new Date(new Date(b.createdAt).getTime() + 30 * 60_000).toISOString();
-        out.push({
+        return {
           id: b.id,
           startTime: start,
           endTime: end,
@@ -131,330 +134,140 @@ export function PosCalendar({ initialDate, onCreateAt, onOpenBooking }: Props) {
           serviceName: b.items.map((it) => it.offer.title).join(" + ") || "Walk-in",
           assignedEmployeeId: b.assignedEmployeeId,
           saleId: b.sale?.id ?? null,
-        });
-      }
+        };
+      });
+
+      out.sort(
+        (a, b) => new Date(a.startTime).getTime() - new Date(b.startTime).getTime(),
+      );
       setBookings(out);
     } finally {
-      setLoading(false);
+      setChargement(false);
     }
-  }, [range]);
+  }, [jour]);
 
   useEffect(() => {
-    load();
-  }, [load]);
+    charger();
+  }, [charger]);
 
-  // Auto-refresh every 60s if visible.
+  // Rafraichissement discret : une reservation prise en ligne pendant que le
+  // salon regarde son agenda doit finir par apparaitre sans rechargement.
   useEffect(() => {
-    const handler = () => {
-      if (document.visibilityState === "visible") load();
+    const relire = () => {
+      if (document.visibilityState === "visible") charger();
     };
-    const interval = setInterval(handler, 60_000);
-    document.addEventListener("visibilitychange", handler);
+    const t = setInterval(relire, 60_000);
+    document.addEventListener("visibilitychange", relire);
     return () => {
-      clearInterval(interval);
-      document.removeEventListener("visibilitychange", handler);
+      clearInterval(t);
+      document.removeEventListener("visibilitychange", relire);
     };
-  }, [load]);
+  }, [charger]);
 
-  // Keyboard navigation.
-  useEffect(() => {
-    const handler = (e: KeyboardEvent) => {
-      const target = e.target as HTMLElement;
-      if (target?.tagName === "INPUT" || target?.tagName === "TEXTAREA") return;
-      if (e.key === "ArrowLeft") {
-        setCursor((c) => {
-          const n = new Date(c);
-          n.setDate(n.getDate() - (view === "day" ? 1 : 7));
-          return n;
-        });
-      } else if (e.key === "ArrowRight") {
-        setCursor((c) => {
-          const n = new Date(c);
-          n.setDate(n.getDate() + (view === "day" ? 1 : 7));
-          return n;
-        });
-      } else if (e.key === "t" || e.key === "T") {
-        setCursor(new Date());
-      }
-    };
-    window.addEventListener("keydown", handler);
-    return () => window.removeEventListener("keydown", handler);
-  }, [view]);
-
-  return (
-    <div ref={containerRef} className="flex flex-col h-full">
-      {/* Top bar */}
-      <div className="border-b border-brand-line bg-white md:px-4 px-3 md:py-3 py-2 flex items-center md:gap-3 gap-1.5 flex-wrap">
-        <button
-          type="button"
-          onClick={() =>
-            setCursor((c) => {
-              const n = new Date(c);
-              n.setDate(n.getDate() - (view === "day" ? 1 : 7));
-              return n;
-            })
-          }
-          className="w-8 h-8 flex items-center justify-center rounded text-brand-ink-soft hover:text-brand-ink hover:bg-brand-sand"
-          aria-label="Précédent"
-        >
-          ←
-        </button>
-        <button
-          type="button"
-          onClick={() => setCursor(new Date())}
-          className="text-[10px] uppercase tracking-[0.18em] text-brand-ink-soft hover:text-brand-ink px-2 py-1"
-        >
-          <span className="hidden sm:inline">Aujourd&apos;hui</span>
-          <span className="sm:hidden">Auj.</span>
-        </button>
-        <button
-          type="button"
-          onClick={() =>
-            setCursor((c) => {
-              const n = new Date(c);
-              n.setDate(n.getDate() + (view === "day" ? 1 : 7));
-              return n;
-            })
-          }
-          className="w-8 h-8 flex items-center justify-center rounded text-brand-ink-soft hover:text-brand-ink hover:bg-brand-sand"
-          aria-label="Suivant"
-        >
-          →
-        </button>
-        <span className="luxury-heading text-sm text-brand-ink md:ml-2 min-w-0 truncate">
-          {view === "day"
-            ? cursor.toLocaleDateString("fr-FR", {
-                weekday: "short",
-                day: "numeric",
-                month: "short",
-              })
-            : `Sem. ${range.from.toLocaleDateString("fr-FR", { day: "numeric", month: "short" })}`}
-        </span>
-        <div className="ml-auto flex gap-1 shrink-0">
-          <button
-            type="button"
-            onClick={() => setView("day")}
-            className={`rounded-lg px-3 py-1 text-[10px] uppercase tracking-[0.18em] ${
-              view === "day"
-                ? "bg-brand-ink text-brand-cream"
-                : "border border-brand-line bg-white text-brand-ink-soft"
-            }`}
-          >
-            Jour
-          </button>
-          <button
-            type="button"
-            onClick={() => setView("week")}
-            className={`rounded-lg px-3 py-1 text-[10px] uppercase tracking-[0.18em] ${
-              view === "week"
-                ? "bg-brand-ink text-brand-cream"
-                : "border border-brand-line bg-white text-brand-ink-soft"
-            }`}
-          >
-            <span className="hidden sm:inline">Semaine</span>
-            <span className="sm:hidden">Sem.</span>
-          </button>
-        </div>
-        {loading && <span className="text-[10px] text-brand-ink-soft">…</span>}
-      </div>
-
-      {/* Body */}
-      <div className="flex-1 overflow-auto">
-        {view === "day" ? (
-          <DayView
-            date={cursor}
-            bookings={bookings}
-            onCreateAt={onCreateAt}
-            onOpenBooking={onOpenBooking}
-          />
-        ) : (
-          <WeekView
-            weekStart={range.from}
-            bookings={bookings}
-            onCreateAt={onCreateAt}
-            onOpenBooking={onOpenBooking}
-          />
-        )}
-      </div>
-    </div>
-  );
-}
-
-function DayView({
-  date,
-  bookings,
-  onCreateAt,
-  onOpenBooking,
-}: {
-  date: Date;
-  bookings: CalendarBooking[];
-  onCreateAt: (d: Date) => void;
-  onOpenBooking: (id: string) => void;
-}) {
-  const dayStart = new Date(date.getFullYear(), date.getMonth(), date.getDate(), HOURS_START);
-  const dayEnd = new Date(date.getFullYear(), date.getMonth(), date.getDate(), HOURS_END);
-  const minutesPerView = (HOURS_END - HOURS_START) * 60;
-  const heightPx = (minutesPerView / ROW_MINUTES) * ROW_HEIGHT_PX;
-
-  const dayBookings = bookings.filter((b) => {
-    const start = new Date(b.startTime);
-    return (
-      start.getFullYear() === date.getFullYear() &&
-      start.getMonth() === date.getMonth() &&
-      start.getDate() === date.getDate()
-    );
-  });
-
-  const now = new Date();
-  const isToday = isoDay(now) === isoDay(date);
-  const nowOffsetMin =
-    isToday && now.getHours() >= HOURS_START && now.getHours() < HOURS_END
-      ? (now.getHours() - HOURS_START) * 60 + now.getMinutes()
-      : -1;
-
-  function rowClick(slotMinutes: number) {
-    const d = new Date(dayStart);
-    d.setMinutes(d.getMinutes() + slotMinutes);
-    onCreateAt(d);
+  function decaler(jours: number) {
+    setChargement(true);
+    setJour((d) => {
+      const n = new Date(d);
+      n.setDate(n.getDate() + jours);
+      return n;
+    });
   }
 
+  const visibles = bookings.filter((b) => b.status !== "CANCELLED");
+
   return (
-    <div className="flex">
-      {/* Time gutter */}
-      <div className="w-16 shrink-0 border-r border-brand-line bg-brand-cream/50">
-        {Array.from({ length: (HOURS_END - HOURS_START) * 2 }).map((_, i) => {
-          const minutes = i * ROW_MINUTES;
-          const showLabel = minutes % 60 === 0;
-          const h = HOURS_START + Math.floor(minutes / 60);
-          return (
-            <div
-              key={i}
-              style={{ height: ROW_HEIGHT_PX }}
-              className="border-b border-brand-line/30 px-2 text-right text-[10px] text-brand-ink-soft"
-            >
-              {showLabel ? `${String(h).padStart(2, "0")}:00` : ""}
-            </div>
-          );
-        })}
-      </div>
-      {/* Tracks */}
-      <div className="flex-1 relative" style={{ height: heightPx }}>
-        {Array.from({ length: (HOURS_END - HOURS_START) * 2 }).map((_, i) => (
-          <div
-            key={i}
-            onClick={() => rowClick(i * ROW_MINUTES)}
-            style={{ height: ROW_HEIGHT_PX, top: i * ROW_HEIGHT_PX }}
-            className="absolute inset-x-0 border-b border-brand-line/30 cursor-pointer hover:bg-brand-sand/50"
-          />
-        ))}
-        {dayBookings.map((b) => {
-          const start = new Date(b.startTime);
-          const end = new Date(b.endTime);
-          const startMin =
-            (start.getHours() - HOURS_START) * 60 + start.getMinutes();
-          if (startMin < 0) return null;
-          const lengthMin = Math.max(15, (end.getTime() - start.getTime()) / 60_000);
-          const top = (startMin / ROW_MINUTES) * ROW_HEIGHT_PX;
-          const height = Math.max(28, (lengthMin / ROW_MINUTES) * ROW_HEIGHT_PX);
-          return (
-            <button
-              key={b.id}
-              type="button"
-              onClick={(e) => {
-                e.stopPropagation();
-                onOpenBooking(b.id);
-              }}
-              style={{ top, height }}
-              className={`absolute left-2 right-2 rounded-md px-2 py-1 text-left text-[11px] leading-tight overflow-hidden ${blockClass(b)}`}
-            >
-              <div className="font-medium truncate">{b.customerName ?? "Sans client"}</div>
-              <div className="truncate opacity-80">{b.serviceName}</div>
-              <div className="opacity-60">
-                {start.toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" })}
-              </div>
-            </button>
-          );
-        })}
-        {nowOffsetMin >= 0 && (
-          <div
-            style={{ top: (nowOffsetMin / ROW_MINUTES) * ROW_HEIGHT_PX }}
-            className="absolute inset-x-0 h-px bg-brand-gold pointer-events-none"
+    <div className="mx-auto flex h-full max-w-3xl flex-col p-4">
+      {/* Navigation entre les jours */}
+      <div className="mb-4 flex items-center justify-between gap-3">
+        <button
+          type="button"
+          onClick={() => decaler(-1)}
+          aria-label="Jour précédent"
+          className="ds-press ds-focus flex h-11 w-11 shrink-0 items-center justify-center rounded-[var(--radius-pill)] border-2 border-hairline text-prune"
+        >
+          ‹
+        </button>
+
+        <div className="min-w-0 text-center">
+          <p className="ds-display truncate text-lg text-prune">{libelleJour(jour)}</p>
+          <button
+            type="button"
+            onClick={() => {
+              setChargement(true);
+              setJour(new Date());
+            }}
+            className="ds-focus text-sm text-prune-soft underline"
           >
-            <span className="absolute -top-1.5 -left-1.5 h-3 w-3 rounded-full bg-brand-gold" />
+            Revenir à aujourd&apos;hui
+          </button>
+        </div>
+
+        <button
+          type="button"
+          onClick={() => decaler(1)}
+          aria-label="Jour suivant"
+          className="ds-press ds-focus flex h-11 w-11 shrink-0 items-center justify-center rounded-[var(--radius-pill)] border-2 border-hairline text-prune"
+        >
+          ›
+        </button>
+      </div>
+
+      <button
+        type="button"
+        onClick={() => onCreateAt(jour)}
+        className="ds-press ds-focus mb-4 min-h-[48px] w-full rounded-[var(--radius-pill)] bg-rose text-base font-semibold text-prune"
+      >
+        + Nouveau rendez-vous
+      </button>
+
+      <div className="min-h-0 flex-1 overflow-y-auto">
+        {chargement ? (
+          <p className="text-base text-prune-soft">Chargement…</p>
+        ) : visibles.length === 0 ? (
+          <div className="rounded-[var(--radius-card)] border-2 border-hairline bg-white p-8 text-center">
+            <p className="text-base text-prune">Aucun rendez-vous ce jour-là.</p>
+            <p className="mt-1 text-sm text-prune-soft">
+              Les réservations prises en ligne apparaissent ici automatiquement.
+            </p>
           </div>
+        ) : (
+          <ul className="space-y-2">
+            {visibles.map((b) => {
+              const e = etat(b);
+              return (
+                <li key={b.id}>
+                  <button
+                    type="button"
+                    onClick={() => onOpenBooking(b.id)}
+                    className="ds-press ds-focus flex w-full items-center gap-4 rounded-[var(--radius-card)] border-2 border-hairline bg-white p-4 text-left hover:border-rose"
+                  >
+                    {/* L'heure d'abord et en gras : c'est l'information qu'on
+                        cherche en parcourant la liste. */}
+                    <span className="shrink-0 text-base font-bold text-prune">
+                      {formatHeure(b.startTime)}
+                    </span>
+                    <span className="min-w-0 flex-1">
+                      <span className="block truncate text-base font-semibold text-prune">
+                        {b.customerName ?? "Sans client"}
+                      </span>
+                      <span className="block truncate text-sm text-prune-soft">
+                        {b.serviceName}
+                      </span>
+                    </span>
+                    {e && (
+                      <span
+                        className={`shrink-0 rounded-[var(--radius-pill)] px-3 py-1 text-xs font-semibold ${e.classes}`}
+                      >
+                        {e.texte}
+                      </span>
+                    )}
+                  </button>
+                </li>
+              );
+            })}
+          </ul>
         )}
       </div>
-    </div>
-  );
-}
-
-function WeekView({
-  weekStart,
-  bookings,
-  onCreateAt,
-  onOpenBooking,
-}: {
-  weekStart: Date;
-  bookings: CalendarBooking[];
-  onCreateAt: (d: Date) => void;
-  onOpenBooking: (id: string) => void;
-}) {
-  const days = Array.from({ length: 7 }, (_, i) => {
-    const d = new Date(weekStart);
-    d.setDate(d.getDate() + i);
-    return d;
-  });
-
-  return (
-    <div className="grid grid-cols-7 min-h-full md:min-w-0 min-w-[700px]">
-      {days.map((d, idx) => {
-        const dayBookings = bookings.filter((b) => {
-          const start = new Date(b.startTime);
-          return (
-            start.getFullYear() === d.getFullYear() &&
-            start.getMonth() === d.getMonth() &&
-            start.getDate() === d.getDate()
-          );
-        });
-        const isToday = isoDay(new Date()) === isoDay(d);
-        return (
-          <div key={idx} className="border-r border-brand-line last:border-r-0 min-h-[400px]">
-            <div className={`px-2 py-2 border-b border-brand-line text-center ${isToday ? "bg-brand-gold/15" : "bg-brand-sand"}`}>
-              <p className="text-[10px] uppercase tracking-[0.18em] text-brand-ink-soft">
-                {DOW_LABELS[idx]}
-              </p>
-              <p className="luxury-heading text-sm text-brand-ink">{d.getDate()}</p>
-            </div>
-            <button
-              type="button"
-              onClick={() => onCreateAt(new Date(d.getFullYear(), d.getMonth(), d.getDate(), 10))}
-              className="w-full text-left p-2 text-[10px] text-brand-ink-soft/60 hover:bg-brand-sand/50"
-            >
-              + Nouvelle réservation
-            </button>
-            <ul className="p-2 space-y-1">
-              {dayBookings.map((b) => {
-                const start = new Date(b.startTime);
-                return (
-                  <li key={b.id}>
-                    <button
-                      type="button"
-                      onClick={() => onOpenBooking(b.id)}
-                      className={`w-full rounded-md px-2 py-1 text-left text-[10px] leading-tight ${blockClass(b)}`}
-                    >
-                      <div className="font-medium truncate">{b.customerName ?? "Sans client"}</div>
-                      <div className="opacity-80 truncate">{b.serviceName}</div>
-                      <div className="opacity-60">
-                        {start.toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" })}
-                      </div>
-                    </button>
-                  </li>
-                );
-              })}
-            </ul>
-          </div>
-        );
-      })}
     </div>
   );
 }

@@ -42,12 +42,12 @@ export function PosCalendarClient({ defaultEmployeeId }: { defaultEmployeeId: st
             setOpenBookingId(null);
             setReloadKey((k) => k + 1);
           }}
-          onEncaisser={() => {
-            // Phase 3 originally pre-filled the cart from this drawer. With
-            // the Design 2 layout the cart is on the home (`/pos`) page; for
-            // Convert-to-Sale flow, navigate the cashier back home and let
-            // them open the booking from the side panel instead.
-            window.location.href = "/pos";
+          onEncaisser={(booking) => {
+            // On emporte l'identifiant du rendez-vous : sans lui, la caissiere
+            // arrivait sur un panier vide et devait retrouver elle-meme la
+            // cliente dans la liste. Le panneau lateral de `/pos` lit ce
+            // parametre et remplit le panier tout seul.
+            window.location.href = `/pos?bookingId=${booking.id}`;
           }}
         />
       )}

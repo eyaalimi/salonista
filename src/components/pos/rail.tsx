@@ -54,7 +54,11 @@ export function Rail({
   const pathname = usePathname();
 
   // Groupe 1 — CAISSE : le quotidien de la caissiere.
+  //
+  // « Mon salon » ouvre la marche : c'est la vue d'ensemble que la
+  // proprietaire consulte en arrivant, avant meme d'encaisser.
   const groupCaisse: RailItem[] = [
+    { href: "/pos/analytics", label: "Mon salon", shortcut: "A", icon: <BarChart3 size={20} />, perm: "analytics.view" },
     { href: "/pos", label: "Caisse", shortcut: "1", icon: <LayoutGrid size={20} />, perm: "pos.sell", module: "POS" },
     { href: "/pos/calendar", label: "RDV", shortcut: "B", icon: <Calendar size={20} />, perm: "bookings.view" },
     { href: "/pos/customers", label: "Clients", shortcut: "C", icon: <Users size={20} />, perm: "customers.view" },
@@ -73,7 +77,6 @@ export function Rail({
     { href: "/pos/loyalty", label: "Fidélité", shortcut: "L", icon: <Star size={20} />, perm: "rewards.adjust" },
     { href: "/pos/commissions", label: "Commissions", shortcut: "M", icon: <Coins size={20} />, perm: "employees.manage", module: "POS" },
     { href: "/pos/employees", label: "Équipe", shortcut: "E", icon: <UserCog size={20} />, perm: "employees.manage", module: "POS" },
-    { href: "/pos/analytics", label: "Stats", shortcut: "A", icon: <BarChart3 size={20} />, perm: "analytics.view" },
     { href: "/pos/settings", label: "Profil", shortcut: "R", icon: <Settings size={20} />, perm: "settings.manage" },
   ];
 

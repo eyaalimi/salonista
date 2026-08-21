@@ -215,6 +215,9 @@ model ProviderProfile {
   lng             Float?
   phone           String?
   photos          String[]
+  /// Logo du salon. Distinct de `photos` : celles-ci illustrent les
+  /// prestations, le logo identifie l'enseigne (ticket, en-tete, avatar).
+  logo            String?
   openingHours    Json?
   matriculeFiscal String?
   receiptFooter   String?
