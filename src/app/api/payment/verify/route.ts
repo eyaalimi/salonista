@@ -3,6 +3,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { resolveVerifier } from "@/lib/verify-authz";
+import { refusValidationArrivee } from "@/lib/booking-state";
 
 export async function GET(req: NextRequest) {
   const code = req.nextUrl.searchParams.get("code");
@@ -108,8 +109,17 @@ export async function POST(req: NextRequest) {
     }
   }
 
-  if (booking.paymentStatus !== "PAID") {
-    return NextResponse.json({ error: "Réservation non payée" }, { status: 400 });
+  // Le controle de reglement a saute : la cliente paie au salon, exiger un
+  // paiement prealable rendrait tout QR invalide. Restent l'annulation et la
+  // double validation — cette derniere est traitee plus bas, avec une reponse
+  // detaillee que le salon peut lire.
+  const refus = refusValidationArrivee({
+    status: booking.status,
+    paymentStatus: booking.paymentStatus,
+    qrVerified: false,
+  });
+  if (refus) {
+    return NextResponse.json({ error: refus.message }, { status: 400 });
   }
 
   const firstItem = booking.items[0];

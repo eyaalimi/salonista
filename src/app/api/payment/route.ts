@@ -1,9 +1,19 @@
+/**
+ * Le POST est retire : Salonista n'encaisse pas.
+ *
+ * Il posait `paymentStatus: "PAID"` et envoyait « Paiement effectue avec
+ * succes » sans qu'aucun prestataire de paiement ne soit branche. Une cliente
+ * connectee obtenait donc gratuitement un QR valide et une reservation
+ * « payee ». Le QR est desormais emis a la creation de la reservation
+ * (voir POST /api/bookings) et la cliente regle au salon.
+ *
+ * Le GET reste : il sert a reafficher le QR d'une reservation.
+ */
+
 import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { nanoid } from "nanoid";
-import { sendPaymentConfirmationEmail } from "@/lib/mail";
 import { publicOrigin } from "@/lib/public-origin";
 
 async function generateQR(text: string): Promise<string> {
@@ -15,79 +25,14 @@ async function generateQR(text: string): Promise<string> {
   });
 }
 
-export async function POST(req: NextRequest) {
-  const session = await getServerSession(authOptions);
-  if (!session) {
-    return NextResponse.json({ error: "Connexion requise" }, { status: 401 });
-  }
-
-  const { bookingId } = await req.json();
-  if (!bookingId) {
-    return NextResponse.json({ error: "ID de reservation requis" }, { status: 400 });
-  }
-
-  const booking = await prisma.booking.findUnique({
-    where: { id: bookingId },
-    include: {
-      items: {
-        include: {
-          offer: {
-            include: { provider: { select: { salonName: true, address: true, city: true } } },
-          },
-          slot: true,
-        },
-      },
-      client: { select: { name: true, email: true } },
+export async function POST() {
+  return NextResponse.json(
+    {
+      error:
+        "Le paiement en ligne n'est pas disponible. Votre réservation est déjà confirmée : présentez votre QR code au salon et réglez sur place.",
     },
-  });
-
-  if (!booking) return NextResponse.json({ error: "Reservation introuvable" }, { status: 404 });
-  if (booking.clientId !== session.user.id)
-    return NextResponse.json({ error: "Non autorise" }, { status: 403 });
-  if (booking.paymentStatus === "PAID")
-    return NextResponse.json({ error: "Deja payee" }, { status: 400 });
-  if (booking.status === "CANCELLED")
-    return NextResponse.json({ error: "Reservation annulee" }, { status: 400 });
-
-  const qrToken = `BT-${nanoid(16)}`;
-  const verificationUrl = `${publicOrigin(req)}/verification?code=${qrToken}`;
-  const qrDataUrl = await generateQR(verificationUrl);
-
-  const updated = await prisma.booking.update({
-    where: { id: bookingId },
-    data: {
-      paymentStatus: "PAID",
-      qrCode: qrToken,
-      paidAt: new Date(),
-      status: "CONFIRMED",
-    },
-  });
-
-  const firstItem = booking.items[0];
-  if (firstItem) {
-    sendPaymentConfirmationEmail(booking.client.email, {
-      clientName: booking.client.name || "",
-      offerTitle: booking.items.map((i) => i.offer.title).join(", "),
-      salonName: firstItem.offer.provider.salonName,
-      date: new Date(firstItem.slot.startTime).toLocaleDateString("fr-TN", {
-        weekday: "long",
-        day: "numeric",
-        month: "long",
-        year: "numeric",
-      }),
-      price: Number(booking.totalPrice).toFixed(0),
-      qrCode: qrDataUrl,
-      qrToken,
-    }).catch(console.error);
-  }
-
-  return NextResponse.json({
-    success: true,
-    booking: updated,
-    qrCode: qrDataUrl,
-    qrToken,
-    message: "Paiement effectue avec succes",
-  });
+    { status: 410 },
+  );
 }
 
 export async function GET(req: NextRequest) {

@@ -116,7 +116,7 @@ function ReservationDetailPageInner() {
             </span>
           ) : (
             <span className="inline-flex items-center rounded-[var(--radius-pill)] border-2 border-hairline px-4 py-2 text-sm font-semibold text-prune">
-              Payé — en attente de visite
+              Confirmé — en attente de visite
             </span>
           )}
         </div>
@@ -174,22 +174,13 @@ function ReservationDetailPageInner() {
               })}
             </span>
           </div>
+          {/* « A regler au salon » et non « Montant paye » : rien n'a ete
+              encaisse ici. La ligne « Paye le » a disparu — `paidAt` reste
+              nul, elle affichait « Invalid Date ». */}
           <div className="flex justify-between gap-3">
-            <span className="text-prune-soft">Montant payé</span>
+            <span className="text-prune-soft">À régler au salon</span>
             <span className="ds-display text-xl text-prune">
               {Number(data.booking.totalPrice).toFixed(0)} TND
-            </span>
-          </div>
-          <div className="flex justify-between gap-3">
-            <span className="text-prune-soft">Payé le</span>
-            <span className="text-right text-prune">
-              {new Date(data.booking.paidAt).toLocaleDateString("fr-TN", {
-                day: "numeric",
-                month: "long",
-                year: "numeric",
-                hour: "2-digit",
-                minute: "2-digit",
-              })}
             </span>
           </div>
         </div>

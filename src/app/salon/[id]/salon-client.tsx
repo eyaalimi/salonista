@@ -215,22 +215,22 @@ export function SalonClient({ salon }: { salon: Salon }) {
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
             </svg>
           </div>
-          <h2 className="ds-display mb-3 text-2xl text-prune">Réservation enregistrée</h2>
+          <h2 className="ds-display mb-3 text-2xl text-prune">Réservation confirmée</h2>
           <p className="mb-8 text-base leading-relaxed text-prune-soft">
-            Procède au paiement pour recevoir ton QR code.
+            Présente ton QR code au salon : tu règles ton soin sur place.
           </p>
           <div className="flex flex-col gap-3">
             <Link
-              href={`/cliente/paiement?bookingId=${success}`}
+              href={`/cliente/reservation?bookingId=${success}`}
               className="ds-press ds-focus inline-flex min-h-[48px] w-full items-center justify-center rounded-[var(--radius-pill)] bg-rose px-6 text-base font-semibold text-prune hover:bg-[#F04A79]"
             >
-              Payer maintenant
+              Voir mon QR code
             </Link>
             <Link
               href="/cliente"
               className="ds-press ds-focus inline-flex min-h-[48px] w-full items-center justify-center rounded-[var(--radius-pill)] border-2 border-hairline px-6 text-base font-semibold text-prune hover:border-rose"
             >
-              Payer plus tard
+              Plus tard
             </Link>
           </div>
         </div>
