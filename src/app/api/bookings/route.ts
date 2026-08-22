@@ -2,8 +2,15 @@ import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { sendBookingConfirmationEmail, sendNewBookingToProvider } from "@/lib/mail";
+import {
+  sendBookingConfirmationEmail,
+  sendBookingQrEmail,
+  sendNewBookingToProvider,
+} from "@/lib/mail";
+import { publicOrigin } from "@/lib/public-origin";
 import { formatHeure } from "@/lib/datetime";
+import { etatCreationReservation } from "@/lib/booking-state";
+import { nanoid } from "nanoid";
 
 // New input shape: an ordered list of offer IDs and a single starting time.
 // The server allocates consecutive slots back-to-back for each offer.
@@ -81,11 +88,18 @@ export async function POST(req: NextRequest) {
         cursor += offer.durationMinutes * 60_000;
       }
 
+      // Le QR nait avec la reservation, pas avec un paiement : il atteste
+      // d'un rendez-vous. La cliente regle son soin au salon.
+      const etat = etatCreationReservation();
+
       const booking = await tx.booking.create({
         data: {
           clientId: session.user.id,
           totalPrice,
           notes: notes || null,
+          status: etat.status,
+          paymentStatus: etat.paymentStatus,
+          qrCode: etat.emettreQr ? `BT-${nanoid(16)}` : null,
           items: { create: itemRows },
         },
       });
@@ -171,13 +185,33 @@ export async function POST(req: NextRequest) {
       });
       const offerTitles = full.items.map((i) => i.offer.title).join(", ");
 
-      sendBookingConfirmationEmail(full.client.email, {
-        clientName: full.client.name || "",
-        offerTitle: offerTitles,
-        salonName: firstItem.offer.provider.salonName,
-        date: dateStr,
-        price: Number(full.totalPrice).toFixed(0),
-      }).catch(console.error);
+      // Un seul mail a la cliente : avec le QR s'il existe, sans lui sinon.
+      // En envoyer deux doublerait la consommation du quota SMTP pour la
+      // meme information.
+      if (full.qrCode) {
+        const QRCode = (await import("qrcode")).default;
+        const qrDataUrl = await QRCode.toDataURL(
+          `${publicOrigin(req)}/verification?code=${full.qrCode}`,
+          { width: 400, margin: 2, color: { dark: "#2D0A0A", light: "#FBF8F4" } },
+        );
+        sendBookingQrEmail(full.client.email, {
+          clientName: full.client.name || "",
+          offerTitle: offerTitles,
+          salonName: firstItem.offer.provider.salonName,
+          date: dateStr,
+          price: Number(full.totalPrice).toFixed(0),
+          qrCode: qrDataUrl,
+          qrToken: full.qrCode,
+        }).catch(console.error);
+      } else {
+        sendBookingConfirmationEmail(full.client.email, {
+          clientName: full.client.name || "",
+          offerTitle: offerTitles,
+          salonName: firstItem.offer.provider.salonName,
+          date: dateStr,
+          price: Number(full.totalPrice).toFixed(0),
+        }).catch(console.error);
+      }
 
       const providerUser = await prisma.user.findUnique({
         where: { id: firstItem.offer.provider.userId },

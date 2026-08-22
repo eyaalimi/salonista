@@ -141,7 +141,7 @@ Role enforcement: [src/middleware.ts](src/middleware.ts) (matcher on `/prestatai
 - **Tracking**: `tracking/click` (sets cookie + redirects to `/offre/<id>`)
 - **Offers**: `offers`, `offers/[id]`
 - **Bookings**: `bookings` (multi-item POST), `client/bookings/...`, `provider/bookings/...`
-- **Payment**: `payment`, `payment/verify` (stub — no real PSP yet)
+- **Payment**: `payment` (POST → **410**, GET sert le QR), `payment/verify` (validation d'arrivée par le salon)
 - **Reviews**: `reviews`
 - **Collaborations**: `collaborations`, `collaborations/[id]` (multi-offer)
 - **Influencer**: `influencer/{links,gains,stats,profile}`
@@ -218,6 +218,35 @@ The lesson is worth keeping: a whole implementation plan was once designed aroun
 ### 10. JWT role refresh on every token cycle
 
 [src/lib/auth.ts](src/lib/auth.ts) re-reads `User.role` from the DB on every JWT refresh, so admin-promotions take effect on the next request without a forced sign-out. Don't "optimize" this away.
+
+### 11. Le QR naît avec la réservation, pas avec un paiement
+
+Salonista n'encaisse rien : la cliente réserve en ligne et **règle au salon**.
+`POST /api/bookings` pose donc `qrCode` et `status: "CONFIRMED"` dès la
+création ; `paymentStatus` reste `UNPAID` — durablement, ce n'est pas un
+oubli.
+
+Trois conséquences à ne pas défaire :
+
+- **`POST /api/payment` répond 410.** Il posait `PAID` et envoyait
+  « Paiement effectué avec succès » sans qu'aucun dinar ne change de main :
+  toute cliente connectée obtenait un QR valide gratuitement. Le `GET` reste,
+  il sert à réafficher le QR.
+- **`POST /api/payment/verify` ne contrôle plus le règlement.** Exiger
+  `paymentStatus === "PAID"` rendrait tout QR invalide, puisque la cliente
+  vient précisément payer sur place. L'appartenance au salon et le refus de
+  double validation restent en place.
+- **Ne jamais afficher `paymentStatus` à la cliente.** Il vaut toujours
+  `UNPAID` et ne veut rien dire pour elle. Les écrans pivotent sur `qrVerified`
+  et `status`.
+
+La décision d'état vit dans [src/lib/booking-state.ts](src/lib/booking-state.ts)
+(pur, testé). Le drapeau `PAIEMENT_EN_LIGNE_ACTIF` y rassemble ce qu'il faudra
+rallumer quand un PSP tunisien sera branché.
+
+Rattrapage des réservations d'avant, sans QR :
+`npx tsx scripts/backfill-qr-reservations.ts --apply` (idempotent, inspecte par
+défaut).
 
 ---
 
@@ -386,7 +415,11 @@ npm run lint
 - ~~Local `npx prisma generate` fails~~ — resolved 2026-08-12 by reinstalling `node_modules`.
 - Image optimizer is bypassed for `/uploads/` — we lose webp/avif/srcset for user photos. OK for now; revisit if photo bandwidth becomes an issue.
 - No CDN in front of `/uploads/` yet. Nginx 7-day caching handles it.
-- Payment is a stub (no real PSP integration).
+- **Le règlement se fait au salon** — Salonista n'encaisse pas. Aucun PSP n'est
+  intégré ; le drapeau `PAIEMENT_EN_LIGNE_ACTIF` dans
+  [src/lib/booking-state.ts](src/lib/booking-state.ts) isole ce qu'il faudra
+  rallumer le jour où un prestataire tunisien (Paymee, Konnect, Flouci,
+  ClicToPay) sera branché.
 - Mobile app is not on the roadmap.
 
 ---

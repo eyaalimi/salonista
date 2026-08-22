@@ -156,7 +156,8 @@ export async function sendBookingConfirmationEmail(
       </tr>
     </table>
     <p style="margin:0;font-size:13px;color:#2D0A0A;opacity:0.4;line-height:1.5;">
-      Proc&eacute;dez au paiement en ligne pour recevoir votre QR code de confirmation.
+      Votre QR code vous attend dans votre espace. Pr&eacute;sentez-le au salon
+      le jour du rendez-vous : vous r&eacute;glerez votre soin sur place.
     </p>
   `);
 
@@ -168,9 +169,12 @@ export async function sendBookingConfirmationEmail(
   });
 }
 
-// ─── Payment success + QR code (for client) ───
+// ─── QR code de la reservation (pour la cliente) ───
+//
+// Anciennement « paiement confirme ». Salonista n'encaisse pas : ce mail
+// porte le QR du rendez-vous, et rappelle que le reglement se fait au salon.
 
-export async function sendPaymentConfirmationEmail(
+export async function sendBookingQrEmail(
   email: string,
   data: {
     clientName: string;
@@ -184,14 +188,15 @@ export async function sendPaymentConfirmationEmail(
 ) {
   const html = layout(`
     <h2 style="margin:0 0 8px;font-family:Georgia,'Times New Roman',serif;font-size:22px;color:#2D0A0A;font-weight:normal;">
-      Paiement confirm&eacute;
+      R&eacute;servation confirm&eacute;e
     </h2>
     <p style="margin:0 0 24px;font-size:14px;color:#2D0A0A;opacity:0.5;">
       Bonjour ${data.clientName},
     </p>
     <p style="margin:0 0 24px;font-size:14px;color:#2D0A0A;opacity:0.6;line-height:1.6;">
-      Votre paiement de <strong style="color:#C9A96E;">${data.price} TND</strong> a &eacute;t&eacute; re&ccedil;u.
-      Pr&eacute;sentez le QR code ci-dessous au salon le jour de votre rendez-vous.
+      Votre rendez-vous est confirm&eacute;. Pr&eacute;sentez le QR code ci-dessous
+      au salon le jour venu : vous r&eacute;glerez vos
+      <strong style="color:#C9A96E;">${data.price} TND</strong> sur place.
     </p>
     <table cellpadding="0" cellspacing="0" style="margin:0 auto 24px;">
       <tr><td style="text-align:center;padding:20px;border:1px solid rgba(201,169,110,0.2);">
@@ -221,7 +226,7 @@ export async function sendPaymentConfirmationEmail(
   await transporter.sendMail({
     from,
     to: email,
-    subject: `Paiement confirmé — ${data.offerTitle}`,
+    subject: `Réservation confirmée — ${data.offerTitle}`,
     html,
     attachments: [
       {

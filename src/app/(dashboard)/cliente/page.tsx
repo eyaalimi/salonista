@@ -226,22 +226,14 @@ export default function ClienteReservations() {
                     {Number(booking.totalPrice).toFixed(0)} TND
                   </span>
 
-                  {booking.paymentStatus === "PAID" && (
-                    <Badge tone="menthe">{booking.qrVerified ? "Vérifié" : "Payé"}</Badge>
-                  )}
+                  {/* Le reglement se fait au salon : `paymentStatus` reste
+                      UNPAID et ne dit rien d'utile a la cliente. Ce qui
+                      compte, c'est si sa visite a ete validee. */}
+                  {booking.qrVerified && <Badge tone="menthe">Vérifié</Badge>}
 
-                  {booking.paymentStatus === "UNPAID" && booking.status !== "CANCELLED" && (
+                  {booking.qrCode && booking.status !== "CANCELLED" && (
                     <Link
-                      href={`/cliente/paiement?bookingId=${booking.id}`}
-                      className="ds-press ds-focus inline-flex min-h-[44px] items-center rounded-[var(--radius-pill)] bg-prune px-4 text-sm font-semibold text-white hover:bg-[#4E1832]"
-                    >
-                      Payer
-                    </Link>
-                  )}
-
-                  {booking.paymentStatus === "PAID" && booking.qrCode && (
-                    <Link
-                      href={`/cliente/reservation?id=${booking.id}`}
+                      href={`/cliente/reservation?bookingId=${booking.id}`}
                       className="ds-press ds-focus inline-flex min-h-[44px] items-center rounded-[var(--radius-pill)] border-2 border-hairline px-4 text-sm font-semibold text-prune hover:border-rose"
                     >
                       QR code

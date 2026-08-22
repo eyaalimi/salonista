@@ -113,7 +113,10 @@ function VerificationPageInner() {
     );
   }
 
-  const paid = data.booking.paymentStatus === "PAID";
+  // La cliente regle au salon : `paymentStatus` reste UNPAID et ne dit rien
+  // de la validite du QR. Ce qui compte, c'est que la reservation tienne
+  // toujours. Se fier au reglement rendait tout QR non validable.
+  const active = data.booking.status !== "CANCELLED";
 
   return (
     <div className="min-h-screen bg-brand-cream flex items-center justify-center px-6">
@@ -124,7 +127,11 @@ function VerificationPageInner() {
 
         <div className="text-center mb-6">
           <h1 className="luxury-heading text-xl text-brand-ink mb-1">
-            {paid ? (data.verified ? "Client déjà vérifié" : "Paiement vérifié") : "Non payé"}
+            {active
+              ? data.verified
+                ? "Client déjà vérifié"
+                : "Réservation valide"
+              : "Réservation annulée"}
           </h1>
           {data.verified && data.verifiedBy && (
             <p className="text-[10px] tracking-[0.15em] uppercase text-brand-ink-soft mt-1">
@@ -164,14 +171,14 @@ function VerificationPageInner() {
             </span>
           </div>
           <div className="flex justify-between">
-            <span className="text-brand-ink-soft">Montant</span>
+            <span className="text-brand-ink-soft">À encaisser</span>
             <span className="luxury-heading text-xl text-brand-gold">
               {Number(data.booking.totalPrice).toFixed(0)} TND
             </span>
           </div>
         </div>
 
-        {paid && !data.verified && (
+        {active && !data.verified && (
           <div className="mt-8">
             {sessionStatus === "loading" ? null : isSalonSession ? (
               <button

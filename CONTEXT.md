@@ -74,7 +74,7 @@ Money math:
 - **Tracking**: `tracking/click` (sets cookie + redirect to `/offre/<id>`)
 - **Offers**: `offers`, `offers/[id]`
 - **Bookings**: `bookings` (multi-item), `client/bookings/...`, `provider/bookings/...`
-- **Payment**: `payment`, `payment/verify`
+- **Payment**: `payment` (POST → 410, GET serves the QR), `payment/verify`
 - **Reviews**: `reviews`
 - **Collaborations**: `collaborations`, `collaborations/[id]` (multi-offer)
 - **Influencer**: `influencer/{links,gains,stats,profile}`
@@ -290,7 +290,11 @@ npx tsx scripts/create-admin.ts
 - Local `npx prisma generate` fails (corrupt `effect` package) — non-blocking, prod regenerates fine.
 - Image optimizer is bypassed for `/uploads/` — we lose webp/avif/srcset for user photos. OK for now; revisit if photo bandwidth becomes an issue.
 - No CDN in front of `/uploads/` yet. Nginx 7-day caching handles it for now.
-- Payment is a stub (no real PSP integration).
+- **Payment happens at the salon.** Salonista collects nothing online. The QR
+  code is issued when the booking is created; `paymentStatus` stays `UNPAID`.
+  `POST /api/payment` returns 410. See `PAIEMENT_EN_LIGNE_ACTIF` in
+  `src/lib/booking-state.ts` for what to re-enable when a Tunisian PSP
+  (Paymee, Konnect, Flouci, ClicToPay) is wired in.
 - Mobile app is not on the roadmap.
 
 ---
