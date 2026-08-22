@@ -6,7 +6,13 @@ import { BookingCreateDrawer } from "@/components/pos/booking-create-drawer";
 import { BookingDetailDrawer } from "@/components/pos/booking-detail-drawer";
 import { useOnlineStatus } from "@/components/pos/online-status";
 
-export function PosCalendarClient({ defaultEmployeeId }: { defaultEmployeeId: string }) {
+export function PosCalendarClient({
+  defaultEmployeeId,
+  peutEncaisser,
+}: {
+  defaultEmployeeId: string;
+  peutEncaisser: boolean;
+}) {
   const { online } = useOnlineStatus();
   const [draftStart, setDraftStart] = useState<Date | null>(null);
   const [openBookingId, setOpenBookingId] = useState<string | null>(null);
@@ -34,7 +40,7 @@ export function PosCalendarClient({ defaultEmployeeId }: { defaultEmployeeId: st
       {openBookingId && (
         <BookingDetailDrawer
           bookingId={openBookingId}
-          canSell={true}
+          canSell={peutEncaisser}
           canCancel={true}
           canEdit={true}
           onClose={() => setOpenBookingId(null)}

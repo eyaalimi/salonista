@@ -2,6 +2,7 @@ import { getCurrentEmployee } from "@/lib/employee-session";
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { etapesDemarrage, demarrageTermine } from "@/lib/onboarding-salon";
+import { hasModule } from "@/lib/modules";
 import { DemarrageCard } from "@/components/pos/demarrage-card";
 import { PosCalendarClient } from "./calendar-client";
 
@@ -54,7 +55,13 @@ export default async function PosCalendarPage() {
       {afficherGuide && profil && (
         <DemarrageCard etapes={etapesDemarrage(profil, nombreOffres)} />
       )}
-      <PosCalendarClient defaultEmployeeId={employee.id} />
+      <PosCalendarClient
+        defaultEmployeeId={employee.id}
+        // Sans le module, `POST /api/pos/sales` repond 403 : le bouton
+        // « Encaisser » ouvrait un panier qui ne pouvait pas etre valide.
+        // La visite est comptee autrement, en validant le QR de la cliente.
+        peutEncaisser={await hasModule(employee.providerId, "POS")}
+      />
     </>
   );
 }
