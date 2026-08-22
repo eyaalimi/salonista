@@ -33,7 +33,10 @@ export default function ReservationDetailPage() {
 
 function ReservationDetailPageInner() {
   const searchParams = useSearchParams();
-  const bookingId = searchParams.get("id");
+  // Les deux noms circulent : `id` dans les liens historiques, `bookingId`
+  // dans ceux qui viennent de /cliente/paiement et des mails. Accepter les
+  // deux evite un « Aucune reservation selectionnee » selon la provenance.
+  const bookingId = searchParams.get("bookingId") ?? searchParams.get("id");
   const [data, setData] = useState<BookingDetail | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
