@@ -248,6 +248,28 @@ Rattrapage des réservations d'avant, sans QR :
 `npx tsx scripts/backfill-qr-reservations.ts --apply` (idempotent, inspecte par
 défaut).
 
+### 12. Comment le salon valide une arrivée
+
+Le QR contient une **URL** (`/verification?code=BT-…`), pas un code nu : c'est
+ce qui permet de le lire avec **l'appareil photo natif d'un téléphone**, sans
+installer d'application. Ne le remplacez pas par un code brut.
+
+Deux chemins mènent à la validation, tous deux vers la même page
+`/verification` :
+
+- **L'appareil photo du téléphone** — le lien s'ouvre tout seul.
+- **`/pos/scan`** — un scanner intégré à la caisse, via `BarcodeDetector`
+  (API **native**, aucune dépendance ajoutée). Support inégal : absent de
+  Safari iOS à ce jour, d'où un repli explicite + saisie manuelle du code.
+  L'extraction du code est isolée dans
+  [src/lib/qr-code-reservation.ts](src/lib/qr-code-reservation.ts) (pur, testé)
+  — elle rejette les QR étrangers et les `?code=` portés par d'autres pages.
+
+Après « Confirmer l'arrivée », un bouton **« Encaisser maintenant »** ouvre
+`/pos?bookingId=…` et pré-remplit le panier — le même mécanisme que le bouton
+« Encaisser » de l'agenda. Sans lui, valider et encaisser restaient deux gestes
+sans lien et la caissière devait retrouver la cliente à la main.
+
 ---
 
 ## Repo layout

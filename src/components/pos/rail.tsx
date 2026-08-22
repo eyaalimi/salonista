@@ -19,6 +19,7 @@ import {
   Handshake,
   ShoppingBag,
   Lock,
+  ScanLine,
 } from "lucide-react";
 import type { SubscriptionModule } from "@/generated/prisma/enums";
 
@@ -61,6 +62,7 @@ export function Rail({
     { href: "/pos/analytics", label: "Mon salon", shortcut: "A", icon: <BarChart3 size={20} />, perm: "analytics.view" },
     { href: "/pos", label: "Caisse", shortcut: "1", icon: <LayoutGrid size={20} />, perm: "pos.sell", module: "POS" },
     { href: "/pos/calendar", label: "RDV", shortcut: "B", icon: <Calendar size={20} />, perm: "bookings.view" },
+    { href: "/pos/scan", label: "Scanner", shortcut: "Q", icon: <ScanLine size={20} />, perm: "bookings.edit" },
     { href: "/pos/customers", label: "Clients", shortcut: "C", icon: <Users size={20} />, perm: "customers.view" },
   ];
 

@@ -105,6 +105,21 @@ function VerificationPageInner() {
             {code ? "Code invalide" : "Code manquant"}
           </h1>
           <p className="text-sm text-brand-ink-soft">{error || "Erreur inconnue"}</p>
+          {/* Sans code, on arrive ici en tapant l'adresse a la main : c'est le
+              moment d'expliquer comment on scanne, puisque rien ailleurs ne le
+              dit. Le QR contient une URL — l'appareil photo du telephone
+              suffit, aucune application a installer. */}
+          {!code && (
+            <p className="mt-4 rounded-xl bg-brand-cream p-4 text-left text-sm leading-relaxed text-brand-ink-soft">
+              Pour valider une cliente, visez son QR code avec l&apos;appareil
+              photo de votre téléphone : le lien s&apos;ouvre tout seul. Depuis
+              la caisse, vous pouvez aussi utiliser{" "}
+              <Link href="/pos/scan" className="font-semibold text-brand-ink underline">
+                Scanner un QR
+              </Link>
+              .
+            </p>
+          )}
           <Link href="/" className="inline-block mt-6 text-xs tracking-[0.2em] uppercase text-brand-gold hover:text-brand-ink transition-colors">
             Retour à l&apos;accueil
           </Link>
@@ -198,6 +213,25 @@ function VerificationPageInner() {
                 S&apos;identifier au salon
               </button>
             )}
+          </div>
+        )}
+
+        {/* Le chainon manquant : valider l'arrivee et encaisser etaient deux
+            gestes sans lien. La caissiere validait ici, puis devait retrouver
+            la cliente elle-meme dans l'agenda de la caisse. `/pos?bookingId=`
+            remplit le panier tout seul — le meme mecanisme que le bouton
+            « Encaisser » de l'agenda. */}
+        {active && data.verified && isSalonSession && (
+          <div className="mt-8">
+            <a
+              href={`/pos?bookingId=${data.booking.id}`}
+              className="block w-full rounded-2xl bg-brand-ink py-4 text-center text-base font-semibold text-white hover:bg-brand-gold transition-colors"
+            >
+              Encaisser maintenant
+            </a>
+            <p className="mt-3 text-center text-xs text-brand-ink-soft">
+              Le panier sera pré-rempli avec les prestations réservées.
+            </p>
           </div>
         )}
       </div>

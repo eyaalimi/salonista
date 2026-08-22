@@ -229,6 +229,16 @@ export function PosCalendar({ initialDate, onCreateAt, onOpenBooking }: Props) {
             <p className="mt-1 text-sm text-prune-soft">
               Les réservations prises en ligne apparaissent ici automatiquement.
             </p>
+            {/* Rien n'expliquait comment valider une cliente : le salon
+                ignorait qu'il suffit de l'appareil photo du telephone. */}
+            <p className="mt-3 text-sm text-prune-soft">
+              À son arrivée, scannez le QR code de la cliente avec l&apos;appareil
+              photo de votre téléphone, ou depuis{" "}
+              <a href="/pos/scan" className="font-semibold text-prune underline">
+                Scanner
+              </a>
+              .
+            </p>
           </div>
         ) : (
           <ul className="space-y-2">
