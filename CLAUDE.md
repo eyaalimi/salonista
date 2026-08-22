@@ -270,6 +270,33 @@ Après « Confirmer l'arrivée », un bouton **« Encaisser maintenant »** ouvr
 « Encaisser » de l'agenda. Sans lui, valider et encaisser restaient deux gestes
 sans lien et la caissière devait retrouver la cliente à la main.
 
+### 13. Le chiffre d'affaires compte aussi les salons sans caisse
+
+**`POST /api/pos/sales` exige le module POS et répond 403 sans lui.** Or les
+statistiques ne comptaient que des `Sale` : un salon non abonné voyait
+**« 0 TND » en permanence**, alors qu'il validait les QR de ses clientes et
+encaissait au comptoir.
+
+`/api/pos/analytics/summary` additionne désormais deux sources via
+[src/lib/revenu-salon.ts](src/lib/revenu-salon.ts) (pur, 11 tests) :
+
+- les **ventes** (`Sale`), quand le salon a la caisse ;
+- les **rendez-vous terminés** (`Booking.status = COMPLETED`) **sans vente
+  rattachée**, sinon.
+
+Deux règles à ne pas défaire :
+
+- **`aUneVente` évite le double comptage.** Quand la caisse encaisse un
+  rendez-vous, elle pose `Sale.bookingId` *et* passe le `Booking` à
+  `COMPLETED` — le compter des deux côtés doublerait la recette.
+- **Le filtre porte sur `qrVerifiedAt`, pas `createdAt`.** Ce qui compte est
+  le jour de la **visite**, pas celui de la réservation. (`Booking` n'a pas
+  d'`updatedAt`.)
+
+Les boutons « Encaisser » sont masqués sans le module — sur `/verification`
+(via `caisseDisponible` renvoyé par l'API) et dans l'agenda (`peutEncaisser`).
+Ils menaient à un échec silencieux : panier rempli, enregistrement en 403.
+
 ---
 
 ## Repo layout

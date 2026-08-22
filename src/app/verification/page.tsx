@@ -11,6 +11,8 @@ interface VerificationData {
   valid: boolean;
   verified: boolean;
   verifiedAt?: string;
+  /** `false` si le salon n'a pas le module caisse : pas d'encaissement ici. */
+  caisseDisponible?: boolean;
   verifiedBy?: { displayName: string };
   booking: {
     id: string;
@@ -221,7 +223,7 @@ function VerificationPageInner() {
             la cliente elle-meme dans l'agenda de la caisse. `/pos?bookingId=`
             remplit le panier tout seul — le meme mecanisme que le bouton
             « Encaisser » de l'agenda. */}
-        {active && data.verified && isSalonSession && (
+        {active && data.verified && isSalonSession && data.caisseDisponible && (
           <div className="mt-8">
             <a
               href={`/pos?bookingId=${data.booking.id}`}
@@ -233,6 +235,16 @@ function VerificationPageInner() {
               Le panier sera pré-rempli avec les prestations réservées.
             </p>
           </div>
+        )}
+
+        {/* Sans le module caisse, l'encaissement detaille n'existe pas — mais
+            la visite compte quand meme dans les statistiques du salon. Le dire
+            evite de laisser croire que la prestation s'est perdue. */}
+        {active && data.verified && isSalonSession && !data.caisseDisponible && (
+          <p className="mt-8 rounded-xl bg-brand-cream p-4 text-center text-sm leading-relaxed text-brand-ink-soft">
+            Visite enregistrée. Le montant est compté dans les statistiques de
+            votre salon — encaissez la cliente au comptoir.
+          </p>
         )}
       </div>
     </div>

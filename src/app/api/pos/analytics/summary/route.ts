@@ -1,8 +1,8 @@
 import { NextRequest } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requirePermission, toResponse } from "@/lib/employee-session";
-import { addMoney, subMoney } from "@/lib/money";
 import { parseRange, previousRange } from "@/lib/analytics-range";
+import { consoliderRevenu, ticketMoyen } from "@/lib/revenu-salon";
 
 const PAID_STATUSES = ["PAID", "PARTIALLY_REFUNDED", "REFUNDED"] as const;
 
@@ -15,6 +15,23 @@ async function summarize(providerId: string, from: Date, to: Date) {
     },
     select: { id: true, total: true },
   });
+
+  // Les rendez-vous termines comptent aussi : sans le module caisse, aucune
+  // vente ne peut exister (POST /api/pos/sales repond 403) et le salon voyait
+  // « 0 TND » alors qu'il travaillait. `consoliderRevenu` ecarte ceux qui
+  // portent deja une vente, pour ne pas compter deux fois la meme prestation.
+  // `qrVerifiedAt` et non `createdAt` : ce qui compte est le jour de la
+  // VISITE, pas celui de la reservation. Une cliente qui reserve lundi pour
+  // vendredi doit compter dans la recette de vendredi.
+  const rdvTermines = await prisma.booking.findMany({
+    where: {
+      status: "COMPLETED",
+      items: { some: { offer: { providerId } } },
+      qrVerifiedAt: { gte: from, lte: to },
+    },
+    select: { totalPrice: true, sale: { select: { id: true } } },
+  });
+
   const refunds = await prisma.refund.findMany({
     where: {
       sale: { providerId },
@@ -22,18 +39,21 @@ async function summarize(providerId: string, from: Date, to: Date) {
     },
     select: { totalAmount: true },
   });
-  const grossRevenue = sales.reduce((s, r) => addMoney(s, String(r.total)), "0.000");
-  const refundTotal = refunds.reduce((s, r) => addMoney(s, String(r.totalAmount)), "0.000");
-  const netRevenue = subMoney(grossRevenue, refundTotal);
+
+  const revenu = consoliderRevenu(
+    sales.map((s) => ({ total: String(s.total) })),
+    rdvTermines.map((b) => ({
+      totalPrice: String(b.totalPrice),
+      aUneVente: b.sale !== null,
+    })),
+    refunds.map((r) => ({ totalAmount: String(r.totalAmount) })),
+  );
+
   const newCustomers = await prisma.customer.count({
     where: { firstSalonId: providerId, createdAt: { gte: from, lte: to } },
   });
-  return {
-    netRevenue,
-    paidCount: sales.length,
-    refundTotal,
-    newCustomers,
-  };
+
+  return { ...revenu, newCustomers };
 }
 
 export async function GET(req: NextRequest) {
@@ -54,10 +74,7 @@ export async function GET(req: NextRequest) {
   ]);
 
   // averageTicket = netRevenue / paidCount (current period only, no delta dependency).
-  const avgTicket =
-    current.paidCount > 0
-      ? (Number(current.netRevenue) / current.paidCount).toFixed(3)
-      : null;
+  const avgTicket = ticketMoyen(current);
 
   return Response.json({
     range: { from, to },

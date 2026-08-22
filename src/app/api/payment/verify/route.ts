@@ -4,6 +4,7 @@ import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { resolveVerifier } from "@/lib/verify-authz";
 import { refusValidationArrivee } from "@/lib/booking-state";
+import { hasModule } from "@/lib/modules";
 
 export async function GET(req: NextRequest) {
   const code = req.nextUrl.searchParams.get("code");
@@ -38,10 +39,18 @@ export async function GET(req: NextRequest) {
     verifiedByDisplayName = emp?.displayName;
   }
 
+  // Meme information que sur le POST : la page se recharge apres validation
+  // et doit savoir s'il faut proposer l'encaissement.
+  const providerIdGet = booking.items[0]?.offer.providerId;
+  const caisseDisponible = providerIdGet
+    ? await hasModule(providerIdGet, "POS")
+    : false;
+
   return NextResponse.json({
     valid: true,
     verified: booking.qrVerified,
     verifiedAt: booking.qrVerifiedAt,
+    caisseDisponible,
     verifiedBy: verifiedByDisplayName ? { displayName: verifiedByDisplayName } : undefined,
     booking: {
       id: booking.id,
@@ -171,9 +180,19 @@ export async function POST(req: NextRequest) {
     verifiedByDisplayName = emp?.displayName;
   }
 
+  // Sans le module caisse, `POST /api/pos/sales` repond 403 : proposer
+  // « Encaisser maintenant » menerait a un echec silencieux. La visite est de
+  // toute facon deja comptee dans les statistiques du salon, via le
+  // rendez-vous passe a COMPLETED juste au-dessus.
+  const providerId = booking.items[0]?.offer.providerId;
+  const caisseDisponible = providerId
+    ? await hasModule(providerId, "POS")
+    : false;
+
   return NextResponse.json({
     valid: true,
     verified: true,
+    caisseDisponible,
     verifiedBy: verifiedByDisplayName ? { displayName: verifiedByDisplayName } : undefined,
     message: "Client vérifié avec succès",
     booking: {
