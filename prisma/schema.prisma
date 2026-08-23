@@ -894,3 +894,22 @@ model FeatureInterest {
   @@unique([providerId, feature])
   @@index([feature])
 }
+
+/// Journal des televersements, pour le quota par utilisateur.
+///
+/// Sans lui, n'importe quel compte connecte — y compris une cliente, qui n'a
+/// aucune raison de televerser — pouvait deposer 5 Mo autant de fois qu'il
+/// voulait sur le disque du serveur.
+///
+/// `userId` est une String libre et non une relation : un employe de caisse
+/// televerse via une session PIN, ou il n'y a pas toujours de `User`. La cle
+/// porte alors l'identifiant de l'employe. Une contrainte de cle etrangere
+/// interdirait ce cas.
+model UploadLog {
+  id        String   @id @default(cuid())
+  userId    String
+  bytes     Int
+  createdAt DateTime @default(now())
+
+  @@index([userId, createdAt])
+}

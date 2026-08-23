@@ -171,6 +171,32 @@ sudo nginx -t
 sudo tail -f /var/log/nginx/access.log
 ```
 
+### Appliquer les en-têtes de sécurité sur `/uploads/` (lot C, une seule fois)
+
+`deploy.sh` ne touche pas à la configuration Nginx : un serveur déjà en place
+ne reçoit **pas** les en-têtes ajoutés à `setup-server.sh`. À appliquer une
+fois, à la main :
+
+```bash
+sudo nano /etc/nginx/sites-enabled/salonista.tn
+```
+
+Dans le bloc `location /uploads/`, ajouter :
+
+```nginx
+add_header X-Content-Type-Options nosniff always;
+default_type application/octet-stream;
+```
+
+Puis vérifier et recharger :
+
+```bash
+sudo nginx -t && sudo systemctl reload nginx
+curl -sI https://salonista.tn/uploads/<un-fichier>.webp | grep -i x-content-type
+```
+
+La dernière commande doit afficher `x-content-type-options: nosniff`.
+
 ### Open a Postgres shell
 ```bash
 sudo -u postgres psql -d salonista_prod
