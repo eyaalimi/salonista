@@ -179,7 +179,17 @@ These are non-obvious things that cost real time to figure out. Preserve them wh
 
 Next's optimizer snapshots `public/` at build time. Files written **after** build (every offer photo) become invisible to the optimizer → 400 "received null".
 
-**Fix:** render uploaded photos with [`<UploadedImage>`](src/components/uploaded-image.tsx) (a `next/image` wrapper with `unoptimized`). Nginx serves `/uploads/` directly with 7-day caching. **Don't** bring back `<Image>` for `/uploads/` paths.
+**Fix:** render uploaded photos with [`<UploadedImage>`](src/components/uploaded-image.tsx). Nginx serves `/uploads/` directly with 7-day caching. **Don't** bring back `<Image>` for `/uploads/` paths.
+
+Depuis le lot C, ce composant utilise un **`loader`** plutôt que `unoptimized`
+pour les images qui ont des variantes (`.webp` sous `/uploads/`) : Next
+construit alors son `srcset` sur les fichiers `-400`/`-800`/`-1600` écrits au
+téléversement. Les images antérieures (`.jpg`, `.png`) n'en ont pas et restent
+en `unoptimized`.
+
+**Passer `srcSet` en prop ne marche pas** — `get-img-props` fait un
+`delete rest.srcSet`, et le force à `undefined` sous `unoptimized`. Le loader
+est le seul point d'entrée prévu.
 
 ### 2. Tracking-link redirect uses forwarded host, not `req.url`
 
@@ -296,6 +306,34 @@ Deux règles à ne pas défaire :
 Les boutons « Encaisser » sont masqués sans le module — sur `/verification`
 (via `caisseDisponible` renvoyé par l'API) et dans l'agenda (`peutEncaisser`).
 Ils menaient à un échec silencieux : panier rempli, enregistrement en 403.
+
+### 14. Le format d'une image se lit dans ses octets, jamais dans `file.type`
+
+`file.type` est l'en-tête MIME **annoncé par le navigateur** : trivialement
+falsifiable. L'ancienne route s'y fiait *et* tirait l'extension de
+`file.name.split(".").pop()`. On déposait donc un `.html` ou un `.svg` en
+déclarant `image/png` ; Nginx servant `/uploads/` en direct, le fichier
+s'exécutait **en même origine que l'application**.
+
+Trois règles, dans [src/lib/upload-image.ts](src/lib/upload-image.ts) (pur,
+27 tests) et [src/app/api/upload/route.ts](src/app/api/upload/route.ts) :
+
+1. **Le format vient de `sharp(buffer).metadata()`**, jamais de l'appelant.
+   Liste blanche : `jpeg`/`png`/`webp`/`avif`. Le SVG est refusé — il peut
+   porter du script.
+2. **L'extension est imposée par le code** (`.webp`), jamais reprise du nom
+   d'origine. Le nom de fichier est un UUID généré côté serveur.
+3. **Tout est ré-encodé** en WebP 400/800/1600 px. Outre le `srcset`, le
+   ré-encodage détruit toute charge utile cachée dans le fichier d'origine.
+
+Quota : 40 envois par 24 h et par utilisateur (`UploadLog`). La clé est
+`User.id`, ou l'identifiant d'employé pour une session PIN — d'où l'absence de
+clé étrangère sur `UploadLog.userId`.
+
+**Nginx n'est pas mis à jour par `deploy.sh`.** Les en-têtes `nosniff` et
+`default_type` ajoutés à `setup-server.sh` doivent être appliqués à la main
+sur un serveur déjà en place — voir le runbook
+[scripts/deploy/README.md](scripts/deploy/README.md).
 
 ---
 

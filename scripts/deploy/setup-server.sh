@@ -106,6 +106,16 @@ server {
         alias ${APP_DIR}/public/uploads/;
         expires 7d;
         access_log off;
+
+        # Defense en profondeur contre une XSS stockee. L'API n'accepte plus
+        # que de vraies images (format detecte dans les octets, re-encodage en
+        # WebP), mais si un fichier hostile arrivait ici par un autre chemin :
+        #   - nosniff empeche le navigateur de deviner un type et d'executer
+        #     du HTML ou du SVG servi depuis NOTRE origine ;
+        #   - default_type force le telechargement plutot que l'affichage pour
+        #     tout ce dont Nginx ne reconnait pas l'extension.
+        add_header X-Content-Type-Options nosniff always;
+        default_type application/octet-stream;
     }
 
     # Next.js
