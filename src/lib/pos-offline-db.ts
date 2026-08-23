@@ -388,3 +388,37 @@ export async function clearCartDraft(employeeId: string): Promise<void> {
   const d = await db();
   await d.delete("cart_draft", employeeId);
 }
+
+/**
+ * Efface toute la base locale de la caisse.
+ *
+ * A la deconnexion, la tablette gardait le catalogue, les clientes et les
+ * brouillons de panier du salon precedent. Sur un appareil partage — le cas
+ * courant d'une tablette de comptoir — l'employe suivant en heritait.
+ *
+ * REFUSE d'effacer s'il reste des ventes non synchronisees : elles ne sont
+ * nulle part ailleurs, les perdre effacerait de l'argent encaisse. L'appelant
+ * doit alors proposer de synchroniser d'abord.
+ *
+ * @returns le nombre de ventes en attente qui ont bloque l'effacement, ou 0
+ *   si la base a bien ete effacee.
+ */
+export async function wipeOfflineDb(): Promise<number> {
+  const enAttente = await listPendingSales().catch(() => []);
+  if (enAttente.length > 0) return enAttente.length;
+
+  // Ferme la connexion ouverte, sinon `deleteDatabase` reste bloque.
+  _db?.close();
+  _db = null;
+
+  await new Promise<void>((resolve) => {
+    const req = indexedDB.deleteDatabase(DB_NAME);
+    // On resout dans tous les cas : un effacement impossible ne doit pas
+    // empecher la deconnexion elle-meme.
+    req.onsuccess = () => resolve();
+    req.onerror = () => resolve();
+    req.onblocked = () => resolve();
+  });
+
+  return 0;
+}

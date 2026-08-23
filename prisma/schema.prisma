@@ -241,6 +241,7 @@ model ProviderProfile {
   rewardProgram         RewardProgram?
   rewardWallets         RewardWallet[]
   featureInterests      FeatureInterest[]
+  devicePairingCodes    DevicePairingCode[]
 }
 
 model InfluencerProfile {
@@ -488,6 +489,10 @@ model SalonEmployee {
   commissionRate Decimal?     @db.Decimal(5, 2)
   active         Boolean      @default(true)
   lastLoginAt    DateTime?
+  /// Echecs consecutifs de saisie du PIN. Remis a zero au premier succes.
+  pinFailedAttempts Int       @default(0)
+  /// Verrouillage temporaire apres trop d'echecs. NULL = ouvert.
+  pinLockedUntil    DateTime?
   createdAt      DateTime     @default(now())
   updatedAt      DateTime     @updatedAt
 
@@ -912,4 +917,45 @@ model UploadLog {
   createdAt DateTime @default(now())
 
   @@index([userId, createdAt])
+}
+
+/// Compteur generique de limite de debit, persiste en base.
+///
+/// Une Map en memoire ne survit pas a `pm2 reload` : chaque deploiement
+/// remettait les compteurs a zero, et un attaquant patient n'avait qu'a
+/// attendre. La base survit aux redemarrages et serait partagee si l'on
+/// passait un jour a plusieurs instances.
+///
+/// `key` porte la dimension limitee : `pin:<employeeId>`, `resolve:ip:<ip>`…
+model RateLimitEntry {
+  key         String   @id
+  count       Int      @default(0)
+  windowStart DateTime
+  updatedAt   DateTime @updatedAt
+
+  @@index([updatedAt])
+}
+
+/// Code d'appairage d'un appareil a un salon, envoye par e-mail.
+///
+/// `/api/salon-pin/resolve` retournait la liste complete des employes d'un
+/// salon a partir de son seul email — donnant a un inconnu les identifiants
+/// a mitrailler. Un appareil neuf doit desormais prouver qu'il a acces a la
+/// boite du proprietaire avant de voir les tuiles.
+///
+/// Le code est stocke HACHE : une fuite de la base ne doit pas livrer des
+/// codes utilisables.
+model DevicePairingCode {
+  id         String   @id @default(cuid())
+  providerId String
+  codeHash   String
+  attempts   Int      @default(0)
+  expiresAt  DateTime
+  usedAt     DateTime?
+  createdAt  DateTime @default(now())
+
+  provider ProviderProfile @relation(fields: [providerId], references: [id], onDelete: Cascade)
+
+  @@index([providerId, createdAt])
+  @@index([expiresAt])
 }

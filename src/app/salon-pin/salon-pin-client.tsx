@@ -20,6 +20,18 @@ type ResolvedSalon = {
   employees: Employee[];
 };
 
+/**
+ * Reponse du POST /resolve pour un appareil NEUF : le nom du salon et un
+ * indice sur la boite qui vient de recevoir le code. Jamais la liste des
+ * employes — c'est precisement ce que l'ancienne version livrait a un
+ * inconnu.
+ */
+type AppairageDemande = {
+  providerId: string;
+  salonName: string;
+  indiceEmail: string;
+};
+
 const ROLE_LABELS: Record<Employee["role"], string> = {
   OWNER: "Propriétaire",
   MANAGER: "Manager",
@@ -42,9 +54,12 @@ export default function SalonPinClient() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const next = sanitizeNext(searchParams.get("next"));
-  const [step, setStep] = useState<"identify" | "pin">("identify");
+  const [step, setStep] = useState<"identify" | "code" | "pin">("identify");
   const [identifier, setIdentifier] = useState("");
   const [salon, setSalon] = useState<ResolvedSalon | null>(null);
+  // Appareil neuf : un code part vers la boite du proprietaire.
+  const [appairage, setAppairage] = useState<AppairageDemande | null>(null);
+  const [code, setCode] = useState("");
   const [employee, setEmployee] = useState<Employee | null>(null);
   const [pin, setPin] = useState("");
   const [loading, setLoading] = useState(false);
@@ -98,6 +113,14 @@ export default function SalonPinClient() {
           setError(data.error ?? "Salon introuvable");
           return;
         }
+        // Appareil neuf : passer par le code recu par mail. Un appareil deja
+        // appaire recoit directement ses tuiles.
+        if (data.appairage === "code-envoye") {
+          setAppairage(data);
+          setCode("");
+          setStep("code");
+          return;
+        }
         setSalon(data);
       } catch {
         setError("Erreur de connexion");
@@ -106,6 +129,36 @@ export default function SalonPinClient() {
       }
     },
     [identifier],
+  );
+
+  /** Valide le code d'appairage : l'appareil est alors autorise. */
+  const handleAppairage = useCallback(
+    async (e: React.FormEvent) => {
+      e.preventDefault();
+      if (!appairage) return;
+      setError(null);
+      setLoading(true);
+      try {
+        const res = await fetch("/api/salon-pin/resolve/verify", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ providerId: appairage.providerId, code }),
+        });
+        const data = await res.json();
+        if (!res.ok) {
+          setError(data.error ?? "Code incorrect");
+          return;
+        }
+        setSalon(data);
+        setAppairage(null);
+        setStep("identify");
+      } catch {
+        setError("Erreur de connexion");
+      } finally {
+        setLoading(false);
+      }
+    },
+    [appairage, code],
   );
 
   const submitPin = useCallback(
@@ -199,6 +252,60 @@ export default function SalonPinClient() {
               {loading ? "..." : "Continuer"}
             </button>
           </form>
+        </section>
+      )}
+
+      {/* Appareil neuf : le code recu par mail prouve l'acces a la boite du
+          proprietaire. Sans lui, un inconnu obtenait la liste des employes
+          avec le seul email du salon. */}
+      {step === "code" && appairage && (
+        <section className="w-full max-w-md rounded-3xl border border-brand-line bg-brand-sand p-10 shadow-sm">
+          <p className="luxury-badge mb-3">{appairage.salonName}</p>
+          <h1 className="luxury-heading text-3xl text-brand-ink">
+            Autoriser cet appareil
+          </h1>
+          <p className="mt-3 text-sm text-brand-ink-soft">
+            Un code à 6 chiffres vient d&apos;être envoyé à{" "}
+            <strong className="text-brand-ink">{appairage.indiceEmail}</strong>.
+            Saisissez-le pour utiliser la caisse sur cet appareil.
+          </p>
+          <form onSubmit={handleAppairage} className="mt-8 space-y-4">
+            <input
+              type="text"
+              inputMode="numeric"
+              autoFocus
+              autoComplete="one-time-code"
+              maxLength={6}
+              value={code}
+              onChange={(e) => setCode(e.target.value.replace(/\D/g, ""))}
+              placeholder="000000"
+              className="w-full rounded-xl border border-brand-line bg-white px-5 py-4 text-center text-2xl tracking-[0.4em] text-brand-ink placeholder:text-brand-ink-soft focus:border-brand-gold focus:outline-none"
+            />
+            {error && <p className="text-sm text-red-600">{error}</p>}
+            <button
+              type="submit"
+              disabled={loading || code.length !== 6}
+              className="w-full rounded-xl bg-brand-ink py-4 text-sm uppercase tracking-[0.18em] text-brand-cream hover:bg-brand-ink-soft disabled:opacity-50"
+            >
+              {loading ? "..." : "Autoriser"}
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                setAppairage(null);
+                setCode("");
+                setError(null);
+                setStep("identify");
+              }}
+              className="w-full text-sm text-brand-ink-soft underline"
+            >
+              Changer de salon
+            </button>
+          </form>
+          <p className="mt-6 text-xs leading-relaxed text-brand-ink-soft">
+            Ce code expire dans 15 minutes. L&apos;appareil restera autorisé
+            30 jours.
+          </p>
         </section>
       )}
 

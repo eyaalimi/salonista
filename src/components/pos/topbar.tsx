@@ -50,6 +50,22 @@ export function PosTopbar({
 
   async function handleLogout() {
     setLoggingOut(true);
+
+    // Efface la base locale : sur une tablette de comptoir, l'employe suivant
+    // heritait sinon du catalogue, des clientes et des brouillons de panier.
+    // La purge refuse de s'executer s'il reste des ventes non synchronisees —
+    // elles ne sont nulle part ailleurs.
+    const { wipeOfflineDb } = await import("@/lib/pos-offline-db");
+    const enAttente = await wipeOfflineDb().catch(() => 0);
+    if (enAttente > 0) {
+      setLoggingOut(false);
+      alert(
+        `${enAttente} vente(s) ne sont pas encore enregistrées sur le serveur. ` +
+          `Reconnectez-vous à Internet et attendez la synchronisation avant de vous déconnecter.`,
+      );
+      return;
+    }
+
     await signOut({ redirect: false });
     // Vers la connexion du site, pas vers l'ecran PIN : celui-ci sert a
     // choisir un employe une fois le salon connecte, pas a se connecter. Y

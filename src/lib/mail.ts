@@ -539,3 +539,47 @@ export async function sendCashDrawerReport(
     ],
   });
 }
+
+// ─── Code d'appairage d'un appareil a la caisse ───
+
+/**
+ * Envoie au proprietaire le code qui autorise un nouvel appareil.
+ *
+ * Sans lui, `/api/salon-pin/resolve` livrait la liste des employes du salon a
+ * quiconque connaissait son email. Le code prouve que l'appelant a acces a la
+ * boite du proprietaire.
+ */
+export async function sendDevicePairingCodeEmail(
+  email: string,
+  data: { salonName: string; code: string },
+) {
+  const html = layout(`
+    <h2 style="margin:0 0 8px;font-family:Georgia,'Times New Roman',serif;font-size:22px;color:#1F1A1C;font-weight:normal;">
+      Code d&rsquo;acc&egrave;s &agrave; votre caisse
+    </h2>
+    <p style="margin:0 0 24px;font-size:14px;color:#1F1A1C;opacity:0.6;line-height:1.6;">
+      Un appareil demande &agrave; ouvrir la caisse de
+      <strong style="color:#1F1A1C;">${data.salonName}</strong>.
+      Saisissez ce code sur cet appareil pour l&rsquo;autoriser.
+    </p>
+    <table cellpadding="0" cellspacing="0" style="margin:0 auto 24px;">
+      <tr><td style="background:#F4EFE8;padding:20px 40px;text-align:center;">
+        <div style="font-size:34px;letter-spacing:0.3em;font-family:'Courier New',monospace;color:#1F1A1C;">
+          ${data.code}
+        </div>
+      </td></tr>
+    </table>
+    <p style="margin:0;font-size:12px;color:#1F1A1C;opacity:0.4;line-height:1.5;">
+      Ce code expire dans 15 minutes.
+      <strong>Si vous n&rsquo;êtes pas &agrave; l&rsquo;origine de cette demande, ignorez cet email</strong>
+      &mdash; personne ne peut ouvrir votre caisse sans lui.
+    </p>
+  `);
+
+  await transporter.sendMail({
+    from,
+    to: email,
+    subject: `Code d'accès à votre caisse — ${data.salonName}`,
+    html,
+  });
+}
