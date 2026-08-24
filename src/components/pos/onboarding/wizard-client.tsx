@@ -7,25 +7,7 @@ import { Step2Services } from "./step2-services";
 import { Step3Products } from "./step3-products";
 import { Step4Loyalty } from "./step4-loyalty";
 import { Step5Team } from "./step5-team";
-
-type Provider = {
-  id: string;
-  salonName: string;
-  phone: string | null;
-  address: string | null;
-  city: string | null;
-  category?: string;
-  matriculeFiscal: string | null;
-  receiptFooter: string | null;
-  onboardingDismissedAt: Date | null;
-  _count: {
-    offers: number;
-    products: number;
-    employees: number;
-    sales: number;
-    cashDrawerSessions: number;
-  };
-};
+import type { Provider } from "./types";
 
 const STEPS = [
   "Votre salon",

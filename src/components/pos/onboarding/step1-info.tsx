@@ -3,16 +3,7 @@
 import { useRef, useState } from "react";
 import { Upload, X } from "lucide-react";
 import { SALON_TYPES } from "@/lib/onboarding-presets";
-
-type Provider = {
-  id: string;
-  salonName: string;
-  phone: string | null;
-  address: string | null;
-  city: string | null;
-  category?: string;
-  matriculeFiscal: string | null;
-};
+import type { Provider } from "./types";
 
 export function Step1Info({
   provider,

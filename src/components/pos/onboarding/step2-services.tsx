@@ -3,12 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { Plus, Trash2, ImagePlus } from "lucide-react";
 import { SERVICE_PRESETS, type ServicePreset } from "@/lib/onboarding-presets";
-
-type Provider = {
-  id: string;
-  category?: string;
-  _count: { offers: number };
-};
+import type { Provider } from "./types";
 
 type Line = {
   title: string;

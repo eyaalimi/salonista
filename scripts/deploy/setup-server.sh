@@ -94,6 +94,19 @@ fi
 echo
 echo "Configuring Nginx..."
 sudo tee /etc/nginx/sites-available/salonista >/dev/null <<NGINX
+# Serveur par defaut : ferme la connexion sans repondre pour tout Host
+# inconnu. Sans lui, Nginx sert l'application a n'importe quel nom pointant
+# vers cette IP — un domaine tiers pouvait donc afficher le site comme le
+# sien, et les scanners qui balaient les IP publiques obtenaient une reponse.
+#
+# 444 est propre a Nginx : la connexion est coupee, aucun octet n'est renvoye.
+server {
+    listen 80 default_server;
+    listen [::]:80 default_server;
+    server_name _;
+    return 444;
+}
+
 server {
     listen 80;
     listen [::]:80;
@@ -128,6 +141,12 @@ server {
         proxy_set_header X-Real-IP \$remote_addr;
         proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
         proxy_set_header X-Forwarded-Proto \$scheme;
+        # ECRASE l'en-tete envoye par le client. Sans cette ligne, Nginx le
+        # transmettait tel quel : n'importe qui pouvait poser
+        # `X-Forwarded-Host: evil.example` et detourner une redirection.
+        # L'application n'en depend plus (voir src/lib/public-origin.ts), mais
+        # laisser passer un en-tete falsifiable n'a aucun interet.
+        proxy_set_header X-Forwarded-Host \$host;
         proxy_read_timeout 60s;
     }
 }

@@ -112,7 +112,13 @@ export async function updateProgram(
 }
 
 /** Cashback % = pointsPerDinar × dinarPerPoint × 100. */
-export function programToCashbackPct(p: Pick<RewardProgram, "pointsPerDinar" | "dinarPerPoint">): string {
+// Les deux ratios ne servent qu'a travers `.toString()` : accepter aussi des
+// chaines evite de fabriquer des `Decimal` la ou la fonction n'en a jamais eu
+// besoin.
+export function programToCashbackPct(p: {
+  pointsPerDinar: { toString(): string };
+  dinarPerPoint: { toString(): string };
+}): string {
   const ppd = Number(p.pointsPerDinar.toString());
   const dpp = Number(p.dinarPerPoint.toString());
   return (ppd * dpp * 100).toFixed(3);

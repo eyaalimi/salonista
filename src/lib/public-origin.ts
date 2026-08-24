@@ -1,12 +1,31 @@
-import type { NextRequest } from "next/server";
+/**
+ * L'origine publique du site.
+ *
+ * AVANT : on lisait `x-forwarded-proto` / `x-forwarded-host`. Or Nginx ne
+ * REECRIT pas ces en-tetes — il les transmet tels que le client les a
+ * envoyes. N'importe qui pouvait donc appeler
+ * `/api/tracking/click?token=…` avec `X-Forwarded-Host: evil.example` et
+ * obtenir une redirection vers son propre site.
+ *
+ * C'est exactement le genre de lien qu'une influenceuse diffuse : le lien
+ * portait bien `salonista.tn`, la victime cliquait en confiance, et
+ * atterrissait ailleurs. Le QR code d'une reservation etait detournable de la
+ * meme facon — il embarque cette origine.
+ *
+ * MAINTENANT : `NEXTAUTH_URL` uniquement. Cette variable est definie dans le
+ * `.env` du serveur, hors d'atteinte d'un appelant.
+ */
 
-// Behind Nginx, req.url resolves to localhost:3000 because that's what the
-// upstream sees. Prefer the proxy's forwarded headers, then NEXTAUTH_URL,
-// and only fall back to req.url for local/dev runs without a reverse proxy.
-export function publicOrigin(req: NextRequest): string {
-  const proto = req.headers.get("x-forwarded-proto");
-  const host = req.headers.get("x-forwarded-host") || req.headers.get("host");
-  if (proto && host) return `${proto}://${host}`;
-  if (process.env.NEXTAUTH_URL) return process.env.NEXTAUTH_URL;
-  return new URL(req.url).origin;
+/**
+ * @returns l'origine sans barre oblique finale, par exemple
+ *   `https://salonista.tn`.
+ *
+ * En developpement, `NEXTAUTH_URL` vaut `http://localhost:3000`. Si elle
+ * manque, on retombe sur cette valeur plutot que de lire la requete : mieux
+ * vaut un lien casse en local qu'une redirection ouverte en production.
+ */
+export function publicOrigin(): string {
+  const brut = process.env.NEXTAUTH_URL?.trim();
+  if (!brut) return "http://localhost:3000";
+  return brut.replace(/\/+$/, "");
 }
