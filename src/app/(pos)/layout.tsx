@@ -7,6 +7,7 @@ import { prisma } from "@/lib/prisma";
 import { OnlineStatusProvider } from "@/components/pos/online-status";
 import { PosTopbar } from "@/components/pos/topbar";
 import { Rail } from "@/components/pos/rail";
+import { IdleLock } from "@/components/pos/idle-lock";
 
 const plexSans = IBM_Plex_Sans({
   subsets: ["latin"],
@@ -63,6 +64,9 @@ export default async function PosLayout({ children }: { children: React.ReactNod
             </main>
           </div>
         </div>
+        {/* Verrouille l'ecran apres 4 minutes sans activite. Ne deconnecte
+            pas : le panier en cours est conserve. */}
+        <IdleLock displayName={employee.displayName} />
         {!provider?.matriculeFiscal && (
           <div className="hidden">
             {/* matricule banner moved to settings page in Design 2 */}

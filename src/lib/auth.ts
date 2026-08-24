@@ -4,6 +4,7 @@ import GoogleProvider from "next-auth/providers/google";
 import { compare } from "bcryptjs";
 import { prisma } from "./prisma";
 import { mergePermissions } from "./permissions";
+import { verifierPinEmploye } from "./verify-employee-pin";
 import type { EmployeeSessionData } from "@/types/next-auth";
 
 export const authOptions: NextAuthOptions = {
@@ -68,6 +69,11 @@ export const authOptions: NextAuthOptions = {
           throw new Error("Identifiant employé et PIN requis");
         }
 
+        // Verrouillage apres 5 echecs + limite de debit, tous deux persistes
+        // en base. Jette « PIN incorrect » ou un message de verrouillage
+        // annoncant le delai. Voir verify-employee-pin.ts.
+        await verifierPinEmploye(credentials.employeeId, credentials.pin);
+
         const employee = await prisma.salonEmployee.findUnique({
           where: { id: credentials.employeeId },
           include: {
@@ -76,12 +82,8 @@ export const authOptions: NextAuthOptions = {
           },
         });
 
-        if (!employee || !employee.active || !employee.pinHash) {
-          throw new Error("PIN incorrect");
-        }
-
-        const ok = await compare(credentials.pin, employee.pinHash);
-        if (!ok) {
+        // Defensif : verifierPinEmploye a deja valide son existence.
+        if (!employee) {
           throw new Error("PIN incorrect");
         }
 

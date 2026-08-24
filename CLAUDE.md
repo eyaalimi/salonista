@@ -335,6 +335,43 @@ clé étrangère sur `UploadLog.userId`.
 sur un serveur déjà en place — voir le runbook
 [scripts/deploy/README.md](scripts/deploy/README.md).
 
+### 15. L'accès à la caisse : trois verrous, pas un
+
+Le PIN fait 4 chiffres — 10 000 possibilités. Trois faiblesses se combinaient :
+`/api/salon-pin/resolve` livrait à un **appelant anonyme** la liste complète
+des employés d'un salon (donc les identifiants à mitrailler), rien ne comptait
+les échecs côté fournisseur NextAuth `salon-pin` (la limite existante portait
+sur `/resolve`, pas sur la validation), et le compteur vivait dans une `Map`
+mémoire remise à zéro par chaque `pm2 reload`.
+
+Ce qui protège maintenant :
+
+- **Verrouillage** — 5 échecs → 5 minutes, persisté sur `SalonEmployee`
+  (`pinFailedAttempts`, `pinLockedUntil`). Décision pure dans
+  [src/lib/pin-lockout.ts](src/lib/pin-lockout.ts) (18 tests). Le verrou est
+  vérifié **avant** `bcrypt.compare` — inutile d'offrir 100 ms de calcul à qui
+  est déjà bloqué.
+- **Limite de débit en base** (`RateLimitEntry`) sur les tentatives de PIN, sur
+  `/resolve` et sur l'envoi de codes. Décision pure dans
+  [src/lib/rate-limit-decision.ts](src/lib/rate-limit-decision.ts) (10 tests).
+- **Appairage de l'appareil** — `POST /resolve` ne rend plus **que** le nom du
+  salon et envoie un code à 6 chiffres au propriétaire ; `POST /resolve/verify`
+  valide ce code et pose le cookie. Le `GET` ne rend les tuiles qu'à un
+  appareil déjà appairé. Le cookie `salonista-provider` devient une preuve
+  d'appairage, donc **`HttpOnly`**.
+- **Verrouillage par inactivité** (4 min) — `<IdleLock>` masque l'écran et
+  redemande le PIN via `/api/salon-pin/relock-verify`. Il **ne déconnecte
+  pas** : le panier en cours survit, sinon la caissière désactiverait la
+  protection.
+- **Purge IndexedDB à la déconnexion** — `wipeOfflineDb()` **refuse** de
+  s'exécuter s'il reste des ventes non synchronisées : elles ne sont nulle
+  part ailleurs.
+
+Deux règles à ne pas défaire : ne jamais distinguer « employé inconnu » de
+« PIN faux » (cela révélerait quels identifiants existent), et ne jamais
+renvoyer autre chose que `id`/`displayName`/`role`/`hasPin`/`avatarColor` dans
+les tuiles.
+
 ---
 
 ## Repo layout
