@@ -63,7 +63,7 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: "Non autorise" }, { status: 403 });
   if (!booking.qrCode) return NextResponse.json({ error: "Pas de QR code" }, { status: 404 });
 
-  const verificationUrl = `${publicOrigin(req)}/verification?code=${booking.qrCode}`;
+  const verificationUrl = `${publicOrigin()}/verification?code=${booking.qrCode}`;
   const qrDataUrl = await generateQR(verificationUrl);
 
   const firstItem = booking.items[0];

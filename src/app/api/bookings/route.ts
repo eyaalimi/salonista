@@ -191,7 +191,7 @@ export async function POST(req: NextRequest) {
       if (full.qrCode) {
         const QRCode = (await import("qrcode")).default;
         const qrDataUrl = await QRCode.toDataURL(
-          `${publicOrigin(req)}/verification?code=${full.qrCode}`,
+          `${publicOrigin()}/verification?code=${full.qrCode}`,
           { width: 400, margin: 2, color: { dark: "#2D0A0A", light: "#FBF8F4" } },
         );
         sendBookingQrEmail(full.client.email, {

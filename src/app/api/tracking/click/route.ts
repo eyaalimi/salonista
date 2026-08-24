@@ -21,7 +21,7 @@ function isRateLimited(key: string, max: number): boolean {
 export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url);
   const token = searchParams.get("ref");
-  const origin = publicOrigin(req);
+  const origin = publicOrigin();
 
   if (!token) {
     return NextResponse.redirect(new URL("/offres", origin));

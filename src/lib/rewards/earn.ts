@@ -43,7 +43,13 @@ export type SaleForEarn = {
  */
 export function computeEarnedPoints(
   sale: SaleForEarn,
-  program: Pick<RewardProgram, "pointsPerDinar" | "eligibleOn" | "active">,
+  // `pointsPerDinar` n'est utilise qu'a travers `.toString()` : accepter aussi
+  // une chaine evite de fabriquer un `Decimal` dans les tests, alors que la
+  // fonction n'en a jamais eu besoin. `Pick<RewardProgram, …>` imposait le
+  // type de Prisma sans contrepartie.
+  program: Pick<RewardProgram, "eligibleOn" | "active"> & {
+    pointsPerDinar: { toString(): string };
+  },
 ): number {
   if (!program.active) return 0;
 

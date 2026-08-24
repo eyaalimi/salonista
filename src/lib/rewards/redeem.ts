@@ -33,10 +33,13 @@ export function validateRedemption(args: {
   walletBalance: number;
   pointsToRedeem: number;
   saleTotal: { toString(): string };
+  // `dinarPerPoint` n'est lu qu'a travers `.toString()` — meme convention que
+  // `saleTotal` juste au-dessus. `Pick<RewardProgram, …>` imposait le type
+  // Decimal de Prisma sans que la fonction s'en serve.
   program: Pick<
     RewardProgram,
-    "active" | "minPointsToRedeem" | "maxRedemptionPctPerSale" | "dinarPerPoint"
-  >;
+    "active" | "minPointsToRedeem" | "maxRedemptionPctPerSale"
+  > & { dinarPerPoint: { toString(): string } };
 }): { redemptionValue: string } {
   const { walletBalance, pointsToRedeem, saleTotal, program } = args;
 

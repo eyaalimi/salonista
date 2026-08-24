@@ -1,0 +1,71 @@
+name: CI
+
+# Bloque les pull requests : CLAUDE.md affirmait que le lint tournait en CI,
+# ce qui etait faux — aucun workflow ne le lancait. C'est desormais vrai.
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+
+jobs:
+  verifier:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Installer les dependances
+        run: npm ci
+
+      # Le client Prisma est gitignore : sans cette etape, tout ce qui suit
+      # echoue sur des imports introuvables.
+      - name: Generer le client Prisma
+        run: npx prisma generate
+
+      - name: Verifier les types
+        run: npx tsc --noEmit
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Tests
+        run: npm test
+
+      # `next build` prerend la page d'accueil, qui interroge Postgres. Sans
+      # base, il echoue sur ECONNREFUSED apres avoir compile — ce qui ne dit
+      # rien de la qualite du code. On lance donc un vrai Postgres, et on y
+      # applique les migrations : le prerendu lit de vraies tables.
+      #
+      # Effet de bord utile : une migration cassee fait echouer la CI ici.
+      - name: Appliquer les migrations
+        run: npx prisma migrate deploy
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/salonista_test
+
+      - name: Build
+        run: npm run build
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/salonista_test
+          NEXTAUTH_URL: http://localhost:3000
+          NEXTAUTH_SECRET: ci-secret-sans-valeur-en-production
+
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: salonista_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5

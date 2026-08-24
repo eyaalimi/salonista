@@ -2,11 +2,7 @@
 
 import { useState } from "react";
 import { Plus, Trash2 } from "lucide-react";
-
-type Provider = {
-  id: string;
-  _count: { employees: number };
-};
+import type { Provider } from "./types";
 
 type Employee = {
   displayName: string;

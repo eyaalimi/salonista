@@ -372,6 +372,49 @@ Deux règles à ne pas défaire : ne jamais distinguer « employé inconnu » de
 renvoyer autre chose que `id`/`displayName`/`role`/`hasPin`/`avatarColor` dans
 les tuiles.
 
+### 16. L'origine publique vient de `NEXTAUTH_URL`, jamais de la requête
+
+`publicOrigin()` lisait `x-forwarded-proto` / `x-forwarded-host`. **Nginx ne
+réécrivait pas ces en-têtes** — il les transmettait tels que le client les
+envoyait. N'importe qui pouvait donc appeler `/api/tracking/click` avec
+`X-Forwarded-Host: evil.example` et obtenir une redirection vers son site :
+exactement les liens que les influenceuses diffusent. Le QR d'une réservation
+était détournable de la même façon.
+
+`publicOrigin()` **ne prend plus d'argument** — un test le verrouille. Si le
+lien est cassé en local, c'est que `NEXTAUTH_URL` manque : ne remettez pas la
+lecture des en-têtes.
+
+### 17. En-têtes de sécurité, CI, et le compilateur comme garde-fou
+
+- **`headers()` dans [next.config.ts](next.config.ts)** applique HSTS (prod
+  seulement), `X-Frame-Options`, `nosniff`, `Referrer-Policy` et
+  `Permissions-Policy`. Détail et tests dans
+  [src/lib/security-headers.ts](src/lib/security-headers.ts).
+- **La CSP part en `Report-Only`.** Elle contient encore `'unsafe-inline'` et
+  `'unsafe-eval'`, imposés par l'hydratation de Next et par Turbopack. Passer
+  en mode bloquant demande des nonces par requête — chantier à part.
+  `camera=(self)` est **nécessaire** : `/pos/scan` ouvre la caméra.
+- **`typescript: { ignoreBuildErrors: true }` a été retiré.** Les 23 erreurs
+  qu'il masquait sont corrigées : le type `Provider` était dupliqué **cinq
+  fois** dans l'assistant de démarrage (d'où des types incompatibles portant
+  le même nom), et trois signatures `Pick<RewardProgram, …>` exigeaient des
+  `Decimal` là où seul `.toString()` était appelé. Ne le remettez pas pour
+  faire passer un build.
+- **[.github/workflows/ci.yml](.github/workflows/ci.yml)** bloque les PR :
+  `npm ci` → `prisma generate` → `tsc --noEmit` → `lint` → `test` → `build`.
+  Elle lance un **vrai Postgres** et applique les migrations, ce qui règle
+  l'échec de prérendu de `/sitemap.xml` visible en local (Prisma sans base) —
+  et fait échouer la CI sur une migration cassée.
+- **Limites de débit** sur la réinitialisation de mot de passe (5/h par IP),
+  l'inscription (5/h) et la connexion (20/15 min). La première est la plus
+  urgente : chaque appel consomme le quota Gmail (~500/jour, **partagé par
+  toute la plateforme**) — une boucle coupait tous les e-mails de la journée.
+- **`deploy.sh` sonde `/api/health`** après `pm2 reload` et échoue
+  explicitement au bout de 30 s. `pm2 reload` rend la main dès que le
+  processus démarre, pas quand il sert des requêtes : un déploiement cassé
+  affichait « Deploy OK » alors que le site renvoyait 502.
+
 ---
 
 ## Repo layout

@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { Plus, Trash2, ImagePlus } from "lucide-react";
 import { PRODUCT_PRESETS, type ProductPreset } from "@/lib/onboarding-presets";
+import type { Provider } from "./types";
 
 function readSalonTypes(providerId: string, fallback: string): string[] {
   try {
@@ -14,12 +15,6 @@ function readSalonTypes(providerId: string, fallback: string): string[] {
   } catch {}
   return [fallback];
 }
-
-type Provider = {
-  id: string;
-  category?: string;
-  _count: { products: number };
-};
 
 type Line = {
   name: string;

@@ -197,6 +197,43 @@ curl -sI https://salonista.tn/uploads/<un-fichier>.webp | grep -i x-content-type
 
 La dernière commande doit afficher `x-content-type-options: nosniff`.
 
+### Serveur par défaut et `X-Forwarded-Host` (lot D, une seule fois)
+
+Même remarque : `deploy.sh` ne touche pas à Nginx. Deux ajouts à appliquer à
+la main dans `/etc/nginx/sites-enabled/salonista.tn`.
+
+**1. Dans le bloc `location /`**, à côté des autres `proxy_set_header` :
+
+```nginx
+proxy_set_header X-Forwarded-Host $host;
+```
+
+Sans elle, Nginx transmet l'en-tête tel que le client l'a envoyé.
+
+**2. Un serveur par défaut**, avant le bloc `server` existant :
+
+```nginx
+server {
+    listen 80 default_server;
+    listen [::]:80 default_server;
+    server_name _;
+    return 444;
+}
+```
+
+Il ferme la connexion pour tout `Host` inconnu. Sans lui, n'importe quel
+domaine pointant vers l'IP affiche le site comme le sien.
+
+> **Attention à l'ordre avec certbot.** Si le HTTPS est déjà configuré,
+> certbot a créé ses propres blocs `listen 443`. Ajoutez alors le
+> `default_server` sur le port 443 également, sinon il ne protège que le
+> port 80. Vérifiez avec `sudo nginx -T | grep default_server`.
+
+```bash
+sudo nginx -t && sudo systemctl reload nginx
+curl -sI -H "Host: inconnu.example" http://127.0.0.1/   # doit ne rien renvoyer
+```
+
 ### Open a Postgres shell
 ```bash
 sudo -u postgres psql -d salonista_prod

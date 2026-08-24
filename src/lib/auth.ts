@@ -5,6 +5,8 @@ import { compare } from "bcryptjs";
 import { prisma } from "./prisma";
 import { mergePermissions } from "./permissions";
 import { verifierPinEmploye } from "./verify-employee-pin";
+import { verifierLimite } from "./rate-limit";
+import { LIMITE_CONNEXION, messageLimite } from "./rate-limit-decision";
 import type { EmployeeSessionData } from "@/types/next-auth";
 
 export const authOptions: NextAuthOptions = {
@@ -26,7 +28,22 @@ export const authOptions: NextAuthOptions = {
         email: { label: "Email", type: "email" },
         password: { label: "Mot de passe", type: "password" },
       },
-      async authorize(credentials) {
+      async authorize(credentials, req) {
+        // Rien ne ralentissait un essai de mots de passe en masse. Plus
+        // permissif que les autres limites : un salon ou une famille derriere
+        // une meme IP publique ne doit pas se bloquer en se trompant.
+        const ip =
+          req?.headers?.["x-forwarded-for"]?.split(",")[0]?.trim() ||
+          req?.headers?.["x-real-ip"] ||
+          "inconnue";
+        const limite = await verifierLimite(
+          `connexion:ip:${ip}`,
+          LIMITE_CONNEXION,
+        );
+        if (!limite.ok) {
+          throw new Error(messageLimite(limite.resetDansMs));
+        }
+
         if (!credentials?.email || !credentials?.password) {
           throw new Error("Email et mot de passe requis");
         }

@@ -33,6 +33,32 @@ export const LIMITE_RESOLVE: Limite = { max: 10, fenetreMs: 10 * 60 * 1000 };
 /** Demandes de code d'appairage, par salon. */
 export const LIMITE_APPAIRAGE: Limite = { max: 3, fenetreMs: 60 * 60 * 1000 };
 
+/**
+ * Reinitialisations de mot de passe, par adresse IP.
+ *
+ * LE PLUS URGENT du lot D. Chaque appel envoie un mail par Gmail, plafonne a
+ * ~500 envois par jour pour tout le compte. Une simple boucle sur cette route
+ * coupait donc TOUS les mails de la plateforme pour la journee : verifications
+ * d'inscription, confirmations de reservation, QR codes.
+ */
+export const LIMITE_RESET_MDP: Limite = { max: 5, fenetreMs: 60 * 60 * 1000 };
+
+/**
+ * Inscriptions, par adresse IP.
+ *
+ * Chaque inscription envoie elle aussi un mail de verification.
+ */
+export const LIMITE_INSCRIPTION: Limite = { max: 5, fenetreMs: 60 * 60 * 1000 };
+
+/**
+ * Tentatives de connexion, par adresse IP.
+ *
+ * N'envoie pas de mail, mais rien ne ralentissait un essai de mots de passe
+ * en masse. Plus permissif que les autres : une famille ou un salon derriere
+ * une meme IP publique ne doit pas se bloquer en se trompant.
+ */
+export const LIMITE_CONNEXION: Limite = { max: 20, fenetreMs: 15 * 60 * 1000 };
+
 /** Etat d'un compteur, tel qu'il est stocke. */
 export type Compteur = {
   count: number;

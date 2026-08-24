@@ -4,9 +4,19 @@ import { prisma } from "@/lib/prisma";
 import { Role } from "@/generated/prisma/client";
 import { nanoid } from "nanoid";
 import { sendVerificationEmail } from "@/lib/mail";
+import { ipDe, reponseLimite, verifierLimite } from "@/lib/rate-limit";
+import { LIMITE_INSCRIPTION } from "@/lib/rate-limit-decision";
 
 export async function POST(req: NextRequest) {
   try {
+    // Chaque inscription envoie un mail de verification : meme quota Gmail
+    // partage que la reinitialisation de mot de passe.
+    const limite = await verifierLimite(
+      `inscription:ip:${ipDe(req)}`,
+      LIMITE_INSCRIPTION,
+    );
+    if (!limite.ok) return reponseLimite(limite);
+
     const body = await req.json();
     const { email, password, name, phone, role } = body;
 
