@@ -115,7 +115,7 @@ export function BookingCalendar({ slots, selectedSlotId, onSelect }: Props) {
             type="button"
             onClick={() => canGoPrev && setViewMonth(addMonths(viewMonth, -1))}
             disabled={!canGoPrev}
-            className="ds-press ds-focus flex h-11 w-11 items-center justify-center rounded-[var(--radius-pill)] border-2 border-hairline text-prune hover:border-rose hover:text-rose"
+            className="ds-press ds-focus flex h-11 w-11 items-center justify-center rounded-[var(--radius-pill)] border-2 border-hairline text-prune hover:border-rose hover:text-rose-fonce"
             aria-label="Mois précédent"
           >
             <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -133,7 +133,7 @@ export function BookingCalendar({ slots, selectedSlotId, onSelect }: Props) {
           <button
             type="button"
             onClick={() => setViewMonth(addMonths(viewMonth, 1))}
-            className="ds-press ds-focus flex h-11 w-11 items-center justify-center rounded-[var(--radius-pill)] border-2 border-hairline text-prune hover:border-rose hover:text-rose"
+            className="ds-press ds-focus flex h-11 w-11 items-center justify-center rounded-[var(--radius-pill)] border-2 border-hairline text-prune hover:border-rose hover:text-rose-fonce"
             aria-label="Mois suivant"
           >
             <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">

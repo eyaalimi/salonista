@@ -266,7 +266,7 @@ export default function ClienteReservations() {
                     <button
                       onClick={() => cancelBooking(booking.id)}
                       disabled={cancelling === booking.id}
-                      className="ds-press ds-focus inline-flex min-h-[44px] items-center rounded-[var(--radius-pill)] border-2 border-hairline px-4 text-sm font-semibold text-prune-soft hover:border-rose hover:text-rose"
+                      className="ds-press ds-focus inline-flex min-h-[44px] items-center rounded-[var(--radius-pill)] border-2 border-hairline px-4 text-sm font-semibold text-prune-soft hover:border-rose hover:text-rose-fonce"
                     >
                       {cancelling === booking.id ? "…" : "Annuler"}
                     </button>
@@ -313,8 +313,8 @@ export default function ClienteReservations() {
                   onClick={() => setReviewRating(star)}
                   aria-label={`${star} étoile${star > 1 ? "s" : ""}`}
                   className={`ds-press ds-focus flex h-11 w-11 items-center justify-center rounded-[var(--radius-pill)] text-3xl ${
-                    star <= reviewRating ? "text-rose" : "text-hairline"
-                  } hover:text-rose`}
+                    star <= reviewRating ? "text-rose-fonce" : "text-hairline"
+                  } hover:text-rose-fonce`}
                 >
                   ★
                 </button>

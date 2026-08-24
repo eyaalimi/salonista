@@ -427,6 +427,41 @@ lecture des en-têtes.
   processus démarre, pas quand il sert des requêtes : un déploiement cassé
   affichait « Deploy OK » alors que le site renvoyait 502.
 
+### 18. Le rose vif est un FOND, pas une couleur de texte
+
+`--color-rose` (`#FF5C8A`) mesure **2,94:1 sur blanc** — WCAG AA en exige 4,5:1
+pour du texte. 19 éléments échouaient sur la seule page d'accueil, dont tous
+les prix.
+
+**Pour tout texte sur fond clair : `text-rose-fonce`** (`#C42A5A`, 5,49:1 sur
+blanc, 5,15:1 sur crème). Cela vaut aussi pour les états `hover:` — un texte au
+survol reste du texte — et pour les pictogrammes comme les étoiles de notation,
+soumis au seuil de 3:1 que le rose vif n'atteint pas non plus.
+
+Le rose vif reste légitime en **fond** de bouton : le projet y pose du prune
+(5,59:1). N'y mettez jamais de blanc, qui retomberait à 2,94:1.
+
+Seule exception conservée : le **point du logo**, signe graphique et non texte.
+
+### 19. Images de partage et titres publiables
+
+- **`opengraph-image.tsx`** existe pour l'accueil, `/offre/[id]` et
+  `/salon/[id]`. Aucune n'existait : un lien collé dans une story Instagram
+  s'affichait sans visuel, alors que toute l'acquisition passe par là. Elles
+  n'embarquent **pas** la photo de l'offre — `next/og` devrait la télécharger à
+  chaque génération, et la vignette casserait si le fichier manque.
+  `params` y est une **promesse**, comme partout en Next 16.
+- **[src/lib/offer-title.ts](src/lib/offer-title.ts)** (9 tests) refuse à la
+  **publication** un titre de moins de 3 caractères ou de la forme `test\d*`.
+  Trois des six offres de l'accueil s'appelaient « test » ou « test0 »,
+  indexées par Google. Le contrôle ne porte que sur la publication : un salon
+  garde le droit d'appeler « x » un service interne à sa caisse. Un titre qui
+  *contient* « test » (« Test de coloration ») passe.
+- Les offres déjà en ligne se retirent de l'index avec
+  `npx tsx scripts/masquer-salons-demo.ts --apply` (inspecte par défaut). Il ne
+  marque que les salons dont **toutes** les offres publiées sont des tests, et
+  signale les cas mixtes sans y toucher — ils demandent une décision humaine.
+
 ---
 
 ## Repo layout

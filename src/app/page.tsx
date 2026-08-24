@@ -11,6 +11,21 @@ import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import { pickNextSlot, formatAvailability } from "@/lib/salon-availability";
 
+/**
+ * Canonique de l'accueil.
+ *
+ * Elle manquait : sans elle, Google peut indexer separement
+ * `salonista.tn`, `salonista.tn/`, `www.salonista.tn` et toute variante
+ * portant des parametres de campagne — le referencement se disperse alors
+ * entre plusieurs adresses pour une seule page.
+ *
+ * `metadataBase` est defini dans le layout racine, donc "/" suffit.
+ */
+export const metadata = {
+  alternates: { canonical: "/" },
+};
+
+
 const categoryLabels: Record<string, string> = {
   COIFFURE: "Coiffure",
   ESTHETIQUE: "Soin visage",
@@ -171,7 +186,7 @@ export default async function Home() {
         <section className="mx-auto mt-6 max-w-6xl px-4">
           <div className="flex items-center justify-between mb-3">
             <h2 className="ds-display text-lg text-prune">Offres du jour</h2>
-            <Link href="/offres" className="text-sm font-semibold text-rose">
+            <Link href="/offres" className="text-sm font-semibold text-rose-fonce">
               Voir tout
             </Link>
           </div>
@@ -211,6 +226,14 @@ export default async function Home() {
                           fill
                           sizes="(max-width: 768px) 170px, 220px"
                           className="object-cover"
+                          // `next/image` charge en `lazy` par defaut, y compris
+                          // ce qui est visible d'emblee : le navigateur attend
+                          // alors la fin du rendu avant de demander l'image, et
+                          // la premiere impression est un rectangle vide.
+                          // Seules les quatre premieres sont au-dessus du pli ;
+                          // toutes les passer en `priority` reviendrait a n'en
+                          // prioriser aucune.
+                          priority={index < 4}
                         />
                       ) : (
                         <div className="flex h-full items-center justify-center text-3xl">
@@ -233,7 +256,7 @@ export default async function Home() {
                         {offer.title}
                       </h3>
                       <div className="flex items-baseline gap-1.5 pt-1">
-                        <span className="text-base font-bold text-rose">
+                        <span className="text-base font-bold text-rose-fonce">
                           {discounted.toFixed(0)} TND
                         </span>
                         {original > discounted && (
@@ -258,7 +281,7 @@ export default async function Home() {
         <section id="salons" className="mx-auto mt-8 max-w-6xl px-4">
           <div className="flex items-center justify-between mb-3">
             <h2 className="ds-display text-lg text-prune">Salons populaires</h2>
-            <Link href="/offres" className="text-sm font-semibold text-rose">
+            <Link href="/offres" className="text-sm font-semibold text-rose-fonce">
               Voir tout
             </Link>
           </div>
@@ -341,7 +364,7 @@ export default async function Home() {
           </div>
           <Link
             href="/offres"
-            className="ds-press ds-focus inline-flex min-h-[44px] shrink-0 items-center rounded-[var(--radius-pill)] px-3 text-base font-semibold text-rose"
+            className="ds-press ds-focus inline-flex min-h-[44px] shrink-0 items-center rounded-[var(--radius-pill)] px-3 text-base font-semibold text-rose-fonce"
           >
             Voir →
           </Link>
@@ -407,7 +430,7 @@ export default async function Home() {
                   {item.question}
                   <span
                     aria-hidden="true"
-                    className="shrink-0 text-xl text-rose transition-transform group-open:rotate-45"
+                    className="shrink-0 text-xl text-rose-fonce transition-transform group-open:rotate-45"
                   >
                     +
                   </span>

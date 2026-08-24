@@ -4,6 +4,7 @@ import { notFound } from "next/navigation";
 import { cookies } from "next/headers";
 import { OfferClient } from "./offer-client";
 import { buildOfferJsonLd } from "@/lib/offer-jsonld";
+import { isValidOpeningHours, type OpeningHours } from "@/lib/opening-hours";
 
 interface Props {
   params: Promise<{ id: string }>;
@@ -56,6 +57,12 @@ export default async function OffrePage({ params, searchParams }: Props) {
           city: true,
           category: true,
           description: true,
+          // La FAQ demande de contacter le salon pour annuler, mais AUCUNE
+          // page ne donnait son numero. L'adresse et les horaires manquaient
+          // de meme : la cliente ne savait ni ou aller, ni quand.
+          address: true,
+          phone: true,
+          openingHours: true,
         },
       },
       slots: {
@@ -144,7 +151,15 @@ export default async function OffrePage({ params, searchParams }: Props) {
           taxRate: Number(offer.taxRate),
           category: categoryLabels[offer.category] || offer.category,
           photos: offer.photos,
-          provider: offer.provider,
+          durationMinutes: offer.durationMinutes,
+          provider: {
+            ...offer.provider,
+            // Prisma rend `openingHours` en JsonValue : le garde valide la
+            // forme avant de le transtyper, comme le fait /salon/[id].
+            openingHours: isValidOpeningHours(offer.provider.openingHours)
+              ? (offer.provider.openingHours as OpeningHours)
+              : null,
+          },
           slots: offer.slots.map((s) => ({
             id: s.id,
             startTime: s.startTime.toISOString(),

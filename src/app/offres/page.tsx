@@ -165,7 +165,7 @@ export default async function OffresPage({
                     </h3>
                     <div className="mt-auto flex flex-col gap-0.5 pt-3">
                       <div className="flex items-baseline gap-2">
-                        <span className="text-lg font-bold text-rose">
+                        <span className="text-lg font-bold text-rose-fonce">
                           {Number(offer.discountPrice).toFixed(0)} TND
                         </span>
                         {Number(offer.originalPrice) > Number(offer.discountPrice) && (

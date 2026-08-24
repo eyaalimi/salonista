@@ -206,7 +206,7 @@ function RegisterPageInner() {
               <button
                 type="button"
                 onClick={() => setStep(1)}
-                className="ds-focus text-sm font-semibold text-rose px-2 py-1 rounded-[var(--radius-pill)]"
+                className="ds-focus text-sm font-semibold text-rose-fonce px-2 py-1 rounded-[var(--radius-pill)]"
               >
                 Changer
               </button>
@@ -273,7 +273,7 @@ function RegisterPageInner() {
 
       <p className="text-sm text-prune-soft">
         Déjà un compte ?{" "}
-        <Link href="/login" className="font-semibold text-rose">
+        <Link href="/login" className="font-semibold text-rose-fonce">
           Se connecter
         </Link>
       </p>

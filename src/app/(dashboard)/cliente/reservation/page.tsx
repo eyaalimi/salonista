@@ -77,7 +77,7 @@ function ReservationDetailPageInner() {
   if (error) {
     return (
       <div className="py-20 text-center">
-        <p className="mb-4 text-base font-semibold text-rose">{error}</p>
+        <p className="mb-4 text-base font-semibold text-rose-fonce">{error}</p>
         <Link
           href="/cliente"
           className="ds-press ds-focus inline-flex min-h-[48px] items-center rounded-[var(--radius-pill)] border-2 border-hairline px-6 text-base font-semibold text-prune hover:border-rose"
@@ -95,7 +95,7 @@ function ReservationDetailPageInner() {
       <div className="mb-8">
         <Link
           href="/cliente"
-          className="ds-press ds-focus mb-4 inline-flex min-h-[44px] items-center rounded-[var(--radius-pill)] text-base font-semibold text-prune-soft hover:text-rose"
+          className="ds-press ds-focus mb-4 inline-flex min-h-[44px] items-center rounded-[var(--radius-pill)] text-base font-semibold text-prune-soft hover:text-rose-fonce-fonce"
         >
           Retour aux réservations
         </Link>

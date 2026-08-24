@@ -5,6 +5,7 @@ import { prisma } from "@/lib/prisma";
 import { regenerateOfferSlots } from "@/lib/slots";
 import { getCurrentEmployee, requirePermission, toResponse } from "@/lib/employee-session";
 import { missingForPublish } from "@/lib/offer-publish";
+import { refusTitreOffre } from "@/lib/offer-title";
 
 const ALLOWED_DURATIONS = [15, 30, 45, 60, 75, 90, 105, 120, 150, 180, 240];
 
@@ -92,6 +93,15 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
   // avec l'operation demandee. La completude conditionne la VISIBILITE dans
   // le feed (filtre photos.isEmpty cote lecture), pas le droit de modifier.
   const isPublishTransition = body.publishedToMarketplace === true && !existingPublished;
+
+  // Meme garde-fou qu'a la creation : un titre de test ne doit pas atteindre
+  // le feed public ni le sitemap. Verifie sur le titre APRES modification.
+  if (isPublishTransition) {
+    const refus = refusTitreOffre(String(body.title ?? offer.title));
+    if (refus) {
+      return NextResponse.json({ error: refus.message }, { status: refus.status });
+    }
+  }
 
   if (isPublishTransition) {
     const missing = missingForPublish({

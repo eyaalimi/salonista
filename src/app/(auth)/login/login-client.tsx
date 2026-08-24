@@ -141,7 +141,7 @@ function LoginPageInner() {
         </Link>
         <p className="text-prune-soft">
           Pas encore de compte ?{" "}
-          <Link href={current.registerHref} className="font-semibold text-rose">
+          <Link href={current.registerHref} className="font-semibold text-rose-fonce">
             Créer un compte
           </Link>
         </p>

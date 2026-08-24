@@ -92,7 +92,7 @@ export default function WalletDetailPage({
     <div className="mx-auto max-w-3xl p-6">
       <Link
         href="/cliente/fidelite"
-        className="ds-press ds-focus mb-4 inline-flex min-h-[44px] items-center rounded-[var(--radius-pill)] text-base font-semibold text-prune-soft hover:text-rose"
+        className="ds-press ds-focus mb-4 inline-flex min-h-[44px] items-center rounded-[var(--radius-pill)] text-base font-semibold text-prune-soft hover:text-rose-fonce"
       >
         ← Mes cartes
       </Link>
