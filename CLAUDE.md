@@ -402,10 +402,22 @@ lecture des en-têtes.
   `Decimal` là où seul `.toString()` était appelé. Ne le remettez pas pour
   faire passer un build.
 - **[.github/workflows/ci.yml](.github/workflows/ci.yml)** bloque les PR :
-  `npm ci` → `prisma generate` → `tsc --noEmit` → `lint` → `test` → `build`.
-  Elle lance un **vrai Postgres** et applique les migrations, ce qui règle
-  l'échec de prérendu de `/sitemap.xml` visible en local (Prisma sans base) —
-  et fait échouer la CI sur une migration cassée.
+  `npm install` → `prisma generate` → `tsc --noEmit` → `lint` → `test` →
+  `build`. Elle lance un **vrai Postgres** et applique les migrations, ce qui
+  règle l'échec de prérendu de `/sitemap.xml` visible en local (Prisma sans
+  base) — et fait échouer la CI sur une migration cassée.
+
+  `npm install` et **non `npm ci`**, comme `deploy.sh` : le lock porte des
+  dépendances optionnelles WebAssembly dont npm choisit des versions
+  différentes selon la version de Node. Exiger `npm ci` rendrait la CI plus
+  stricte que le déploiement.
+
+  **Le lint ne bloque pas** (`continue-on-error`). La configuration ne classe
+  presque rien en `error`, et les 35 seules erreurs — règles du compilateur
+  React 19 sur du code en production depuis des mois — sont rétrogradées en
+  avertissement dans [eslint.config.mjs](eslint.config.mjs), avec la dette
+  détaillée. Le garde-fou réel de ce projet est **`tsc --noEmit`**, qui, lui,
+  est bloquant.
 - **Limites de débit** sur la réinitialisation de mot de passe (5/h par IP),
   l'inscription (5/h) et la connexion (20/15 min). La première est la plus
   urgente : chaque appel consomme le quota Gmail (~500/jour, **partagé par
