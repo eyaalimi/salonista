@@ -16,6 +16,16 @@
      disparaitront lot par lot, quand plus rien ne les referencera. */
   --color-rose: #FF5C8A;
   --color-rose-soft: #FFE0E8;
+  /* Rose FONCE, pour tout TEXTE sur fond clair.
+     Le rose #FF5C8A ne mesure que 2,94:1 sur blanc et 2,76:1 sur creme, la
+     ou WCAG AA exige 4,5:1 pour du texte courant — 19 elements echouaient
+     sur la seule page d'accueil, dont tous les prix.
+     #C42A5A atteint 5,49:1 sur blanc et 5,15:1 sur creme, en restant dans la
+     meme famille chromatique.
+     Les BOUTONS roses ne sont pas concernes : le rose y est un FOND, et le
+     projet y pose du prune (5,59:1), jamais du blanc — qui ne donnerait que
+     2,94:1. Ne mettez pas de texte blanc sur un bouton rose. */
+  --color-rose-fonce: #C42A5A;
   --color-prune: #3A1024;
   --color-prune-soft: #6B4157;
   --color-menthe: #A8E6CF;

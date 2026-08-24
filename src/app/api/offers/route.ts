@@ -4,6 +4,7 @@ import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { regenerateOfferSlots } from "@/lib/slots";
 import { requirePermission, toResponse } from "@/lib/employee-session";
+import { refusTitreOffre } from "@/lib/offer-title";
 
 const ALLOWED_DURATIONS = [15, 30, 45, 60, 75, 90, 105, 120, 150, 180, 240];
 
@@ -121,6 +122,16 @@ export async function POST(req: NextRequest) {
       { error: `Champs requis manquants : ${missing.join(", ")}` },
       { status: 400 },
     );
+  }
+
+  // Trois des six offres de l'accueil s'appelaient « test » ou « test0 »,
+  // indexees par Google. Le controle ne porte QUE sur la publication : un
+  // salon garde le droit d'appeler « x » un service interne a sa caisse.
+  if (publishedToMarketplace) {
+    const refus = refusTitreOffre(String(title));
+    if (refus) {
+      return NextResponse.json({ error: refus.message }, { status: refus.status });
+    }
   }
 
   const tax = taxRate === undefined ? 19 : Number(taxRate);

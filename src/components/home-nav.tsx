@@ -54,13 +54,13 @@ export function HomeNav() {
         <div className="hidden md:flex items-center gap-8">
           <Link
             href="/offres"
-            className="ds-focus text-base text-prune-soft hover:text-rose rounded-[var(--radius-pill)] px-2 py-1"
+            className="ds-focus text-base text-prune-soft hover:text-rose-fonce rounded-[var(--radius-pill)] px-2 py-1"
           >
             Offres
           </Link>
           <Link
             href="/pro"
-            className="ds-focus text-base text-prune-soft hover:text-rose rounded-[var(--radius-pill)] px-2 py-1"
+            className="ds-focus text-base text-prune-soft hover:text-rose-fonce rounded-[var(--radius-pill)] px-2 py-1"
           >
             Espace professionnel
           </Link>
@@ -68,7 +68,7 @@ export function HomeNav() {
               /offres, ou une ancre nue ne mene nulle part. */}
           <Link
             href="/#salons"
-            className="ds-focus text-base text-prune-soft hover:text-rose rounded-[var(--radius-pill)] px-2 py-1"
+            className="ds-focus text-base text-prune-soft hover:text-rose-fonce rounded-[var(--radius-pill)] px-2 py-1"
           >
             Salons
           </Link>

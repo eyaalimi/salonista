@@ -9,6 +9,7 @@ import { DAY_KEYS, DAY_LABELS_FR, type OpeningHours } from "@/lib/opening-hours"
 import { NavAccount } from "@/components/nav-account";
 import { Logo } from "@/components/logo";
 import { isValidCoords } from "@/lib/coords";
+import { scrollToElement } from "@/lib/scroll-to";
 import dynamic from "next/dynamic";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -73,6 +74,11 @@ export function SalonClient({ salon }: { salon: Salon }) {
   const { data: session } = useSession();
   const [cart, setCart] = useState<string[]>([]); // ordered list of offerIds
   const [selectedStart, setSelectedStart] = useState<string | null>(null);
+  // Le calendrier apparait sous le pli quand le panier se remplit : sans
+  // defilement, la cliente ajoute un service et croit qu'il ne s'est rien
+  // passe. Meme traitement que sur /offre/[id].
+  const calendrierRef = useRef<HTMLElement | null>(null);
+  const panierEtaitVide = useRef(true);
   const [notes, setNotes] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -133,6 +139,18 @@ export function SalonClient({ salon }: { salon: Salon }) {
     };
     localStorage.setItem(draftKey, JSON.stringify(draft));
   }, [cart, selectedStart, notes, draftKey]);
+
+  // Defile vers le calendrier au PREMIER service ajoute seulement. Le faire a
+  // chaque ajout arracherait la page sous les doigts d'une cliente qui
+  // compose un panier de plusieurs prestations.
+  useEffect(() => {
+    if (cart.length > 0 && panierEtaitVide.current) {
+      panierEtaitVide.current = false;
+      scrollToElement(calendrierRef.current);
+    } else if (cart.length === 0) {
+      panierEtaitVide.current = true;
+    }
+  }, [cart.length]);
 
   function toggleOffer(offerId: string) {
     setCart((prev) => {
@@ -247,7 +265,7 @@ export function SalonClient({ salon }: { salon: Salon }) {
           <div className="flex items-center gap-6">
             <Link
               href="/offres"
-              className="ds-focus rounded-[var(--radius-pill)] px-2 py-1 text-base text-prune-soft hover:text-rose"
+              className="ds-focus rounded-[var(--radius-pill)] px-2 py-1 text-base text-prune-soft hover:text-rose-fonce-fonce"
             >
               Toutes les offres
             </Link>
@@ -297,7 +315,7 @@ export function SalonClient({ salon }: { salon: Salon }) {
                   setNotes("");
                   setRestored(false);
                 }}
-                className="ds-press ds-focus min-h-[44px] rounded-[var(--radius-pill)] px-4 text-sm font-semibold text-prune-soft hover:text-rose"
+                className="ds-press ds-focus min-h-[44px] rounded-[var(--radius-pill)] px-4 text-sm font-semibold text-prune-soft hover:text-rose-fonce-fonce"
               >
                 Effacer
               </button>
@@ -393,7 +411,7 @@ export function SalonClient({ salon }: { salon: Salon }) {
 
             {/* Calendar */}
             {cartOffers.length > 0 && (
-              <section>
+              <section ref={calendrierRef}>
                 <h2 className="ds-display mb-2 text-2xl text-prune">Choisir une date</h2>
                 <p className="mb-6 text-base text-prune-soft">
                   Une seule heure de début. Les services s&apos;enchaînent automatiquement dans l&apos;ordre choisi.
@@ -435,7 +453,7 @@ export function SalonClient({ salon }: { salon: Salon }) {
                           type="button"
                           onClick={() => moveOffer(offer.id, -1)}
                           disabled={idx === 0}
-                          className="ds-press ds-focus flex h-[22px] w-11 items-center justify-center rounded-t-[var(--radius-panel)] text-prune-soft hover:text-rose"
+                          className="ds-press ds-focus flex h-[22px] w-11 items-center justify-center rounded-t-[var(--radius-panel)] text-prune-soft hover:text-rose-fonce-fonce"
                           aria-label={`Monter ${offer.title}`}
                         >
                           ▲
@@ -444,7 +462,7 @@ export function SalonClient({ salon }: { salon: Salon }) {
                           type="button"
                           onClick={() => moveOffer(offer.id, 1)}
                           disabled={idx === cartOffers.length - 1}
-                          className="ds-press ds-focus flex h-[22px] w-11 items-center justify-center rounded-b-[var(--radius-panel)] text-prune-soft hover:text-rose"
+                          className="ds-press ds-focus flex h-[22px] w-11 items-center justify-center rounded-b-[var(--radius-panel)] text-prune-soft hover:text-rose-fonce-fonce"
                           aria-label={`Descendre ${offer.title}`}
                         >
                           ▼
@@ -453,7 +471,7 @@ export function SalonClient({ salon }: { salon: Salon }) {
                       <button
                         type="button"
                         onClick={() => toggleOffer(offer.id)}
-                        className="ds-press ds-focus flex h-11 w-11 shrink-0 items-center justify-center rounded-[var(--radius-pill)] text-prune-soft hover:text-rose"
+                        className="ds-press ds-focus flex h-11 w-11 shrink-0 items-center justify-center rounded-[var(--radius-pill)] text-prune-soft hover:text-rose-fonce-fonce"
                         aria-label={`Retirer ${offer.title}`}
                       >
                         ✕
@@ -491,7 +509,7 @@ export function SalonClient({ salon }: { salon: Salon }) {
                     rows={2}
                     className="ds-focus mb-3 w-full rounded-[var(--radius-panel)] border-2 border-hairline bg-white px-4 py-3 text-base text-prune placeholder:text-prune-soft/50"
                   />
-                  {error && <p className="mb-3 text-sm font-semibold text-rose">{error}</p>}
+                  {error && <p className="mb-3 text-sm font-semibold text-rose-fonce">{error}</p>}
                   {/* Masque sur mobile : la barre fixe du bas porte deja l'action.
                       Deux boutons roses simultanes enfreindraient la regle
                       « une seule action primaire par vue ». Sur desktop la barre
@@ -526,7 +544,7 @@ export function SalonClient({ salon }: { salon: Salon }) {
               {salon.phone && (
                 <a
                   href={`tel:${salon.phone}`}
-                  className="ds-press ds-focus inline-flex min-h-[44px] items-center rounded-[var(--radius-pill)] text-base font-semibold text-rose hover:underline"
+                  className="ds-press ds-focus inline-flex min-h-[44px] items-center rounded-[var(--radius-pill)] text-base font-semibold text-rose-fonce hover:underline"
                 >
                   {salon.phone}
                 </a>

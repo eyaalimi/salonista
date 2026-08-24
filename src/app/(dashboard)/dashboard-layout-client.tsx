@@ -95,7 +95,7 @@ export default function DashboardLayoutClient({ children, activeModules }: Props
           </div>
           <button
             onClick={() => signOut({ callbackUrl: "/" })}
-            className="ds-press ds-focus inline-flex min-h-[44px] items-center rounded-[var(--radius-pill)] px-3 text-sm font-semibold text-prune-soft hover:text-rose"
+            className="ds-press ds-focus inline-flex min-h-[44px] items-center rounded-[var(--radius-pill)] px-3 text-sm font-semibold text-prune-soft hover:text-rose-fonce"
           >
             Déconnexion
           </button>

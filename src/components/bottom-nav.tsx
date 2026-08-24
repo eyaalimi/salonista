@@ -38,7 +38,7 @@ export function BottomNav() {
             key={item.label}
             href={item.href}
             className={`ds-press flex min-h-[44px] min-w-[44px] flex-col items-center justify-center gap-1 ${
-              active ? "text-rose" : "text-prune-soft"
+              active ? "text-rose-fonce" : "text-prune-soft"
             }`}
           >
             <span className="text-xl leading-none">{item.emoji}</span>

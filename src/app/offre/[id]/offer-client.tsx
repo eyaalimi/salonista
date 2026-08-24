@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { scrollToElement } from "@/lib/scroll-to";
+import { DAY_KEYS, DAY_LABELS_FR, type OpeningHours } from "@/lib/opening-hours";
 import { useSession, signIn } from "next-auth/react";
 import Link from "next/link";
 import { BookingCalendar } from "@/components/booking-calendar";
@@ -19,6 +20,14 @@ interface Slot {
   bookedCount: number;
 }
 
+/** « 90 min » se lit moins bien que « 1h30 » pour une cliente. */
+function formatDuree(min: number): string {
+  if (min < 60) return `${min} min`;
+  const h = Math.floor(min / 60);
+  const m = min % 60;
+  return m === 0 ? `${h} h` : `${h}h${String(m).padStart(2, "0")}`;
+}
+
 interface OfferData {
   id: string;
   title: string;
@@ -28,12 +37,16 @@ interface OfferData {
   taxRate: number;
   category: string;
   photos: string[];
+  durationMinutes: number;
   provider: {
     id: string;
     salonName: string;
     city: string | null;
     category: string;
     description: string | null;
+    address: string | null;
+    phone: string | null;
+    openingHours: OpeningHours | null;
   };
   slots: Slot[];
 }
@@ -51,7 +64,7 @@ function StarRating({ rating, size = "sm" }: { rating: number; size?: "sm" | "lg
   return (
     <span className={`${sizeClass} tracking-wider`}>
       {[1, 2, 3, 4, 5].map((i) => (
-        <span key={i} className={i <= rating ? "text-rose" : "text-hairline"}>
+        <span key={i} className={i <= rating ? "text-rose-fonce" : "text-hairline"}>
           ★
         </span>
       ))}
@@ -241,7 +254,7 @@ export function OfferClient({
           <Logo className="text-xl" />
           <Link
             href="/offres"
-            className="ds-focus rounded-[var(--radius-pill)] px-2 py-1 text-base text-prune-soft hover:text-rose"
+            className="ds-focus rounded-[var(--radius-pill)] px-2 py-1 text-base text-prune-soft hover:text-rose-fonce"
           >
             Toutes les offres
           </Link>
@@ -299,8 +312,51 @@ export function OfferClient({
             </p>
             {offer.provider.city && (
               <p className="mt-0.5 text-sm text-prune-soft">
-                📍 {offer.provider.city}
+                📍 {offer.provider.address
+                  ? `${offer.provider.address}, ${offer.provider.city}`
+                  : offer.provider.city}
               </p>
+            )}
+            {/* Le telephone est indispensable : la FAQ demande de contacter le
+                salon pour annuler, et aucune page ne le donnait. `tel:` pour
+                qu'un appui appelle directement depuis un telephone. */}
+            {offer.provider.phone && (
+              <p className="mt-0.5 text-sm">
+                <a
+                  href={`tel:${offer.provider.phone}`}
+                  className="ds-focus font-semibold text-rose-fonce"
+                >
+                  📞 {offer.provider.phone}
+                </a>
+              </p>
+            )}
+            <p className="mt-0.5 text-sm text-prune-soft">
+              ⏱️ {formatDuree(offer.durationMinutes)}
+            </p>
+            {offer.provider.openingHours && (
+              <details className="mt-2">
+                <summary className="ds-focus cursor-pointer text-sm font-semibold text-prune">
+                  Horaires d&apos;ouverture
+                </summary>
+                <ul className="mt-2 space-y-0.5 text-sm text-prune-soft">
+                  {/* `openingHours` est un tableau de plages par jour, pas un
+                      objet ouvert/ferme : un jour peut avoir une coupure de
+                      midi. Meme rendu que sur /salon/[id]. */}
+                  {DAY_KEYS.map((jour) => {
+                    const plages = offer.provider.openingHours?.[jour] ?? [];
+                    return (
+                      <li key={jour} className="flex justify-between gap-4">
+                        <span>{DAY_LABELS_FR[jour]}</span>
+                        <span className="text-prune">
+                          {plages.length === 0
+                            ? "Fermé"
+                            : plages.map((p) => `${p.start}–${p.end}`).join(", ")}
+                        </span>
+                      </li>
+                    );
+                  })}
+                </ul>
+              </details>
             )}
 
             <h1 className="ds-display mt-4 text-2xl text-prune md:text-4xl">
@@ -337,6 +393,12 @@ export function OfferClient({
                 <Button onClick={() => setShowBooking(true)} fullWidth>
                   Réserver maintenant
                 </Button>
+                {/* Le paiement en ligne n'existe pas (lot A) : le dire ici
+                    evite qu'une cliente renonce en croyant devoir sortir sa
+                    carte, et evite la surprise a l'arrivee au salon. */}
+                <p className="mt-3 text-center text-sm text-prune-soft">
+                  Réservation gratuite · règlement au salon
+                </p>
               </div>
             ) : (
               <form ref={formulaireRef} onSubmit={handleBook} className="scroll-mt-4 space-y-6 rounded-[var(--radius-card)] border-2 border-hairline bg-white p-6">
@@ -468,7 +530,7 @@ export function OfferClient({
                       {authMode === "login" && (
                         <Link
                           href="/forgot-password"
-                          className="ds-focus inline-flex min-h-[44px] items-center rounded-[var(--radius-pill)] text-sm font-semibold text-prune-soft hover:text-rose"
+                          className="ds-focus inline-flex min-h-[44px] items-center rounded-[var(--radius-pill)] text-sm font-semibold text-prune-soft hover:text-rose-fonce"
                         >
                           Mot de passe oublié ?
                         </Link>
