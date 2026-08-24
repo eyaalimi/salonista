@@ -8,6 +8,12 @@ on:
   push:
     branches: [main]
 
+# Une PR mise a jour annule l'execution precedente : sans cela, chaque push
+# empile une CI complete de plusieurs minutes sur la meme branche.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   verifier:
     runs-on: ubuntu-latest
@@ -21,8 +27,20 @@ jobs:
           node-version: 20
           cache: npm
 
+      # `npm install` et NON `npm ci`, comme le fait deploy.sh.
+      #
+      # `npm ci` exige que package-lock.json corresponde exactement a ce que
+      # npm resoudrait. Or le lock contient des dependances OPTIONNELLES
+      # WebAssembly (@emnapi, @napi-rs/wasm-runtime, tirees par Tailwind et
+      # Rolldown) dont npm choisit des versions differentes selon la version
+      # de Node. Le lock a ete genere sous Node 24 ; sous Node 20 — celui de
+      # la production — `npm ci` reclame @emnapi/core@1.10.0 et echoue.
+      #
+      # Exiger `npm ci` ici rendrait la CI PLUS stricte que le deploiement,
+      # donc capable de bloquer une PR pour une difference que la production
+      # ne verra jamais.
       - name: Installer les dependances
-        run: npm ci
+        run: npm install --no-audit --no-fund
 
       # Le client Prisma est gitignore : sans cette etape, tout ce qui suit
       # echoue sur des imports introuvables.
