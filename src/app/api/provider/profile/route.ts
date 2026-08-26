@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { isValidOpeningHours } from "@/lib/opening-hours";
 import { regenerateAllProviderSlots } from "@/lib/slots";
 import { requirePermission, toResponse } from "@/lib/employee-session";
+import { refusPhotosSalon } from "@/lib/upload-image";
 
 export async function GET() {
   // Accepte session PROVIDER et session employe par PIN : un proprietaire
@@ -56,6 +57,14 @@ export async function PUT(req: NextRequest) {
 
   if (openingHours !== undefined && !isValidOpeningHours(openingHours)) {
     return NextResponse.json({ error: "Horaires d'ouverture invalides" }, { status: 400 });
+  }
+  // `photos` etait recopie en base tel quel : ni le nombre ni la forme
+  // n'etaient verifies cote serveur, seule l'interface limitait a 5.
+  if (photos !== undefined) {
+    const refus = refusPhotosSalon(photos);
+    if (refus) {
+      return NextResponse.json({ error: refus.message }, { status: refus.status });
+    }
   }
   if (
     receiptFooter !== undefined &&

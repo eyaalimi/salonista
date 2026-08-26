@@ -16,7 +16,7 @@ export async function GET(req: NextRequest, ctx: { params: Promise<{ walletId: s
     where: { id: walletId },
     include: {
       customer: { select: { userId: true } },
-      provider: { select: { id: true, salonName: true, city: true, photos: true } },
+      provider: { select: { id: true, salonName: true, city: true, photos: true, logo: true } },
       program: true,
     },
   });
@@ -45,7 +45,10 @@ export async function GET(req: NextRequest, ctx: { params: Promise<{ walletId: s
       id: wallet.provider.id,
       salonName: wallet.provider.salonName,
       city: wallet.provider.city,
-      photo: wallet.provider.photos[0] ?? null,
+      // Le logo d'abord, la premiere photo ensuite : depuis que l'assistant
+        // ecrit dans `logo`, un salon recent a un logo mais pas forcement
+        // de photos.
+        photo: wallet.provider.logo ?? wallet.provider.photos[0] ?? null,
     },
     program: {
       pointsPerDinar: wallet.program.pointsPerDinar.toString(),

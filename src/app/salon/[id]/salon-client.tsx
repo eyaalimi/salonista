@@ -277,9 +277,38 @@ export function SalonClient({ salon }: { salon: Salon }) {
       <div className="mx-auto max-w-6xl px-6 pt-12 pb-40 md:px-12 md:pt-16 md:pb-16">
         {/* Salon header */}
         <div className="mb-12">
+          {/* Le salon peut deposer jusqu'a 5 photos ; seule la premiere
+              s'affichait, les autres etaient enregistrees mais invisibles.
+              La premiere reste en banniere, les suivantes en galerie. */}
           {salon.photos.length > 0 && (
-            <div className="relative mb-8 aspect-[21/9] overflow-hidden rounded-[var(--radius-card)]">
-              <UploadedImage src={salon.photos[0]} alt={salon.salonName} fill className="object-cover" sizes="100vw" />
+            <div className="mb-8">
+              <div className="relative aspect-[21/9] overflow-hidden rounded-[var(--radius-card)]">
+                <UploadedImage
+                  src={salon.photos[0]}
+                  alt={salon.salonName}
+                  fill
+                  className="object-cover"
+                  sizes="100vw"
+                />
+              </div>
+              {salon.photos.length > 1 && (
+                <ul className="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-4">
+                  {salon.photos.slice(1).map((photo, i) => (
+                    <li
+                      key={photo}
+                      className="relative aspect-square overflow-hidden rounded-[var(--radius-card)]"
+                    >
+                      <UploadedImage
+                        src={photo}
+                        alt={`${salon.salonName} — photo ${i + 2}`}
+                        fill
+                        className="object-cover"
+                        sizes="(max-width: 640px) 50vw, 25vw"
+                      />
+                    </li>
+                  ))}
+                </ul>
+              )}
             </div>
           )}
           <div className="flex flex-wrap items-start justify-between gap-4">

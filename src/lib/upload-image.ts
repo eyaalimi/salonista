@@ -101,6 +101,43 @@ export function refusNombre(n: number): RefusImage | null {
   return null;
 }
 
+/**
+ * Nombre de photos qu'un salon peut publier sur sa fiche.
+ *
+ * L'interface le limitait deja (`<ImageUpload max={5}>`), mais la route
+ * `PATCH /api/provider/profile` recopiait `photos` en base SANS AUCUNE
+ * verification : un appel direct pouvait en ecrire autant qu'il voulait, et
+ * une fiche a cinquante images est autant un probleme d'affichage que de
+ * disque.
+ */
+export const PHOTOS_MAX_SALON = 5;
+
+/**
+ * La liste de photos d'un salon est-elle acceptable ?
+ *
+ * Verifie le nombre ET la forme : seuls des chemins `/uploads/…` sont
+ * admis. Sans ce second controle, on pourrait pointer la fiche vers une
+ * image hebergee ailleurs — et faire porter a Salonista un contenu qu'elle
+ * ne maitrise pas.
+ */
+export function refusPhotosSalon(photos: unknown): RefusImage | null {
+  if (!Array.isArray(photos)) {
+    return { message: "Format de photos invalide", status: 400 };
+  }
+  if (photos.length > PHOTOS_MAX_SALON) {
+    return {
+      message: `Maximum ${PHOTOS_MAX_SALON} photos pour le salon.`,
+      status: 400,
+    };
+  }
+  for (const p of photos) {
+    if (typeof p !== "string" || !p.startsWith("/uploads/")) {
+      return { message: "Format de photos invalide", status: 400 };
+    }
+  }
+  return null;
+}
+
 /** Le quota journalier est-il depasse ? */
 export function refusQuota(envoisAujourdhui: number): RefusImage | null {
   if (envoisAujourdhui >= ENVOIS_MAX_PAR_JOUR) {

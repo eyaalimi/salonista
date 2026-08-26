@@ -8,8 +8,10 @@ import {
   largeursAGenerer,
   aDesVariantes,
   urlVariante,
+  refusPhotosSalon,
   TAILLE_MAX,
   ENVOIS_MAX_PAR_JOUR,
+  PHOTOS_MAX_SALON,
 } from "./upload-image";
 
 describe("refusFormat", () => {
@@ -138,6 +140,52 @@ describe("aDesVariantes", () => {
   it("ecarte ce qui ne vient pas de /uploads/", () => {
     expect(aDesVariantes("/images/hero.webp")).toBe(false);
     expect(aDesVariantes("https://exemple.tn/photo.webp")).toBe(false);
+  });
+});
+
+describe("refusPhotosSalon", () => {
+  const ok = ["/uploads/a.webp", "/uploads/b.webp"];
+
+  it("accepte une liste valide", () => {
+    expect(refusPhotosSalon(ok)).toBe(null);
+    expect(refusPhotosSalon([])).toBe(null);
+  });
+
+  it("accepte exactement la limite", () => {
+    const cinq = Array.from({ length: PHOTOS_MAX_SALON }, (_, i) => `/uploads/${i}.webp`);
+    expect(refusPhotosSalon(cinq)).toBe(null);
+  });
+
+  /**
+   * L'interface limitait deja a 5, mais la route recopiait `photos` en base
+   * SANS verification : un appel direct pouvait en ecrire autant qu'il
+   * voulait.
+   */
+  it("refuse au-dela de la limite", () => {
+    const six = Array.from({ length: PHOTOS_MAX_SALON + 1 }, (_, i) => `/uploads/${i}.webp`);
+    expect(refusPhotosSalon(six)?.status).toBe(400);
+    expect(refusPhotosSalon(six)?.message).toMatch(/Maximum 5 photos/);
+  });
+
+  /**
+   * Sans controle de forme, une fiche pouvait pointer vers une image
+   * hebergee ailleurs — un contenu que Salonista ne maitrise pas.
+   */
+  it("refuse une URL hors /uploads/", () => {
+    expect(refusPhotosSalon(["https://evil.example/x.png"])?.status).toBe(400);
+    expect(refusPhotosSalon(["/images/hero.jpg"])?.status).toBe(400);
+    expect(refusPhotosSalon(["../../etc/passwd"])?.status).toBe(400);
+  });
+
+  it("refuse ce qui n'est pas une liste de chaines", () => {
+    expect(refusPhotosSalon("pas une liste")?.status).toBe(400);
+    expect(refusPhotosSalon(null)?.status).toBe(400);
+    expect(refusPhotosSalon([42])?.status).toBe(400);
+    expect(refusPhotosSalon([null])?.status).toBe(400);
+  });
+
+  it("rend des messages en francais", () => {
+    expect(refusPhotosSalon(["http://x"])?.message).toMatch(/invalide/i);
   });
 });
 

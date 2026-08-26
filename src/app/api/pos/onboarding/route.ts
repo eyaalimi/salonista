@@ -98,8 +98,13 @@ export async function PATCH(req: NextRequest) {
       data.matriculeFiscal = s.matriculeFiscal.trim() || null;
     }
     if (typeof s.logoUrl === "string" && s.logoUrl.trim()) {
-      // photos[0] is conventionally the salon logo. Replace existing logo.
-      data.photos = [s.logoUrl.trim()];
+      // Le logo va dans `logo`, PAS dans `photos[0]`.
+      //
+      // L'ancienne convention « photos[0] est le logo » ecrasait tout le
+      // tableau (`data.photos = [logo]`) : les photos du salon disparaissaient
+      // des qu'on repassait par l'assistant. Le champ `logo` existe depuis, et
+      // c'est celui que lisent les reglages et le ticket.
+      data.logo = s.logoUrl.trim();
     }
     if (Object.keys(data).length > 0) {
       await (prisma as never as {

@@ -22,6 +22,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       city: true,
       address: true,
       photos: true,
+      logo: true,
       demo: true,
       offers: {
         where: { active: true, publishedToMarketplace: true, photos: { isEmpty: false } } as never,
@@ -53,9 +54,10 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       provider.address ? ` ${provider.address}.` : "",
     ].join("");
 
-  const image = provider.photos[0]
-    ? `${BASE_URL}${provider.photos[0]}`
-    : undefined;
+  // La premiere photo d'abord — c'est une vue du salon, plus parlante dans
+  // une vignette de partage qu'un logo. Le logo sert de repli.
+  const visuel = provider.photos[0] ?? provider.logo;
+  const image = visuel ? `${BASE_URL}${visuel}` : undefined;
 
   return {
     title: titre,
