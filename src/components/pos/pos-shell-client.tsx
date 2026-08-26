@@ -9,6 +9,7 @@ import { ReceiptPrintFrame, type ReceiptData } from "@/components/pos/receipt";
 import { Results } from "@/components/pos/results";
 import { Cart } from "@/components/pos/cart";
 import { SidePanel } from "@/components/pos/side-panel";
+import { AttacheRdvDepuisUrl } from "@/components/pos/attache-rdv-url";
 import { ShortcutHelpOverlay } from "@/components/pos/shortcut-help-overlay";
 import { usePOSShortcut } from "@/lib/use-pos-shortcuts";
 import {
@@ -265,6 +266,12 @@ export function PosShellClient({ employee }: { employee: EmployeeProp }) {
 
   return (
     <div className="h-full md:grid flex flex-col relative md:[grid-template-columns:1fr_420px]">
+      {/* Arrivee depuis « Encaisser » (agenda, verification du QR) :
+          `/pos?bookingId=…`. Monte INCONDITIONNELLEMENT — cette lecture
+          vivait dans `side-panel.tsx`, qui n'est rendu que si le tiroir est
+          ouvert, si bien que le panier restait vide a l'arrivee. */}
+      <AttacheRdvDepuisUrl defaultEmployeeId={employee.id} />
+
       <section className="overflow-hidden bg-pos-bg flex flex-col min-h-0 flex-1 md:flex-initial">
         <Results defaultEmployeeId={employee.id} />
       </section>
