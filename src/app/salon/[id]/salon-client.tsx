@@ -352,7 +352,11 @@ export function SalonClient({ salon }: { salon: Salon }) {
           )}
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-10">
+        {/* `items-start` est INDISPENSABLE au sticky de la colonne droite :
+            une grille etire ses cellules par defaut (`stretch`), la colonne
+            fait alors toute la hauteur de la ligne et n'a plus de place pour
+            coller. */}
+        <div className="grid grid-cols-1 items-start gap-10 lg:grid-cols-3">
           {/* LEFT: services list + cart summary */}
           <div className="lg:col-span-2 space-y-8">
             {/* Services list */}
@@ -454,10 +458,18 @@ export function SalonClient({ salon }: { salon: Salon }) {
             )}
           </div>
 
-          {/* RIGHT: contact + cart */}
-          <aside className="space-y-6 lg:col-span-1">
-            {/* Cart summary (sticky) */}
-            <div className="sticky top-24 rounded-[var(--radius-card)] border-2 border-hairline bg-white p-6">
+          {/* RIGHT: contact + cart
+              Le `sticky` porte sur TOUTE la colonne, pas sur le seul panier.
+              Quand il etait sur le panier, celui-ci se figeait pendant que
+              « Coordonnees » et « Horaires » — ses freres dans le meme
+              conteneur — continuaient de defiler DERRIERE lui : les panneaux
+              se chevauchaient.
+              `max-h` + `overflow-y-auto` : sur un petit ecran, une colonne
+              plus haute que la fenetre deviendrait autrement inatteignable
+              par le bas. */}
+          <aside className="space-y-6 lg:col-span-1 lg:sticky lg:top-24 lg:max-h-[calc(100vh-7rem)] lg:overflow-y-auto">
+            {/* Cart summary */}
+            <div className="rounded-[var(--radius-card)] border-2 border-hairline bg-white p-6">
               <p className="mb-4 text-xs font-semibold uppercase tracking-[0.12em] text-prune-soft">Ta réservation</p>
 
               {cart.length === 0 ? (

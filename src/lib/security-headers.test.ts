@@ -77,6 +77,16 @@ describe("contentSecurityPolicy", () => {
     expect(csp).toContain("img-src 'self' data:");
   });
 
+  /**
+   * Leaflet charge ses tuiles depuis OpenStreetMap sur la fiche salon et dans
+   * les reglages. Elles manquaient a `img-src` : sans effet tant que la CSP
+   * est en Report-Only, mais la carte serait devenue un rectangle gris le
+   * jour ou elle passerait bloquante.
+   */
+  it("autorise les tuiles OpenStreetMap", () => {
+    expect(csp).toMatch(/img-src[^;]*tile\.openstreetmap\.org/);
+  });
+
   it("interdit d'encadrer le site", () => {
     expect(csp).toContain("frame-ancestors 'none'");
   });

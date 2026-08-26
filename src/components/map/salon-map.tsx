@@ -44,7 +44,22 @@ export default function SalonMap({
       .addTo(map.current)
       .bindPopup(label);
 
+    /**
+     * Leaflet mesure son conteneur UNE FOIS, au montage, et ne redemande de
+     * tuiles que pour cette taille. Si le conteneur grandit ensuite — colonne
+     * qui devient collante, panneau replie qui s'ouvre, fenetre
+     * redimensionnee — la zone decouverte reste GRISE, faute de tuiles.
+     *
+     * `ResizeObserver` est natif (aucune dependance ajoutee) et couvre tous
+     * ces cas d'un coup, la ou un `window.resize` en manquerait la plupart.
+     */
+    const observer = new ResizeObserver(() => {
+      map.current?.invalidateSize();
+    });
+    observer.observe(container.current);
+
     return () => {
+      observer.disconnect();
       map.current?.remove();
       map.current = null;
     };
