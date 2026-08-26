@@ -50,7 +50,7 @@ export function CashDrawerIndicator({ canOpen, employeeName }: { canOpen: boolea
         type="button"
         onClick={() => (isOpen ? setOpen(true) : canOpen ? setOpeningModal(true) : null)}
         disabled={!canOpen && !isOpen}
-        className="inline-flex items-center gap-2 text-xs hover:text-brand-cream/100"
+        className="inline-flex items-center gap-2 text-xs hover:text-white/100"
         title={
           isOpen && session
             ? `Caisse ouverte par ${session.employee?.displayName ?? "—"} · Fond ${formatDT(session.openingFloat ?? "0.000")}`
@@ -85,21 +85,22 @@ export function CashDrawerIndicator({ canOpen, employeeName }: { canOpen: boolea
             onClick={() => setOpen(false)}
             className="flex-1 bg-black/30"
           />
-          <aside className="w-full max-w-sm bg-brand-cream p-6 shadow-xl overflow-y-auto">
-            <div className="flex items-center justify-between mb-4">
-              <p className="luxury-badge">Caisse</p>
+          <aside className="w-full max-w-sm bg-creme p-6 shadow-xl overflow-y-auto">
+            <div className="mb-4 flex items-center justify-between">
+              <h2 className="ds-display text-xl text-prune">Caisse</h2>
               <button
                 onClick={() => setOpen(false)}
-                className="text-brand-ink-soft hover:text-brand-ink"
+                aria-label="Fermer"
+                className="ds-focus p-2 text-prune/70 hover:text-prune"
               >
                 ✕
               </button>
             </div>
-            <p className="text-xs text-brand-ink-soft mb-1">
+            <p className="mb-1 text-sm text-prune/70">
               Ouverte le {new Date(session.openedAt).toLocaleString("fr-FR")}
             </p>
             {session.employee?.displayName && (
-              <p className="text-xs text-brand-ink mb-4">
+              <p className="mb-4 text-sm text-prune">
                 Par <strong>{session.employee.displayName}</strong> · Fond{" "}
                 <strong>{formatDT(session.openingFloat ?? summary.openingFloat)}</strong>
               </p>
@@ -120,7 +121,7 @@ export function CashDrawerIndicator({ canOpen, employeeName }: { canOpen: boolea
                 setOpen(false);
                 setExpenseModalOpen(true);
               }}
-              className="mb-3 w-full rounded-lg border border-brand-line py-3 text-xs uppercase tracking-[0.18em] text-brand-ink hover:bg-brand-cream"
+              className="ds-press ds-focus mb-3 min-h-[48px] w-full rounded-[var(--radius-pill)] border border-hairline bg-white text-base text-prune hover:border-rose"
             >
               + Dépense
             </button>
@@ -130,9 +131,9 @@ export function CashDrawerIndicator({ canOpen, employeeName }: { canOpen: boolea
                 setOpen(false);
                 setClosingModal(true);
               }}
-              className="w-full rounded-lg bg-brand-ink py-3 text-xs uppercase tracking-[0.18em] text-brand-cream"
+              className="ds-press ds-focus min-h-[48px] w-full rounded-[var(--radius-pill)] bg-rose text-base font-medium text-prune"
             >
-              Fermer caisse
+              Fermer la caisse
             </button>
           </aside>
         </div>
@@ -176,14 +177,20 @@ export function CashDrawerIndicator({ canOpen, employeeName }: { canOpen: boolea
 function Row({ label, value, emphasis }: { label: string; value: string; emphasis?: boolean }) {
   return (
     <div className="flex justify-between">
-      <dt className="text-brand-ink-soft">{label}</dt>
+      <dt className="text-prune/70">{label}</dt>
       <dd className={emphasis ? "font-semibold" : ""}>{value}</dd>
     </div>
   );
 }
 
 function OpenModal({ onClose, onOpened }: { onClose: () => void; onOpened: () => void }) {
-  const [openingFloat, setOpeningFloat] = useState("0.000");
+  // Champ VIDE au depart, pas « 0.000 ».
+  //
+  // La valeur pre-remplie se lisait comme un texte grise inerte, et il fallait
+  // l'effacer avant de saisir son montant. Vide, le placeholder indique le
+  // format attendu et disparait a la premiere frappe. Le fond reste facultatif
+  // — `submit` envoie « 0.000 » si rien n'est saisi.
+  const [openingFloat, setOpeningFloat] = useState("");
   const [openingNotes, setOpeningNotes] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -195,7 +202,12 @@ function OpenModal({ onClose, onOpened }: { onClose: () => void; onOpened: () =>
       const res = await fetch("/api/pos/cash-drawer/open", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ openingFloat, openingNotes: openingNotes || null }),
+        // Champ laisse vide = tiroir vide. Sans ce repli, on enverrait une
+        // chaine vide que le serveur refuserait.
+        body: JSON.stringify({
+          openingFloat: openingFloat.trim() || "0.000",
+          openingNotes: openingNotes || null,
+        }),
       });
       if (!res.ok) {
         const data = await res.json().catch(() => ({}));
@@ -210,30 +222,50 @@ function OpenModal({ onClose, onOpened }: { onClose: () => void; onOpened: () =>
 
   return (
     <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4">
-      <div className="w-full max-w-sm rounded-2xl bg-brand-cream p-6">
-        <p className="luxury-badge mb-2">Ouvrir caisse</p>
-        <h2 className="luxury-heading text-xl text-brand-ink mb-4">Fond de caisse</h2>
-        <input
-          type="number"
-          step="0.001"
-          min="0"
-          value={openingFloat}
-          onChange={(e) => setOpeningFloat(e.target.value)}
-          className="w-full rounded border border-brand-line bg-white px-3 py-2 text-sm mb-3"
-        />
-        <textarea
-          value={openingNotes}
-          onChange={(e) => setOpeningNotes(e.target.value)}
-          rows={2}
-          placeholder="Notes (optionnel)"
-          className="w-full rounded border border-brand-line bg-white px-3 py-2 text-sm mb-3"
-        />
-        {error && <p className="text-xs text-pos-danger mb-3">{error}</p>}
-        <div className="flex gap-2 justify-end">
+      <div className="w-full max-w-sm rounded-2xl bg-creme p-6">
+        <h2 className="ds-display mb-1 text-xl text-prune">Ouvrir la caisse</h2>
+        <p className="mb-4 text-sm text-prune/70">
+          Le montant en espèces présent dans le tiroir avant la première vente.
+        </p>
+
+        {/* Le champ n'avait NI label NI placeholder : le « 0.000 » gris venait
+            du navigateur, et disparaissait des la premiere frappe — plus rien
+            n'indiquait alors ce qu'on saisissait. */}
+        <label className="mb-3 block">
+          <span className="mb-1 block text-sm text-prune">Fond de caisse (TND)</span>
+          <input
+            type="number"
+            step="0.001"
+            min="0"
+            inputMode="decimal"
+            autoFocus
+            value={openingFloat}
+            onChange={(e) => setOpeningFloat(e.target.value)}
+            placeholder="0.000"
+            className="ds-focus min-h-[48px] w-full rounded-[var(--radius-pill)] border border-hairline bg-white px-4 text-base text-prune placeholder:text-prune/40"
+          />
+        </label>
+
+        <label className="mb-4 block">
+          <span className="mb-1 block text-sm text-prune">Notes (facultatif)</span>
+          <textarea
+            value={openingNotes}
+            onChange={(e) => setOpeningNotes(e.target.value)}
+            rows={2}
+            className="ds-focus w-full rounded-[var(--radius-card)] border border-hairline bg-white px-4 py-3 text-base text-prune placeholder:text-prune/40"
+          />
+        </label>
+
+        {error && (
+          <p role="alert" className="mb-3 text-sm text-rose-fonce">
+            {error}
+          </p>
+        )}
+        <div className="flex justify-end gap-2">
           <button
             type="button"
             onClick={onClose}
-            className="text-xs uppercase tracking-[0.18em] text-brand-ink-soft"
+            className="ds-press ds-focus min-h-[44px] rounded-[var(--radius-pill)] px-4 text-sm text-prune/70 hover:bg-creme"
           >
             Annuler
           </button>
@@ -241,9 +273,9 @@ function OpenModal({ onClose, onOpened }: { onClose: () => void; onOpened: () =>
             type="button"
             onClick={submit}
             disabled={submitting}
-            className="rounded-lg bg-brand-ink px-6 py-2 text-xs uppercase tracking-[0.18em] text-brand-cream disabled:opacity-50"
+            className="ds-press ds-focus min-h-[44px] rounded-[var(--radius-pill)] bg-rose px-6 text-sm font-medium text-prune disabled:opacity-50"
           >
-            Ouvrir
+            {submitting ? "Ouverture…" : "Ouvrir"}
           </button>
         </div>
       </div>
@@ -262,7 +294,15 @@ function CloseModal({
   onClose: () => void;
   onClosed: () => void;
 }) {
-  const [closingCount, setClosingCount] = useState("0.000");
+  /**
+   * Champ VIDE, et pas « 0.000 ».
+   *
+   * Pre-remplir a zero permettait de fermer la caisse sans rien compter : on
+   * validait alors un ecart egal a tout l'attendu, en croyant avoir confirme
+   * un comptage. Vide, le bouton reste desactive tant qu'aucun montant n'est
+   * saisi — compter est le seul geste de cet ecran.
+   */
+  const [closingCount, setClosingCount] = useState("");
   const [closingNotes, setClosingNotes] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -294,13 +334,15 @@ function CloseModal({
     const color = v === 0 ? "text-pos-accent" : Math.abs(v) < 5 ? "text-pos-warn" : "text-pos-danger";
     return (
       <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4">
-        <div className="w-full max-w-sm rounded-2xl bg-brand-cream p-6 text-center">
-          <p className="luxury-badge mb-2">Caisse fermée</p>
-          <p className="text-sm text-brand-ink-soft">Attendu</p>
-          <p className="text-lg">{expectedCash} TND</p>
-          <p className="text-sm text-brand-ink-soft mt-3">Compté</p>
-          <p className="text-lg">{closingCount} TND</p>
-          <p className="text-sm text-brand-ink-soft mt-3">Variance</p>
+        <div className="w-full max-w-sm rounded-[var(--radius-panel)] bg-creme p-6 text-center">
+          <h2 className="ds-display mb-4 text-xl text-prune">Caisse fermée</h2>
+          <p className="text-sm text-prune/70">Attendu</p>
+          <p className="text-lg text-prune">{expectedCash} TND</p>
+          <p className="mt-3 text-sm text-prune/70">Compté</p>
+          <p className="text-lg text-prune">{closingCount} TND</p>
+          {/* « Variance » est un mot de comptable ; l'ecran est lu par une
+              caissiere en fin de journee. */}
+          <p className="mt-3 text-sm text-prune/70">Écart</p>
           <p className={`text-2xl font-semibold ${color}`}>
             {v > 0 ? "+" : ""}
             {variance} TND
@@ -308,7 +350,7 @@ function CloseModal({
           <button
             type="button"
             onClick={onClosed}
-            className="mt-6 rounded-lg bg-brand-ink px-6 py-2 text-xs uppercase tracking-[0.18em] text-brand-cream"
+            className="ds-press ds-focus mt-6 min-h-[44px] rounded-[var(--radius-pill)] bg-rose px-6 text-sm font-medium text-prune"
           >
             OK
           </button>
@@ -319,43 +361,61 @@ function CloseModal({
 
   return (
     <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4">
-      <div className="w-full max-w-sm rounded-2xl bg-brand-cream p-6">
-        <p className="luxury-badge mb-2">Fermer caisse</p>
-        <p className="text-sm text-brand-ink-soft mb-4">Attendu: {expectedCash} TND</p>
-        <label className="block text-[10px] uppercase tracking-[0.18em] text-brand-ink-soft mb-1">
-          Cash compté (TND)
+      <div className="w-full max-w-sm rounded-[var(--radius-panel)] bg-creme p-6">
+        <h2 className="ds-display mb-1 text-xl text-prune">Fermer la caisse</h2>
+        <p className="mb-4 text-sm text-prune/70">
+          Attendu dans le tiroir : {expectedCash} TND
+        </p>
+
+        <label className="mb-3 block">
+          <span className="mb-1 block text-sm text-prune">
+            Espèces comptées (TND)
+          </span>
+          <input
+            type="number"
+            step="0.001"
+            min="0"
+            inputMode="decimal"
+            autoFocus
+            value={closingCount}
+            onChange={(e) => setClosingCount(e.target.value)}
+            placeholder="0.000"
+            className="ds-focus min-h-[48px] w-full rounded-[var(--radius-pill)] border border-hairline bg-white px-4 text-base text-prune placeholder:text-prune/40"
+          />
         </label>
-        <input
-          type="number"
-          step="0.001"
-          min="0"
-          value={closingCount}
-          onChange={(e) => setClosingCount(e.target.value)}
-          className="w-full rounded border border-brand-line bg-white px-3 py-2 text-sm mb-3"
-        />
-        <textarea
-          value={closingNotes}
-          onChange={(e) => setClosingNotes(e.target.value)}
-          rows={2}
-          placeholder="Notes (obligatoires si variance ≥ 5 TND)"
-          className="w-full rounded border border-brand-line bg-white px-3 py-2 text-sm mb-3"
-        />
-        {error && <p className="text-xs text-pos-danger mb-3">{error}</p>}
-        <div className="flex gap-2 justify-end">
+
+        <label className="mb-4 block">
+          <span className="mb-1 block text-sm text-prune">
+            Notes — obligatoires si l&apos;écart atteint 5 TND
+          </span>
+          <textarea
+            value={closingNotes}
+            onChange={(e) => setClosingNotes(e.target.value)}
+            rows={2}
+            className="ds-focus w-full rounded-[var(--radius-card)] border border-hairline bg-white px-4 py-3 text-base text-prune placeholder:text-prune/40"
+          />
+        </label>
+
+        {error && (
+          <p role="alert" className="mb-3 text-sm text-rose-fonce">
+            {error}
+          </p>
+        )}
+        <div className="flex justify-end gap-2">
           <button
             type="button"
             onClick={onClose}
-            className="text-xs uppercase tracking-[0.18em] text-brand-ink-soft"
+            className="ds-press ds-focus min-h-[44px] rounded-[var(--radius-pill)] px-4 text-sm text-prune/70 hover:bg-creme"
           >
             Annuler
           </button>
           <button
             type="button"
             onClick={submit}
-            disabled={submitting}
-            className="rounded-lg bg-brand-ink px-6 py-2 text-xs uppercase tracking-[0.18em] text-brand-cream disabled:opacity-50"
+            disabled={submitting || closingCount.trim() === ""}
+            className="ds-press ds-focus min-h-[44px] rounded-[var(--radius-pill)] bg-rose px-6 text-sm font-medium text-prune disabled:opacity-50"
           >
-            Fermer
+            {submitting ? "Fermeture…" : "Fermer"}
           </button>
         </div>
       </div>
