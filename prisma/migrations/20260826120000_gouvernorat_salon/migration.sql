@@ -1,0 +1,19 @@
+-- Adresse structuree : gouvernorat + delegation + rue.
+--
+-- L'adresse etait deux champs libres. En production : « Hometna, Ba7dha
+-- sousse », « sfax ville » — impossible de filtrer par zone, et le geocodage
+-- echouait faute de nom reconnaissable.
+--
+-- `governorate` est AJOUTE ; `city` continue de porter la DELEGATION. C'est
+-- delibere : `city` est lu a 47 endroits du code (fiches, admin, fidelite) et
+-- continue donc d'afficher quelque chose de juste sans qu'aucun de ces appels
+-- soit touche.
+--
+-- NULLABLE a dessein : les salons deja inscrits n'ont pas de gouvernorat. La
+-- route le rend obligatoire a la PROCHAINE modification de profil ; poser NOT
+-- NULL ici casserait la migration sur les lignes existantes.
+--
+-- Ecrite a la main : `prisma migrate dev` voudrait aussi « corriger » la
+-- contrainte CashDrawerExpense_employeeId_fkey, sur laquelle le schema et la
+-- base divergent depuis juin (voir docs/seo-notes.md).
+ALTER TABLE "ProviderProfile" ADD COLUMN "governorate" TEXT;

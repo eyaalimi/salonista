@@ -5,6 +5,7 @@ import { regenerateAllProviderSlots } from "@/lib/slots";
 import { requirePermission, toResponse } from "@/lib/employee-session";
 import { refusPhotosSalon } from "@/lib/upload-image";
 import { exigerTelephoneSalon } from "@/lib/phone";
+import { refusAdresseSalon } from "@/lib/tunisie-geo";
 
 export async function GET() {
   // Accepte session PROVIDER et session employe par PIN : un proprietaire
@@ -46,6 +47,7 @@ export async function PUT(req: NextRequest) {
     description,
     address,
     city,
+    governorate,
     phone,
     lat,
     lng,
@@ -76,6 +78,15 @@ export async function PUT(req: NextRequest) {
       return NextResponse.json({ error: verdict.message }, { status: 400 });
     }
     phoneNormalise = verdict.phone;
+  }
+
+  // Adresse structuree. Le COUPLE est verifie, pas seulement chaque champ :
+  // « Sousse / La Marsa » serait sinon accepte.
+  if (governorate !== undefined || city !== undefined || address !== undefined) {
+    const refus = refusAdresseSalon(governorate, city, address);
+    if (refus) {
+      return NextResponse.json({ error: refus.message }, { status: 400 });
+    }
   }
 
   if (
@@ -123,6 +134,7 @@ export async function PUT(req: NextRequest) {
       description,
       address,
       city,
+      ...(governorate !== undefined ? { governorate } : {}),
       // Le numero NORMALISE (`+216…`), pas la saisie brute : c'est ce format
       // que WhatsApp attend, et il rend les numeros comparables entre eux.
       ...(phoneNormalise !== undefined ? { phone: phoneNormalise } : {}),
