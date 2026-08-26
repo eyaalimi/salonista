@@ -18,6 +18,13 @@ const GOOGLE_FONTS_FILES = "https://fonts.gstatic.com";
 const WORKBOX_CDN = "https://storage.googleapis.com";
 
 /**
+ * Tuiles OpenStreetMap, servies par Leaflet sur la fiche salon et dans les
+ * reglages de la caisse. Le motif couvre les sous-domaines `a.`, `b.`, `c.`
+ * que Leaflet alterne via `{s}`.
+ */
+const OSM_TILES = "https://*.tile.openstreetmap.org";
+
+/**
  * La politique de securite du contenu.
  *
  * Envoyee en **Report-Only** d'abord : `'unsafe-inline'` et `'unsafe-eval'`
@@ -38,7 +45,11 @@ export function contentSecurityPolicy(): string {
     "style-src 'self' 'unsafe-inline' " + GOOGLE_FONTS_CSS,
     "font-src 'self' " + GOOGLE_FONTS_FILES,
     // `data:` est indispensable : les QR codes sont des images en base64.
-    "img-src 'self' data: blob:",
+    // Les tuiles OpenStreetMap sont chargees par Leaflet sur la fiche salon
+    // et dans les reglages : sans elles, la carte reste un rectangle gris.
+    // Manquait ici — invisible tant que la CSP est en Report-Only, cassant le
+    // jour ou elle passera bloquante.
+    "img-src 'self' data: blob: " + OSM_TILES,
     "connect-src 'self' " + WORKBOX_CDN,
     "worker-src 'self'",
     "manifest-src 'self'",
