@@ -21,11 +21,18 @@ const roleLabels: Record<string, string> = {
   ADMIN: "Admin",
 };
 
+/**
+ * Quatre roles, trois tons dans la charte (menthe, rose, prune). Plutot que
+ * d'en confondre deux, le quatrieme reste neutre : c'est CLIENT, le role par
+ * defaut et le plus nombreux, pour qui l'absence de couleur ne perd aucune
+ * information. Les trois roles qui demandent une action de l'admin —
+ * verifier un salon, une influenceuse, reperer un pair — gardent un ton.
+ */
 const roleStyles: Record<string, string> = {
-  CLIENT: "border-blue-300 text-blue-700",
-  PROVIDER: "border-emerald-300 text-emerald-700",
-  INFLUENCER: "border-purple-300 text-purple-700",
-  ADMIN: "border-brand-gold text-brand-gold",
+  CLIENT: "border-hairline text-prune/60",
+  PROVIDER: "border-menthe-deep/40 text-menthe-deep",
+  INFLUENCER: "border-rose/40 text-rose-fonce",
+  ADMIN: "border-prune/30 text-prune",
 };
 
 export default function AdminUsersPage() {
@@ -84,27 +91,34 @@ export default function AdminUsersPage() {
   });
 
   if (loading) {
-    return <div className="flex items-center justify-center h-64 text-brand-bordeaux/40 text-xs tracking-[0.2em] uppercase">Chargement...</div>;
+    return (
+      <div className="flex h-64 items-center justify-center text-sm text-prune/50">
+        Chargement…
+      </div>
+    );
   }
 
   return (
     <div>
-      <div className="mb-8">
-        <p className="luxury-badge mb-3">Administration</p>
-        <h1 className="luxury-heading text-3xl text-brand-bordeaux">Utilisateurs</h1>
-        <p className="text-sm text-brand-bordeaux/40 mt-2">{users.length} utilisateurs inscrits</p>
+      <div className="mb-6">
+        <h1 className="ds-display text-3xl text-prune">Utilisateurs</h1>
+        <p className="mt-2 text-base text-prune/60">
+          {users.length} utilisateur{users.length > 1 ? "s" : ""} inscrit
+          {users.length > 1 ? "s" : ""}
+        </p>
       </div>
 
-      {/* Search + filters */}
-      <div className="flex flex-col sm:flex-row gap-3 mb-6">
+      {/* Recherche et filtres */}
+      <div className="mb-5 flex flex-col gap-3 sm:flex-row">
         <input
           type="text"
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          placeholder="Rechercher par nom, email..."
-          className="flex-1 px-4 py-3 border border-brand-gold/20 bg-white text-brand-bordeaux text-sm placeholder:text-brand-bordeaux/30 focus:outline-none focus:border-brand-gold transition-colors"
+          placeholder="Rechercher par nom, email…"
+          aria-label="Rechercher un utilisateur"
+          className="ds-focus min-h-[52px] flex-1 rounded-[var(--radius-pill)] border border-hairline bg-white px-4 text-base text-prune placeholder:text-prune/40"
         />
-        <div className="flex gap-2 flex-wrap">
+        <div className="flex flex-wrap gap-2">
           {[
             { key: "ALL", label: "Tous" },
             { key: "CLIENT", label: "Clients" },
@@ -115,10 +129,11 @@ export default function AdminUsersPage() {
             <button
               key={f.key}
               onClick={() => setFilter(f.key)}
-              className={`px-4 py-2 text-[10px] tracking-[0.15em] uppercase font-medium transition-colors duration-500 ${
+              aria-pressed={filter === f.key}
+              className={`ds-press ds-focus min-h-[44px] rounded-[var(--radius-pill)] px-4 text-sm transition-colors ${
                 filter === f.key
-                  ? "bg-brand-bordeaux text-white"
-                  : "border border-brand-gold/20 text-brand-bordeaux/60 hover:border-brand-gold"
+                  ? "bg-prune text-white"
+                  : "border border-hairline text-prune/70 hover:border-rose"
               }`}
             >
               {f.label}
@@ -127,51 +142,65 @@ export default function AdminUsersPage() {
         </div>
       </div>
 
-      {/* Users list */}
+      {/* Liste */}
       {filtered.length === 0 ? (
-        <div className="bg-white border border-brand-gold/20 p-16 text-center">
-          <p className="text-brand-bordeaux/40 text-sm">Aucun utilisateur trouve</p>
+        <div className="rounded-[var(--radius-card)] border border-hairline bg-white p-12 text-center">
+          <p className="text-base text-prune/50">Aucun utilisateur trouvé</p>
         </div>
       ) : (
         <div className="space-y-3">
           {filtered.map((user) => (
-            <div key={user.id} className="bg-white border border-brand-gold/20 p-5 hover:border-brand-gold transition-colors duration-500">
-              <div className="flex flex-col md:flex-row md:items-center gap-3">
-                <div className="flex items-center gap-4 flex-1 min-w-0">
-                  <div className="w-10 h-10 bg-brand-bordeaux flex items-center justify-center text-white text-sm font-medium shrink-0">
+            <div
+              key={user.id}
+              className="rounded-[var(--radius-card)] border border-hairline bg-white p-4 transition-colors hover:border-rose"
+            >
+              <div className="flex flex-col gap-3 md:flex-row md:items-center">
+                <div className="flex min-w-0 flex-1 items-center gap-3">
+                  <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-prune text-base font-medium text-white">
                     {user.name?.[0]?.toUpperCase() || "?"}
                   </div>
                   <div className="min-w-0">
                     <div className="flex items-center gap-2">
-                      <p className="text-sm font-medium text-brand-bordeaux truncate">{user.name || "Sans nom"}</p>
-                      <span className={`px-2 py-0.5 border text-[9px] tracking-[0.1em] uppercase font-medium ${roleStyles[user.role] || "border-gray-300 text-gray-600"}`}>
+                      <p className="truncate text-base font-medium text-prune">
+                        {user.name || "Sans nom"}
+                      </p>
+                      <span
+                        className={`shrink-0 rounded-[var(--radius-pill)] border px-2 py-0.5 text-xs ${roleStyles[user.role] || "border-hairline text-prune/60"}`}
+                      >
                         {roleLabels[user.role] || user.role}
                       </span>
                     </div>
-                    <p className="text-xs text-brand-bordeaux/40 truncate">{user.email}</p>
+                    <p className="truncate text-sm text-prune/60">{user.email}</p>
                     {user.providerProfile && (
-                      <p className="text-xs text-brand-bordeaux/30 mt-0.5">
-                        Salon: {user.providerProfile.salonName}
-                        {user.providerProfile.verified && <span className="ml-2 text-brand-gold">· Vérifié</span>}
+                      <p className="mt-0.5 text-sm text-prune/50">
+                        Salon : {user.providerProfile.salonName}
+                        {user.providerProfile.verified && (
+                          <span className="ml-2 text-menthe-deep">· Vérifié</span>
+                        )}
                       </p>
                     )}
                     {user.influencerProfile && (
-                      <p className="text-xs text-brand-bordeaux/30 mt-0.5">
-                        @{user.influencerProfile.instagramHandle} · {user.influencerProfile.followersCount} followers
-                        {user.influencerProfile.verified && <span className="ml-2 text-brand-gold">· Vérifiée</span>}
+                      <p className="mt-0.5 text-sm text-prune/50">
+                        @{user.influencerProfile.instagramHandle} ·{" "}
+                        {user.influencerProfile.followersCount} abonnés
+                        {user.influencerProfile.verified && (
+                          <span className="ml-2 text-menthe-deep">· Vérifiée</span>
+                        )}
                       </p>
                     )}
                   </div>
                 </div>
 
-                <div className="flex items-center gap-3">
-                  <span className="text-xs text-brand-bordeaux/30">
-                    {user._count.bookings} reserv. · {new Date(user.createdAt).toLocaleDateString("fr-TN")}
+                <div className="flex flex-wrap items-center gap-2">
+                  <span className="text-sm text-prune/50">
+                    {user._count.bookings} résa. ·{" "}
+                    {new Date(user.createdAt).toLocaleDateString("fr-TN")}
                   </span>
                   <select
                     value={user.role}
                     onChange={(e) => changeRole(user.id, e.target.value)}
-                    className="px-3 py-1.5 border border-brand-gold/20 text-xs text-brand-bordeaux bg-transparent focus:outline-none focus:border-brand-gold transition-colors"
+                    aria-label={`Rôle de ${user.name || user.email}`}
+                    className="ds-focus min-h-[44px] rounded-[var(--radius-pill)] border border-hairline bg-white px-3 text-sm text-prune"
                   >
                     <option value="CLIENT">Client</option>
                     <option value="PROVIDER">Prestataire</option>
@@ -181,10 +210,10 @@ export default function AdminUsersPage() {
                   {user.influencerProfile && (
                     <button
                       onClick={() => toggleVerified(user.id, "influencer", !user.influencerProfile!.verified)}
-                      className={`px-3 py-1.5 border text-xs tracking-[0.1em] uppercase transition-colors duration-500 ${
+                      className={`ds-press ds-focus min-h-[44px] rounded-[var(--radius-pill)] border px-3 text-sm transition-colors ${
                         user.influencerProfile.verified
-                          ? "border-brand-gold text-brand-gold hover:bg-brand-gold/10"
-                          : "border-brand-gold/30 text-brand-bordeaux/60 hover:border-brand-gold hover:text-brand-gold"
+                          ? "border-menthe-deep/40 text-menthe-deep"
+                          : "border-hairline text-prune/70 hover:border-rose"
                       }`}
                       title={user.influencerProfile.verified ? "Retirer la vérification" : "Vérifier cette influenceuse"}
                     >
@@ -194,10 +223,10 @@ export default function AdminUsersPage() {
                   {user.providerProfile && (
                     <button
                       onClick={() => toggleVerified(user.id, "provider", !user.providerProfile!.verified)}
-                      className={`px-3 py-1.5 border text-xs tracking-[0.1em] uppercase transition-colors duration-500 ${
+                      className={`ds-press ds-focus min-h-[44px] rounded-[var(--radius-pill)] border px-3 text-sm transition-colors ${
                         user.providerProfile.verified
-                          ? "border-brand-gold text-brand-gold hover:bg-brand-gold/10"
-                          : "border-brand-gold/30 text-brand-bordeaux/60 hover:border-brand-gold hover:text-brand-gold"
+                          ? "border-menthe-deep/40 text-menthe-deep"
+                          : "border-hairline text-prune/70 hover:border-rose"
                       }`}
                       title={user.providerProfile.verified ? "Retirer la vérification" : "Vérifier ce prestataire"}
                     >
@@ -206,9 +235,9 @@ export default function AdminUsersPage() {
                   )}
                   <button
                     onClick={() => deleteUser(user.id, user.email)}
-                    className="px-3 py-1.5 border border-red-300 text-red-600 text-xs tracking-[0.1em] uppercase hover:bg-red-50 transition-colors duration-500"
+                    className="ds-press ds-focus min-h-[44px] rounded-[var(--radius-pill)] border border-rose/50 px-3 text-sm text-rose-fonce transition-colors hover:bg-rose-soft"
                   >
-                    Suppr.
+                    Supprimer
                   </button>
                 </div>
               </div>

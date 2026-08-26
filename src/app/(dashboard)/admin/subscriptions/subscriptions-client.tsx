@@ -52,14 +52,14 @@ function expiringSoon(s: Subscription | undefined): boolean {
 function StatusPill({ sub }: { sub?: Subscription }) {
   if (!sub) {
     return (
-      <span className="inline-flex items-center rounded-full border border-brand-line px-3 py-1 text-[10px] uppercase tracking-[0.18em] text-brand-ink-soft">
+      <span className="inline-flex items-center rounded-full border border-hairline px-3 py-1 text-prune/60">
         Inactif
       </span>
     );
   }
   if (sub.status === "ACTIVE") {
     return (
-      <span className="inline-flex items-center rounded-full border border-emerald-400 px-3 py-1 text-[10px] uppercase tracking-[0.18em] text-emerald-700">
+      <span className="inline-flex items-center rounded-full border border-menthe-deep/40 px-3 py-1 text-menthe-deep">
         Actif
       </span>
     );
@@ -68,20 +68,20 @@ function StatusPill({ sub }: { sub?: Subscription }) {
     const date = sub.expiresAt ? new Date(sub.expiresAt) : null;
     const dd = date ? `${String(date.getDate()).padStart(2, "0")}/${String(date.getMonth() + 1).padStart(2, "0")}` : "";
     return (
-      <span className="inline-flex items-center rounded-full border border-amber-400 px-3 py-1 text-[10px] uppercase tracking-[0.18em] text-amber-700">
+      <span className="inline-flex items-center rounded-full border border-prune/30 px-3 py-1 text-prune">
         Essai{dd ? ` (jusqu'au ${dd})` : ""}
       </span>
     );
   }
   if (sub.status === "SUSPENDED") {
     return (
-      <span className="inline-flex items-center rounded-full border border-red-400 px-3 py-1 text-[10px] uppercase tracking-[0.18em] text-red-700">
+      <span className="inline-flex items-center rounded-full border border-rose/40 px-3 py-1 text-rose-fonce">
         Suspendu
       </span>
     );
   }
   return (
-    <span className="inline-flex items-center rounded-full border border-brand-line px-3 py-1 text-[10px] uppercase tracking-[0.18em] text-brand-ink-soft">
+    <span className="inline-flex items-center rounded-full border border-hairline px-3 py-1 text-prune/60">
       Expiré
     </span>
   );
@@ -132,8 +132,7 @@ export default function SubscriptionsClient() {
 
   return (
     <div>
-      <p className="luxury-badge mb-2">Administration</p>
-      <h1 className="luxury-heading text-3xl text-brand-ink mb-6">Abonnements modules</h1>
+      <h1 className="ds-display mb-6 text-3xl text-prune">Abonnements modules</h1>
 
       <div className="flex flex-col md:flex-row md:items-center gap-4 mb-6">
         <input
@@ -141,7 +140,7 @@ export default function SubscriptionsClient() {
           placeholder="Rechercher un salon ou une ville…"
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          className="flex-1 rounded-xl border border-brand-line bg-white px-4 py-3 text-sm focus:border-brand-gold focus:outline-none"
+          className="flex-1 rounded-xl border border-hairline bg-white px-4 py-3 text-sm focus:border-rose focus:outline-none"
         />
         <div className="flex flex-wrap gap-2">
           {FILTERS.map((f) => (
@@ -149,10 +148,10 @@ export default function SubscriptionsClient() {
               key={f.value}
               type="button"
               onClick={() => setFilter(f.value)}
-              className={`rounded-full border px-4 py-2 text-[10px] uppercase tracking-[0.18em] transition ${
+              className={`rounded-full border px-4 py-2 transition ${
                 filter === f.value
-                  ? "border-brand-ink bg-brand-ink text-brand-cream"
-                  : "border-brand-line bg-white text-brand-ink-soft hover:border-brand-gold"
+                  ? "border-prune bg-prune text-white"
+                  : "border-hairline bg-white text-prune/60 hover:border-rose"
               }`}
             >
               {f.label}
@@ -162,11 +161,11 @@ export default function SubscriptionsClient() {
       </div>
 
       {loading ? (
-        <p className="text-sm text-brand-ink-soft">Chargement…</p>
+        <p className="text-sm text-prune/60">Chargement…</p>
       ) : (
-        <div className="overflow-x-auto rounded-2xl border border-brand-line bg-white">
+        <div className="overflow-x-auto rounded-2xl border border-hairline bg-white">
           <table className="w-full text-sm">
-            <thead className="bg-brand-sand text-left text-[10px] uppercase tracking-[0.18em] text-brand-ink-soft">
+            <thead className="bg-prune-soft text-left text-prune/60">
               <tr>
                 <th className="px-4 py-3">Salon</th>
                 <th className="px-4 py-3">Ville</th>
@@ -180,12 +179,12 @@ export default function SubscriptionsClient() {
                 const pos = p.subscriptions.find((s) => s.module === "POS");
                 const rewards = p.subscriptions.find((s) => s.module === "REWARDS");
                 return (
-                  <tr key={p.id} className="border-t border-brand-line">
+                  <tr key={p.id} className="border-t border-hairline">
                     <td className="px-4 py-4">
-                      <div className="font-medium text-brand-ink">{p.salonName}</div>
-                      <div className="text-[10px] text-brand-ink-soft">{p.user.email}</div>
+                      <div className="font-medium text-prune">{p.salonName}</div>
+                      <div className="text-[10px] text-prune/60">{p.user.email}</div>
                     </td>
-                    <td className="px-4 py-4 text-brand-ink-soft">{p.city ?? "—"}</td>
+                    <td className="px-4 py-4 text-prune/60">{p.city ?? "—"}</td>
                     <td className="px-4 py-4">
                       <StatusPill sub={pos} />
                     </td>
@@ -196,7 +195,7 @@ export default function SubscriptionsClient() {
                       <button
                         type="button"
                         onClick={() => setDrawerProvider(p)}
-                        className="rounded-lg border border-brand-line bg-white px-3 py-2 text-[10px] uppercase tracking-[0.18em] text-brand-ink hover:border-brand-gold"
+                        className="rounded-lg border border-hairline bg-white px-3 py-2 text-prune hover:border-rose"
                       >
                         Gérer
                       </button>
@@ -206,7 +205,7 @@ export default function SubscriptionsClient() {
               })}
               {filtered.length === 0 && (
                 <tr>
-                  <td colSpan={5} className="px-4 py-12 text-center text-sm text-brand-ink-soft">
+                  <td colSpan={5} className="px-4 py-12 text-center text-sm text-prune/60">
                     Aucun salon ne correspond.
                   </td>
                 </tr>
@@ -260,16 +259,16 @@ function ManageDrawer({
         onClick={onClose}
         className="flex-1 bg-black/30"
       />
-      <aside className="w-full max-w-md bg-brand-cream p-8 shadow-xl overflow-y-auto">
+      <aside className="w-full max-w-md bg-creme p-8 shadow-xl overflow-y-auto">
         <button
           type="button"
           onClick={onClose}
-          className="text-xs uppercase tracking-[0.18em] text-brand-ink-soft hover:text-brand-ink"
+          className="text-prune/60 hover:text-prune"
         >
           ✕ Fermer
         </button>
-        <p className="luxury-badge mt-4 mb-2">{provider.user.email}</p>
-        <h2 className="luxury-heading text-2xl text-brand-ink">{provider.salonName}</h2>
+        <p className="mt-4 mb-2 text-sm text-prune/60">{provider.user.email}</p>
+        <h2 className="ds-display text-2xl text-prune">{provider.salonName}</h2>
 
         <ModuleCard
           module="POS"
@@ -350,16 +349,16 @@ function ModuleCard({
     : null;
 
   return (
-    <section className="mt-6 rounded-2xl border border-brand-line bg-white p-6">
+    <section className="mt-6 rounded-2xl border border-hairline bg-white p-6">
       <div className="flex items-center justify-between">
-        <p className="luxury-heading text-lg text-brand-ink">
+        <p className="ds-display text-lg text-prune">
           {module === "POS" ? "Caisse (POS)" : "Fidélité (Rewards)"}
         </p>
         <StatusPill sub={sub} />
       </div>
 
       {!editing && sub && (
-        <div className="mt-4 space-y-2 text-sm text-brand-ink-soft">
+        <div className="mt-4 space-y-2 text-sm text-prune/60">
           {sub.expiresAt && (
             <p>
               Expire le {new Date(sub.expiresAt).toLocaleDateString("fr-FR")}
@@ -384,7 +383,7 @@ function ModuleCard({
           <button
             type="button"
             onClick={() => setEditing(true)}
-            className="rounded-lg bg-brand-ink px-4 py-2 text-[10px] uppercase tracking-[0.18em] text-brand-cream hover:bg-brand-ink-soft"
+            className="rounded-lg bg-prune px-4 py-2 text-white hover:bg-prune/90"
           >
             Activer
           </button>
@@ -394,14 +393,14 @@ function ModuleCard({
             <button
               type="button"
               onClick={() => setEditing(true)}
-              className="rounded-lg border border-brand-line bg-white px-4 py-2 text-[10px] uppercase tracking-[0.18em] text-brand-ink hover:border-brand-gold"
+              className="rounded-lg border border-hairline bg-white px-4 py-2 text-prune hover:border-rose"
             >
               Modifier
             </button>
             <button
               type="button"
               onClick={() => setStatus("SUSPENDED")}
-              className="rounded-lg border border-red-200 bg-white px-4 py-2 text-[10px] uppercase tracking-[0.18em] text-red-700 hover:border-red-400"
+              className="rounded-lg border border-rose/50 bg-white px-4 py-2 text-rose-fonce hover:bg-rose-soft"
             >
               Suspendre
             </button>
@@ -411,7 +410,7 @@ function ModuleCard({
           <button
             type="button"
             onClick={() => setStatus("ACTIVE")}
-            className="rounded-lg bg-brand-ink px-4 py-2 text-[10px] uppercase tracking-[0.18em] text-brand-cream hover:bg-brand-ink-soft"
+            className="rounded-lg bg-prune px-4 py-2 text-white hover:bg-prune/90"
           >
             Réactiver
           </button>
@@ -425,7 +424,7 @@ function ModuleCard({
             onChange={(e) =>
               setForm({ ...form, status: e.target.value as ActivateForm["status"] })
             }
-            className="w-full rounded-lg border border-brand-line bg-white px-3 py-2 text-sm"
+            className="w-full rounded-lg border border-hairline bg-white px-3 py-2 text-sm"
           >
             <option value="ACTIVE">Actif</option>
             <option value="TRIAL">Essai</option>
@@ -435,7 +434,7 @@ function ModuleCard({
             value={form.expiresAt}
             onChange={(e) => setForm({ ...form, expiresAt: e.target.value })}
             placeholder="Date d'expiration"
-            className="w-full rounded-lg border border-brand-line bg-white px-3 py-2 text-sm"
+            className="w-full rounded-lg border border-hairline bg-white px-3 py-2 text-sm"
           />
           <input
             type="number"
@@ -444,27 +443,27 @@ function ModuleCard({
             value={form.monthlyPrice}
             onChange={(e) => setForm({ ...form, monthlyPrice: e.target.value })}
             placeholder="Prix mensuel (TND)"
-            className="w-full rounded-lg border border-brand-line bg-white px-3 py-2 text-sm"
+            className="w-full rounded-lg border border-hairline bg-white px-3 py-2 text-sm"
           />
           <textarea
             value={form.notes}
             onChange={(e) => setForm({ ...form, notes: e.target.value })}
             placeholder="Notes"
             rows={3}
-            className="w-full rounded-lg border border-brand-line bg-white px-3 py-2 text-sm"
+            className="w-full rounded-lg border border-hairline bg-white px-3 py-2 text-sm"
           />
           <div className="flex gap-2">
             <button
               type="button"
               onClick={save}
-              className="rounded-lg bg-brand-ink px-4 py-2 text-[10px] uppercase tracking-[0.18em] text-brand-cream hover:bg-brand-ink-soft"
+              className="rounded-lg bg-prune px-4 py-2 text-white hover:bg-prune/90"
             >
               Enregistrer
             </button>
             <button
               type="button"
               onClick={() => setEditing(false)}
-              className="rounded-lg border border-brand-line bg-white px-4 py-2 text-[10px] uppercase tracking-[0.18em] text-brand-ink-soft"
+              className="rounded-lg border border-hairline bg-white px-4 py-2 text-prune/60"
             >
               Annuler
             </button>
@@ -473,7 +472,7 @@ function ModuleCard({
       )}
 
       {admin && (
-        <p className="mt-4 text-[10px] uppercase tracking-[0.18em] text-brand-ink-soft">
+        <p className="mt-4 text-prune/60">
           Activé par {admin.name ?? admin.email} le{" "}
           {new Date(sub!.updatedAt).toLocaleDateString("fr-FR")}
         </p>

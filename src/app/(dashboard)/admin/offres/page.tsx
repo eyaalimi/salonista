@@ -5,7 +5,10 @@ import { useEffect, useState } from "react";
 interface Offer {
   id: string;
   title: string;
-  originalPrice: string;
+  // Nullable en base (`Decimal?`) depuis le lot POS : une offre creee a la
+  // caisse n'a pas de prix barre. Le type le disait non-nul, d'ou un « NaN % »
+  // affiche a l'admin des qu'une telle offre apparaissait.
+  originalPrice: string | null;
   discountPrice: string;
   category: string;
   active: boolean;
@@ -44,19 +47,18 @@ export default function AdminOffersPage() {
     : offers.filter((o) => !o.active);
 
   if (loading) {
-    return <div className="flex items-center justify-center h-64 text-brand-bordeaux/40 text-xs tracking-[0.2em] uppercase">Chargement...</div>;
+    return <div className="flex h-64 items-center justify-center text-sm text-prune/50">Chargement&</div>;
   }
 
   return (
     <div>
       <div className="mb-8">
-        <p className="luxury-badge mb-3">Administration</p>
-        <h1 className="luxury-heading text-3xl text-brand-bordeaux">Toutes les offres</h1>
-        <p className="text-sm text-brand-bordeaux/40 mt-2">{offers.length} offres au total</p>
+        <h1 className="ds-display text-3xl text-prune">Toutes les offres</h1>
+        <p className="mt-2 text-base text-prune/60">{offers.length} offres au total</p>
       </div>
 
-      {/* Filters */}
-      <div className="flex gap-2 mb-6">
+      {/* Filtres */}
+      <div className="mb-5 flex flex-wrap gap-2">
         {[
           { key: "ALL", label: "Toutes" },
           { key: "ACTIVE", label: "Actives" },
@@ -65,10 +67,11 @@ export default function AdminOffersPage() {
           <button
             key={f.key}
             onClick={() => setFilter(f.key)}
-            className={`px-4 py-2 text-[10px] tracking-[0.15em] uppercase font-medium transition-colors duration-500 ${
+            aria-pressed={filter === f.key}
+            className={`ds-press ds-focus min-h-[44px] rounded-[var(--radius-pill)] px-4 text-sm transition-colors ${
               filter === f.key
-                ? "bg-brand-bordeaux text-white"
-                : "border border-brand-gold/20 text-brand-bordeaux/60 hover:border-brand-gold"
+                ? "bg-prune text-white"
+                : "border border-hairline text-prune/70 hover:border-rose"
             }`}
           >
             {f.label}
@@ -77,46 +80,64 @@ export default function AdminOffersPage() {
       </div>
 
       {filtered.length === 0 ? (
-        <div className="bg-white border border-brand-gold/20 p-16 text-center">
-          <p className="text-brand-bordeaux/40 text-sm">Aucune offre</p>
+        <div className="rounded-[var(--radius-card)] border border-hairline bg-white p-12 text-center">
+          <p className="text-base text-prune/50">Aucune offre</p>
         </div>
       ) : (
         <div className="space-y-3">
           {filtered.map((offer) => {
-            const discount = Math.round(
-              ((Number(offer.originalPrice) - Number(offer.discountPrice)) / Number(offer.originalPrice)) * 100
-            );
+            // Une offre de caisse n'a pas de prix barre : pas de remise a
+            // afficher, plutot qu'un « NaN % ».
+            const prixOrigine = offer.originalPrice ? Number(offer.originalPrice) : null;
+            const remise =
+              prixOrigine && prixOrigine > Number(offer.discountPrice)
+                ? Math.round(((prixOrigine - Number(offer.discountPrice)) / prixOrigine) * 100)
+                : null;
             return (
-              <div key={offer.id} className="bg-white border border-brand-gold/20 p-5 hover:border-brand-gold transition-colors duration-500">
-                <div className="flex flex-col md:flex-row md:items-center gap-3">
+              <div
+                key={offer.id}
+                className="rounded-[var(--radius-card)] border border-hairline bg-white p-4 transition-colors hover:border-rose"
+              >
+                <div className="flex flex-col gap-3 md:flex-row md:items-center">
                   <div className="flex-1">
-                    <div className="flex items-center gap-2 mb-1">
-                      <span className="luxury-badge text-[10px]">
+                    <div className="mb-1 flex flex-wrap items-center gap-2">
+                      <span className="rounded-[var(--radius-pill)] bg-prune-soft px-2 py-0.5 text-xs text-prune">
                         {categoryLabels[offer.category] || offer.category}
                       </span>
-                      <span className={`px-2 py-0.5 border text-[9px] tracking-[0.1em] uppercase font-medium ${
-                        offer.active ? "border-emerald-300 text-emerald-700" : "border-red-300 text-red-700"
-                      }`}>
+                      <span
+                        className={`rounded-[var(--radius-pill)] border px-2 py-0.5 text-xs ${
+                          offer.active
+                            ? "border-menthe-deep/40 text-menthe-deep"
+                            : "border-rose/40 text-rose-fonce"
+                        }`}
+                      >
                         {offer.active ? "Active" : "Inactive"}
                       </span>
                     </div>
-                    <h3 className="luxury-heading text-lg text-brand-bordeaux">{offer.title}</h3>
-                    <p className="text-xs text-brand-bordeaux/40 mt-1">
+                    <h3 className="ds-display text-lg text-prune">{offer.title}</h3>
+                    <p className="mt-1 text-sm text-prune/50">
                       {offer.provider.salonName}
                       {offer.provider.city && ` · ${offer.provider.city}`}
-                      {" · "}Creee le {new Date(offer.createdAt).toLocaleDateString("fr-TN")}
+                      {" · "}Créée le{" "}
+                      {new Date(offer.createdAt).toLocaleDateString("fr-TN")}
                     </p>
                   </div>
-                  <div className="flex items-center gap-6">
-                    <div className="text-right">
-                      <div className="flex items-baseline gap-2">
-                        <span className="text-brand-bordeaux/30 line-through text-sm">{Number(offer.originalPrice).toFixed(0)} TND</span>
-                        <span className="luxury-heading text-xl text-brand-gold">{Number(offer.discountPrice).toFixed(0)} TND</span>
-                        <span className="text-[10px] tracking-[0.1em] uppercase text-brand-gold">-{discount}%</span>
-                      </div>
+                  <div className="flex items-center gap-5">
+                    <div className="flex items-baseline gap-2 text-right">
+                      {prixOrigine !== null && (
+                        <span className="text-sm text-prune/40 line-through">
+                          {prixOrigine.toFixed(0)} TND
+                        </span>
+                      )}
+                      <span className="ds-display text-xl text-prune">
+                        {Number(offer.discountPrice).toFixed(0)} TND
+                      </span>
+                      {remise !== null && (
+                        <span className="text-sm text-rose-fonce">-{remise} %</span>
+                      )}
                     </div>
-                    <div className="text-xs text-brand-bordeaux/40 tracking-wider text-right">
-                      <p>{offer._count.bookingItems} reserv.</p>
+                    <div className="text-right text-sm text-prune/50">
+                      <p>{offer._count.bookingItems} résa.</p>
                       <p>{offer._count.trackingLinks} liens</p>
                     </div>
                   </div>
