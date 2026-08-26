@@ -319,6 +319,55 @@ What it does:
 
 Idempotent — re-runs are no-ops.
 
+### `scripts/backfill-uploads.ts` — rattrapage des images d'avant le lot C
+
+Le lot C re-encode chaque téléversement en WebP et le décline en 400/800/
+1600 px, servis via `srcset`. Il ne vaut que pour les **nouveaux** fichiers :
+les photos déjà sur le disque sont restées en `.jpg`/`.png`, reconnues comme
+héritées par `aDesVariantes()` et servies **en pleine résolution**.
+
+Mesuré en production le 24 août : une image de 1 600 px téléchargée pour
+s'afficher dans 214 px, un premier rendu à 7,4 s en cache froid pour un TTFB à
+277 ms.
+
+```bash
+cd /home/ubuntu/salonista
+npx tsx scripts/backfill-uploads.ts            # SIMULE, n'écrit rien
+npx tsx scripts/backfill-uploads.ts --apply    # convertit et réécrit la base
+```
+
+Ce qu'il fait :
+
+- produit, pour chaque image sans canonique WebP, exactement ce que produit
+  `POST /api/upload` — mêmes helpers importés depuis `src/lib/upload-image.ts`,
+  donc aucune règle dupliquée qui pourrait diverger ;
+- réécrit les URLs dans les cinq colonnes qui en portent : `User.avatar`,
+  `ProviderProfile.photos[]`, `ProviderProfile.logo`, `Offer.photos[]`,
+  `Product.photo`.
+
+**Quand le relancer :** après toute reprise de fichiers déposés hors de la
+route d'upload (restauration de sauvegarde, copie manuelle dans
+`public/uploads/`). Un passage à vide ne coûte qu'une lecture du dossier.
+
+Quatre garanties tenues :
+
+- **Idempotent.** Un fichier dont la canonique `<base>.webp` existe est ignoré.
+  Les variantes `<base>-400.webp` sont reconnues comme telles et jamais
+  reprises pour des originaux — sans ce filtre, chaque relance produirait
+  `<base>-400-400.webp`.
+- **Aucun original supprimé.** Les `.jpg`/`.png` restent en place : si une
+  référence était manquée quelque part, elle continue de fonctionner au lieu
+  d'afficher une image cassée. Le ménage se fera après vérification.
+- **Séquentiel.** Un `sharp` à la fois. La Lightsail a 1 Go de RAM et `next
+  build` y sature déjà la mémoire ; dix décodages de 1 600 px en parallèle la
+  mettraient à genoux.
+- **Une transaction par entité**, pas un verrou unique sur toute la base
+  pendant la durée du lot.
+
+Un fichier illisible est journalisé et le lot continue ; sa référence en base
+reste alors sur l'original, toujours présent. Le script ne réécrit **que** vers
+des fichiers qu'il a effectivement écrits.
+
 ---
 
 ## Notes
