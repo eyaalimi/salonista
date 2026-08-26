@@ -174,9 +174,12 @@ export default async function OffresPage({
                           </span>
                         )}
                       </div>
-                      <p className="text-xs text-prune-soft">
-                        TVA incluse : {Number(offer.taxRate ?? 19)}%
-                      </p>
+                      {/* Masquee a 0 % — voir /offre/[id]. */}
+                      {Number(offer.taxRate ?? 0) > 0 && (
+                        <p className="text-xs text-prune-soft">
+                          TVA incluse : {Number(offer.taxRate)}%
+                        </p>
+                      )}
                     </div>
                   </div>
                 </Card>

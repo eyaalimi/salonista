@@ -229,6 +229,10 @@ model ProviderProfile {
   logo            String?
   openingHours    Json?
   matriculeFiscal String?
+  /// Le salon collecte-t-il la TVA ? `false` par defaut : la majorite des
+  /// salons tunisiens ne sont pas assujettis. Tant que c'est faux, le serveur
+  /// impose 0 % sur les offres et les produits — voir src/lib/tva-salon.ts.
+  vatRegistered   Boolean  @default(false)
   receiptFooter   String?
   onboardingDismissedAt DateTime?
   verified        Boolean  @default(false)

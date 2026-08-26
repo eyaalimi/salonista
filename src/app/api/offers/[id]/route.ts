@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { tauxTvaApplicable } from "@/lib/tva-salon";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
@@ -130,13 +131,16 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
     nextDuration = d;
   }
 
+  // Le regime du salon prime sur ce que demande l'appelant : un salon non
+  // assujetti obtient 0 %, quel que soit le taux envoye. Un seul champ lu,
+  // pas tout le profil — c'est la seule information manquante ici.
   let nextTaxRate: number | undefined;
   if (body.taxRate !== undefined) {
-    const t = Number(body.taxRate);
-    if (Number.isNaN(t) || t < 0 || t > 100) {
-      return NextResponse.json({ error: "Taux de TVA invalide (0–100)" }, { status: 400 });
-    }
-    nextTaxRate = t;
+    const regime = await prisma.providerProfile.findUnique({
+      where: { id: employee.providerId },
+      select: { vatRegistered: true },
+    });
+    nextTaxRate = tauxTvaApplicable(regime?.vatRegistered ?? false, body.taxRate);
   }
 
   const updated = await prisma.offer.update({
