@@ -1,4 +1,5 @@
 import { NextRequest } from "next/server";
+import { tauxTvaApplicable } from "@/lib/tva-salon";
 import { prisma } from "@/lib/prisma";
 import { requirePermission, requireEmployee, toResponse } from "@/lib/employee-session";
 
@@ -85,10 +86,12 @@ export async function PUT(req: NextRequest, ctx: { params: Promise<{ id: string 
     data.salePrice = n;
   }
   if (body.taxRate !== undefined) {
-    const t = Number(body.taxRate);
-    if (Number.isNaN(t) || t < 0 || t > 100)
-      return Response.json({ error: "TVA invalide" }, { status: 400 });
-    data.taxRate = t;
+    // Le regime du salon prime sur ce que demande l'appelant.
+    const regime = await prisma.providerProfile.findUnique({
+      where: { id: employee.providerId },
+      select: { vatRegistered: true },
+    });
+    data.taxRate = tauxTvaApplicable(regime?.vatRegistered ?? false, body.taxRate);
   }
 
   try {

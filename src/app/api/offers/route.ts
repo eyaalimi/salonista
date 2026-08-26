@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { tauxTvaApplicable } from "@/lib/tva-salon";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
@@ -134,10 +135,11 @@ export async function POST(req: NextRequest) {
     }
   }
 
-  const tax = taxRate === undefined ? 19 : Number(taxRate);
-  if (Number.isNaN(tax) || tax < 0 || tax > 100) {
-    return NextResponse.json({ error: "Taux de TVA invalide (0–100)" }, { status: 400 });
-  }
+  // Un salon non assujetti obtient 0 %, quoi qu'il demande : c'est le seul
+  // moyen d'etre sur qu'aucune ligne ne porte de TVA fantome, quel que soit
+  // le chemin de creation. Silencieux a dessein — la caisse et l'assistant
+  // creent des services sans jamais parler de TVA.
+  const tax = tauxTvaApplicable(profile.vatRegistered, taxRate);
 
   const offer = await prisma.offer.create({
     data: {

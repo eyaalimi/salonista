@@ -29,6 +29,7 @@ export type SalonProfile = {
   photos: string[];
   logo: string | null;
   matriculeFiscal: string | null;
+  vatRegistered: boolean;
   receiptFooter: string | null;
 };
 
@@ -57,6 +58,7 @@ export function SalonForm({ initial }: { initial: SalonProfile }) {
     photos: initial.photos ?? [],
     logo: initial.logo ?? null,
     matriculeFiscal: initial.matriculeFiscal ?? "",
+    vatRegistered: initial.vatRegistered,
     receiptFooter: initial.receiptFooter ?? "",
   });
   const [busy, setBusy] = useState(false);
@@ -92,6 +94,7 @@ export function SalonForm({ initial }: { initial: SalonProfile }) {
           photos: form.photos,
           logo: form.logo,
           matriculeFiscal: form.matriculeFiscal.trim() || null,
+          vatRegistered: form.vatRegistered,
           receiptFooter: form.receiptFooter.trim() || null,
         }),
       });
@@ -235,16 +238,46 @@ export function SalonForm({ initial }: { initial: SalonProfile }) {
         />
       </label>
 
-      <label className="block">
-        <span className="mb-1 block text-xs uppercase tracking-wider text-pos-ink-3">
-          Matricule fiscal
-        </span>
-        <input
-          className="w-full rounded border border-pos-border bg-white px-3 py-2 text-sm text-pos-ink"
-          value={form.matriculeFiscal}
-          onChange={(e) => patch("matriculeFiscal", e.target.value)}
-        />
-      </label>
+      {/* Regime de TVA. « Non » par defaut : la majorite des salons
+          tunisiens ne sont pas assujettis, et ils devaient jusqu'ici passer
+          chaque service a 0 % a la main. */}
+      <div className="rounded border border-pos-border p-3">
+        <label className="flex items-start gap-3">
+          <input
+            type="checkbox"
+            checked={form.vatRegistered}
+            onChange={(e) => patch("vatRegistered", e.target.checked)}
+            className="mt-0.5 h-4 w-4 shrink-0 accent-pos-accent"
+          />
+          <span>
+            <span className="block text-sm font-medium text-pos-ink">
+              Mon salon est assujetti à la TVA
+            </span>
+            <span className="mt-0.5 block text-xs text-pos-ink-3">
+              {form.vatRegistered
+                ? "Tes services et produits porteront un taux de TVA."
+                : "Aucune TVA ne sera appliquée ni affichée. C'est le cas de la plupart des salons."}
+            </span>
+          </span>
+        </label>
+
+        {/* Le matricule ne s'affiche que s'il sert : c'est la mention qui
+            rend une facture valable, sans objet pour un non-assujetti. */}
+        {form.vatRegistered && (
+          <label className="mt-3 block">
+            <span className="mb-1 block text-xs uppercase tracking-wider text-pos-ink-3">
+              Matricule fiscal <span className="text-pos-danger">*</span>
+            </span>
+            <input
+              required
+              placeholder="1234567/A/M/000"
+              className="w-full rounded border border-pos-border bg-white px-3 py-2 text-sm text-pos-ink placeholder:text-pos-ink-3"
+              value={form.matriculeFiscal}
+              onChange={(e) => patch("matriculeFiscal", e.target.value)}
+            />
+          </label>
+        )}
+      </div>
 
       <div>
         <span className="mb-1 block text-xs uppercase tracking-wider text-pos-ink-3">

@@ -6,6 +6,7 @@ import { requirePermission, toResponse } from "@/lib/employee-session";
 import { refusPhotosSalon } from "@/lib/upload-image";
 import { exigerTelephoneSalon } from "@/lib/phone";
 import { refusAdresseSalon } from "@/lib/tunisie-geo";
+import { refusRegimeTva } from "@/lib/tva-salon";
 
 export async function GET() {
   // Accepte session PROVIDER et session employe par PIN : un proprietaire
@@ -55,6 +56,7 @@ export async function PUT(req: NextRequest) {
     logo,
     openingHours,
     matriculeFiscal,
+    vatRegistered,
     receiptFooter,
   } = body;
 
@@ -84,6 +86,16 @@ export async function PUT(req: NextRequest) {
   // « Sousse / La Marsa » serait sinon accepte.
   if (governorate !== undefined || city !== undefined || address !== undefined) {
     const refus = refusAdresseSalon(governorate, city, address);
+    if (refus) {
+      return NextResponse.json({ error: refus.message }, { status: 400 });
+    }
+  }
+
+  // Un salon assujetti doit avoir un matricule fiscal : c'est la mention qui
+  // rend une facture valable. On lit le matricule ENVOYE, pas celui en base —
+  // les deux champs voyagent ensemble dans le meme formulaire.
+  if (vatRegistered !== undefined) {
+    const refus = refusRegimeTva(vatRegistered, matriculeFiscal);
     if (refus) {
       return NextResponse.json({ error: refus.message }, { status: 400 });
     }
@@ -145,6 +157,7 @@ export async function PUT(req: NextRequest) {
       // Chaine vide -> null : un logo retire doit disparaitre, pas devenir "".
       ...(logo !== undefined ? { logo: logo || null } : {}),
       ...(matriculeFiscal !== undefined ? { matriculeFiscal: matriculeFiscal || null } : {}),
+      ...(vatRegistered !== undefined ? { vatRegistered: !!vatRegistered } : {}),
       ...(receiptFooter !== undefined ? { receiptFooter: receiptFooter || null } : {}),
     },
   });

@@ -1,4 +1,5 @@
 import { NextRequest } from "next/server";
+import { tauxTvaApplicable } from "@/lib/tva-salon";
 import { prisma } from "@/lib/prisma";
 import { requireModule } from "@/lib/modules";
 import { requireEmployee, requirePermission, toResponse } from "@/lib/employee-session";
@@ -63,10 +64,13 @@ export async function POST(req: NextRequest) {
     return Response.json({ error: "Champs requis manquants" }, { status: 400 });
   }
 
-  const tax = Number(body.taxRate ?? 19);
-  if (Number.isNaN(tax) || tax < 0 || tax > 100) {
-    return Response.json({ error: "Taux de TVA invalide (0–100)" }, { status: 400 });
-  }
+  // Meme regle que pour les offres : un salon non assujetti obtient 0 %,
+  // quel que soit le taux envoye.
+  const regime = await prisma.providerProfile.findUnique({
+    where: { id: employee.providerId },
+    select: { vatRegistered: true },
+  });
+  const tax = tauxTvaApplicable(regime?.vatRegistered ?? false, body.taxRate);
   const purchase = Number(body.purchasePrice);
   const sale = Number(body.salePrice);
   if (!Number.isFinite(purchase) || purchase < 0 || !Number.isFinite(sale) || sale < 0) {

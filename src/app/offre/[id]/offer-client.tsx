@@ -378,9 +378,14 @@ export function OfferClient({
                   </>
                 )}
               </div>
-              <p className="mt-2 text-sm text-prune-soft">
-                TVA incluse : {Number(offer.taxRate ?? 19)}%
-              </p>
+              {/* Rien a afficher a 0 % : « TVA incluse : 0% » n'informe
+                  personne et laisse croire a un oubli de configuration. La
+                  plupart des salons ne sont pas assujettis. */}
+              {Number(offer.taxRate ?? 0) > 0 && (
+                <p className="mt-2 text-sm text-prune-soft">
+                  TVA incluse : {Number(offer.taxRate)}%
+                </p>
+              )}
             </div>
 
             {offer.description && (

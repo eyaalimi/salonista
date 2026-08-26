@@ -33,6 +33,7 @@ export default async function SettingsPage() {
       photos: true,
       logo: true,
       matriculeFiscal: true,
+      vatRegistered: true,
       receiptFooter: true,
       openingHours: true,
     } as never,
@@ -49,6 +50,7 @@ export default async function SettingsPage() {
     photos: string[];
     logo: string | null;
     matriculeFiscal: string | null;
+    vatRegistered: boolean;
     receiptFooter: string | null;
     openingHours: unknown;
   } | null;
@@ -81,6 +83,7 @@ export default async function SettingsPage() {
             photos: provider.photos ?? [],
             logo: provider.logo ?? null,
             matriculeFiscal: provider.matriculeFiscal,
+            vatRegistered: provider.vatRegistered,
             receiptFooter: provider.receiptFooter,
           }}
           openingHours={hours}
