@@ -142,23 +142,40 @@ describe("aDesVariantes", () => {
 });
 
 describe("urlVariante", () => {
-  it("sert la variante exacte quand elle existe", () => {
-    expect(urlVariante("/uploads/abc.webp", 800)).toBe("/uploads/abc-800.webp");
+  /**
+   * LE BUG CORRIGE ICI. L'ancienne version choisissait la variante
+   * immediatement superieure a la largeur demandee, en supposant que les
+   * trois existaient toujours. Or `largeursAGenerer` ne produit que celles
+   * inferieures ou egales a la largeur de la SOURCE : un logo de salon de
+   * 500 px n'a QUE `-400`. Le navigateur recevait `-1600`, obtenait un 404,
+   * et affichait le texte alternatif — constate en production sur les logos,
+   * plus petits que les photos de prestation.
+   */
+  it("sert -400, la seule variante toujours produite", () => {
+    expect(urlVariante("/uploads/abc.webp", 400)).toBe("/uploads/abc-400.webp");
+    expect(urlVariante("/uploads/abc.webp", 256)).toBe("/uploads/abc-400.webp");
+    expect(urlVariante("/uploads/abc.webp", 1)).toBe("/uploads/abc-400.webp");
   });
 
   /**
-   * Next reclame des largeurs arbitraires (256, 384, 1080…). Servir plus
-   * petit que demande afficherait une image visiblement floue : on arrondit
-   * toujours vers le haut.
+   * Au-dela, on sert le CANONIQUE plutot qu'une variante qui peut ne pas
+   * exister. Il est toujours ecrit, et borne a 1600 px par la route
+   * d'upload : jamais l'original en pleine resolution.
    */
-  it("arrondit vers la variante superieure", () => {
-    expect(urlVariante("/uploads/abc.webp", 256)).toBe("/uploads/abc-400.webp");
-    expect(urlVariante("/uploads/abc.webp", 640)).toBe("/uploads/abc-800.webp");
-    expect(urlVariante("/uploads/abc.webp", 1080)).toBe("/uploads/abc-1600.webp");
+  it("sert le canonique au-dela de -400, jamais un fichier absent", () => {
+    expect(urlVariante("/uploads/abc.webp", 401)).toBe("/uploads/abc.webp");
+    expect(urlVariante("/uploads/abc.webp", 800)).toBe("/uploads/abc.webp");
+    expect(urlVariante("/uploads/abc.webp", 1080)).toBe("/uploads/abc.webp");
+    expect(urlVariante("/uploads/abc.webp", 3000)).toBe("/uploads/abc.webp");
   });
 
-  it("plafonne a la plus grande variante", () => {
-    expect(urlVariante("/uploads/abc.webp", 3000)).toBe("/uploads/abc-1600.webp");
+  /** Toute URL rendue doit correspondre a un fichier reellement ecrit. */
+  it("ne demande jamais -800 ni -1600", () => {
+    for (const w of [1, 100, 400, 401, 640, 800, 801, 1080, 1600, 3000]) {
+      const url = urlVariante("/uploads/abc.webp", w);
+      expect(url).not.toMatch(/-800\.webp$/);
+      expect(url).not.toMatch(/-1600\.webp$/);
+    }
   });
 
   it("laisse intacte une image sans variantes", () => {
