@@ -5,6 +5,7 @@ import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 import { geocodeAddress } from "@/lib/geocode";
 import { markerIcon } from "@/components/map/marker-icon";
+import { adresseComplete } from "@/lib/tunisie-geo";
 
 /** Centre de la Tunisie, cadrage par defaut quand on n'a aucun point. */
 const TUNISIE: [number, number] = [34.0, 9.0];
@@ -22,12 +23,15 @@ export default function LocationPicker({
   lng,
   address,
   city,
+  governorate,
   onChange,
 }: {
   lat: number | null;
   lng: number | null;
   address: string;
+  /** La delegation. */
   city: string;
+  governorate?: string;
   onChange: (lat: number, lng: number) => void;
 }) {
   const container = useRef<HTMLDivElement>(null);
@@ -105,7 +109,9 @@ export default function LocationPicker({
   }, []);
 
   async function localiser() {
-    const query = [address.trim(), city.trim()].filter(Boolean).join(", ");
+    // Nominatim geocode mal sans pays ni echelon administratif : la requete
+    // se limitait a la rue et a la delegation, et echouait souvent.
+    const query = adresseComplete(address.trim(), city.trim(), governorate?.trim() ?? null);
     if (!query) {
       setMessage("Renseignez d'abord une adresse ou une ville.");
       return;

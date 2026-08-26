@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { ImageUpload } from "@/components/image-upload";
 import { PHOTOS_MAX_SALON } from "@/lib/upload-image";
+import { delegationsDe, nomsGouvernorats } from "@/lib/tunisie-geo";
 import dynamic from "next/dynamic";
 
 // Leaflet manipule le DOM et n'existe pas cote serveur : sans ssr:false, le
@@ -19,7 +20,9 @@ export type SalonProfile = {
   category: string;
   description: string | null;
   address: string | null;
+  /** La DELEGATION. Le nom `city` est celui de la colonne, conserve. */
   city: string | null;
+  governorate: string | null;
   phone: string | null;
   lat: number | null;
   lng: number | null;
@@ -47,6 +50,7 @@ export function SalonForm({ initial }: { initial: SalonProfile }) {
     description: initial.description ?? "",
     address: initial.address ?? "",
     city: initial.city ?? "",
+    governorate: initial.governorate ?? "",
     phone: initial.phone ?? "",
     lat: initial.lat,
     lng: initial.lng,
@@ -67,7 +71,7 @@ export function SalonForm({ initial }: { initial: SalonProfile }) {
 
   async function save() {
     // Le telephone est obligatoire : il porte les confirmations WhatsApp.
-    if (busy || uploading || !form.salonName.trim() || !form.phone.trim()) return;
+    if (busy || uploading || !form.salonName.trim() || !form.phone.trim() || !form.governorate || !form.city.trim() || form.address.trim().length < 3) return;
     setBusy(true);
     setError(null);
     setOk(false);
@@ -81,6 +85,7 @@ export function SalonForm({ initial }: { initial: SalonProfile }) {
           description: form.description.trim() || null,
           address: form.address.trim() || null,
           city: form.city.trim() || null,
+          governorate: form.governorate || null,
           phone: form.phone.trim(),
           lat: form.lat,
           lng: form.lng,
@@ -164,39 +169,82 @@ export function SalonForm({ initial }: { initial: SalonProfile }) {
         </label>
       </div>
 
+      {/* Adresse structuree : gouvernorat -> delegation -> rue.
+          L'adresse libre donnait « Hometna, Ba7dha sousse » : impossible de
+          filtrer par zone, et le geocodage echouait. */}
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+        <label className="block">
+          <span className="mb-1 block text-xs uppercase tracking-wider text-pos-ink-3">
+            Gouvernorat <span className="text-pos-danger">*</span>
+          </span>
+          <select
+            required
+            className="w-full rounded border border-pos-border bg-white px-3 py-2 text-sm text-pos-ink"
+            value={form.governorate}
+            onChange={(e) => {
+              // Changer de gouvernorat vide la delegation : la garder
+              // laisserait un couple incoherent que le serveur refuserait.
+              setForm((f) => ({ ...f, governorate: e.target.value, city: "" }));
+              setOk(false);
+            }}
+          >
+            <option value="">Sélectionner un gouvernorat…</option>
+            {nomsGouvernorats().map((g) => (
+              <option key={g} value={g}>
+                {g}
+              </option>
+            ))}
+          </select>
+        </label>
+
+        <label className="block">
+          <span className="mb-1 block text-xs uppercase tracking-wider text-pos-ink-3">
+            Délégation <span className="text-pos-danger">*</span>
+          </span>
+          <select
+            required
+            disabled={!form.governorate}
+            className="w-full rounded border border-pos-border bg-white px-3 py-2 text-sm text-pos-ink disabled:opacity-50"
+            value={form.city}
+            onChange={(e) => patch("city", e.target.value)}
+          >
+            <option value="">
+              {form.governorate
+                ? "Sélectionner une délégation…"
+                : "Choisis d'abord un gouvernorat"}
+            </option>
+            {delegationsDe(form.governorate).map((d) => (
+              <option key={d} value={d}>
+                {d}
+              </option>
+            ))}
+          </select>
+        </label>
+      </div>
+
       <label className="block">
         <span className="mb-1 block text-xs uppercase tracking-wider text-pos-ink-3">
-          Adresse
+          Numéro et nom de rue <span className="text-pos-danger">*</span>
         </span>
         <input
-          className="w-full rounded border border-pos-border bg-white px-3 py-2 text-sm"
+          required
+          placeholder="12 rue des Oliviers"
+          className="w-full rounded border border-pos-border bg-white px-3 py-2 text-sm text-pos-ink placeholder:text-pos-ink-3"
           value={form.address}
           onChange={(e) => patch("address", e.target.value)}
         />
       </label>
 
-      <div className="grid grid-cols-2 gap-3">
-        <label className="block">
-          <span className="mb-1 block text-xs uppercase tracking-wider text-pos-ink-3">
-            Ville
-          </span>
-          <input
-            className="w-full rounded border border-pos-border bg-white px-3 py-2 text-sm"
-            value={form.city}
-            onChange={(e) => patch("city", e.target.value)}
-          />
-        </label>
-        <label className="block">
-          <span className="mb-1 block text-xs uppercase tracking-wider text-pos-ink-3">
-            Matricule fiscal
-          </span>
-          <input
-            className="w-full rounded border border-pos-border bg-white px-3 py-2 text-sm"
-            value={form.matriculeFiscal}
-            onChange={(e) => patch("matriculeFiscal", e.target.value)}
-          />
-        </label>
-      </div>
+      <label className="block">
+        <span className="mb-1 block text-xs uppercase tracking-wider text-pos-ink-3">
+          Matricule fiscal
+        </span>
+        <input
+          className="w-full rounded border border-pos-border bg-white px-3 py-2 text-sm text-pos-ink"
+          value={form.matriculeFiscal}
+          onChange={(e) => patch("matriculeFiscal", e.target.value)}
+        />
+      </label>
 
       <div>
         <span className="mb-1 block text-xs uppercase tracking-wider text-pos-ink-3">
@@ -207,6 +255,7 @@ export function SalonForm({ initial }: { initial: SalonProfile }) {
           lng={form.lng}
           address={form.address}
           city={form.city}
+          governorate={form.governorate}
           onChange={(lat, lng) => {
             setForm((f) => ({ ...f, lat, lng }));
             setOk(false);
@@ -278,7 +327,7 @@ export function SalonForm({ initial }: { initial: SalonProfile }) {
         <button
           type="button"
           onClick={save}
-          disabled={busy || uploading || footerTrop || !form.salonName.trim() || !form.phone.trim()}
+          disabled={busy || uploading || footerTrop || !form.salonName.trim() || !form.phone.trim() || !form.governorate || !form.city.trim() || form.address.trim().length < 3}
           className="rounded bg-pos-ink px-4 py-2 text-sm font-medium text-pos-bg disabled:opacity-50"
         >
           {uploading ? "Upload en cours…" : busy ? "Enregistrement…" : "Enregistrer"}

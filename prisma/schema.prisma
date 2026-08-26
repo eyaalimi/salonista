@@ -209,8 +209,17 @@ model ProviderProfile {
   salonName       String
   category        Category
   description     String?
+  /// Numero et nom de rue. Le reste de l'adresse vit dans `governorate` et
+  /// `city` : l'adresse libre donnait « Hometna, Ba7dha sousse ».
   address         String?
+  /// La DELEGATION (ex. « Hammam Sousse »). Le nom `city` est conserve parce
+  /// qu'il est lu a 47 endroits du code — le renommer n'apporterait rien et
+  /// casserait autant d'appels.
   city            String?
+  /// Le gouvernorat, choisi parmi les 24 (voir src/lib/tunisie-geo.ts).
+  /// Nullable pour les salons inscrits avant : la route l'exige a la
+  /// prochaine modification de profil.
+  governorate     String?
   lat             Float?
   lng             Float?
   phone           String?

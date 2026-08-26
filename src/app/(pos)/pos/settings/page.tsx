@@ -26,6 +26,7 @@ export default async function SettingsPage() {
       description: true,
       address: true,
       city: true,
+      governorate: true,
       phone: true,
       lat: true,
       lng: true,
@@ -41,6 +42,7 @@ export default async function SettingsPage() {
     description: string | null;
     address: string | null;
     city: string | null;
+    governorate: string | null;
     phone: string | null;
     lat: number | null;
     lng: number | null;
@@ -72,6 +74,7 @@ export default async function SettingsPage() {
             description: provider.description,
             address: provider.address,
             city: provider.city,
+            governorate: provider.governorate,
             phone: provider.phone,
             lat: provider.lat,
             lng: provider.lng,
