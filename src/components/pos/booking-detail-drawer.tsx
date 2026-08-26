@@ -122,7 +122,15 @@ export function BookingDetailDrawer({
   }
 
   return (
-    <div className="fixed inset-0 z-40 flex">
+    /**
+     * z-[70] : au-dessus du panneau lateral de `/pos`, qui monte a z-[60] sur
+     * mobile (voir `pos-shell-client.tsx`). A z-40, ce tiroir s'ouvrait
+     * DERRIERE lui — invisible. Le meme piege est deja documente dans ce
+     * fichier pour « Ajouter cliente ».
+     *
+     * Sur l'agenda, ou rien d'autre n'est empile, la valeur est sans effet.
+     */
+    <div className="fixed inset-0 z-[70] flex">
       <button
         type="button"
         aria-label="Fermer"

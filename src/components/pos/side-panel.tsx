@@ -11,6 +11,7 @@ import {
 } from "@/lib/pos-offline-db";
 import { usePOSShortcut } from "@/lib/use-pos-shortcuts";
 import { getShortcutLabel } from "@/lib/pos-shortcuts";
+import { BookingDetailDrawer } from "./booking-detail-drawer";
 
 type Permission = string;
 
@@ -63,7 +64,11 @@ export function SidePanel({
     <div className="bg-pos-surface flex flex-col h-full">
       {permissions["customers.view"] && <CustomerBlock />}
       {permissions["bookings.view"] && (
-        <BookingsTodayBlock defaultEmployeeId={defaultEmployeeId} />
+        <BookingsTodayBlock
+          defaultEmployeeId={defaultEmployeeId}
+          peutVendre={!!permissions["pos.sell"]}
+          peutModifier={!!permissions["bookings.edit"]}
+        />
       )}
       {permissions["pos.sell"] && <RecentSalesBlock />}
     </div>
@@ -442,7 +447,16 @@ function CustomerCachedSuggestions({
   );
 }
 
-function BookingsTodayBlock({ defaultEmployeeId }: { defaultEmployeeId: string }) {
+function BookingsTodayBlock({
+  defaultEmployeeId,
+  peutVendre,
+  peutModifier,
+}: {
+  defaultEmployeeId: string;
+  peutVendre: boolean;
+  peutModifier: boolean;
+}) {
+  const [detailBookingId, setDetailBookingId] = useState<string | null>(null);
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [loading, setLoading] = useState(true);
   // Affiche l'echec du pre-remplissage plutot que de laisser un panier vide
@@ -597,15 +611,30 @@ function BookingsTodayBlock({ defaultEmployeeId }: { defaultEmployeeId: string }
               <li key={b.id}>
                 <button
                   type="button"
-                  disabled={charged}
-                  onClick={() => handlePick(b)}
+                  /**
+                   * Plus de `disabled` sur un rendez-vous encaisse : il
+                   * interdisait le clic parce que celui-ci remplissait le
+                   * panier. Maintenant qu'il ouvre le detail, consulter une
+                   * vente passee est legitime — et le detail y montre le
+                   * lien vers le ticket. Le drawer masque de lui-meme
+                   * « Encaisser » quand une vente existe deja.
+                   *
+                   * Ouvre le DETAIL, il ne remplit plus le panier.
+                   *
+                   * Le clic attachait le rendez-vous immediatement : on
+                   * ouvrait la liste pour consulter un horaire et le panier
+                   * se remplissait tout seul. Encaisser est une decision, pas
+                   * un effet de bord de la consultation — c'est « Encaisser »
+                   * du detail qui remplit, comme depuis l'agenda.
+                   */
+                  onClick={() => setDetailBookingId(b.id)}
                   className={`w-full text-left rounded px-2 py-2 text-xs flex items-start gap-2 ${
                     inProgress
                       ? "bg-pos-accent-soft border-l-2 border-pos-accent"
                       : past
                         ? "opacity-60"
                         : "hover:bg-pos-highlight"
-                  } ${charged ? "opacity-40 cursor-not-allowed" : ""}`}
+                  } ${charged ? "opacity-50" : ""}`}
                 >
                   <span className="pos-mono font-semibold w-12 shrink-0">
                     {String(start.getHours()).padStart(2, "0")}:
@@ -632,6 +661,30 @@ function BookingsTodayBlock({ defaultEmployeeId }: { defaultEmployeeId: string }
             );
           })}
         </ul>
+      )}
+
+      {detailBookingId && (
+        <BookingDetailDrawer
+          bookingId={detailBookingId}
+          // Etre sur /pos suppose deja le module POS : la page ne s'ouvre
+          // pas sans lui. Reste la permission de vendre.
+          canSell={peutVendre}
+          canCancel={peutModifier}
+          canEdit={peutModifier}
+          onClose={() => setDetailBookingId(null)}
+          onChanged={async () => {
+            setDetailBookingId(null);
+            await load();
+          }}
+          onEncaisser={(booking) => {
+            // On est deja sur /pos : inutile de recharger la page comme le
+            // fait l'agenda. On attache directement, a partir de la ligne
+            // deja chargee — meme forme que celle rendue par /today.
+            const cible = bookings.find((x) => x.id === booking.id);
+            if (cible) handlePick(cible);
+            setDetailBookingId(null);
+          }}
+        />
       )}
     </section>
   );
