@@ -176,9 +176,13 @@ export function CashDrawerIndicator({ canOpen, employeeName }: { canOpen: boolea
 
 function Row({ label, value, emphasis }: { label: string; value: string; emphasis?: boolean }) {
   return (
-    <div className="flex justify-between">
+    <div className="flex justify-between gap-4">
       <dt className="text-prune/70">{label}</dt>
-      <dd className={emphasis ? "font-semibold" : ""}>{value}</dd>
+      {/* Le montant DOIT porter sa couleur : sans classe il heritait du
+          contexte et devenait illisible sur le fond creme du panneau. */}
+      <dd className={`text-prune tabular-nums ${emphasis ? "font-semibold" : ""}`}>
+        {value}
+      </dd>
     </div>
   );
 }

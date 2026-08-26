@@ -81,7 +81,11 @@ export function ExpenseModal({
   }
 
   const amountNum = Number(amount);
-  const canSave = amountNum > 0 && !Number.isNaN(amountNum) && !busy;
+  // Le motif fait partie des conditions : le serveur le refuse vide. Le
+  // verifier ici evite un aller-retour qui ne servait qu'a afficher
+  // « Motif requis » apres coup.
+  const canSave =
+    amountNum > 0 && !Number.isNaN(amountNum) && reason.trim() !== "" && !busy;
 
   // Display value: amount with 3 decimals if "complete", otherwise the raw input
   const displayAmount = amount === "" ? "0.000" : amount;
@@ -186,14 +190,22 @@ export function ExpenseModal({
 
           {/* Reason */}
           <div>
+            {/* « (optionnel) » etait FAUX : `POST /api/pos/drawer/expenses`
+                refuse un motif vide avec « Motif requis ». Le formulaire
+                promettait le contraire, et l'erreur n'arrivait qu'apres le
+                clic sur Enregistrer. */}
             <label className="block text-sm font-medium text-pos-ink mb-2">
-              Motif <span className="text-pos-ink-3 font-normal">(optionnel)</span>
+              Motif
             </label>
             <textarea
               value={reason}
               onChange={(e) => setReason(e.target.value)}
               rows={3}
-              className="w-full px-3 py-2 border border-pos-border rounded-lg bg-white text-sm focus:border-pos-accent focus:outline-none resize-y"
+              placeholder="Ex. : achat de shampoing"
+              // Sans `text-pos-ink`, le texte saisi heritait du contexte et
+              // devenait illisible — tous les autres champs du fichier le
+              // portent.
+              className="w-full resize-y rounded-lg border border-pos-border bg-white px-3 py-2 text-sm text-pos-ink placeholder:text-pos-ink-3 focus:border-pos-accent focus:outline-none"
               aria-label="Motif"
             />
           </div>
