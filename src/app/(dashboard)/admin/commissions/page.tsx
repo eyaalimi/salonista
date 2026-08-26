@@ -54,46 +54,55 @@ export default function AdminCommissionsPage() {
     .reduce((sum, c) => sum + Number(c.platformAmount), 0);
 
   if (loading) {
-    return <div className="flex items-center justify-center h-64 text-brand-bordeaux/40 text-xs tracking-[0.2em] uppercase">Chargement...</div>;
+    return <div className="flex h-64 items-center justify-center text-sm text-prune/50">Chargement…</div>;
   }
 
   return (
     <div>
-      <div className="mb-10">
-        <p className="luxury-badge mb-3">Finances</p>
-        <h1 className="luxury-heading text-3xl text-brand-bordeaux">Commissions</h1>
+      <div className="mb-6">
+        <h1 className="ds-display text-3xl text-prune">Commissions</h1>
+        <p className="mt-2 text-base text-prune/60">
+          Ce que la plateforme, les salons et les influenceuses ont gagné.
+        </p>
       </div>
 
-      {/* Summary */}
-      <div className="grid grid-cols-3 gap-4 mb-10">
-        <div className="bg-white p-6 border border-brand-gold/20">
-          <p className="text-[10px] tracking-[0.15em] uppercase text-brand-bordeaux/40 mb-2">Revenus plateforme</p>
-          <p className="luxury-heading text-3xl text-brand-gold">{totalPlatform.toFixed(0)} TND</p>
+      {/* Totaux */}
+      <div className="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-3">
+        <div className="rounded-[var(--radius-card)] border border-hairline bg-white p-5">
+          <p className="text-sm text-prune/60">Revenus plateforme</p>
+          <p className="ds-display mt-1 text-3xl text-prune">
+            {totalPlatform.toFixed(0)} TND
+          </p>
         </div>
-        <div className="bg-white p-6 border border-brand-gold/20">
-          <p className="text-[10px] tracking-[0.15em] uppercase text-brand-bordeaux/40 mb-2">En attente</p>
-          <p className="luxury-heading text-3xl text-brand-bordeaux">{totalPending.toFixed(0)} TND</p>
+        <div className="rounded-[var(--radius-card)] border border-hairline bg-white p-5">
+          <p className="text-sm text-prune/60">En attente</p>
+          <p className="ds-display mt-1 text-3xl text-prune">
+            {totalPending.toFixed(0)} TND
+          </p>
         </div>
-        <div className="bg-white p-6 border border-brand-gold/20">
-          <p className="text-[10px] tracking-[0.15em] uppercase text-brand-bordeaux/40 mb-2">Paye</p>
-          <p className="luxury-heading text-3xl text-emerald-700">{totalPaid.toFixed(0)} TND</p>
+        <div className="rounded-[var(--radius-card)] border border-hairline bg-white p-5">
+          <p className="text-sm text-prune/60">Payé</p>
+          <p className="ds-display mt-1 text-3xl text-menthe-deep">
+            {totalPaid.toFixed(0)} TND
+          </p>
         </div>
       </div>
 
-      {/* Filters */}
-      <div className="flex gap-2 mb-6">
+      {/* Filtres */}
+      <div className="mb-5 flex flex-wrap gap-2">
         {[
           { key: "ALL", label: "Toutes" },
           { key: "PENDING", label: "En attente" },
-          { key: "PAID", label: "Payees" },
+          { key: "PAID", label: "Payées" },
         ].map((f) => (
           <button
             key={f.key}
             onClick={() => setFilter(f.key)}
-            className={`px-4 py-2 text-[10px] tracking-[0.15em] uppercase font-medium transition-colors duration-500 ${
+            aria-pressed={filter === f.key}
+            className={`ds-press ds-focus min-h-[44px] rounded-[var(--radius-pill)] px-4 text-sm transition-colors ${
               filter === f.key
-                ? "bg-brand-bordeaux text-white"
-                : "border border-brand-gold/20 text-brand-bordeaux/60 hover:border-brand-gold"
+                ? "bg-prune text-white"
+                : "border border-hairline text-prune/70 hover:border-rose"
             }`}
           >
             {f.label}
@@ -102,45 +111,58 @@ export default function AdminCommissionsPage() {
       </div>
 
       {filtered.length === 0 ? (
-        <div className="bg-white border border-brand-gold/20 p-16 text-center">
-          <p className="text-brand-bordeaux/40 text-sm">Aucune commission</p>
+        <div className="rounded-[var(--radius-card)] border border-hairline bg-white p-12 text-center">
+          <p className="text-base text-prune/50">Aucune commission</p>
         </div>
       ) : (
         <div className="space-y-3">
           {filtered.map((c) => (
-            <div key={c.id} className="bg-white border border-brand-gold/20 p-5 hover:border-brand-gold transition-colors duration-500">
-              <div className="flex flex-col md:flex-row md:items-center gap-3">
+            <div
+              key={c.id}
+              className="rounded-[var(--radius-card)] border border-hairline bg-white p-4 transition-colors hover:border-rose"
+            >
+              <div className="flex flex-col gap-3 md:flex-row md:items-center">
                 <div className="flex-1">
-                  <h3 className="text-sm font-medium text-brand-bordeaux">
+                  <h3 className="text-base font-medium text-prune">
                     {c.booking.items.map((i) => i.offer.title).join(", ")}
                   </h3>
-                  <p className="text-xs text-brand-bordeaux/40 mt-1">
-                    {c.booking.items[0]?.offer.provider.salonName} · Client: {c.booking.client.name || c.booking.client.email}
+                  <p className="mt-1 text-sm text-prune/60">
+                    {c.booking.items[0]?.offer.provider.salonName} · Cliente :{" "}
+                    {c.booking.client.name || c.booking.client.email}
                   </p>
-                  <p className="text-xs text-brand-bordeaux/30 mt-1">
-                    Total reservation: {Number(c.booking.totalPrice).toFixed(0)} TND · {new Date(c.createdAt).toLocaleDateString("fr-TN")}
+                  <p className="mt-1 text-sm text-prune/50">
+                    Total réservation : {Number(c.booking.totalPrice).toFixed(0)} TND ·{" "}
+                    {new Date(c.createdAt).toLocaleDateString("fr-TN")}
                   </p>
                 </div>
 
-                <div className="flex items-center gap-4">
-                  <div className="text-right text-[10px] text-brand-bordeaux/40 tracking-wider">
-                    <p>Prest. {Number(c.providerAmount).toFixed(0)} TND</p>
-                    {c.influencerAmount && <p>Infl. {Number(c.influencerAmount).toFixed(0)} TND</p>}
-                    <p className="text-brand-gold font-medium">Platef. {Number(c.platformAmount).toFixed(0)} TND</p>
+                <div className="flex flex-wrap items-center gap-3">
+                  <div className="text-right text-sm text-prune/60">
+                    <p>Salon {Number(c.providerAmount).toFixed(0)} TND</p>
+                    {c.influencerAmount && (
+                      <p>Influenceuse {Number(c.influencerAmount).toFixed(0)} TND</p>
+                    )}
+                    <p className="font-medium text-prune">
+                      Plateforme {Number(c.platformAmount).toFixed(0)} TND
+                    </p>
                   </div>
 
-                  <span className={`px-3 py-1 border text-[10px] tracking-[0.1em] uppercase font-medium ${
-                    c.status === "PAID" ? "border-emerald-300 text-emerald-700" : "border-amber-300 text-amber-700"
-                  }`}>
-                    {c.status === "PAID" ? "Paye" : "En attente"}
+                  <span
+                    className={`rounded-[var(--radius-pill)] border px-3 py-1 text-xs ${
+                      c.status === "PAID"
+                        ? "border-menthe-deep/40 text-menthe-deep"
+                        : "border-hairline text-prune/60"
+                    }`}
+                  >
+                    {c.status === "PAID" ? "Payé" : "En attente"}
                   </span>
 
                   {c.status === "PENDING" && (
                     <button
                       onClick={() => markPaid(c.id)}
-                      className="px-4 py-2 text-xs tracking-[0.15em] uppercase bg-emerald-700 text-white hover:bg-emerald-800 transition-colors duration-500"
+                      className="ds-press ds-focus min-h-[44px] rounded-[var(--radius-pill)] bg-rose px-4 text-sm text-prune transition-colors hover:bg-rose/90"
                     >
-                      Marquer paye
+                      Marquer payé
                     </button>
                   )}
                 </div>

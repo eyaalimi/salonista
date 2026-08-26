@@ -14,7 +14,7 @@ async function BackupBanner() {
     return (
       <div
         role="alert"
-        className="mb-6 rounded-2xl border border-red-300 bg-red-50 px-4 py-3 text-sm text-red-900"
+        className="mb-6 rounded-2xl border border-rose/50 bg-rose-soft px-4 py-3 text-sm text-prune"
       >
         ⚠️ Impossible de lire l&apos;état des sauvegardes — vérifier les
         permissions de <code>/home/ubuntu/backups</code>.
@@ -36,7 +36,7 @@ async function BackupBanner() {
     return (
       <div
         role="alert"
-        className="mb-6 rounded-2xl border border-red-300 bg-red-50 px-4 py-3 text-sm text-red-900"
+        className="mb-6 rounded-2xl border border-rose/50 bg-rose-soft px-4 py-3 text-sm text-prune"
       >
         ⚠️ Sauvegardes manquantes ou anciennes — vérifier <code>backup.sh</code>.
       </div>
@@ -46,7 +46,7 @@ async function BackupBanner() {
     return (
       <div
         role="alert"
-        className="mb-6 rounded-2xl border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-900"
+        className="mb-6 rounded-2xl border border-hairline bg-creme px-4 py-3 text-sm text-prune"
       >
         ⚠️ Dernière synchro S3 en échec — voir <code>backup.log</code>.
       </div>
@@ -56,7 +56,7 @@ async function BackupBanner() {
     return (
       <div
         role="status"
-        className="mb-6 rounded-2xl border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-900"
+        className="mb-6 rounded-2xl border border-hairline bg-creme px-4 py-3 text-sm text-prune"
       >
         ⚠️ Sauvegardes locales uniquement — pas d&apos;offsite configuré. Voir <code>scripts/deploy/README.md</code>.
       </div>
