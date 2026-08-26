@@ -66,7 +66,8 @@ export function SalonForm({ initial }: { initial: SalonProfile }) {
   }
 
   async function save() {
-    if (busy || uploading || !form.salonName.trim()) return;
+    // Le telephone est obligatoire : il porte les confirmations WhatsApp.
+    if (busy || uploading || !form.salonName.trim() || !form.phone.trim()) return;
     setBusy(true);
     setError(null);
     setOk(false);
@@ -80,7 +81,7 @@ export function SalonForm({ initial }: { initial: SalonProfile }) {
           description: form.description.trim() || null,
           address: form.address.trim() || null,
           city: form.city.trim() || null,
-          phone: form.phone.trim() || null,
+          phone: form.phone.trim(),
           lat: form.lat,
           lng: form.lng,
           photos: form.photos,
@@ -145,13 +146,21 @@ export function SalonForm({ initial }: { initial: SalonProfile }) {
         </label>
         <label className="block">
           <span className="mb-1 block text-xs uppercase tracking-wider text-pos-ink-3">
-            Téléphone
+            Téléphone <span className="text-pos-danger">*</span>
           </span>
           <input
-            className="w-full rounded border border-pos-border bg-white px-3 py-2 text-sm"
+            type="tel"
+            inputMode="tel"
+            required
+            placeholder="20 123 456"
+            className="w-full rounded border border-pos-border bg-white px-3 py-2 text-sm text-pos-ink placeholder:text-pos-ink-3"
             value={form.phone}
             onChange={(e) => patch("phone", e.target.value)}
           />
+          <span className="mt-1 block text-xs text-pos-ink-3">
+            Obligatoire : sert à envoyer les confirmations de réservation par
+            WhatsApp.
+          </span>
         </label>
       </div>
 
@@ -269,7 +278,7 @@ export function SalonForm({ initial }: { initial: SalonProfile }) {
         <button
           type="button"
           onClick={save}
-          disabled={busy || uploading || footerTrop || !form.salonName.trim()}
+          disabled={busy || uploading || footerTrop || !form.salonName.trim() || !form.phone.trim()}
           className="rounded bg-pos-ink px-4 py-2 text-sm font-medium text-pos-bg disabled:opacity-50"
         >
           {uploading ? "Upload en cours…" : busy ? "Enregistrement…" : "Enregistrer"}

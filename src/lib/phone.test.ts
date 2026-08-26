@@ -2,6 +2,7 @@ import { describe, it, expect } from "vitest";
 import {
   normalizePhone,
   tryNormalizePhone,
+  exigerTelephoneSalon,
   formatPhoneDisplay,
   InvalidPhoneError,
 } from "./phone";
@@ -79,5 +80,44 @@ describe("formatPhoneDisplay", () => {
     expect(formatPhoneDisplay("+33612345678")).toBe("+33612345678");
     expect(formatPhoneDisplay("22345678")).toBe("22345678");
     expect(formatPhoneDisplay("")).toBe("");
+  });
+});
+
+describe("exigerTelephoneSalon", () => {
+  /**
+   * Le numero portera les confirmations WhatsApp : un salon sans numero
+   * n'est joignable par aucun de ces canaux.
+   */
+  it("accepte un numero tunisien et le normalise", () => {
+    const r = exigerTelephoneSalon("20123456");
+    expect(r.ok).toBe(true);
+    if (r.ok) expect(r.phone).toBe("+21620123456");
+  });
+
+  it("accepte un numero deja espace ou prefixe", () => {
+    expect(exigerTelephoneSalon("20 123 456").ok).toBe(true);
+    expect(exigerTelephoneSalon("+216 20 123 456").ok).toBe(true);
+  });
+
+  it("refuse un champ vide", () => {
+    for (const v of ["", "   ", null, undefined, 42]) {
+      const r = exigerTelephoneSalon(v);
+      expect(r.ok).toBe(false);
+    }
+  });
+
+  it("refuse un numero invalide", () => {
+    expect(exigerTelephoneSalon("123").ok).toBe(false);
+    expect(exigerTelephoneSalon("00000000").ok).toBe(false);
+  });
+
+  it("explique POURQUOI le numero est demande", () => {
+    const r = exigerTelephoneSalon("");
+    if (!r.ok) expect(r.message).toMatch(/WhatsApp/);
+  });
+
+  it("rend des messages en francais", () => {
+    const r = exigerTelephoneSalon("123");
+    if (!r.ok) expect(r.message).toMatch(/invalide/i);
   });
 });

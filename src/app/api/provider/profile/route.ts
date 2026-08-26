@@ -4,6 +4,7 @@ import { isValidOpeningHours } from "@/lib/opening-hours";
 import { regenerateAllProviderSlots } from "@/lib/slots";
 import { requirePermission, toResponse } from "@/lib/employee-session";
 import { refusPhotosSalon } from "@/lib/upload-image";
+import { exigerTelephoneSalon } from "@/lib/phone";
 
 export async function GET() {
   // Accepte session PROVIDER et session employe par PIN : un proprietaire
@@ -66,6 +67,17 @@ export async function PUT(req: NextRequest) {
       return NextResponse.json({ error: refus.message }, { status: refus.status });
     }
   }
+  // Le telephone porte les confirmations WhatsApp : il est obligatoire, y
+  // compris pour les salons deja inscrits sans numero.
+  let phoneNormalise: string | undefined;
+  if (phone !== undefined) {
+    const verdict = exigerTelephoneSalon(phone);
+    if (!verdict.ok) {
+      return NextResponse.json({ error: verdict.message }, { status: 400 });
+    }
+    phoneNormalise = verdict.phone;
+  }
+
   if (
     receiptFooter !== undefined &&
     typeof receiptFooter === "string" &&
@@ -111,7 +123,9 @@ export async function PUT(req: NextRequest) {
       description,
       address,
       city,
-      phone,
+      // Le numero NORMALISE (`+216…`), pas la saisie brute : c'est ce format
+      // que WhatsApp attend, et il rend les numeros comparables entre eux.
+      ...(phoneNormalise !== undefined ? { phone: phoneNormalise } : {}),
       ...(lat !== undefined ? { lat: lat === null ? null : Number(lat) } : {}),
       ...(lng !== undefined ? { lng: lng === null ? null : Number(lng) } : {}),
       openingHours,
