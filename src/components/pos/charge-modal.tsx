@@ -277,13 +277,13 @@ export function ChargeModal({
 
   return (
     <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4">
-      <div className="w-full max-w-lg rounded-2xl bg-brand-cream p-8 max-h-[90vh] overflow-y-auto">
+      <div className="w-full max-w-lg rounded-[var(--radius-card)] bg-creme p-8 max-h-[90vh] overflow-y-auto">
         <div className="flex items-center justify-between mb-6">
-          <p className="luxury-badge">Encaissement — {step === "payment" ? "Paiement" : step === "tips" ? "Pourboires" : "Reçu"}</p>
+          <p className="text-sm text-prune/70">Encaissement — {step === "payment" ? "Paiement" : step === "tips" ? "Pourboires" : "Reçu"}</p>
           <button
             type="button"
             onClick={onClose}
-            className="text-brand-ink-soft hover:text-brand-ink"
+            className="text-prune/70 hover:text-prune"
           >
             ✕
           </button>
@@ -291,8 +291,8 @@ export function ChargeModal({
 
         {step === "payment" && (
           <>
-            <p className="luxury-heading text-3xl text-brand-ink mb-1">{formatDT(totals.total)}</p>
-            <p className="text-sm text-brand-ink-soft mb-6">
+            <p className="ds-display text-3xl text-prune mb-1">{formatDT(totals.total)}</p>
+            <p className="text-sm text-prune/70 mb-6">
               Restant: <span className="font-semibold">{formatDT(remaining)}</span>
               {paidM > totalM && (
                 <span className="ml-3 text-pos-accent">
@@ -305,9 +305,9 @@ export function ChargeModal({
               {payments.map((p, i) => (
                 <li
                   key={i}
-                  className="flex items-center gap-2 rounded-lg border border-brand-line bg-white p-3"
+                  className="flex items-center gap-2 rounded-lg border border-hairline bg-white p-3"
                 >
-                  <span className="text-xs uppercase tracking-[0.18em] text-brand-ink-soft w-20">
+                  <span className="text-prune/70 w-20">
                     {METHOD_LABELS[p.method]}
                   </span>
                   <input
@@ -316,7 +316,7 @@ export function ChargeModal({
                     min="0"
                     value={p.amount}
                     onChange={(e) => updatePayment(i, { amount: e.target.value })}
-                    className="flex-1 rounded border border-brand-line bg-white px-2 py-1 text-sm"
+                    className="flex-1 rounded border border-hairline bg-white px-2 py-1 text-sm"
                   />
                   {(p.method === "CARD" || p.method === "TRANSFER") && (
                     <input
@@ -324,13 +324,13 @@ export function ChargeModal({
                       value={p.reference ?? ""}
                       onChange={(e) => updatePayment(i, { reference: e.target.value })}
                       placeholder="Référence"
-                      className="w-28 rounded border border-brand-line bg-white px-2 py-1 text-xs"
+                      className="w-28 rounded border border-hairline bg-white px-2 py-1 text-xs"
                     />
                   )}
                   <button
                     type="button"
                     onClick={() => removePayment(i)}
-                    className="text-brand-ink-soft hover:text-pos-danger text-xs"
+                    className="text-prune/70 hover:text-pos-danger text-xs"
                   >
                     ✕
                   </button>
@@ -348,7 +348,7 @@ export function ChargeModal({
                     disabled={disabled}
                     onClick={() => addPayment(m)}
                     title={disabled ? "Carte indisponible hors ligne" : ""}
-                    className="rounded-2xl border border-brand-line bg-white py-4 text-xs uppercase tracking-[0.18em] hover:border-brand-gold disabled:opacity-40"
+                    className="ds-press ds-focus min-h-[56px] rounded-[var(--radius-card)] border border-hairline bg-white text-base text-prune hover:border-rose disabled:opacity-40"
                   >
                     {METHOD_LABELS[m]}
                   </button>
@@ -370,18 +370,18 @@ export function ChargeModal({
                         ? "Déjà appliqué"
                         : ""
                 }
-                className="w-full mb-6 rounded-2xl border-2 border-brand-gold bg-brand-gold-soft/30 py-4 px-4 text-left text-brand-ink hover:bg-brand-gold-soft/50 disabled:opacity-40 disabled:cursor-not-allowed"
+                className="w-full mb-6 rounded-[var(--radius-card)] border-2 border-dashed border-rose/40 bg-rose-soft/40 py-4 px-4 text-left text-prune hover:bg-rose-soft/70 disabled:opacity-40 disabled:cursor-not-allowed"
               >
-                <p className="text-xs uppercase tracking-[0.18em] mb-1">★ Points fidélité</p>
+                <p className="mb-1">★ Points fidélité</p>
                 <p className="text-sm">
                   Solde: <span className="font-semibold">{wallet.balance} pts</span>
-                  <span className="text-brand-ink-soft"> (≈ {formatDT(fromMillimes(Math.round(wallet.balance * dpp * 1000)))})</span>
+                  <span className="text-prune/70"> (≈ {formatDT(fromMillimes(Math.round(wallet.balance * dpp * 1000)))})</span>
                 </p>
               </button>
             ) : customerId ? (
               // Customer attached but no wallet — module not activated or
               // brand-new customer with zero balance.
-              <div className="w-full mb-6 rounded-2xl border border-dashed border-brand-line bg-brand-cream/40 py-3 px-4 text-xs text-brand-ink-soft">
+              <div className="w-full mb-6 rounded-[var(--radius-card)] border border-dashed border-hairline bg-creme/40 py-3 px-4 text-xs text-prune/70">
                 <span className="uppercase tracking-[0.18em]">★ Points fidélité</span>
                 <span className="block mt-1">
                   Aucun point disponible sur ce compte.
@@ -390,27 +390,27 @@ export function ChargeModal({
             ) : (
               // No customer attached at all — this is the common source of
               // "why don't I see the loyalty tile?". Tell the cashier.
-              <div className="w-full mb-6 rounded-2xl border-2 border-dashed border-brand-gold/50 bg-brand-gold-soft/10 py-3 px-4 text-xs">
-                <p className="uppercase tracking-[0.18em] text-brand-ink font-semibold">
+              <div className="w-full mb-6 rounded-[var(--radius-card)] border-2 border-dashed border-rose/50 bg-rose-soft/30 py-3 px-4 text-xs">
+                <p className="uppercase tracking-[0.18em] text-prune font-semibold">
                   ★ Points fidélité
                 </p>
-                <p className="mt-1 text-brand-ink-soft">
+                <p className="mt-1 text-prune/70">
                   Attachez une cliente au panier pour utiliser ses points de fidélité en paiement.
                 </p>
               </div>
             )}
 
             {showLoyaltyExpansion && wallet && (
-              <div className="rounded-2xl border-2 border-brand-gold bg-brand-cream p-4 mb-6">
-                <p className="luxury-badge mb-2">Utiliser des points</p>
-                <p className="text-sm text-brand-ink-soft mb-4">
+              <div className="rounded-[var(--radius-card)] border-2 border-rose bg-creme p-4 mb-6">
+                <p className="mb-2 text-sm text-prune/70">Utiliser des points</p>
+                <p className="text-sm text-prune/70 mb-4">
                   Solde disponible: {wallet.balance} pts (≈ {formatDT(fromMillimes(Math.round(wallet.balance * dpp * 1000)))})
                 </p>
                 <div className="flex items-center gap-2 mb-3">
                   <button
                     type="button"
                     onClick={() => setLoyaltyPoints((p) => Math.max(wallet.minPointsToRedeem, p - 10))}
-                    className="rounded border border-brand-line bg-white px-3 py-2"
+                    className="rounded border border-hairline bg-white px-3 py-2"
                   >
                     −
                   </button>
@@ -428,28 +428,28 @@ export function ChargeModal({
                         ),
                       )
                     }
-                    className="flex-1 rounded border border-brand-line bg-white px-2 py-2 text-center"
+                    className="flex-1 rounded border border-hairline bg-white px-2 py-2 text-center"
                   />
                   <button
                     type="button"
                     onClick={() => setLoyaltyPoints((p) => Math.min(loyaltyMax, p + 10))}
-                    className="rounded border border-brand-line bg-white px-3 py-2"
+                    className="rounded border border-hairline bg-white px-3 py-2"
                   >
                     +
                   </button>
-                  <span className="text-xs text-brand-ink-soft">pts</span>
+                  <span className="text-xs text-prune/70">pts</span>
                 </div>
                 <p className="text-sm mb-1">
                   Valeur: <span className="font-semibold">{formatDT(loyaltyValue)}</span>
                 </p>
-                <p className="text-xs text-brand-ink-soft mb-4">
+                <p className="text-xs text-prune/70 mb-4">
                   Maximum sur cette vente: {loyaltyMax} pts ({wallet.maxRedemptionPctPerSale}%)
                 </p>
                 <div className="flex justify-end gap-2">
                   <button
                     type="button"
                     onClick={() => setShowLoyaltyExpansion(false)}
-                    className="text-xs uppercase tracking-[0.18em] text-brand-ink-soft hover:text-brand-ink px-4"
+                    className="text-prune/70 hover:text-prune px-4"
                   >
                     Annuler
                   </button>
@@ -457,7 +457,7 @@ export function ChargeModal({
                     type="button"
                     onClick={applyLoyaltyRedemption}
                     disabled={loyaltyPoints < wallet.minPointsToRedeem || loyaltyPoints > loyaltyMax}
-                    className="rounded-lg bg-brand-gold px-6 py-2 text-xs uppercase tracking-[0.18em] text-brand-ink hover:bg-brand-gold-soft disabled:opacity-40"
+                    className="ds-press ds-focus min-h-[44px] rounded-[var(--radius-pill)] bg-rose px-6 text-prune hover:bg-rose/90 disabled:opacity-40"
                   >
                     Appliquer
                   </button>
@@ -465,12 +465,19 @@ export function ChargeModal({
               </div>
             )}
 
-            <div className="flex justify-end">
+            <div className="flex items-center justify-end gap-4">
+              {/* Le bouton restait gris sans que rien n'explique pourquoi :
+                  il faut d'abord choisir un moyen de paiement. */}
+              {!canContinue && (
+                <p className="text-sm text-prune/70">
+                  Choisis un moyen de paiement ci-dessus.
+                </p>
+              )}
               <button
                 type="button"
                 onClick={goToTips}
                 disabled={!canContinue}
-                className="rounded-lg bg-brand-ink px-6 py-3 text-xs uppercase tracking-[0.18em] text-brand-cream disabled:opacity-40"
+                className="ds-press ds-focus min-h-[48px] rounded-[var(--radius-pill)] bg-rose px-6 font-medium text-prune disabled:opacity-40"
               >
                 Continuer
               </button>
@@ -480,7 +487,7 @@ export function ChargeModal({
 
         {step === "tips" && (
           <>
-            <p className="text-sm text-brand-ink-soft mb-4">
+            <p className="text-sm text-prune/70 mb-4">
               Pourboire total: <span className="font-semibold">{formatDT(tipTotal)}</span>
             </p>
             <ul className="space-y-2 mb-4">
@@ -499,20 +506,20 @@ export function ChargeModal({
                           a.map((x, j) => (i === j ? { ...x, amount: e.target.value } : x)),
                         )
                       }
-                      className="w-24 rounded border border-brand-line bg-white px-2 py-1 text-sm"
+                      className="w-24 rounded border border-hairline bg-white px-2 py-1 text-sm"
                     />
                   </li>
                 );
               })}
             </ul>
-            <p className="text-xs text-brand-ink-soft mb-6">
+            <p className="text-xs text-prune/70 mb-6">
               Somme allouée: {formatDT(tipAllocSum())}
             </p>
             <div className="flex justify-between">
               <button
                 type="button"
                 onClick={() => setStep("payment")}
-                className="text-xs uppercase tracking-[0.18em] text-brand-ink-soft"
+                className="text-prune/70"
               >
                 ← Retour
               </button>
@@ -522,7 +529,7 @@ export function ChargeModal({
                 disabled={
                   toMillimes(tipAllocSum()) !== toMillimes(tipTotal)
                 }
-                className="rounded-lg bg-brand-ink px-6 py-3 text-xs uppercase tracking-[0.18em] text-brand-cream disabled:opacity-40"
+                className="ds-press ds-focus min-h-[48px] rounded-[var(--radius-pill)] bg-rose px-6 font-medium text-prune disabled:opacity-40"
               >
                 Continuer
               </button>
@@ -548,7 +555,7 @@ export function ChargeModal({
                   disabled={!online}
                   onChange={(e) => setEmailReceipt(e.target.checked)}
                 />
-                Envoyer par email {!online && <span className="text-xs text-brand-ink-soft">(en file d&apos;attente)</span>}
+                Envoyer par email {!online && <span className="text-xs text-prune/70">(en file d&apos;attente)</span>}
               </label>
               {emailReceipt && (
                 <input
@@ -556,7 +563,7 @@ export function ChargeModal({
                   value={emailOverride}
                   onChange={(e) => setEmailOverride(e.target.value)}
                   placeholder="email@example.com"
-                  className="w-full rounded border border-brand-line bg-white px-2 py-1 text-sm"
+                  className="w-full rounded border border-hairline bg-white px-2 py-1 text-sm"
                 />
               )}
             </div>
@@ -565,7 +572,7 @@ export function ChargeModal({
               <button
                 type="button"
                 onClick={() => setStep(toMillimes(tipTotal) > 0 ? "tips" : "payment")}
-                className="text-xs uppercase tracking-[0.18em] text-brand-ink-soft"
+                className="text-prune/70"
               >
                 ← Retour
               </button>
@@ -573,7 +580,7 @@ export function ChargeModal({
                 type="button"
                 onClick={submit}
                 disabled={submitting}
-                className="rounded-lg bg-brand-gold px-6 py-3 text-xs uppercase tracking-[0.18em] text-brand-ink hover:bg-brand-gold-soft disabled:opacity-50"
+                className="ds-press ds-focus min-h-[48px] rounded-[var(--radius-pill)] bg-rose px-6 font-medium text-prune hover:bg-rose/90 disabled:opacity-50"
               >
                 {submitting ? "Enregistrement…" : "Confirmer"}
               </button>

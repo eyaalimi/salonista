@@ -59,6 +59,39 @@ export function tryNormalizePhone(input: string): string | null {
   }
 }
 
+/**
+ * Le telephone d'un salon est OBLIGATOIRE.
+ *
+ * Il portera l'envoi des confirmations de reservation et des validations
+ * d'arrivee par WhatsApp : un salon sans numero n'est joignable par aucun de
+ * ces canaux, et la cliente se retrouve sans confirmation.
+ *
+ * La regle vaut aussi pour les salons deja inscrits sans numero — ils devront
+ * en saisir un a leur prochaine modification de profil. C'est le prix pour que
+ * le canal fonctionne pour tout le monde, sans relance manuelle.
+ *
+ * Rend le numero normalise (`+216…`) ou un message d'erreur en francais.
+ */
+export function exigerTelephoneSalon(
+  input: unknown,
+): { ok: true; phone: string } | { ok: false; message: string } {
+  if (typeof input !== "string" || input.trim() === "") {
+    return {
+      ok: false,
+      message:
+        "Le numéro de téléphone est obligatoire : il sert à envoyer les confirmations de réservation par WhatsApp.",
+    };
+  }
+  const normalise = tryNormalizePhone(input);
+  if (!normalise) {
+    return {
+      ok: false,
+      message: "Numéro de téléphone invalide. Format attendu : 8 chiffres.",
+    };
+  }
+  return { ok: true, phone: normalise };
+}
+
 export function formatPhoneDisplay(e164: string): string {
   if (!e164.startsWith("+216") || e164.length !== 12) {
     return e164;
