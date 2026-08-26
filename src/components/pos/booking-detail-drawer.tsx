@@ -29,6 +29,14 @@ type Booking = {
   sale: { id: string; receiptNumber: string; status: string } | null;
 };
 
+/** Les statuts en base sont en anglais ; l'ecran est lu par une caissiere. */
+const STATUT_LISIBLE: Record<string, string> = {
+  PENDING: "En attente",
+  CONFIRMED: "Confirmé",
+  COMPLETED: "Terminé",
+  CANCELLED: "Annulé",
+};
+
 type Props = {
   bookingId: string;
   onClose: () => void;
@@ -121,30 +129,30 @@ export function BookingDetailDrawer({
         onClick={onClose}
         className="flex-1 bg-black/30"
       />
-      <aside className="w-full max-w-md bg-brand-cream p-6 shadow-xl overflow-y-auto">
+      <aside className="w-full max-w-md bg-creme p-6 shadow-xl overflow-y-auto">
         <div className="flex items-center justify-between mb-4">
-          <p className="luxury-badge">Détails réservation</p>
+          <p className="text-sm text-prune/60">Détails réservation</p>
           <button
             type="button"
             onClick={onClose}
-            className="text-brand-ink-soft hover:text-brand-ink"
+            className="text-prune/60 hover:text-prune"
           >
             ✕
           </button>
         </div>
 
         {loading ? (
-          <p className="text-sm text-brand-ink-soft">Chargement…</p>
+          <p className="text-sm text-prune/60">Chargement…</p>
         ) : !booking ? (
-          <p className="text-sm text-pos-danger">{error ?? "Introuvable"}</p>
+          <p className="text-sm text-rose-fonce">{error ?? "Introuvable"}</p>
         ) : (
           <div className="space-y-4">
             <div>
-              <p className="luxury-heading text-lg text-brand-ink">
+              <p className="ds-display text-lg text-prune">
                 {bookingClientName(booking.customer, booking.client, "Sans client")}
               </p>
               {booking.assignedEmployee && (
-                <p className="text-xs text-brand-ink-soft">
+                <p className="text-xs text-prune/60">
                   par {booking.assignedEmployee.displayName}
                 </p>
               )}
@@ -154,11 +162,11 @@ export function BookingDetailDrawer({
               {booking.items.map((it) => (
                 <li
                   key={it.id}
-                  className="rounded border border-brand-line bg-white p-3"
+                  className="rounded border border-hairline bg-white p-3"
                 >
                   <p className="font-medium">{it.offer.title}</p>
                   {it.slot && (
-                    <p className="text-xs text-brand-ink-soft">
+                    <p className="text-xs text-prune/60">
                       {new Date(it.slot.startTime).toLocaleString("fr-FR")} →{" "}
                       {new Date(it.slot.endTime).toLocaleTimeString("fr-FR", {
                         hour: "2-digit",
@@ -171,39 +179,40 @@ export function BookingDetailDrawer({
             </ul>
 
             {booking.notes && (
-              <p className="text-sm italic text-brand-ink-soft">{booking.notes}</p>
+              <p className="text-sm italic text-prune/60">{booking.notes}</p>
             )}
 
-            <div className="text-sm">
+            <div className="text-base">
               <p>
-                <span className="text-brand-ink-soft">Total:</span>{" "}
+                <span className="text-prune/60">Total :</span>{" "}
                 {formatDT(booking.totalPrice)}
               </p>
-              <p className="text-xs text-brand-ink-soft">
-                Statut: {booking.status}
-                {booking.walkIn && " · Walk-in"}
-                {booking.phantom && " · Phantom"}
+              <p className="text-sm text-prune/60">
+                {/* « PENDING » ne veut rien dire pour une caissiere. */}
+                {STATUT_LISIBLE[booking.status] ?? booking.status}
+                {booking.walkIn && " · Sans rendez-vous"}
+                {booking.phantom && " · Vente directe"}
               </p>
             </div>
 
             {booking.sale && (
               <a
                 href={`/pos/sales/${booking.sale.id}`}
-                className="text-xs text-brand-gold hover:underline"
+                className="text-xs text-rose-fonce hover:underline"
               >
                 Vente associée: {booking.sale.receiptNumber}
               </a>
             )}
 
-            {error && <p className="text-xs text-pos-danger">{error}</p>}
+            {error && <p className="text-xs text-rose-fonce">{error}</p>}
 
             {booking.status !== "CANCELLED" && booking.status !== "COMPLETED" && (
-              <div className="flex flex-wrap gap-2 pt-3 border-t border-brand-line">
+              <div className="flex flex-wrap gap-2 pt-3 border-t border-hairline">
                 {canSell && !booking.sale && (
                   <button
                     type="button"
                     onClick={() => onEncaisser(booking)}
-                    className="rounded bg-brand-gold px-4 py-2 text-[10px] uppercase tracking-[0.18em] text-brand-ink hover:bg-brand-gold-soft"
+                    className="ds-press ds-focus min-h-[44px] rounded-[var(--radius-pill)] bg-rose px-4 text-sm text-prune hover:bg-rose/90"
                   >
                     Encaisser
                   </button>
@@ -213,7 +222,7 @@ export function BookingDetailDrawer({
                     type="button"
                     onClick={move}
                     disabled={busy}
-                    className="rounded border border-brand-line bg-white px-4 py-2 text-[10px] uppercase tracking-[0.18em] text-brand-ink hover:border-brand-gold disabled:opacity-50"
+                    className="ds-press ds-focus min-h-[44px] rounded-[var(--radius-pill)] border border-hairline bg-white px-4 text-sm text-prune hover:border-rose disabled:opacity-50"
                   >
                     Déplacer
                   </button>
@@ -223,7 +232,7 @@ export function BookingDetailDrawer({
                     type="button"
                     onClick={cancel}
                     disabled={busy}
-                    className="rounded border border-pos-danger bg-white px-4 py-2 text-[10px] uppercase tracking-[0.18em] text-pos-danger hover:border-pos-danger disabled:opacity-50"
+                    className="ds-press ds-focus min-h-[44px] rounded-[var(--radius-pill)] border border-rose/50 bg-white px-4 text-sm text-rose-fonce hover:bg-rose-soft disabled:opacity-50"
                   >
                     Annuler
                   </button>
@@ -231,7 +240,7 @@ export function BookingDetailDrawer({
               </div>
             )}
 
-            <p className="text-[10px] text-brand-ink-soft pt-3 border-t border-brand-line">
+            <p className="text-[10px] text-prune/60 pt-3 border-t border-hairline">
               Créée le {new Date(booking.createdAt).toLocaleString("fr-FR")}
             </p>
           </div>

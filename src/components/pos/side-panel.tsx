@@ -24,6 +24,27 @@ type Booking = {
   items: Array<{ offerId: string; name: string; duration: number; price: string; taxRate: string }>;
 };
 
+/**
+ * Forme rendue par `/api/pos/bookings/[id]` — le Booking brut de Prisma, plus
+ * riche et differemment structure que celui de `/today`.
+ */
+type BookingDetail = {
+  id: string;
+  status: string;
+  customer: Booking["customer"];
+  sale: { id: string } | null;
+  items: Array<{
+    slot: { startTime: string; endTime: string } | null;
+    offer: {
+      id: string;
+      title: string;
+      durationMinutes: number;
+      discountPrice: string;
+      taxRate: string;
+    };
+  }>;
+};
+
 type RecentSale = {
   id: string;
   receiptNumber: string;
@@ -424,6 +445,9 @@ function CustomerCachedSuggestions({
 function BookingsTodayBlock({ defaultEmployeeId }: { defaultEmployeeId: string }) {
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [loading, setLoading] = useState(true);
+  // Affiche l'echec du pre-remplissage plutot que de laisser un panier vide
+  // passer pour un panier rempli.
+  const [erreurAttache, setErreurAttache] = useState<string | null>(null);
   const attachBooking = usePosStore((s) => s.attachBooking);
   const addLine = usePosStore((s) => s.addLine);
   const setCustomer = usePosStore((s) => s.setCustomer);
@@ -451,15 +475,15 @@ function BookingsTodayBlock({ defaultEmployeeId }: { defaultEmployeeId: string }
   // rejouerait a chaque rechargement de la liste (toutes les 60 s).
   const attacheAuto = useRef(false);
   useEffect(() => {
-    if (attacheAuto.current || bookings.length === 0) return;
+    if (attacheAuto.current || loading) return;
     const params = new URLSearchParams(window.location.search);
     const vise = params.get("bookingId");
     if (!vise) return;
 
-    const rdv = bookings.find((b) => b.id === vise);
     attacheAuto.current = true;
-    if (rdv) handlePick(rdv);
 
+    // Nettoyer l'URL tout de suite : un rafraichissement ne doit pas
+    // re-attacher le meme rendez-vous.
     params.delete("bookingId");
     const reste = params.toString();
     window.history.replaceState(
@@ -467,7 +491,46 @@ function BookingsTodayBlock({ defaultEmployeeId }: { defaultEmployeeId: string }
       "",
       reste ? `${window.location.pathname}?${reste}` : window.location.pathname,
     );
-  }, [bookings]);
+
+    const dansLeJour = bookings.find((b) => b.id === vise);
+    if (dansLeJour) {
+      handlePick(dansLeJour);
+      return;
+    }
+
+    // Le rendez-vous n'est pas celui du jour — l'agenda permet de naviguer
+    // vers d'autres dates, et « Encaisser » y est propose. Sans ce repli, le
+    // panier restait VIDE sans le moindre message : la caissiere croyait
+    // avoir encaisse un service qui n'etait jamais entre dans le panier.
+    (async () => {
+      const res = await fetch(`/api/pos/bookings/${vise}`);
+      if (!res.ok) {
+        setErreurAttache(
+          "Ce rendez-vous n'a pas pu être chargé. Ajoute les services à la main.",
+        );
+        return;
+      }
+      // `/api/pos/bookings/[id]` rend le Booking brut : le prix et la TVA
+      // vivent sur l'OFFRE, pas sur l'item (BookingItem n'a qu'`unitPrice` et
+      // aucun taxRate). Meme derivation que `/api/pos/bookings/today`.
+      const b = (await res.json()) as BookingDetail;
+      handlePick({
+        id: b.id,
+        startTime: b.items[0]?.slot?.startTime ?? new Date().toISOString(),
+        endTime: b.items[0]?.slot?.endTime ?? null,
+        status: b.status,
+        saleId: b.sale?.id ?? null,
+        customer: b.customer,
+        items: b.items.map((it) => ({
+          offerId: it.offer.id,
+          name: it.offer.title,
+          duration: it.offer.durationMinutes,
+          price: String(it.offer.discountPrice),
+          taxRate: String(it.offer.taxRate),
+        })),
+      });
+    })();
+  }, [bookings, loading]);
 
   function handlePick(b: Booking) {
     // Guard against double-click attaching the same booking twice — the
@@ -510,6 +573,11 @@ function BookingsTodayBlock({ defaultEmployeeId }: { defaultEmployeeId: string }
         <h3 className="text-[10px] uppercase tracking-[0.18em] text-pos-ink-3">RDV aujourd&apos;hui</h3>
         <kbd>B</kbd>
       </div>
+      {erreurAttache && (
+        <p role="alert" className="mb-2 text-xs text-pos-danger">
+          {erreurAttache}
+        </p>
+      )}
       {loading ? (
         <p className="text-xs text-pos-ink-3">Chargement…</p>
       ) : bookings.length === 0 ? (
