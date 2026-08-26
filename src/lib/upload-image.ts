@@ -153,18 +153,41 @@ export function aDesVariantes(src: string): boolean {
  *
  * Next reclame des largeurs arbitraires (256, 384, 1080…) alors que seules
  * trois existent. On prend la premiere variante superieure ou egale : servir
- * plus petit que demande afficherait une image visiblement floue. Au-dela de
- * la plus grande, on sert la plus grande.
+ * plus petit que demande afficherait une image visiblement floue.
+ *
+ * ATTENTION — TOUTES LES VARIANTES N'EXISTENT PAS. `largeursAGenerer` ne
+ * produit que celles inferieures ou egales a la largeur de la source : une
+ * photo de 500 px n'a QUE `-400`. Renvoyer `-1600` pour elle donnait un 404
+ * et une image cassee — constate en production sur les logos de salon, plus
+ * petits que les photos de prestation.
+ *
+ * Le CANONIQUE `<base>.webp`, lui, existe toujours : c'est la source
+ * re-encodee, bornee a 1600 px. Il sert donc de repli des que la largeur
+ * demandee depasse la plus grande variante SURE.
  *
  * Les images sans variantes sont rendues telles quelles.
  */
 export function urlVariante(src: string, largeurDemandee: number): string {
   if (!aDesVariantes(src)) return src;
 
+  // Seule `-400` est SURE : `largeursAGenerer` la produit meme pour une
+  // source minuscule, alors que `-800` n'existe qu'a partir de 800 px de
+  // large et `-1600` qu'a partir de 1600. Au-dela, on sert le canonique —
+  // qui existe toujours et pese au plus 1600 px.
+  //
+  // LE COMPROMIS, mesure en production : une grande photo affichee dans
+  // 800 px telecharge son canonique (211 Ko) plutot que `-800` (79 Ko). On
+  // l'accepte parce que l'alternative — deviner qu'un fichier existe — casse
+  // l'image, ce qui est bien pire qu'une image lourde. Les VIGNETTES, elles,
+  // gardent tout leur gain : c'est la que se joue l'essentiel du poids d'une
+  // page de liste.
+  //
+  // Pour recuperer le palier 800, il faudrait produire les trois variantes
+  // pour toutes les images (quitte a agrandir) — chantier a part, pas une
+  // ligne a changer ici.
   const base = src.slice(0, -(EXTENSION_SORTIE.length + 1));
-  const choisie =
-    LARGEURS_VARIANTES.find((l) => l >= largeurDemandee) ??
-    LARGEURS_VARIANTES[LARGEURS_VARIANTES.length - 1];
-
-  return `${base}-${choisie}.${EXTENSION_SORTIE}`;
+  if (largeurDemandee <= LARGEURS_VARIANTES[0]) {
+    return `${base}-${LARGEURS_VARIANTES[0]}.${EXTENSION_SORTIE}`;
+  }
+  return src;
 }
