@@ -88,7 +88,12 @@ export function securityHeaders(production: boolean): EnTete[] {
     // scanner de QR de la caisse, qui a besoin de la camera en meme origine.
     {
       key: "Permissions-Policy",
-      value: "camera=(self), microphone=(), geolocation=(), payment=()",
+      // `geolocation=(self)` est NECESSAIRE : les reglages du salon proposent
+      // « Me localiser » pour poser le point qui ouvrira l'itineraire des
+      // clientes. A `()`, le navigateur refusait la demande en production
+      // alors qu'elle marchait en local — l'en-tete n'y est pas pose.
+      // `camera=(self)` l'est aussi : /pos/scan lit les QR codes.
+      value: "camera=(self), microphone=(), geolocation=(self), payment=()",
     },
     { key: "Content-Security-Policy-Report-Only", value: contentSecurityPolicy() },
   ];

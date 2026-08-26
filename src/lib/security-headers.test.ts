@@ -40,11 +40,24 @@ describe("securityHeaders", () => {
     expect(valeur(true, "Permissions-Policy")).toContain("camera=(self)");
   });
 
-  it("coupe micro, position et paiement", () => {
+  it("coupe le micro et le paiement", () => {
     const p = valeur(true, "Permissions-Policy") ?? "";
     expect(p).toContain("microphone=()");
-    expect(p).toContain("geolocation=()");
     expect(p).toContain("payment=()");
+  });
+
+  /**
+   * La position etait coupee (`geolocation=()`). Les reglages du salon
+   * proposent desormais « Me localiser » pour poser le point qui ouvrira
+   * l'itineraire des clientes : le bouton echouait en production alors qu'il
+   * marchait en local, ou l'en-tete n'est pas pose.
+   *
+   * `(self)` et non `*` : notre origine seulement, jamais un tiers embarque.
+   */
+  it("laisse la position au site lui-meme, pour localiser un salon", () => {
+    const p = valeur(true, "Permissions-Policy") ?? "";
+    expect(p).toContain("geolocation=(self)");
+    expect(p).not.toContain("geolocation=*");
   });
 
   /**
