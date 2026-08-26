@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { ImageUpload } from "@/components/image-upload";
+import { PHOTOS_MAX_SALON } from "@/lib/upload-image";
 import dynamic from "next/dynamic";
 
 // Leaflet manipule le DOM et n'existe pas cote serveur : sans ssr:false, le
@@ -237,11 +238,15 @@ export function SalonForm({ initial }: { initial: SalonProfile }) {
         <span className="mb-1 block text-xs uppercase tracking-wider text-pos-ink-3">
           Photos du salon
         </span>
+        <p className="mb-2 text-xs text-pos-ink-3">
+          Jusqu&apos;à {PHOTOS_MAX_SALON} photos. La première s&apos;affiche en
+          bandeau sur votre fiche, les autres en galerie.
+        </p>
         <ImageUpload
           images={form.photos}
           onChange={(photos) => patch("photos", photos)}
           onUploadingChange={setUploading}
-          max={5}
+          max={PHOTOS_MAX_SALON}
         />
       </div>
 

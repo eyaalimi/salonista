@@ -14,7 +14,7 @@ export async function GET() {
     where: { customerId: customer.id },
     orderBy: { lastActivityAt: "desc" },
     include: {
-      provider: { select: { id: true, salonName: true, city: true, photos: true } },
+      provider: { select: { id: true, salonName: true, city: true, photos: true, logo: true } },
       program: { select: { dinarPerPoint: true } },
     },
   });
@@ -29,7 +29,10 @@ export async function GET() {
         id: w.provider.id,
         salonName: w.provider.salonName,
         city: w.provider.city,
-        photo: w.provider.photos[0] ?? null,
+        // Le logo d'abord, la premiere photo ensuite : depuis que l'assistant
+        // ecrit dans `logo`, un salon recent a un logo mais pas forcement
+        // de photos.
+        photo: w.provider.logo ?? w.provider.photos[0] ?? null,
       },
     })),
   });
