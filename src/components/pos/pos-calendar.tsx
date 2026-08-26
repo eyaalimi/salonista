@@ -16,6 +16,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { bookingClientName } from "@/lib/booking-client-name";
 import { formatHeure } from "@/lib/datetime";
+import { memeJour } from "@/lib/mois-calendrier";
 
 export type CalendarBooking = {
   id: string;
@@ -35,15 +36,15 @@ type Props = {
   initialDate?: Date;
   onCreateAt: (start: Date) => void;
   onOpenBooking: (id: string) => void;
+  /**
+   * Jour impose de l'exterieur — le mini-calendrier. `PosCalendar` reste
+   * maitre de son etat : ce n'est qu'une synchronisation, pas un passage en
+   * composant controle, qui aurait demande de remanier toute sa navigation.
+   */
+  jourImpose?: Date | null;
+  /** Notifie le jour affiche, pour que la grille mensuelle le surligne. */
+  onJourChange?: (d: Date) => void;
 };
-
-function memeJour(a: Date, b: Date): boolean {
-  return (
-    a.getFullYear() === b.getFullYear() &&
-    a.getMonth() === b.getMonth() &&
-    a.getDate() === b.getDate()
-  );
-}
 
 function libelleJour(d: Date): string {
   const aujourdhui = new Date();
@@ -76,9 +77,34 @@ function etat(b: CalendarBooking): { texte: string; classes: string } | null {
   return null;
 }
 
-export function PosCalendar({ initialDate, onCreateAt, onOpenBooking }: Props) {
-  const [jour, setJour] = useState<Date>(() =>
+export function PosCalendar({
+  initialDate,
+  onCreateAt,
+  onOpenBooking,
+  jourImpose,
+  onJourChange,
+}: Props) {
+  const [jourLocal, setJourLocal] = useState<Date>(() =>
     initialDate ? new Date(initialDate) : new Date(),
+  );
+
+  /**
+   * Quand le parent fournit `jourImpose`, il est la SOURCE UNIQUE : la date
+   * se derive au rendu, sans effet de synchronisation.
+   *
+   * Deux `useEffect` qui se repondaient — l'un descendant, l'autre
+   * remontant — auraient produit des rendus en cascade et pouvaient laisser
+   * la grille et la liste se contredire. Sans parent, le composant garde son
+   * etat interne : `PosCalendar` reste utilisable seul.
+   */
+  const jour = jourImpose ?? jourLocal;
+
+  const setJour = useCallback(
+    (d: Date) => {
+      setJourLocal(d);
+      onJourChange?.(d);
+    },
+    [onJourChange],
   );
   const [bookings, setBookings] = useState<CalendarBooking[]>([]);
   const [chargement, setChargement] = useState(true);
@@ -166,11 +192,12 @@ export function PosCalendar({ initialDate, onCreateAt, onOpenBooking }: Props) {
 
   function decaler(jours: number) {
     setChargement(true);
-    setJour((d) => {
-      const n = new Date(d);
-      n.setDate(n.getDate() + jours);
-      return n;
-    });
+    // `jour` est derive au rendu (il peut venir du parent) : la forme
+    // fonctionnelle de `setState` ne s'applique plus, on part de la valeur
+    // courante.
+    const n = new Date(jour);
+    n.setDate(n.getDate() + jours);
+    setJour(n);
   }
 
   const visibles = bookings.filter((b) => b.status !== "CANCELLED");
