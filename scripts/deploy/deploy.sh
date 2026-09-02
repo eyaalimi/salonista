@@ -9,7 +9,32 @@ APP_NAME="salonista"
 cd "${APP_DIR}"
 
 echo "[1/6] Pull latest code"
-git fetch --all --prune
+# Le fetch ne doit JAMAIS attendre un identifiant.
+#
+# Symptome rencontre en production :
+#   fatal: could not read Username for 'https://github.com': No such device
+# Le message est trompeur : la session SSH n'a pas de terminal pour saisir un
+# identifiant, d'ou « No such device » plutot qu'une invite. La cause est un
+# jeton expire quelque part dans la configuration git — URL du remote,
+# credential.helper, ou `http.extraHeader`.
+#
+# `GIT_TERMINAL_PROMPT=0` transforme toute demande d'identifiant en ECHEC
+# IMMEDIAT : sans lui, un deploiement peut rester bloque jusqu'au timeout de
+# 30 minutes sur une invite que personne ne verra.
+export GIT_TERMINAL_PROMPT=0
+
+# Le depot est public : HTTPS anonyme suffit a lire. On neutralise le
+# credential.helper et tout en-tete d'autorisation herite d'un ancien clone.
+git remote set-url origin https://github.com/eyaalimi/salonista.git
+if ! git -c credential.helper= \
+       -c "http.https://github.com/.extraHeader=" \
+       fetch --all --prune; then
+  # Repli SSH : si une cle de deploiement est installee, elle ne demande
+  # jamais de mot de passe. Utile si le depot devenait prive.
+  echo "  HTTPS a echoue — tentative en SSH"
+  git remote set-url origin git@github.com:eyaalimi/salonista.git
+  git fetch --all --prune
+fi
 git reset --hard origin/main
 
 echo "[2/6] Install dependencies"

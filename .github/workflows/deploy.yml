@@ -25,6 +25,22 @@ jobs:
             cd /home/ubuntu/salonista
             # Pull the latest deploy.sh BEFORE running it, so we never execute
             # a stale copy whose body changes mid-run when the script self-updates.
-            git fetch --all --prune
+            #
+            # Le fetch ne doit JAMAIS attendre un identifiant : la session SSH
+            # n'a pas de terminal, d'ou « could not read Username for
+            # 'https://github.com': No such device or address ». Sans
+            # GIT_TERMINAL_PROMPT=0, le job reste bloque jusqu'au timeout de
+            # 30 minutes sur une invite que personne ne verra.
+            export GIT_TERMINAL_PROMPT=0
+            # HTTPS anonyme d'abord (le depot est public), repli SSH ensuite
+            # si une cle de deploiement est installee.
+            git remote set-url origin https://github.com/eyaalimi/salonista.git
+            if ! git -c credential.helper= \
+                   -c "http.https://github.com/.extraHeader=" \
+                   fetch --all --prune; then
+              echo "HTTPS a echoue — tentative en SSH"
+              git remote set-url origin git@github.com:eyaalimi/salonista.git
+              git fetch --all --prune
+            fi
             git reset --hard origin/main
             bash ./scripts/deploy/deploy.sh
