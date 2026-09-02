@@ -71,9 +71,28 @@ export function SalonForm({ initial }: { initial: SalonProfile }) {
     setOk(false);
   }
 
+  const footerTrop = form.receiptFooter.length > FOOTER_MAX;
+
+  /**
+   * Les champs obligatoires encore vides, nommes pour l'ecran.
+   *
+   * La meme condition vivait en double — dans `save()` et sur le `disabled`
+   * du bouton — et se contentait de griser sans dire quoi remplir. Les
+   * obligatoires sont eparpilles sur toute la page : le salon ne pouvait pas
+   * deviner lequel manquait.
+   */
+  const champsManquants = [
+    !form.salonName.trim() && "le nom du salon",
+    // Le telephone porte les confirmations WhatsApp.
+    !form.phone.trim() && "le téléphone",
+    !form.governorate && "le gouvernorat",
+    !form.city.trim() && "la délégation",
+    form.address.trim().length < 3 && "la rue",
+    form.vatRegistered && !form.matriculeFiscal.trim() && "le matricule fiscal",
+  ].filter((x): x is string => typeof x === "string");
+
   async function save() {
-    // Le telephone est obligatoire : il porte les confirmations WhatsApp.
-    if (busy || uploading || !form.salonName.trim() || !form.phone.trim() || !form.governorate || !form.city.trim() || form.address.trim().length < 3) return;
+    if (busy || uploading || footerTrop || champsManquants.length > 0) return;
     setBusy(true);
     setError(null);
     setOk(false);
@@ -111,25 +130,23 @@ export function SalonForm({ initial }: { initial: SalonProfile }) {
     }
   }
 
-  const footerTrop = form.receiptFooter.length > FOOTER_MAX;
-
   return (
     <div className="space-y-5">
       {error && (
-        <div className="rounded bg-pos-danger-soft px-3 py-2 text-sm text-pos-danger">{error}</div>
+        <div className="rounded-[var(--radius-card)] bg-pos-danger-soft px-4 py-3 text-sm text-pos-danger">{error}</div>
       )}
       {ok && (
-        <div className="rounded bg-pos-accent-soft px-3 py-2 text-sm text-pos-accent">
+        <div className="rounded-[var(--radius-card)] bg-pos-accent-soft px-4 py-3 text-sm text-pos-accent">
           Profil enregistré.
         </div>
       )}
 
       <label className="block">
-        <span className="mb-1 block text-xs uppercase tracking-wider text-pos-ink-3">
+        <span className="mb-1 block text-sm font-medium text-pos-ink">
           Nom du salon
         </span>
         <input
-          className="w-full rounded border border-pos-border bg-white px-3 py-2 text-sm"
+          className="ds-focus min-h-[48px] w-full rounded-[var(--radius-pill)] border border-pos-border bg-white px-4 text-base text-pos-ink"
           value={form.salonName}
           onChange={(e) => patch("salonName", e.target.value)}
         />
@@ -137,11 +154,11 @@ export function SalonForm({ initial }: { initial: SalonProfile }) {
 
       <div className="grid grid-cols-2 gap-3">
         <label className="block">
-          <span className="mb-1 block text-xs uppercase tracking-wider text-pos-ink-3">
+          <span className="mb-1 block text-sm font-medium text-pos-ink">
             Catégorie
           </span>
           <select
-            className="w-full rounded border border-pos-border bg-white px-3 py-2 text-sm"
+            className="ds-focus min-h-[48px] w-full rounded-[var(--radius-pill)] border border-pos-border bg-white px-4 text-base text-pos-ink"
             value={form.category}
             onChange={(e) => patch("category", e.target.value)}
           >
@@ -153,7 +170,7 @@ export function SalonForm({ initial }: { initial: SalonProfile }) {
           </select>
         </label>
         <label className="block">
-          <span className="mb-1 block text-xs uppercase tracking-wider text-pos-ink-3">
+          <span className="mb-1 block text-sm font-medium text-pos-ink">
             Téléphone <span className="text-pos-danger">*</span>
           </span>
           <input
@@ -161,11 +178,11 @@ export function SalonForm({ initial }: { initial: SalonProfile }) {
             inputMode="tel"
             required
             placeholder="20 123 456"
-            className="w-full rounded border border-pos-border bg-white px-3 py-2 text-sm text-pos-ink placeholder:text-pos-ink-3"
+            className="ds-focus min-h-[48px] w-full rounded-[var(--radius-pill)] border border-pos-border bg-white px-4 text-base text-pos-ink placeholder:text-pos-ink-3"
             value={form.phone}
             onChange={(e) => patch("phone", e.target.value)}
           />
-          <span className="mt-1 block text-xs text-pos-ink-3">
+          <span className="mt-1 block text-sm text-pos-ink-3">
             Obligatoire : sert à envoyer les confirmations de réservation par
             WhatsApp.
           </span>
@@ -175,14 +192,18 @@ export function SalonForm({ initial }: { initial: SalonProfile }) {
       {/* Adresse structuree : gouvernorat -> delegation -> rue.
           L'adresse libre donnait « Hometna, Ba7dha sousse » : impossible de
           filtrer par zone, et le geocodage echouait. */}
+      <h3 className="border-t border-pos-border pt-5 text-base font-semibold text-pos-ink">
+        Où se trouve ton salon
+      </h3>
+
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
         <label className="block">
-          <span className="mb-1 block text-xs uppercase tracking-wider text-pos-ink-3">
+          <span className="mb-1 block text-sm font-medium text-pos-ink">
             Gouvernorat <span className="text-pos-danger">*</span>
           </span>
           <select
             required
-            className="w-full rounded border border-pos-border bg-white px-3 py-2 text-sm text-pos-ink"
+            className="ds-focus min-h-[48px] w-full rounded-[var(--radius-pill)] border border-pos-border bg-white px-4 text-base text-pos-ink"
             value={form.governorate}
             onChange={(e) => {
               // Changer de gouvernorat vide la delegation : la garder
@@ -201,13 +222,13 @@ export function SalonForm({ initial }: { initial: SalonProfile }) {
         </label>
 
         <label className="block">
-          <span className="mb-1 block text-xs uppercase tracking-wider text-pos-ink-3">
+          <span className="mb-1 block text-sm font-medium text-pos-ink">
             Délégation <span className="text-pos-danger">*</span>
           </span>
           <select
             required
             disabled={!form.governorate}
-            className="w-full rounded border border-pos-border bg-white px-3 py-2 text-sm text-pos-ink disabled:opacity-50"
+            className="ds-focus min-h-[48px] w-full rounded-[var(--radius-pill)] border border-pos-border bg-white px-4 text-base text-pos-ink disabled:opacity-50"
             value={form.city}
             onChange={(e) => patch("city", e.target.value)}
           >
@@ -226,13 +247,13 @@ export function SalonForm({ initial }: { initial: SalonProfile }) {
       </div>
 
       <label className="block">
-        <span className="mb-1 block text-xs uppercase tracking-wider text-pos-ink-3">
+        <span className="mb-1 block text-sm font-medium text-pos-ink">
           Numéro et nom de rue <span className="text-pos-danger">*</span>
         </span>
         <input
           required
           placeholder="12 rue des Oliviers"
-          className="w-full rounded border border-pos-border bg-white px-3 py-2 text-sm text-pos-ink placeholder:text-pos-ink-3"
+          className="ds-focus min-h-[48px] w-full rounded-[var(--radius-pill)] border border-pos-border bg-white px-4 text-base text-pos-ink placeholder:text-pos-ink-3"
           value={form.address}
           onChange={(e) => patch("address", e.target.value)}
         />
@@ -241,7 +262,7 @@ export function SalonForm({ initial }: { initial: SalonProfile }) {
       {/* Regime de TVA. « Non » par defaut : la majorite des salons
           tunisiens ne sont pas assujettis, et ils devaient jusqu'ici passer
           chaque service a 0 % a la main. */}
-      <div className="rounded border border-pos-border p-3">
+      <div className="rounded-[var(--radius-card)] border border-pos-border p-4">
         <label className="flex items-start gap-3">
           <input
             type="checkbox"
@@ -253,7 +274,7 @@ export function SalonForm({ initial }: { initial: SalonProfile }) {
             <span className="block text-sm font-medium text-pos-ink">
               Mon salon est assujetti à la TVA
             </span>
-            <span className="mt-0.5 block text-xs text-pos-ink-3">
+            <span className="mt-0.5 block text-sm text-pos-ink-3">
               {form.vatRegistered
                 ? "Tes services et produits porteront un taux de TVA."
                 : "Aucune TVA ne sera appliquée ni affichée. C'est le cas de la plupart des salons."}
@@ -265,13 +286,13 @@ export function SalonForm({ initial }: { initial: SalonProfile }) {
             rend une facture valable, sans objet pour un non-assujetti. */}
         {form.vatRegistered && (
           <label className="mt-3 block">
-            <span className="mb-1 block text-xs uppercase tracking-wider text-pos-ink-3">
+            <span className="mb-1 block text-sm font-medium text-pos-ink">
               Matricule fiscal <span className="text-pos-danger">*</span>
             </span>
             <input
               required
               placeholder="1234567/A/M/000"
-              className="w-full rounded border border-pos-border bg-white px-3 py-2 text-sm text-pos-ink placeholder:text-pos-ink-3"
+              className="ds-focus min-h-[48px] w-full rounded-[var(--radius-pill)] border border-pos-border bg-white px-4 text-base text-pos-ink placeholder:text-pos-ink-3"
               value={form.matriculeFiscal}
               onChange={(e) => patch("matriculeFiscal", e.target.value)}
             />
@@ -280,7 +301,7 @@ export function SalonForm({ initial }: { initial: SalonProfile }) {
       </div>
 
       <div>
-        <span className="mb-1 block text-xs uppercase tracking-wider text-pos-ink-3">
+        <span className="mb-1 block text-sm font-medium text-pos-ink">
           Emplacement sur la carte
         </span>
         <LocationPicker
@@ -296,23 +317,30 @@ export function SalonForm({ initial }: { initial: SalonProfile }) {
         />
       </div>
 
+      <h3 className="border-t border-pos-border pt-5 text-base font-semibold text-pos-ink">
+        Ta vitrine
+      </h3>
+      <p className="-mt-3 text-sm text-pos-ink-3">
+        Ce que voient tes clientes sur ta page publique.
+      </p>
+
       <label className="block">
-        <span className="mb-1 block text-xs uppercase tracking-wider text-pos-ink-3">
+        <span className="mb-1 block text-sm font-medium text-pos-ink">
           Description
         </span>
         <textarea
           rows={3}
-          className="w-full rounded border border-pos-border bg-white px-3 py-2 text-sm"
+          className="ds-focus min-h-[48px] w-full rounded-[var(--radius-pill)] border border-pos-border bg-white px-4 text-base text-pos-ink"
           value={form.description}
           onChange={(e) => patch("description", e.target.value)}
         />
       </label>
 
       <div>
-        <span className="mb-1 block text-xs uppercase tracking-wider text-pos-ink-3">
+        <span className="mb-1 block text-sm font-medium text-pos-ink">
           Logo du salon
         </span>
-        <p className="mb-2 text-xs text-pos-ink-3">
+        <p className="mb-2 text-sm text-pos-ink-3">
           Votre enseigne. Elle apparaît sur vos tickets et votre fiche.
         </p>
         {/* `max={1}` : un logo est unique. Le tableau n'est qu'un adaptateur
@@ -326,10 +354,10 @@ export function SalonForm({ initial }: { initial: SalonProfile }) {
       </div>
 
       <div>
-        <span className="mb-1 block text-xs uppercase tracking-wider text-pos-ink-3">
+        <span className="mb-1 block text-sm font-medium text-pos-ink">
           Photos du salon
         </span>
-        <p className="mb-2 text-xs text-pos-ink-3">
+        <p className="mb-2 text-sm text-pos-ink-3">
           Jusqu&apos;à {PHOTOS_MAX_SALON} photos. La première s&apos;affiche en
           bandeau sur votre fiche, les autres en galerie.
         </p>
@@ -341,29 +369,42 @@ export function SalonForm({ initial }: { initial: SalonProfile }) {
         />
       </div>
 
+      <h3 className="border-t border-pos-border pt-5 text-base font-semibold text-pos-ink">
+        Ticket de caisse
+      </h3>
+
       <label className="block">
-        <span className="mb-1 flex items-center justify-between text-xs uppercase tracking-wider text-pos-ink-3">
+        <span className="mb-1 flex items-center justify-between text-sm font-medium text-pos-ink">
           <span>Pied de ticket</span>
-          <span className={footerTrop ? "text-pos-danger" : ""}>
+          <span
+            className={footerTrop ? "text-pos-danger" : "font-normal text-pos-ink-3"}
+          >
             {form.receiptFooter.length}/{FOOTER_MAX}
           </span>
         </span>
         <input
-          className="w-full rounded border border-pos-border bg-white px-3 py-2 text-sm"
+          className="ds-focus min-h-[48px] w-full rounded-[var(--radius-pill)] border border-pos-border bg-white px-4 text-base text-pos-ink"
           placeholder="Merci de votre visite !"
           value={form.receiptFooter}
           onChange={(e) => patch("receiptFooter", e.target.value)}
         />
       </label>
 
-      <div className="flex justify-end">
+      <div className="flex flex-wrap items-center justify-end gap-3 border-t border-pos-border pt-4">
+        {/* Le bouton restait gris sans qu'on sache quel champ manquait : la
+            liste des obligatoires est longue et ils sont eparpilles. */}
+        {champsManquants.length > 0 && (
+          <p className="text-sm text-pos-ink-3">
+            À compléter : {champsManquants.join(", ")}.
+          </p>
+        )}
         <button
           type="button"
           onClick={save}
-          disabled={busy || uploading || footerTrop || !form.salonName.trim() || !form.phone.trim() || !form.governorate || !form.city.trim() || form.address.trim().length < 3}
-          className="rounded bg-pos-ink px-4 py-2 text-sm font-medium text-pos-bg disabled:opacity-50"
+          disabled={busy || uploading || footerTrop || champsManquants.length > 0}
+          className="ds-press ds-focus min-h-[48px] rounded-[var(--radius-pill)] bg-pos-accent px-6 text-base font-medium text-white disabled:opacity-50"
         >
-          {uploading ? "Upload en cours…" : busy ? "Enregistrement…" : "Enregistrer"}
+          {uploading ? "Envoi de l'image…" : busy ? "Enregistrement…" : "Enregistrer"}
         </button>
       </div>
     </div>

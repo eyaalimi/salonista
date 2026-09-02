@@ -39,6 +39,9 @@ export default function LocationPicker({
   const marker = useRef<L.Marker | null>(null);
   const onChangeRef = useRef(onChange);
   const [busy, setBusy] = useState(false);
+  // Un point est-il defini ? Sans lui la fiche n'a ni carte ni itineraire :
+  // l'ecran doit le dire, pas laisser croire que tout est en ordre.
+  const place = lat !== null && lng !== null;
   const [message, setMessage] = useState<string | null>(null);
 
   // Le parent recree souvent onChange ; on garde la derniere version sans
@@ -109,49 +112,22 @@ export default function LocationPicker({
   }, []);
 
   /**
-   * Geocodage AUTOMATIQUE des que l'adresse est complete.
+   * PAS DE GEOCODAGE AUTOMATIQUE — retire volontairement.
    *
-   * Le salon ne devrait pas avoir a cliquer pour que sa fiche soit
-   * localisable : sans point, la cliente n'a ni carte ni itineraire.
+   * Une version precedente posait un marqueur des que l'adresse etait
+   * complete, en la geocodant. C'etait faux : Nominatim rend le centre de la
+   * delegation, pas la devanture du salon. Le marqueur apparaissait tout seul
+   * a plusieurs centaines de metres, et « Me localiser » semblait donner un
+   * mauvais resultat alors qu'il n'avait jamais ete appele.
    *
-   * Trois gardes, chacune pour une raison :
-   *  - `lat`/`lng` deja poses -> on ne bouge JAMAIS un marqueur place a la
-   *    main, ce serait defaire le travail du salon ;
-   *  - `dejaTente` -> une seule tentative par adresse, sinon chaque frappe
-   *    dans la rue relancerait une requete Nominatim ;
-   *  - le delai -> on attend que la saisie se stabilise.
+   * Le point doit venir d'une intention explicite, dans cet ordre :
+   *   1. « Me localiser » — la position REELLE de l'appareil (telephone) ;
+   *   2. un clic sur la carte — le salon pointe sa devanture (ordinateur) ;
+   *   3. « Depuis l'adresse » — approximation assumee, en dernier recours.
+   *
+   * C'est ce point qui ouvrira l'itineraire de la cliente : mieux vaut aucun
+   * marqueur qu'un marqueur faux.
    */
-  const dejaTente = useRef<string | null>(null);
-
-  // Declaree AVANT l'effet qui l'appelle : la regle react-hooks/immutability
-  // refuse un acces a une fonction declaree plus bas — meme raison que
-  // `placeMarker` ci-dessus.
-  async function localiserAuto(cle: string) {
-    const [gouv, del, rue] = cle.split("|");
-    const found = await geocodeAddress(adresseComplete(rue, del, gouv));
-    if (!found) return; // silencieux : le salon peut encore cliquer ou pointer
-    map.current?.setView([found.lat, found.lng], ZOOM_ADRESSE);
-    placeMarker(found.lat, found.lng, true);
-    setMessage(
-      "Emplacement trouvé automatiquement depuis ton adresse. Vérifie qu'il est exact.",
-    );
-  }
-
-  useEffect(() => {
-    if (lat !== null && lng !== null) return;
-    if (!governorate || !city.trim() || address.trim().length < 3) return;
-
-    const cle = `${governorate}|${city.trim()}|${address.trim()}`;
-    if (dejaTente.current === cle) return;
-
-    const t = setTimeout(() => {
-      dejaTente.current = cle;
-      localiserAuto(cle);
-    }, 1200);
-    return () => clearTimeout(t);
-    // `localiserAuto` est stable pour la duree de vie du composant.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [governorate, city, address, lat, lng]);
 
   /**
    * Position reelle de l'appareil.
@@ -179,7 +155,16 @@ export default function LocationPicker({
           ZOOM_ADRESSE,
         );
         placeMarker(pos.coords.latitude, pos.coords.longitude, true);
-        setMessage("Position trouvée. Déplace le marqueur si besoin.");
+        // `accuracy` est un rayon en metres. Un telephone donne ~10 m, un
+        // ordinateur portable sans GPS se repere par le Wi-Fi et peut se
+        // tromper de plusieurs centaines de metres — le dire evite qu'un
+        // point grossier soit pris pour exact.
+        const m = Math.round(pos.coords.accuracy);
+        setMessage(
+          m > 100
+            ? `Position approximative (± ${m} m). Clique sur la carte pour pointer ton salon précisément.`
+            : `Position trouvée (± ${m} m). Déplace le marqueur si besoin.`,
+        );
         setBusy(false);
       },
       (err) => {
@@ -223,30 +208,42 @@ export default function LocationPicker({
   return (
     <div>
       <div ref={container} className="h-64 w-full rounded border border-pos-border" />
+
       <p className="mt-2 text-xs text-pos-ink-3">
-        C&apos;est ce point qui ouvrira l&apos;itinéraire de tes clientes.
-        Déplace le marqueur s&apos;il n&apos;est pas exact.
+        {place
+          ? "C'est ce point qui ouvrira l'itinéraire de tes clientes. Clique sur la carte ou déplace le marqueur pour le corriger."
+          : "Aucun emplacement défini. Tes clientes n'auront ni carte ni itinéraire."}
       </p>
+
       <div className="mt-2 flex flex-wrap gap-2">
-        {/* Action principale : le salon remplit son profil DEPUIS son salon,
-            sa position reelle vaut mieux qu'un geocodage d'adresse. */}
+        {/* Action principale, surtout sur telephone : la position REELLE de
+            l'appareil. Le salon remplit son profil depuis son salon. */}
         <button
           type="button"
           onClick={seLocaliser}
           disabled={busy}
           className="rounded border border-pos-accent bg-pos-accent-soft px-3 py-1.5 text-xs font-medium text-pos-accent disabled:opacity-50"
         >
-          {busy ? "Recherche…" : "📍 Me localiser"}
+          {busy ? "Recherche…" : "📍 Utiliser ma position actuelle"}
         </button>
+        {/* Dernier recours, jamais automatique : Nominatim rend le centre de
+            la delegation, pas la devanture. */}
         <button
           type="button"
           onClick={localiser}
           disabled={busy}
           className="rounded border border-pos-border px-3 py-1.5 text-xs text-pos-ink-2 disabled:opacity-50"
         >
-          Depuis l&apos;adresse
+          Chercher depuis l&apos;adresse
         </button>
       </div>
+
+      <p className="mt-2 text-xs text-pos-ink-3">
+        Sur téléphone, autorise l&apos;accès à ta position quand le navigateur
+        le demande. Sur ordinateur, clique directement sur la carte à
+        l&apos;emplacement de ton salon.
+      </p>
+
       {message && <p className="mt-1 text-xs text-pos-ink-2">{message}</p>}
     </div>
   );
