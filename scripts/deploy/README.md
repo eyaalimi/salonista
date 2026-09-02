@@ -269,7 +269,7 @@ If you ever need to renew Let's Encrypt manually while proxied, temporarily swit
 |---|---|
 | `502 Bad Gateway` from Nginx | `pm2 status` — Next.js crashed. `pm2 logs salonista --lines 100` for the cause. |
 | GitHub Actions deploy fails on SSH | Verify the secret `SSH_PRIVATE_KEY` contains the **entire** `.pem` content including `-----BEGIN ... -----` and `-----END ... -----`. |
-| `could not read Username for 'https://github.com': No such device or address` | Le remote porte un jeton expiré. Le message est trompeur : la session SSH n'a pas de terminal où saisir un identifiant, d'où « No such device » plutôt qu'une invite. Le dépôt est **public**, aucun identifiant n'est requis pour lire. Corrigé automatiquement depuis que le workflow et `deploy.sh` forcent `git remote set-url origin https://github.com/eyaalimi/salonista.git`. Pour débloquer un serveur à la main : `cd /home/ubuntu/salonista && git remote set-url origin https://github.com/eyaalimi/salonista.git && git config --unset credential.helper` |
+| `could not read Username for 'https://github.com': No such device or address` | Git réclame une authentification pour un `fetch`. Le message est trompeur : la session SSH n'a pas de terminal où saisir un identifiant, d'où « No such device » plutôt qu'une invite. Voir la section ci-dessous. |
 | Migration fails on deploy | SSH in, run `npx prisma migrate status` to see the gap. Manually apply or `migrate resolve` then redeploy. |
 | Cloudflare shows "Error 521" | Origin is unreachable. Check Lightsail firewall has port 80/443 open and Nginx is running. |
 | `permission denied` on uploads | `sudo chown -R ubuntu:ubuntu /home/ubuntu/salonista/public/uploads` |
@@ -370,6 +370,50 @@ reste alors sur l'original, toujours présent. Le script ne réécrit **que** ve
 des fichiers qu'il a effectivement écrits.
 
 ---
+
+## Le déploiement échoue sur `could not read Username`
+
+Le `git fetch` réclame une authentification. Le message
+`No such device or address` ne parle pas d'un disque : la session SSH n'a pas
+de terminal où saisir un identifiant, donc git échoue au lieu de demander.
+
+Le dépôt est **public** — vérifiable par `curl -s
+https://api.github.com/repos/eyaalimi/salonista | grep private` (`false`) — et
+un `git ls-remote` anonyme fonctionne depuis n'importe quelle machine. Si le
+serveur, lui, réclame un mot de passe, la cause est **locale** :
+
+```bash
+cd /home/ubuntu/salonista
+git config --get remote.origin.url | cat -A            # caractères invisibles ?
+git config --list --show-origin | grep -iE 'url\.|insteadof|extraheader|credential'
+GIT_TERMINAL_PROMPT=0 git ls-remote https://github.com/eyaalimi/salonista.git HEAD
+```
+
+Une réécriture `url.<base>.insteadOf` (globale ou système) suffit à rediriger
+toutes les URL HTTPS vers une forme authentifiée, même après avoir corrigé le
+remote.
+
+### Solution durable : clé de déploiement SSH
+
+Une URL SSH ne demande jamais d'identifiant interactif. C'est le repli
+qu'appliquent automatiquement le workflow et `deploy.sh` quand HTTPS échoue —
+mais la clé doit exister :
+
+```bash
+ssh-keygen -t ed25519 -C "salonista-deploy" -f ~/.ssh/id_ed25519 -N ""
+cat ~/.ssh/id_ed25519.pub
+# GitHub > dépôt > Settings > Deploy keys > Add deploy key
+# Titre « Lightsail prod », lecture seule (ne PAS cocher l'écriture)
+
+ssh -T -o StrictHostKeyChecking=accept-new git@github.com   # doit dire "successfully authenticated"
+cd /home/ubuntu/salonista
+git remote set-url origin git@github.com:eyaalimi/salonista.git
+git fetch --all --prune
+```
+
+`GIT_TERMINAL_PROMPT=0` est posé dans les deux scripts : sans lui, un
+déploiement resterait bloqué jusqu'au timeout de 30 minutes sur une invite que
+personne ne verra.
 
 ## Notes
 
