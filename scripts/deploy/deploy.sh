@@ -9,7 +9,20 @@ APP_NAME="salonista"
 cd "${APP_DIR}"
 
 echo "[1/6] Pull latest code"
-git fetch --all --prune
+# Forcer une URL HTTPS ANONYME avant tout fetch.
+#
+# Un clone fait avec un jeton dans l'URL (https://<token>@github.com/…) ou un
+# credential.helper configure fait echouer `git fetch` des que le jeton
+# expire, avec un message trompeur :
+#   fatal: could not read Username for 'https://github.com': No such device
+# La session SSH n'a pas de terminal pour saisir un identifiant, d'ou « No
+# such device » plutot qu'une invite.
+#
+# Le depot est PUBLIC : aucun identifiant n'est necessaire pour lire. On
+# reecrit donc l'URL a chaque deploiement, ce qui rend le script insensible a
+# la facon dont le clone initial a ete fait.
+git remote set-url origin https://github.com/eyaalimi/salonista.git
+git -c credential.helper= fetch --all --prune
 git reset --hard origin/main
 
 echo "[2/6] Install dependencies"

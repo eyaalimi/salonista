@@ -269,6 +269,7 @@ If you ever need to renew Let's Encrypt manually while proxied, temporarily swit
 |---|---|
 | `502 Bad Gateway` from Nginx | `pm2 status` — Next.js crashed. `pm2 logs salonista --lines 100` for the cause. |
 | GitHub Actions deploy fails on SSH | Verify the secret `SSH_PRIVATE_KEY` contains the **entire** `.pem` content including `-----BEGIN ... -----` and `-----END ... -----`. |
+| `could not read Username for 'https://github.com': No such device or address` | Le remote porte un jeton expiré. Le message est trompeur : la session SSH n'a pas de terminal où saisir un identifiant, d'où « No such device » plutôt qu'une invite. Le dépôt est **public**, aucun identifiant n'est requis pour lire. Corrigé automatiquement depuis que le workflow et `deploy.sh` forcent `git remote set-url origin https://github.com/eyaalimi/salonista.git`. Pour débloquer un serveur à la main : `cd /home/ubuntu/salonista && git remote set-url origin https://github.com/eyaalimi/salonista.git && git config --unset credential.helper` |
 | Migration fails on deploy | SSH in, run `npx prisma migrate status` to see the gap. Manually apply or `migrate resolve` then redeploy. |
 | Cloudflare shows "Error 521" | Origin is unreachable. Check Lightsail firewall has port 80/443 open and Nginx is running. |
 | `permission denied` on uploads | `sudo chown -R ubuntu:ubuntu /home/ubuntu/salonista/public/uploads` |
