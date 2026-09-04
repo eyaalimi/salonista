@@ -10,6 +10,7 @@ import { Results } from "@/components/pos/results";
 import { Cart } from "@/components/pos/cart";
 import { SidePanel } from "@/components/pos/side-panel";
 import { AttacheRdvDepuisUrl } from "@/components/pos/attache-rdv-url";
+import { lienWhatsappFidelite } from "@/lib/whatsapp-fidelite";
 import { ShortcutHelpOverlay } from "@/components/pos/shortcut-help-overlay";
 import { usePOSShortcut } from "@/lib/use-pos-shortcuts";
 import {
@@ -174,7 +175,10 @@ export function PosShellClient({ employee }: { employee: EmployeeProp }) {
   // Auto-dismiss the success toast (longer if there's a WhatsApp CTA).
   useEffect(() => {
     if (!successToast) return;
-    const timeoutMs = successToast.whatsappUrl ? 8000 : 2500;
+    // 20 s quand il y a un bouton WhatsApp, contre 8 auparavant : la
+    // caissiere rend d'abord la monnaie et raccompagne la cliente. Le bouton
+    // disparaissait avant qu'elle puisse le cliquer.
+    const timeoutMs = successToast.whatsappUrl ? 20000 : 2500;
     const id = setTimeout(() => setSuccessToast(null), timeoutMs);
     return () => clearTimeout(id);
   }, [successToast]);
@@ -209,15 +213,17 @@ export function PosShellClient({ employee }: { employee: EmployeeProp }) {
       (receipt.rewards?.earned ?? 0) +
       (receipt.rewards?.welcomeBonus ?? 0) +
       (receipt.rewards?.birthdayBonus ?? 0);
-    const whatsappUrl =
-      whatsappTemplate && totalEarned > 0 && customer?.phone
-        ? buildWhatsappLink(whatsappTemplate, {
-            phone: customer.phone,
-            name: (`${customer.firstName ?? ""} ${customer.lastName ?? ""}`.trim()) || "",
-            earned: totalEarned,
-            balance: receipt.rewards?.newBalance ?? 0,
-          })
-        : null;
+    // Plus de `whatsappTemplate &&` : la route rend `null` tant que le salon
+    // n'a pas personnalise son message, et le bouton n'apparaissait donc
+    // JAMAIS avant qu'il n'ouvre ses reglages de fidelite. Le gabarit par
+    // defaut vit desormais dans la lib.
+    const whatsappUrl = lienWhatsappFidelite({
+      phone: customer?.phone,
+      gabarit: whatsappTemplate,
+      name: `${customer?.firstName ?? ""} ${customer?.lastName ?? ""}`.trim(),
+      earned: totalEarned,
+      balance: receipt.rewards?.newBalance ?? 0,
+    });
     setSuccessToast({
       total: receipt.total,
       receiptNumber: receipt.receiptNumber,
@@ -503,16 +509,7 @@ function formatCartTotal(total: string | number): string {
   return n.toFixed(3);
 }
 
-function buildWhatsappLink(
-  template: string,
-  ctx: { phone: string; name: string; earned: number; balance: number },
-): string | null {
-  // Strip everything but digits. wa.me needs no leading + and no formatting.
-  const digits = ctx.phone.replace(/[^\d]/g, "");
-  if (!digits) return null;
-  const text = template
-    .replaceAll("{name}", ctx.name || "")
-    .replaceAll("{earned}", String(ctx.earned))
-    .replaceAll("{balance}", String(ctx.balance));
-  return `https://wa.me/${digits}?text=${encodeURIComponent(text)}`;
-}
+// `buildWhatsappLink` vivait ici, duplique de la logique du formulaire de
+// reglages. Il est remplace par `src/lib/whatsapp-fidelite.ts` (pur, 13
+// tests), qui applique en plus le gabarit PAR DEFAUT — sans quoi le bouton
+// n'apparaissait jamais tant que le salon n'avait pas ouvert ses reglages.
