@@ -57,6 +57,9 @@ export function BookingCreateDrawer({
   const [employeeId, setEmployeeId] = useState<string>(defaultEmployeeId);
   const [phone, setPhone] = useState("");
   const [customer, setCustomer] = useState<Customer | null>(null);
+  // Nom saisi pour une cliente pas encore enregistree. Le telephone seul ne
+  // dit rien a la caissiere qui prepare sa journee.
+  const [nom, setNom] = useState("");
   const [results, setResults] = useState<Customer[]>([]);
   const [notes, setNotes] = useState("");
   const [submitting, setSubmitting] = useState(false);
@@ -179,11 +182,44 @@ export function BookingCreateDrawer({
     }
     setSubmitting(true);
     try {
+      /**
+       * Creer la cliente AVANT le rendez-vous.
+       *
+       * Le numero etait valide puis JETE : il n'etait jamais envoye. Une
+       * cliente pas encore enregistree voyait donc son rendez-vous cree sans
+       * elle — l'agenda affichait « — », et le rappel n'avait personne a
+       * joindre.
+       *
+       * `POST /api/customers` renvoie la fiche existante si le numero est
+       * deja connu : pas de doublon, et le nom saisi ici n'ecrase pas celui
+       * deja enregistre.
+       */
+      let customerId = customer?.id ?? null;
+      if (!customerId && phone.trim()) {
+        const [firstName, ...reste] = nom.trim().split(/\s+/);
+        const res = await fetch("/api/customers", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            phone: phone.trim(),
+            firstName: firstName || undefined,
+            lastName: reste.join(" ") || undefined,
+          }),
+        });
+        if (!res.ok) {
+          const data = await res.json().catch(() => ({}));
+          setError(data.error ?? "Impossible d'enregistrer la cliente");
+          setSubmitting(false);
+          return;
+        }
+        customerId = ((await res.json()) as { id: string }).id;
+      }
+
       const startIso = walkIn
         ? new Date(startStr).toISOString()
         : selectedSlot!;
       const body = {
-        customerId: customer?.id ?? null,
+        customerId,
         walkIn,
         startTime: startIso,
         offerIds: walkIn ? [] : selectedOffers,
@@ -252,7 +288,7 @@ export function BookingCreateDrawer({
                   type="datetime-local"
                   value={startStr}
                   onChange={(e) => setStartStr(e.target.value)}
-                  className="w-full rounded border border-brand-line bg-white px-3 py-2"
+                  className="w-full rounded border border-hairline bg-white px-3 py-2 text-base text-prune placeholder:text-prune/50"
                 />
               </div>
               <div>
@@ -265,7 +301,7 @@ export function BookingCreateDrawer({
                   step="5"
                   value={duration}
                   onChange={(e) => setDuration(parseInt(e.target.value) || 30)}
-                  className="w-full rounded border border-brand-line bg-white px-3 py-2"
+                  className="w-full rounded border border-hairline bg-white px-3 py-2 text-base text-prune placeholder:text-prune/50"
                 />
               </div>
             </>
@@ -304,7 +340,7 @@ export function BookingCreateDrawer({
                   value={dateStr}
                   onChange={(e) => setDateStr(e.target.value)}
                   min={isoDate(new Date())}
-                  className="w-full rounded border border-brand-line bg-white px-3 py-2"
+                  className="w-full rounded border border-hairline bg-white px-3 py-2 text-base text-prune placeholder:text-prune/50"
                 />
               </div>
 
@@ -362,7 +398,7 @@ export function BookingCreateDrawer({
             <select
               value={employeeId}
               onChange={(e) => setEmployeeId(e.target.value)}
-              className="w-full rounded border border-brand-line bg-white px-3 py-2"
+              className="w-full rounded border border-hairline bg-white px-3 py-2 text-base text-prune placeholder:text-prune/50"
             >
               <option value="">—</option>
               {employees.map((e) => (
@@ -378,29 +414,45 @@ export function BookingCreateDrawer({
               Client
             </label>
             {customer ? (
-              <div className="rounded border border-brand-line bg-white px-3 py-2 flex justify-between">
-                <span className="text-sm">
-                  {[customer.firstName, customer.lastName].filter(Boolean).join(" ")}
+              <div className="flex items-center justify-between rounded border border-hairline bg-white px-3 py-2">
+                <span className="text-sm text-prune">
+                  {[customer.firstName, customer.lastName].filter(Boolean).join(" ") ||
+                    "Sans nom"}
+                  <span className="ml-2 text-prune/70">{customer.phone}</span>
                 </span>
                 <button
                   type="button"
                   onClick={() => {
                     setCustomer(null);
                     setPhone("");
+                    setNom("");
                   }}
-                  className="text-xs text-brand-ink-soft"
+                  className="text-sm text-rose-fonce"
                 >
                   Changer
                 </button>
               </div>
             ) : (
               <>
+                {/* Le nom ET le telephone. Le numero seul ne dit rien a la
+                    caissiere qui prepare sa journee, et le rendez-vous
+                    s'affichait « — » dans l'agenda. */}
                 <input
                   type="text"
+                  value={nom}
+                  onChange={(e) => setNom(e.target.value)}
+                  placeholder="Nom de la cliente"
+                  className="mb-2 w-full rounded border border-hairline bg-white px-3 py-2 text-base text-prune placeholder:text-prune/50"
+                />
+                <input
+                  type="tel"
+                  inputMode="tel"
                   value={phone}
                   onChange={(e) => setPhone(e.target.value)}
                   placeholder="Téléphone (laisser vide pour walk-in)"
-                  className="w-full rounded border border-brand-line bg-white px-3 py-2"
+                  // Sans `text-prune`, le texte saisi heritait du contexte et
+                  // devenait illisible — meme defaut que la modale de depense.
+                  className="w-full rounded border border-hairline bg-white px-3 py-2 text-base text-prune placeholder:text-prune/50"
                 />
                 {results.length > 0 && (
                   <ul className="mt-1 rounded border border-brand-line bg-white">
@@ -429,7 +481,7 @@ export function BookingCreateDrawer({
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
               rows={2}
-              className="w-full rounded border border-brand-line bg-white px-3 py-2"
+              className="w-full rounded border border-hairline bg-white px-3 py-2 text-base text-prune placeholder:text-prune/50"
             />
           </div>
 
