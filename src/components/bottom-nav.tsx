@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { MARKETPLACE_PUBLIQUE } from "@/lib/flags";
 
 const items = [
   { href: "/", label: "Accueil", emoji: "🏠" },
@@ -17,6 +18,10 @@ const HIDDEN_PREFIXES = ["/prestataire", "/influenceuse", "/admin", "/pos", "/sa
 
 export function BottomNav() {
   const pathname = usePathname() || "/";
+
+  // Ses quatre entrees (Accueil, Explorer, Mes RDV, Moi) menent toutes a la
+  // place de marche. Fermee, la barre n'irait nulle part.
+  if (!MARKETPLACE_PUBLIQUE) return null;
 
   if (HIDDEN_PREFIXES.some((p) => pathname === p || pathname.startsWith(p + "/"))) {
     return null;
