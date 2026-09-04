@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { formatDT } from "@/lib/money";
 import { bookingClientName } from "@/lib/booking-client-name";
+import { formatPhoneDisplay } from "@/lib/phone";
 
 type Booking = {
   id: string;
@@ -139,18 +140,18 @@ export function BookingDetailDrawer({
       />
       <aside className="w-full max-w-md bg-creme p-6 shadow-xl overflow-y-auto">
         <div className="flex items-center justify-between mb-4">
-          <p className="text-sm text-prune/60">Détails réservation</p>
+          <p className="text-sm text-prune/70">Détails réservation</p>
           <button
             type="button"
             onClick={onClose}
-            className="text-prune/60 hover:text-prune"
+            className="text-prune/70 hover:text-prune"
           >
             ✕
           </button>
         </div>
 
         {loading ? (
-          <p className="text-sm text-prune/60">Chargement…</p>
+          <p className="text-sm text-prune/70">Chargement…</p>
         ) : !booking ? (
           <p className="text-sm text-rose-fonce">{error ?? "Introuvable"}</p>
         ) : (
@@ -159,8 +160,18 @@ export function BookingDetailDrawer({
               <p className="ds-display text-lg text-prune">
                 {bookingClientName(booking.customer, booking.client, "Sans client")}
               </p>
+              {/* Le numero est cliquable : depuis une tablette de comptoir,
+                  c'est le geste le plus direct pour prevenir d'un retard. */}
+              {booking.customer?.phone && (
+                <a
+                  href={`tel:${booking.customer.phone}`}
+                  className="ds-focus text-sm text-rose-fonce underline-offset-4 hover:underline"
+                >
+                  {formatPhoneDisplay(booking.customer.phone)}
+                </a>
+              )}
               {booking.assignedEmployee && (
-                <p className="text-xs text-prune/60">
+                <p className="text-sm text-prune/70">
                   par {booking.assignedEmployee.displayName}
                 </p>
               )}
@@ -174,7 +185,7 @@ export function BookingDetailDrawer({
                 >
                   <p className="font-medium">{it.offer.title}</p>
                   {it.slot && (
-                    <p className="text-xs text-prune/60">
+                    <p className="text-sm text-prune/70">
                       {new Date(it.slot.startTime).toLocaleString("fr-FR")} →{" "}
                       {new Date(it.slot.endTime).toLocaleTimeString("fr-FR", {
                         hour: "2-digit",
@@ -187,15 +198,15 @@ export function BookingDetailDrawer({
             </ul>
 
             {booking.notes && (
-              <p className="text-sm italic text-prune/60">{booking.notes}</p>
+              <p className="text-sm italic text-prune/70">{booking.notes}</p>
             )}
 
             <div className="text-base">
               <p>
-                <span className="text-prune/60">Total :</span>{" "}
+                <span className="text-prune/70">Total :</span>{" "}
                 {formatDT(booking.totalPrice)}
               </p>
-              <p className="text-sm text-prune/60">
+              <p className="text-sm text-prune/70">
                 {/* « PENDING » ne veut rien dire pour une caissiere. */}
                 {STATUT_LISIBLE[booking.status] ?? booking.status}
                 {booking.walkIn && " · Sans rendez-vous"}
@@ -206,13 +217,13 @@ export function BookingDetailDrawer({
             {booking.sale && (
               <a
                 href={`/pos/sales/${booking.sale.id}`}
-                className="text-xs text-rose-fonce hover:underline"
+                className="text-sm text-rose-fonce hover:underline"
               >
                 Vente associée: {booking.sale.receiptNumber}
               </a>
             )}
 
-            {error && <p className="text-xs text-rose-fonce">{error}</p>}
+            {error && <p role="alert" className="text-sm text-rose-fonce">{error}</p>}
 
             {booking.status !== "CANCELLED" && booking.status !== "COMPLETED" && (
               <div className="flex flex-wrap gap-2 pt-3 border-t border-hairline">
@@ -248,7 +259,7 @@ export function BookingDetailDrawer({
               </div>
             )}
 
-            <p className="text-[10px] text-prune/60 pt-3 border-t border-hairline">
+            <p className="text-[10px] text-prune/70 pt-3 border-t border-hairline">
               Créée le {new Date(booking.createdAt).toLocaleString("fr-FR")}
             </p>
           </div>
