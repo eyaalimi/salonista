@@ -15,6 +15,7 @@
  */
 
 import { prisma } from "@/lib/prisma";
+import { refusVenteSansTiroir } from "./caisse-ouverte";
 import { computeTotals, type CartInput } from "@/lib/sale-totals";
 import { toMillimes, fromMillimes } from "@/lib/money";
 import { nextReceiptNumber } from "@/lib/receipt-number";
@@ -333,6 +334,23 @@ export async function createSaleFromPayload(args: {
       orderBy: { openedAt: "desc" },
     });
     openDrawerId = session?.id ?? null;
+  }
+
+  // Une vente en especes exige un tiroir OUVERT.
+  //
+  // Sans ce controle, la vente passait et son paiement especes n'etait
+  // rattache a aucune session : invisible du rapport Z, donc un attendu en
+  // caisse faux et un ecart inexplicable a la fermeture suivante.
+  //
+  // Verifie APRES la resolution du tiroir et AVANT la transaction : inutile
+  // d'ouvrir une transaction pour la defaire.
+  const refusTiroir = refusVenteSansTiroir(
+    payload.payments.map((p) => p.method),
+    openDrawerId !== null,
+    fromSync === true,
+  );
+  if (refusTiroir) {
+    return { kind: "validation", error: refusTiroir.message };
   }
 
   // Begin the persistence transaction.
