@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { formatDT, toMillimes, fromMillimes, addMoney } from "@/lib/money";
 import type { ComputedTotals } from "@/lib/sale-totals";
 import type { CartLine } from "@/lib/pos-store";
@@ -71,6 +71,35 @@ export function ChargeModal({
   onCompleted: (receipt: ReceiptData, shouldPrint: boolean) => void;
   queueOffline: (payload: import("@/lib/pos-sale-create").SalePayload & { clientTotal?: string }) => Promise<void>;
 }) {
+  /**
+   * Un tiroir est-il ouvert ?
+   *
+   * Le serveur refuse desormais une vente en especes sans tiroir ouvert. Le
+   * savoir ICI permet de prevenir AVANT que la caissiere compose son
+   * encaissement — bloquer au moment de valider arrive trop tard, la cliente
+   * attend devant le comptoir.
+   *
+   * `null` tant qu'on ne sait pas : on n'affiche rien plutot qu'une alerte
+   * qui clignoterait a chaque ouverture de la modale.
+   */
+  const [tiroirOuvert, setTiroirOuvert] = useState<boolean | null>(null);
+  useEffect(() => {
+    let vivant = true;
+    fetch("/api/pos/cash-drawer/current", { cache: "no-store" })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => {
+        if (vivant) setTiroirOuvert(d?.session?.status === "OPEN");
+      })
+      .catch(() => {
+        // Hors ligne : le serveur tranchera a la synchronisation. On ne
+        // bloque pas une caissiere qui n'a pas de reseau.
+        if (vivant) setTiroirOuvert(null);
+      });
+    return () => {
+      vivant = false;
+    };
+  }, []);
+
   const [step, setStep] = useState<"payment" | "tips" | "receipt">("payment");
   const [payments, setPayments] = useState<Payment[]>([]);
   const [showLoyaltyExpansion, setShowLoyaltyExpansion] = useState(false);
@@ -291,6 +320,19 @@ export function ChargeModal({
 
         {step === "payment" && (
           <>
+            {/* Averti AVANT la composition du paiement : le serveur refusera
+                une vente en especes sans tiroir ouvert. */}
+            {tiroirOuvert === false && (
+              <div
+                role="alert"
+                className="mb-4 rounded-[var(--radius-card)] border border-rose/50 bg-rose-soft px-4 py-3 text-sm text-prune"
+              >
+                <strong>La caisse est fermée.</strong> Ouvre-la avant
+                d&apos;encaisser en espèces — sinon cet argent n&apos;apparaîtra
+                pas dans le rapport de fin de journée. Carte et virement restent
+                possibles.
+              </div>
+            )}
             <p className="ds-display text-3xl text-prune mb-1">{formatDT(totals.total)}</p>
             <p className="text-sm text-prune/70 mb-6">
               Restant: <span className="font-semibold">{formatDT(remaining)}</span>
@@ -340,14 +382,23 @@ export function ChargeModal({
 
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-6">
               {(["CASH", "CARD", "TRANSFER", "OTHER"] as Method[]).map((m) => {
-                const disabled = !online && m === "CARD";
+                // Especes bloquees tiroir ferme : mieux vaut un bouton inerte
+                // qu'un clic qui echoue au moment de valider.
+                const especesBloquees = m === "CASH" && tiroirOuvert === false;
+                const disabled = (!online && m === "CARD") || especesBloquees;
                 return (
                   <button
                     key={m}
                     type="button"
                     disabled={disabled}
                     onClick={() => addPayment(m)}
-                    title={disabled ? "Carte indisponible hors ligne" : ""}
+                    title={
+                      especesBloquees
+                        ? "Ouvre la caisse pour encaisser en espèces"
+                        : disabled
+                          ? "Carte indisponible hors ligne"
+                          : ""
+                    }
                     className="ds-press ds-focus min-h-[56px] rounded-[var(--radius-card)] border border-hairline bg-white text-base text-prune hover:border-rose disabled:opacity-40"
                   >
                     {METHOD_LABELS[m]}
