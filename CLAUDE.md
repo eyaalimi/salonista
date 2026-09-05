@@ -462,6 +462,71 @@ Seule exception conservée : le **point du logo**, signe graphique et non texte.
   marque que les salons dont **toutes** les offres publiées sont des tests, et
   signale les cas mixtes sans y toucher — ils demandent une décision humaine.
 
+### 20. La place de marché est fermée : `MARKETPLACE_PUBLIQUE`
+
+Salonista lance **d'abord sa caisse**, gratuitement. Le drapeau
+[src/lib/flags.ts](src/lib/flags.ts) tient cette décision en un seul endroit.
+
+**Ce qu'il ferme** (`MARKETPLACE_PUBLIQUE = false`) :
+
+| Route | Comportement |
+|---|---|
+| `/` | sert la **landing de la caisse** au lieu du fil d'offres |
+| `/offres`, `/offre/[id]`, `/salon/[id]`, `/pro` | `redirect("/")` |
+| `/sitemap.xml` | n'annonce plus que `/` et `/pos-start` |
+| `/robots.txt` | interdit `/offres`, `/offre/`, `/salon/`, `/pro` |
+| `<BottomNav>` | ne rend rien — ses quatre entrées mènent à la place de marché |
+
+**Ce qui reste ouvert dans les deux cas** : `/login`, `/register`,
+`/salon-pin`, `/pos-start` et **toute la caisse** (`/pos/*`). Des salons s'en
+servent déjà en production — les fermer couperait des clients payants… enfin,
+des clients tout court, la caisse étant gratuite.
+
+**Le `redirect()` est placé avant tout accès Prisma**, dans le corps de la
+page. C'est ce qui permet à `npm run build` de prérendre `/sitemap.xml` sans
+base accessible.
+
+**Rouvrir la place de marché**, dans l'ordre :
+
+1. Passer `MARKETPLACE_PUBLIQUE` à `true`.
+2. Remettre [src/components/legacy/marketplace-home.tsx](src/components/legacy/marketplace-home.tsx)
+   en `src/app/page.tsx` (l'ancienne accueil, **conservée intacte** exprès — ne
+   la « nettoyez » pas et ne la supprimez pas, c'est la seule copie).
+3. Retirer l'import de `landing.css` du nouveau `page.tsx`.
+
+Aucune donnée n'est touchée entre-temps : offres, salons et réservations
+restent en base, seules les **routes publiques** changent.
+
+#### La landing elle-même
+
+- **Trois fichiers**, tous dans [src/components/landing/](src/components/landing/) :
+  `content.ts` (textes), `landing-client.tsx` (structure), `landing.css` (style).
+- **Aucun texte en dur dans le JSX.** Toute chaîne ajoutée doit l'être en `fr`
+  **et** en `ar` — y compris les valeurs chiffrées qui contiennent un mot
+  (« 5 min », « 0 DT » deviennent « 5 دقايق », « 0 دينار »). Seuls les nombres
+  purs (`35,000`) et le nom de marque restent dans le JSX.
+- **`landing.css` habille `.lp-root`, jamais `<body>`** : le layout racine pose
+  déjà `bg-brand-cream` et `text-brand-ink` en classes Tailwind, qu'une règle
+  d'élément ne battrait pas.
+- **Le `clip-path` de révélation vit sur l'`<img>` interne**, jamais sur
+  l'élément observé par `IntersectionObserver`. Un élément entièrement masqué
+  par `clip-path` est rapporté comme **jamais visible** : il ne se révélerait
+  plus jamais.
+- **La parallaxe ne se branche pas directement sur `resize`.** Elle passe par
+  un intermédiaire qui vérifie `prefers-reduced-motion` — sinon une rotation de
+  téléphone réécrivait les transformations chez quelqu'un qui a demandé moins
+  d'animations.
+- **Deux ors, deux usages.** `--champagne` (#C0A177) ne mesure que **2,21:1**
+  sur l'ivoire : il est réservé aux **traits** (ligne du curseur comparatif).
+  Tout ce qui se **lit** — numéros des fonctionnalités, coches, marqueur de la
+  FAQ, pourtour du curseur — prend `--or-texte` (#836237, **5,04:1**).
+- Les images de `/images/lp/` passent par des `<img>` simples. En les
+  convertissant en `next/image`, `localPatterns` couvre déjà `/images/**` mais
+  il faudra fournir `width`/`height`, ou `fill` + `sizes`.
+- Deux polices arrivent par `<link>` dans [src/app/layout.tsx](src/app/layout.tsx) :
+  **Instrument Serif** (titres) et **Noto Kufi Arabic** (version arabe).
+  Aucune n'est au catalogue `next/font/google` de cette version.
+
 ---
 
 ## Repo layout

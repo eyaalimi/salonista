@@ -1,5 +1,7 @@
 import Link from "next/link";
 import { HomeNav } from "@/components/home-nav";
+import { redirect } from "next/navigation";
+import { MARKETPLACE_PUBLIQUE } from "@/lib/flags";
 
 export const metadata = {
   title: "Votre salon sur Salonista — inscription gratuite",
@@ -23,6 +25,9 @@ const ETAPES = [
 ];
 
 export default function ProPage() {
+  // Place de marche fermee au public : voir src/lib/flags.ts.
+  if (!MARKETPLACE_PUBLIQUE) redirect("/");
+
   return (
     <div className="min-h-screen bg-creme">
       <HomeNav />

@@ -6,6 +6,8 @@ import { HomeNav } from "@/components/home-nav";
 import { Chip } from "@/components/ui/chip";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
+import { redirect } from "next/navigation";
+import { MARKETPLACE_PUBLIQUE } from "@/lib/flags";
 
 export const metadata: Metadata = {
   title: "Offres",
@@ -31,6 +33,9 @@ export default async function OffresPage({
 }: {
   searchParams: Promise<{ q?: string; category?: string }>;
 }) {
+  // Place de marche fermee au public : voir src/lib/flags.ts.
+  if (!MARKETPLACE_PUBLIQUE) redirect("/");
+
   const { q, category } = await searchParams;
 
   const offers = await prisma.offer.findMany({

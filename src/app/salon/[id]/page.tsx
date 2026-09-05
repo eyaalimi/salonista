@@ -1,9 +1,10 @@
 import type { Metadata } from "next";
 import { prisma } from "@/lib/prisma";
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import { SalonClient } from "./salon-client";
 import { isValidOpeningHours, type OpeningHours } from "@/lib/opening-hours";
 import { buildSalonJsonLd, categoryLabel } from "@/lib/salon-jsonld";
+import { MARKETPLACE_PUBLIQUE } from "@/lib/flags";
 
 interface Props {
   params: Promise<{ id: string }>;
@@ -76,6 +77,9 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 }
 
 export default async function SalonPage({ params }: Props) {
+  // Place de marche fermee au public : voir src/lib/flags.ts.
+  if (!MARKETPLACE_PUBLIQUE) redirect("/");
+
   const { id } = await params;
 
   const provider = await prisma.providerProfile.findUnique({

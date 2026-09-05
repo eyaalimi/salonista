@@ -1,8 +1,19 @@
 import { MetadataRoute } from "next";
 import { prisma } from "@/lib/prisma";
+import { MARKETPLACE_PUBLIQUE } from "@/lib/flags";
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const baseUrl = process.env.NEXTAUTH_URL || "https://salonista.tn";
+
+  // Place de marche fermee : on n'annonce que ce qui est reellement servi.
+  // Annoncer /offres ou /salon/xxx enverrait Google sur des redirections, ce
+  // qui gaspille le budget de crawl d'un domaine encore jeune.
+  if (!MARKETPLACE_PUBLIQUE) {
+    return [
+      { url: baseUrl, lastModified: new Date(), changeFrequency: "weekly", priority: 1 },
+      { url: `${baseUrl}/pos-start`, lastModified: new Date(), changeFrequency: "monthly", priority: 0.9 },
+    ];
+  }
 
   // Static pages
   const staticPages: MetadataRoute.Sitemap = [
