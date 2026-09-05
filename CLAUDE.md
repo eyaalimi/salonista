@@ -523,9 +523,22 @@ restent en base, seules les **routes publiques** changent.
 - Les images de `/images/lp/` passent par des `<img>` simples. En les
   convertissant en `next/image`, `localPatterns` couvre déjà `/images/**` mais
   il faudra fournir `width`/`height`, ou `fill` + `sizes`.
-- Deux polices arrivent par `<link>` dans [src/app/layout.tsx](src/app/layout.tsx) :
-  **Instrument Serif** (titres) et **Noto Kufi Arabic** (version arabe).
-  Aucune n'est au catalogue `next/font/google` de cette version.
+- **La landing écrit avec les polices de la charte**, pas les siennes. Ses
+  titres prennent `--font-display` (**Bricolage Grotesque**, poids 800,
+  `letter-spacing: -.02em` — les valeurs de `.ds-display`) et son interface
+  `--font-archivo`. Elle déclarait auparavant **Instrument Serif**, qui
+  n'existait nulle part ailleurs dans Salonista : la page d'accueil n'avait
+  pas la même écriture que le reste du site.
+- **Le nom de marque est l'exception** : `.brand` suit
+  [`<Logo>`](src/components/logo.tsx) et reste en **Playfair**, « salon » en
+  italique et le point en rose (`#FF5C8A` sur fond sombre, `#C42A5A` une fois
+  la barre devenue ivoire). Le passer en Bricolage donnerait deux logos
+  différents selon la page.
+- **Noto Kufi Arabic** arrive par `<link>` dans [src/app/layout.tsx](src/app/layout.tsx) :
+  Bricolage n'a pas de glyphes arabes. Une **seule** règle `:is(…)` bascule
+  tout ce qui est en police d'affichage — y ajouter chaque nouveau sélecteur
+  qui pose `font-family:var(--display)`, sinon la ligne concernée change de
+  police au milieu du texte arabe.
 
 ---
 

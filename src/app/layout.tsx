@@ -102,13 +102,14 @@ export default function RootLayout({
           href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,700;12..96,800&display=swap"
           rel="stylesheet"
         />
-        {/* Instrument Serif porte les titres de la page d'accueil, Noto Kufi
-            Arabic sa version arabe. Aucune des deux n'est au catalogue de
-            next/font/google dans cette version de Next — meme raison que pour
-            Bricolage ci-dessus. */}
+        {/* Noto Kufi Arabic sert la version arabe de la page d'accueil :
+            Bricolage n'a pas de glyphes arabes. Pas au catalogue de
+            next/font/google dans cette version — meme raison que ci-dessus.
+            (Instrument Serif a ete retiree : la landing ecrit desormais avec
+            les polices de la charte.) */}
         {/* eslint-disable-next-line @next/next/no-page-custom-font */}
         <link
-          href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Noto+Kufi+Arabic:wght@300;400;600;700&display=swap"
+          href="https://fonts.googleapis.com/css2?family=Noto+Kufi+Arabic:wght@400;600;700&display=swap"
           rel="stylesheet"
         />
       </head>

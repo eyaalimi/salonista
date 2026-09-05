@@ -21,9 +21,15 @@
   --or-texte:#836237;
   --hair:#DED3C6;
 
-  --serif:"Instrument Serif", "Times New Roman", serif;
-  --ui:"Archivo", system-ui, -apple-system, sans-serif;
-  --ar:"Noto Kufi Arabic", "Archivo", system-ui, sans-serif;
+  /* Les polices de la charte, reprises telles quelles de globals.css.
+     La landing declarait « Instrument Serif », qui n'existe nulle part
+     ailleurs dans Salonista : la page d'accueil n'ecrivait donc pas comme le
+     reste du site. --font-display et --font-archivo sont poses par le layout
+     racine, les valeurs litterales servent de repli si cette feuille est lue
+     hors de ce contexte. */
+  --display:var(--font-display, "Bricolage Grotesque"), system-ui, sans-serif;
+  --ui:var(--font-archivo, "Archivo"), system-ui, -apple-system, sans-serif;
+  --ar:"Noto Kufi Arabic", var(--font-archivo, "Archivo"), system-ui, sans-serif;
 
   --gut:clamp(20px, 5vw, 76px);
   --maxw:1400px;
@@ -50,16 +56,30 @@ a{color:inherit;text-decoration:none;}
 
 .shell{max-width:var(--maxw);margin:0 auto;padding-inline:var(--gut);}
 
-h1,h2,h3,.serif{
-  font-family:var(--serif);font-weight:400;letter-spacing:-.012em;
-  line-height:1.02;margin:0;text-wrap:balance;
+/* Poids 800 et -.02em : les valeurs de .ds-display dans globals.css.
+   Bricolage est une grotesque, pas un serif fin — garder le 400 et le
+   -.012em de l'ancienne police donnait des titres maigres et laches. */
+h1,h2,h3,.display{
+  font-family:var(--display);font-weight:800;letter-spacing:-.02em;
+  line-height:1.04;margin:0;text-wrap:balance;
 }
-body[data-lang="ar"] h1,body[data-lang="ar"] h2,body[data-lang="ar"] h3,body[data-lang="ar"] .serif{
-  font-family:var(--ar);font-weight:300;line-height:1.35;letter-spacing:0;
+/* En arabe, TOUT ce qui est en police d'affichage bascule sur Noto Kufi :
+   Bricolage n'a pas de glyphes arabes, et le navigateur retomberait sur une
+   police systeme au hasard. La liste couvre chaque regle qui pose
+   `font-family:var(--display)` — une omission se verrait tout de suite, la
+   ligne concernee changeant de police au milieu du texte. */
+body[data-lang="ar"] :is(h1,h2,h3,.display,.hero-chip .l3,.fig b,.feat .no,.feat .ph,.cmp h3,summary){
+  font-family:var(--ar);font-weight:700;line-height:1.35;letter-spacing:0;
 }
-h1{font-size:clamp(3rem,8.2vw,7rem);}
-h2{font-size:clamp(2.3rem,5.4vw,4.4rem);}
-.serif-md{font-size:clamp(1.6rem,3.2vw,2.5rem);}
+/* Une grotesque grasse occupe plus de place qu'un serif fin a taille egale :
+   sans cette reduction, le titre du hero deborde sur un petit portable.
+   `overflow-wrap` est le garde-fou : le plus long mot des titres actuels fait
+   huit lettres, mais une copie future plus longue couperait la mise en page
+   au lieu de passer a la ligne. */
+h1,h2,h3{overflow-wrap:break-word;}
+h1{font-size:clamp(2.6rem,7.2vw,6rem);}
+h2{font-size:clamp(2rem,4.8vw,3.8rem);}
+.display-md{font-size:clamp(1.6rem,3.2vw,2.5rem);}
 
 .eyebrow{
   font-family:var(--ui);font-size:.68rem;font-weight:500;
@@ -103,7 +123,22 @@ body[data-lang="ar"] .btn{font-family:var(--ar);text-transform:none;letter-spaci
 }
 .nav.solid{background:rgba(247,243,237,.86);backdrop-filter:blur(14px) saturate(1.1);border-bottom-color:var(--hair);}
 .nav-in{display:flex;align-items:center;gap:22px;height:78px;}
-.brand{font-family:var(--serif);font-size:1.65rem;letter-spacing:-.02em;color:#F7F3ED;transition:color .55s var(--ease);direction:ltr;}
+/* Le nom de marque suit <Logo> (src/components/logo.tsx) et NON les titres :
+   il est en Playfair partout ailleurs sur le site, avec le « salon » en
+   italique et le point en rose. Le passer en Bricolage ferait deux logos
+   differents selon la page. */
+.brand{
+  font-family:var(--font-playfair, Georgia), serif;font-weight:500;
+  font-size:1.65rem;letter-spacing:-.015em;line-height:1.05;
+  color:#F7F3ED;transition:color .55s var(--ease);direction:ltr;
+}
+/* Le point rose de la marque. #FF5C8A est un FOND ailleurs dans la charte,
+   mais ici il est pose sur l'espresso : 5,70:1, largement au-dessus du seuil.
+   Sur la barre devenue ivoire il retomberait a 2,94:1, d'ou la bascule sur le
+   rose fonce (#C42A5A, 4,97:1) — la meme regle que <Logo>. */
+.brand b{font-weight:inherit;color:#FF5C8A;}
+.nav.solid .brand b{color:#C42A5A;}
+.foot .brand b{color:#C42A5A;}
 .nav.solid .brand{color:var(--espresso);}
 .brand em{font-style:italic;}
 .nav-links{display:none;gap:30px;margin-inline:auto;}
@@ -160,7 +195,7 @@ body[data-lang="ar"] .nav-links a{text-transform:none;letter-spacing:0;font-size
 .hero-chip .l1{font-size:.62rem;letter-spacing:.22em;text-transform:uppercase;color:var(--taupe);}
 .hero-chip .l2{display:flex;justify-content:space-between;gap:18px;margin-top:10px;font-size:.9rem;}
 .hero-chip .l2 b{font-weight:500;}
-.hero-chip .l3{margin-top:12px;padding-top:10px;border-top:1px solid var(--hair);display:flex;justify-content:space-between;font-family:var(--serif);font-size:1.25rem;}
+.hero-chip .l3{margin-top:12px;padding-top:10px;border-top:1px solid var(--hair);display:flex;justify-content:space-between;font-family:var(--display);font-weight:700;font-size:1.25rem;}
 .hero-chip .ok{margin-top:12px;font-size:.7rem;letter-spacing:.16em;text-transform:uppercase;color:var(--bordeaux);}
 
 /* ---------------- rythme des sections ---------------- */
@@ -197,8 +232,7 @@ body[data-lang="ar"] .chips span{letter-spacing:0;text-transform:none;font-size:
 .figures{display:grid;grid-template-columns:repeat(2,1fr);gap:1px;background:var(--hair);margin-top:44px;border:1px solid var(--hair);}
 @media(min-width:720px){.figures{grid-template-columns:repeat(4,1fr);}}
 .fig{background:var(--ivoire);padding:26px 20px;}
-.fig b{display:block;font-family:var(--serif);font-weight:400;font-size:clamp(2rem,3.6vw,2.9rem);line-height:1;}
-body[data-lang="ar"] .fig b{font-family:var(--ar);font-weight:300;}
+.fig b{display:block;font-family:var(--display);font-weight:800;letter-spacing:-.02em;font-size:clamp(1.8rem,3.2vw,2.6rem);line-height:1;}
 .fig span{display:block;margin-top:10px;font-size:.74rem;letter-spacing:.14em;text-transform:uppercase;color:var(--taupe);}
 body[data-lang="ar"] .fig span{letter-spacing:0;text-transform:none;font-size:.88rem;}
 
@@ -212,11 +246,11 @@ body[data-lang="ar"] .fig span{letter-spacing:0;text-transform:none;font-size:.8
   transition:opacity .6s var(--ease);
 }
 @media(min-width:1000px){.feat{opacity:.34;}.feat.live{opacity:1;}}
-.feat .no{font-family:var(--serif);font-size:1rem;color:var(--or-texte);letter-spacing:.04em;}
+.feat .no{font-family:var(--display);font-weight:700;font-size:1rem;color:var(--or-texte);letter-spacing:.04em;}
 .feat .lb{font-size:.68rem;letter-spacing:.24em;text-transform:uppercase;color:var(--taupe);grid-column:2;}
 body[data-lang="ar"] .feat .lb{letter-spacing:0;text-transform:none;font-size:.86rem;}
-.feat .ph{grid-column:2;margin-top:8px;font-family:var(--serif);font-size:clamp(1.45rem,2.6vw,2.15rem);line-height:1.1;}
-body[data-lang="ar"] .feat .ph{font-family:var(--ar);font-weight:300;line-height:1.4;}
+.feat .ph{grid-column:2;margin-top:8px;font-family:var(--display);font-weight:700;letter-spacing:-.02em;font-size:clamp(1.3rem,2.3vw,1.9rem);line-height:1.15;}
+body[data-lang="ar"] .feat .ph{line-height:1.4;}
 .feat .inline-img{grid-column:1/-1;margin-top:18px;}
 @media(min-width:1000px){.feat .inline-img{display:none;}}
 .feat .inline-img img{width:100%;aspect-ratio:4/3;object-fit:cover;}
@@ -246,7 +280,7 @@ body[data-lang="ar"] .feat .ph{font-family:var(--ar);font-weight:300;line-height
 /* Le contenu du volet sombre garde la largeur du conteneur : sans cela il
    se re-mettrait en page a chaque pixel de deplacement du curseur. */
 .cmp-a .inner{width:calc(100vw - 2 * var(--gut));max-width:calc(var(--maxw) - 2 * var(--gut));}
-.cmp h3{font-family:var(--serif);font-size:clamp(1.5rem,2.8vw,2.1rem);}
+.cmp h3{font-family:var(--display);font-weight:800;letter-spacing:-.02em;font-size:clamp(1.35rem,2.4vw,1.9rem);}
 .cmp .tag{font-size:.66rem;letter-spacing:.24em;text-transform:uppercase;opacity:.65;}
 body[data-lang="ar"] .cmp .tag{letter-spacing:0;text-transform:none;font-size:.86rem;}
 .cmp ul{list-style:none;margin:26px 0 0;padding:0;display:grid;gap:13px;max-width:32ch;}
@@ -282,9 +316,8 @@ details{border-bottom:1px solid var(--hair);}
 details:first-of-type{border-top:1px solid var(--hair);}
 summary{
   list-style:none;cursor:pointer;padding-block:24px;display:flex;justify-content:space-between;gap:20px;
-  align-items:baseline;font-family:var(--serif);font-size:clamp(1.1rem,2vw,1.45rem);
+  align-items:baseline;font-family:var(--display);font-weight:700;letter-spacing:-.015em;font-size:clamp(1.02rem,1.8vw,1.3rem);
 }
-body[data-lang="ar"] summary{font-family:var(--ar);font-weight:300;}
 summary::-webkit-details-marker{display:none;}
 summary::after{content:"+";font-family:var(--ui);font-size:1rem;color:var(--or-texte);flex:none;}
 details[open] summary::after{content:"–";}
