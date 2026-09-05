@@ -19,10 +19,15 @@ export default function LandingClient() {
   const t = CONTENU[langue];
   const rtl = langue === "ar";
 
-  /* ---------- langue ---------- */
+  /* ---------- langue ----------
+     La langue retenue ne peut etre lue qu'APRES l'hydratation : le serveur
+     n'a pas acces a localStorage, et l'initialiser au premier rendu ferait
+     diverger le HTML serveur du HTML client. Le setState en effet est donc
+     le seul chemin correct ici, malgre la regle React 19. */
   useEffect(() => {
     try {
       const enregistree = localStorage.getItem(CLE_LANGUE);
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       if (enregistree === "ar" || enregistree === "fr") setLangue(enregistree);
     } catch {
       /* navigation privee, stockage bloque : on reste en francais */
@@ -119,14 +124,22 @@ export default function LandingClient() {
       }
     };
 
+    /* `dessiner` n'est jamais branche directement sur `resize` : il ecrirait
+       des transformations de parallaxe a chaque rotation de telephone, y
+       compris quand l'utilisateur a demande moins d'animations — le seul
+       chemin qui respecte ce reglage passe par `auScroll`. */
+    const auResize = () => {
+      if (!reduit) dessiner();
+    };
+
     auScroll();
     if (!reduit) dessiner();
     window.addEventListener("scroll", auScroll, { passive: true });
-    window.addEventListener("resize", dessiner);
+    window.addEventListener("resize", auResize);
 
     return () => {
       window.removeEventListener("scroll", auScroll);
-      window.removeEventListener("resize", dessiner);
+      window.removeEventListener("resize", auResize);
       ioReveal?.disconnect();
       ioFeat?.disconnect();
       document.body.classList.remove("js");
@@ -362,19 +375,19 @@ export default function LandingClient() {
               </p>
               <div className="figures rv d3">
                 <div className="fig">
-                  <b>5 min</b>
+                  <b>{t.figv1}</b>
                   <span>{t.fig1}</span>
                 </div>
                 <div className="fig">
-                  <b>0 DT</b>
+                  <b>{t.figv2}</b>
                   <span>{t.fig2}</span>
                 </div>
                 <div className="fig">
-                  <b>24/7</b>
+                  <b>{t.figv3}</b>
                   <span>{t.fig3}</span>
                 </div>
                 <div className="fig">
-                  <b>100%</b>
+                  <b>{t.figv4}</b>
                   <span>{t.fig4}</span>
                 </div>
               </div>

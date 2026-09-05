@@ -11,7 +11,14 @@
   --bordeaux:#6B1F35;
   --bordeaux-2:#571828;
   --blush:#E7D3CD;
+  /* Or clair, reserve aux TRAITS et aux BORDURES : #C0A177 ne mesure que
+     2,21:1 sur l'ivoire, tres loin des 4,5:1 exiges pour du texte et des
+     3:1 exiges pour un pictogramme. */
   --champagne:#C0A177;
+  /* Sa version lisible, pour tout ce qui se LIT : numeros des
+     fonctionnalites, coches de « Pourquoi », marqueur +/− de la FAQ.
+     5,04:1 sur l'ivoire, 4,55:1 sur l'ivoire fonce. */
+  --or-texte:#836237;
   --hair:#DED3C6;
 
   --serif:"Instrument Serif", "Times New Roman", serif;
@@ -112,12 +119,19 @@ body[data-lang="ar"] .nav-links a{text-transform:none;letter-spacing:0;font-size
 .nav.solid .nav-links a:hover{color:var(--espresso);}
 .lang{display:flex;align-items:center;gap:2px;margin-inline-start:auto;flex:none;}
 @media(min-width:1080px){.lang{margin-inline-start:0;}}
+/* 44px et non 40 : c'est le SEUL bouton de la barre sous 760px, la ou le
+   « Commencer gratuitement » est masque. En dessous de 44, on rate la cible
+   au pouce. */
 .lang button{
   background:none;border:0;cursor:pointer;font-family:var(--ui);font-size:.74rem;font-weight:500;
-  letter-spacing:.12em;padding:9px 10px;color:rgba(247,243,237,.55);transition:color .4s var(--ease);min-height:40px;
+  letter-spacing:.12em;padding:11px 12px;color:rgba(247,243,237,.72);transition:color .4s var(--ease);min-height:44px;
 }
 .lang button[data-l="ar"]{font-family:var(--ar);font-size:.86rem;letter-spacing:0;}
-.nav.solid .lang button{color:rgba(110,97,87,.65);}
+/* Le taupe plein, pas une version transparente : a .65 d'opacite la langue
+   non selectionnee tombait a 2,38:1 sur l'ivoire — illisible une fois la
+   barre devenue opaque, alors que c'est le bouton qui sert a changer de
+   langue. */
+.nav.solid .lang button{color:var(--taupe);}
 .lang button[aria-pressed="true"]{color:#F7F3ED;}
 .nav.solid .lang button[aria-pressed="true"]{color:var(--espresso);}
 .lang i{width:1px;height:13px;background:currentColor;opacity:.3;}
@@ -198,7 +212,7 @@ body[data-lang="ar"] .fig span{letter-spacing:0;text-transform:none;font-size:.8
   transition:opacity .6s var(--ease);
 }
 @media(min-width:1000px){.feat{opacity:.34;}.feat.live{opacity:1;}}
-.feat .no{font-family:var(--serif);font-size:1rem;color:var(--champagne);letter-spacing:.04em;}
+.feat .no{font-family:var(--serif);font-size:1rem;color:var(--or-texte);letter-spacing:.04em;}
 .feat .lb{font-size:.68rem;letter-spacing:.24em;text-transform:uppercase;color:var(--taupe);grid-column:2;}
 body[data-lang="ar"] .feat .lb{letter-spacing:0;text-transform:none;font-size:.86rem;}
 .feat .ph{grid-column:2;margin-top:8px;font-family:var(--serif);font-size:clamp(1.45rem,2.6vw,2.15rem);line-height:1.1;}
@@ -243,7 +257,10 @@ body[data-lang="ar"] .cmp .tag{letter-spacing:0;text-transform:none;font-size:.8
 .handle{position:absolute;top:0;bottom:0;left:50%;width:1px;background:var(--champagne);z-index:5;cursor:ew-resize;}
 .handle::before{
   content:"";position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);
-  width:52px;height:52px;border-radius:50%;background:var(--ivoire);border:1px solid var(--champagne);
+  /* Bordure a l'or lisible : le curseur glisse aussi au-dessus du volet
+     ivoire, ou un contour a 2,21:1 disparaissait. WCAG demande 3:1 pour le
+     pourtour d'un composant. */
+  width:52px;height:52px;border-radius:50%;background:var(--ivoire);border:1px solid var(--or-texte);
   box-shadow:0 12px 28px -12px rgba(36,28,24,.5);
 }
 .handle::after{
@@ -257,7 +274,7 @@ body[data-lang="ar"] .cmp .tag{letter-spacing:0;text-transform:none;font-size:.8
 @media(min-width:960px){.why{grid-template-columns:1fr 1fr;align-items:start;}}
 .why-list{border-top:1px solid var(--hair);}
 .why-list div{display:flex;gap:16px;align-items:baseline;padding-block:19px;border-bottom:1px solid var(--hair);font-size:1rem;font-weight:300;}
-.why-list i{font-style:normal;color:var(--champagne);flex:none;}
+.why-list i{font-style:normal;color:var(--or-texte);flex:none;}
 
 /* ---------------- faq ---------------- */
 .faq{max-width:840px;margin-inline:auto;margin-top:clamp(38px,5vw,64px);}
@@ -269,7 +286,7 @@ summary{
 }
 body[data-lang="ar"] summary{font-family:var(--ar);font-weight:300;}
 summary::-webkit-details-marker{display:none;}
-summary::after{content:"+";font-family:var(--ui);font-size:1rem;color:var(--champagne);flex:none;}
+summary::after{content:"+";font-family:var(--ui);font-size:1rem;color:var(--or-texte);flex:none;}
 details[open] summary::after{content:"–";}
 details p{padding-bottom:26px;max-width:62ch;color:var(--taupe);font-weight:300;}
 
