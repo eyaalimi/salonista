@@ -235,8 +235,10 @@ export default function LandingClient() {
     <div className="lp-root">
       <header className={`nav${navOpaque ? " solid" : ""}`}>
         <div className="shell nav-in">
+          {/* Meme composition que <Logo> : « salon » en italique, « ista »,
+              puis le point rose. */}
           <a className="brand" href="#top">
-            <em>salon</em>ista.
+            <em>salon</em>ista<b>.</b>
           </a>
           <nav className="nav-links">
             <a href="#produit">{t.nav1}</a>
@@ -571,7 +573,7 @@ export default function LandingClient() {
         <footer>
           <div className="shell foot">
             <span className="brand">
-              <em>salon</em>ista.
+              <em>salon</em>ista<b>.</b>
             </span>
             <span>{t.foot}</span>
             <a href="/login">{t.deja}</a>
