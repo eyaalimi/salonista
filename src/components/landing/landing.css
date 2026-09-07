@@ -281,13 +281,15 @@ body[data-lang="ar"] .onglets-barre button{
    ferait sauter toute la page, les captures n'ayant pas le meme rapport. */
 .onglets-vue{
   margin-top:clamp(22px,3vw,36px);background:var(--ivoire-2);
-  border:1px solid var(--hair);padding:clamp(10px,1.6vw,18px);
+  border:1px solid var(--hair);padding:clamp(8px,1.2vw,14px);
   display:flex;align-items:center;justify-content:center;
-  min-height:clamp(220px,42vw,560px);
+  /* Cale sur le rapport reel des captures (~1540x950, soit 1,6). Sans cette
+     hauteur, des tableaux de treize lignes seraient reduits a une bande
+     illisible. */
+  aspect-ratio:16/10;
 }
 .onglets-vue img{
-  max-width:100%;max-height:clamp(200px,40vw,524px);
-  width:auto;height:auto;object-fit:contain;
+  max-width:100%;max-height:100%;width:auto;height:auto;object-fit:contain;
 }
 
 /* ---------------- editorial ---------------- */
