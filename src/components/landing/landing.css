@@ -68,7 +68,7 @@ h1,h2,h3,.display{
    police systeme au hasard. La liste couvre chaque regle qui pose
    `font-family:var(--display)` — une omission se verrait tout de suite, la
    ligne concernee changeant de police au milieu du texte. */
-body[data-lang="ar"] :is(h1,h2,h3,.display,.hero-chip .l3,.fig b,.feat .no,.feat .ph,.cmp h3,summary){
+body[data-lang="ar"] :is(h1,h2,h3,.display,.fig b,.feat .no,.feat .ph,.cmp h3,summary){
   font-family:var(--ar);font-weight:700;line-height:1.35;letter-spacing:0;
 }
 /* Une grotesque grasse occupe plus de place qu'un serif fin a taille egale :
@@ -116,12 +116,18 @@ body[data-lang="ar"] .btn{font-family:var(--ar);text-transform:none;letter-spaci
 [dir="rtl"] .btn:hover .arrowc{transform:scaleX(-1) translateX(5px);}
 
 /* ---------------- nav ---------------- */
+/* La barre est opaque DES LE DEPART.
+   Elle etait transparente sur un hero sombre plein ecran, et ne devenait
+   ivoire qu'au defilement. Le hero est desormais clair : du texte creme sur
+   du creme aurait ete illisible pendant les 60 premiers pixels. La classe
+   `solid` reste posee par le JS et n'ajoute plus qu'une ombre de separation. */
 .nav{
   position:fixed;top:0;left:0;right:0;z-index:90;
-  transition:background-color .55s var(--ease),border-color .55s var(--ease),backdrop-filter .55s;
+  background:rgba(247,243,237,.92);backdrop-filter:blur(14px) saturate(1.1);
   border-bottom:1px solid transparent;
+  transition:border-color .55s var(--ease);
 }
-.nav.solid{background:rgba(247,243,237,.86);backdrop-filter:blur(14px) saturate(1.1);border-bottom-color:var(--hair);}
+.nav.solid{border-bottom-color:var(--hair);}
 .nav-in{display:flex;align-items:center;gap:22px;height:78px;}
 /* Le nom de marque suit <Logo> (src/components/logo.tsx) et NON les titres :
    il est en Playfair partout ailleurs sur le site, avec le « salon » en
@@ -130,25 +136,20 @@ body[data-lang="ar"] .btn{font-family:var(--ar);text-transform:none;letter-spaci
 .brand{
   font-family:var(--font-playfair, Georgia), serif;font-weight:500;
   font-size:1.65rem;letter-spacing:-.015em;line-height:1.05;
-  color:#F7F3ED;transition:color .55s var(--ease);direction:ltr;
+  color:var(--espresso);direction:ltr;
 }
-/* Le point rose de la marque. #FF5C8A est un FOND ailleurs dans la charte,
-   mais ici il est pose sur l'espresso : 5,70:1, largement au-dessus du seuil.
-   Sur la barre devenue ivoire il retomberait a 2,94:1, d'ou la bascule sur le
-   rose fonce (#C42A5A, 4,97:1) — la meme regle que <Logo>. */
-.brand b{font-weight:inherit;color:#FF5C8A;}
-.nav.solid .brand b{color:#C42A5A;}
-.foot .brand b{color:#C42A5A;}
-.nav.solid .brand{color:var(--espresso);}
+/* Le point de la marque en rose FONCE : la barre est ivoire, ou le rose vif
+   ne mesure que 2,94:1. Meme regle que <Logo>. */
+.brand b{font-weight:inherit;color:#C42A5A;}
 .brand em{font-style:italic;}
 .nav-links{display:none;gap:30px;margin-inline:auto;}
 @media(min-width:1080px){.nav-links{display:flex;}}
 .nav-links a{
   font-size:.76rem;font-weight:500;letter-spacing:.14em;text-transform:uppercase;
-  color:rgba(247,243,237,.82);transition:color .55s var(--ease);position:relative;padding-block:6px;
+  color:var(--taupe);transition:color .55s var(--ease);position:relative;padding-block:6px;
 }
 body[data-lang="ar"] .nav-links a{text-transform:none;letter-spacing:0;font-size:.92rem;}
-.nav.solid .nav-links a{color:var(--taupe);}
+.nav-links a:hover{color:var(--espresso);}
 .nav-links a::after{content:"";position:absolute;left:0;right:0;bottom:0;height:1px;background:currentColor;transform:scaleX(0);transform-origin:left;transition:transform .45s var(--ease);}
 .nav-links a:hover::after{transform:scaleX(1);}
 .nav.solid .nav-links a:hover{color:var(--espresso);}
@@ -157,46 +158,57 @@ body[data-lang="ar"] .nav-links a{text-transform:none;letter-spacing:0;font-size
 /* 44px et non 40 : c'est le SEUL bouton de la barre sous 760px, la ou le
    « Commencer gratuitement » est masque. En dessous de 44, on rate la cible
    au pouce. */
+/* Le taupe plein, pas une version transparente : a .65 d'opacite la langue
+   non selectionnee tombait a 2,38:1 sur l'ivoire, alors que c'est le bouton
+   qui sert precisement a changer de langue. */
 .lang button{
   background:none;border:0;cursor:pointer;font-family:var(--ui);font-size:.74rem;font-weight:500;
-  letter-spacing:.12em;padding:11px 12px;color:rgba(247,243,237,.72);transition:color .4s var(--ease);min-height:44px;
+  letter-spacing:.12em;padding:11px 12px;color:var(--taupe);transition:color .4s var(--ease);min-height:44px;
 }
 .lang button[data-l="ar"]{font-family:var(--ar);font-size:.86rem;letter-spacing:0;}
-/* Le taupe plein, pas une version transparente : a .65 d'opacite la langue
-   non selectionnee tombait a 2,38:1 sur l'ivoire — illisible une fois la
-   barre devenue opaque, alors que c'est le bouton qui sert a changer de
-   langue. */
-.nav.solid .lang button{color:var(--taupe);}
-.lang button[aria-pressed="true"]{color:#F7F3ED;}
-.nav.solid .lang button[aria-pressed="true"]{color:var(--espresso);}
+.lang button[aria-pressed="true"]{color:var(--espresso);}
 .lang i{width:1px;height:13px;background:currentColor;opacity:.3;}
 .nav .btn{min-height:44px;padding:0 1.2rem;font-size:.72rem;display:none;}
 @media(min-width:760px){.nav .btn{display:inline-flex;}}
 
-/* ---------------- hero ---------------- */
-.hero{position:relative;min-height:min(90vh,780px);display:flex;align-items:flex-end;overflow:hidden;background:var(--espresso-2);}
-.hero-media{position:absolute;inset:-8% 0 -8% 0;z-index:0;will-change:transform;}
-.hero-media img{width:100%;height:100%;object-fit:cover;object-position:center 42%;}
-.hero-scrim{
-  position:absolute;inset:0;z-index:1;
-  background:linear-gradient(180deg, rgba(26,19,16,.62) 0%, rgba(26,19,16,.22) 34%, rgba(26,19,16,.55) 72%, rgba(26,19,16,.86) 100%);
+/* ---------------- hero ----------------
+   Deux colonnes sur fond clair : le texte a gauche, la capture de la caisse
+   a droite. Remplace une photo de spa plein ecran avec texte creme par
+   dessus — le visiteur voyait un institut de beaute la ou Salonista vend un
+   logiciel. */
+.hero{
+  position:relative;background:var(--ivoire);
+  padding-block:calc(78px + clamp(40px,6vw,84px)) clamp(48px,7vw,90px);
 }
-.hero-in{position:relative;z-index:2;width:100%;padding-block:150px 60px;color:#F7F3ED;}
-.hero .eyebrow{color:rgba(247,243,237,.72);}
-.hero h1{margin-top:22px;max-width:15ch;color:#fff;}
-.hero h1 em{font-style:italic;color:var(--blush);}
-.hero-cta{display:flex;flex-wrap:wrap;gap:14px;margin-top:36px;}
-.hero-foot{display:flex;flex-wrap:wrap;gap:10px 34px;margin-top:44px;padding-top:22px;border-top:1px solid rgba(247,243,237,.2);font-size:.82rem;color:rgba(247,243,237,.7);font-weight:300;}
-.hero-chip{
-  position:absolute;z-index:3;inset-inline-end:var(--gut);bottom:96px;background:var(--ivoire);color:var(--espresso);
-  padding:16px 20px;min-width:224px;display:none;box-shadow:0 30px 60px -30px rgba(0,0,0,.6);
+.hero-in{display:grid;gap:clamp(38px,5vw,64px);align-items:center;}
+@media(min-width:900px){
+  .hero-in{grid-template-columns:1.05fr .95fr;}
 }
-@media(min-width:1080px){.hero-chip{display:block;}}
-.hero-chip .l1{font-size:.62rem;letter-spacing:.22em;text-transform:uppercase;color:var(--taupe);}
-.hero-chip .l2{display:flex;justify-content:space-between;gap:18px;margin-top:10px;font-size:.9rem;}
-.hero-chip .l2 b{font-weight:500;}
-.hero-chip .l3{margin-top:12px;padding-top:10px;border-top:1px solid var(--hair);display:flex;justify-content:space-between;font-family:var(--display);font-weight:700;font-size:1.25rem;}
-.hero-chip .ok{margin-top:12px;font-size:.7rem;letter-spacing:.16em;text-transform:uppercase;color:var(--bordeaux);}
+.hero .eyebrow{color:var(--taupe);}
+.hero h1{margin-top:20px;max-width:14ch;color:var(--espresso);}
+/* L'italique du serif d'origine n'existe pas en Bricolage : c'est la couleur
+   qui porte l'accent, pas l'inclinaison. */
+.hero h1 em{font-style:normal;color:var(--bordeaux);}
+.hero-cta{display:flex;flex-wrap:wrap;gap:14px;margin-top:34px;}
+.hero-foot{
+  display:flex;flex-wrap:wrap;gap:10px 30px;margin-top:40px;padding-top:20px;
+  border-top:1px solid var(--hair);font-size:.85rem;color:var(--taupe);
+}
+
+/* La maquette de telephone. Pas d'image de cadre : une bordure epaisse et un
+   grand rayon suffisent, et rien ne se casse si la capture change de taille. */
+.hero-appareil{display:flex;justify-content:center;}
+@media(min-width:900px){.hero-appareil{justify-content:flex-end;}}
+.hero-telephone{
+  width:min(72vw,240px);border-radius:34px;padding:8px;
+  background:var(--espresso);
+  box-shadow:0 40px 80px -40px rgba(36,28,24,.5);
+}
+@media(min-width:760px){.hero-telephone{width:280px;}}
+@media(min-width:1080px){.hero-telephone{width:320px;}}
+/* La capture est montree ENTIERE : la barre du panier, en bas, est ce qui
+   prouve qu'une vente est en cours — la rogner viderait l'image de son sens. */
+.hero-telephone img{width:100%;height:auto;border-radius:26px;display:block;}
 
 /* ---------------- rythme des sections ---------------- */
 section{position:relative;}
@@ -355,7 +367,7 @@ body.js .rvl.in img{clip-path:inset(0 0 0 0);transition:clip-path 1.35s var(--ea
 @media(prefers-reduced-motion:reduce){
   html{scroll-behavior:auto;}
   body.js .rv,body.js .rvl,body.js .rvl img{opacity:1!important;transform:none!important;clip-path:none!important;transition:none!important;}
-  .hero-media,.emo-media,.float,.edito-img img{transform:none!important;}
+  .emo-media,.float,.edito-img img{transform:none!important;}
   .feat{opacity:1!important;}
   *{animation:none!important;}
 }

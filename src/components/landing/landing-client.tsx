@@ -215,14 +215,38 @@ export default function LandingClient() {
     ? { right: `${coupe}%`, left: "auto" }
     : { left: `${coupe}%`, right: "auto" };
 
+  /**
+   * Chaque ligne montre le PRODUIT quand une capture existe.
+   *
+   * « Clientes » illustrait sa ligne avec une photo d'ongles portant un
+   * filigrane visible (« INDIRA_GANDI1994 ») : une image prise sur le compte
+   * de quelqu'un, sans licence, publiee sur salonista.tn. Elle passe sur la
+   * vraie liste des clientes et de leurs points.
+   *
+   * « Stock » garde une photo d'ambiance faute de capture : aucun ecran de
+   * l'inventaire n'a ete photographie. `img: null` masque la vignette plutot
+   * que d'illustrer le stock par un massage des pieds, ce que faisait
+   * f-stock.jpg.
+   */
   const FONCTIONS = [
-    { no: "01", label: t.l1, phrase: t.s1, img: "f-encaissement" },
-    { no: "02", label: t.l2, phrase: t.s2, img: "f-agenda" },
-    { no: "03", label: t.l3, phrase: t.s3, img: "f-clients" },
-    { no: "04", label: t.l4, phrase: t.s4, img: "f-stock" },
+    { no: "01", label: t.l1, phrase: t.s1, img: "ui-caisse" },
+    { no: "02", label: t.l2, phrase: t.s2, img: "ui-agenda" },
+    { no: "03", label: t.l3, phrase: t.s3, img: "ui-fidelite" },
+    { no: "04", label: t.l4, phrase: t.s4, img: null },
     { no: "05", label: t.l5, phrase: t.s5, img: "ui-stats" },
     { no: "06", label: t.l6, phrase: t.s6, img: "ui-tiroir" },
   ];
+
+  /* Les captures a empiler dans le panneau lateral, sans doublon. */
+  const IMAGES_ETAGE = [...new Set(FONCTIONS.map((f) => f.img).filter(Boolean))];
+
+  /* Sur une ligne sans capture, on GARDE la derniere affichee : le panneau
+     deviendrait sinon un rectangle vide au milieu de la lecture. */
+  const imageActive =
+    FONCTIONS.slice(0, featureActive + 1)
+      .map((f) => f.img)
+      .filter(Boolean)
+      .pop() ?? IMAGES_ETAGE[0];
 
   const QUESTIONS = [
     { q: t.q1, a: t.a1 },
@@ -269,50 +293,60 @@ export default function LandingClient() {
 
       <div id="top">
         {/* ---------------- hero ---------------- */}
+        {/**
+         * Le hero montre le PRODUIT, pas une photo d'ambiance.
+         *
+         * Il affichait une photo de spa plein ecran : un visiteur y lisait
+         * « institut de beaute haut de gamme » la ou Salonista vend une
+         * caisse. La vraie capture de l'application, sur un telephone,
+         * repond en une seconde a « c'est quoi ? ».
+         *
+         * La carte flottante qui simulait un encaissement a disparu : la
+         * capture montre desormais un vrai panier a 100,000 TND, et deux
+         * totaux differents cote a cote se contredisaient.
+         */}
         <section className="hero">
-          <div className="hero-media" data-par="0.16">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src={`${IMG}hero.jpg`} alt="" width={1760} height={990} fetchPriority="high" />
-          </div>
-          <div className="hero-scrim" />
           <div className="shell hero-in">
-            <p className="eyebrow rv in">{t.eyebrow}</p>
-            <h1 className="rv in d1">
-              <span>{t.h1a}</span>
-              <br />
-              <em>{t.h1b}</em>
-            </h1>
-            <div className="hero-cta rv in d2">
-              <a className="btn btn-solid" href="/pos-start">
-                <span>{t.cta}</span>
-                <span className="arrowc">→</span>
-              </a>
-              <a className="btn btn-ghost" href="#produit">
-                <span>{t.cta2}</span>
-              </a>
+            <div className="hero-texte">
+              <p className="eyebrow rv in">{t.eyebrow}</p>
+              <h1 className="rv in d1">
+                <span>{t.h1a}</span>
+                <br />
+                <em>{t.h1b}</em>
+              </h1>
+              <div className="hero-cta rv in d2">
+                <a className="btn btn-solid" href="/pos-start">
+                  <span>{t.cta}</span>
+                  <span className="arrowc">→</span>
+                </a>
+                <a className="btn btn-line" href="#produit">
+                  <span>{t.cta2}</span>
+                </a>
+              </div>
+              <div className="hero-foot rv in d3">
+                <span>{t.hf1}</span>
+                <span>{t.hf2}</span>
+                <span>{t.hf3}</span>
+              </div>
             </div>
-            <div className="hero-foot rv in d3">
-              <span>{t.hf1}</span>
-              <span>{t.hf2}</span>
-              <span>{t.hf3}</span>
+
+            {/* `fetchPriority="high"` : c'est l'image la plus grande de la
+                zone visible au chargement, donc celle que mesure le LCP. */}
+            <div className="hero-appareil rv in d2">
+              <div className="hero-telephone">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={`${IMG}ui-caisse-mobile.webp`}
+                  srcSet={`${IMG}ui-caisse-mobile-400.webp 400w, ${IMG}ui-caisse-mobile-800.webp 800w, ${IMG}ui-caisse-mobile-1256.webp 1256w`}
+                  sizes="(min-width: 1080px) 320px, (min-width: 760px) 280px, 240px"
+                  alt={t.altCaisse}
+                  width={628}
+                  height={984}
+                  fetchPriority="high"
+                />
+              </div>
             </div>
           </div>
-          <aside className="hero-chip rv in d3">
-            <div className="l1">{t.chip1}</div>
-            <div className="l2">
-              <span>{t.chip2}</span>
-              <b>35,000</b>
-            </div>
-            <div className="l2">
-              <span>{t.chip3}</span>
-              <b>25,000</b>
-            </div>
-            <div className="l3">
-              <span>{t.chip4}</span>
-              <span>60,000</span>
-            </div>
-            <div className="ok">{t.chip5}</div>
-          </aside>
         </section>
 
         {/* ---------------- la caisse ---------------- */}
@@ -418,23 +452,25 @@ export default function LandingClient() {
                     <span className="no">{f.no}</span>
                     <span className="lb">{f.label}</span>
                     <p className="ph">{f.phrase}</p>
-                    <div className="inline-img">
-                      {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <img src={`${IMG}${f.img}.jpg`} alt="" loading="lazy" />
-                    </div>
+                    {f.img && (
+                      <div className="inline-img">
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img src={`${IMG}${f.img}.jpg`} alt="" loading="lazy" />
+                      </div>
+                    )}
                   </article>
                 ))}
               </div>
 
               <div className="feat-stage">
-                {FONCTIONS.map((f, i) => (
+                {IMAGES_ETAGE.map((src) => (
                   // eslint-disable-next-line @next/next/no-img-element
                   <img
-                    key={f.no}
-                    src={`${IMG}${f.img}.jpg`}
+                    key={src}
+                    src={`${IMG}${src}.jpg`}
                     alt=""
                     loading="lazy"
-                    className={featureActive === i ? "on" : undefined}
+                    className={imageActive === src ? "on" : undefined}
                   />
                 ))}
               </div>
