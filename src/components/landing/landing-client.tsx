@@ -349,11 +349,15 @@ export default function LandingClient() {
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
                 src={`${IMG}${HERO_PHOTO}.webp`}
-                srcSet={`${IMG}${HERO_PHOTO}-800.webp 800w, ${IMG}${HERO_PHOTO}-1200.webp 1200w, ${IMG}${HERO_PHOTO}-1600.webp 1600w`}
+                /* La source fait 1376 px de large : la variante « -1600 »
+                   plafonne donc a 1376. L'annoncer a sa VRAIE largeur, sinon
+                   le navigateur la croit plus grande et telecharge 68 Ko la
+                   ou 56 auraient suffi. */
+                srcSet={`${IMG}${HERO_PHOTO}-800.webp 800w, ${IMG}${HERO_PHOTO}-1200.webp 1200w, ${IMG}${HERO_PHOTO}-1600.webp 1376w`}
                 sizes="(min-width: 900px) 52vw, 100vw"
                 alt={t.altHero}
                 width={1376}
-                height={918}
+                height={768}
                 fetchPriority="high"
               />
             </div>
