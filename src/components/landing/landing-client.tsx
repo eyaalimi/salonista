@@ -429,24 +429,50 @@ export default function LandingClient() {
                 ))}
               </div>
 
-              {/* Un seul volet est monte a la fois : les captures pesent
-                  jusqu'a 110 Ko et les charger toutes d'un coup retarderait
-                  le reste de la page. `loading="lazy"` fait le reste. */}
-              <div
-                className="onglets-vue"
-                role="tabpanel"
-                id={`volet-${ecranActif}`}
-                aria-labelledby={`onglet-${ecranActif}`}
-              >
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img
-                  key={ECRANS[ecranActif].img}
-                  src={`${IMG}${ECRANS[ecranActif].img}.webp`}
-                  srcSet={`${IMG}${ECRANS[ecranActif].img}-760.webp 760w, ${IMG}${ECRANS[ecranActif].img}-1100.webp 1100w, ${IMG}${ECRANS[ecranActif].img}-1540.webp 1540w`}
-                  sizes="(min-width: 1400px) 1300px, 92vw"
-                  alt={ECRANS[ecranActif].alt}
-                  loading="lazy"
-                />
+              {/* Les fleches vivent HORS du `tabpanel` : ce role ne doit
+                  contenir que le contenu du volet, pas ses commandes.
+                  Elles bouclent — depuis le premier ecran, « precedent » ramene
+                  au dernier. Desactivees aux extremites, deux boutons grises
+                  sur huit ecrans donneraient l'impression d'une panne. */}
+              <div className="onglets-vue">
+                <button
+                  type="button"
+                  className="onglets-fleche prec"
+                  aria-label={t.ecranPrec}
+                  onClick={() =>
+                    setEcranActif((i) => (i - 1 + ECRANS.length) % ECRANS.length)
+                  }
+                >
+                  ‹
+                </button>
+
+                {/* Un seul volet est monte a la fois : les captures pesent
+                    jusqu'a 80 Ko et les charger toutes d'un coup retarderait
+                    le reste de la page. */}
+                <div
+                  role="tabpanel"
+                  id={`volet-${ecranActif}`}
+                  aria-labelledby={`onglet-${ecranActif}`}
+                >
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    key={ECRANS[ecranActif].img}
+                    src={`${IMG}${ECRANS[ecranActif].img}.webp`}
+                    srcSet={`${IMG}${ECRANS[ecranActif].img}-760.webp 760w, ${IMG}${ECRANS[ecranActif].img}-1100.webp 1100w, ${IMG}${ECRANS[ecranActif].img}-1540.webp 1540w`}
+                    sizes="(min-width: 1400px) 1300px, 92vw"
+                    alt={ECRANS[ecranActif].alt}
+                    loading="lazy"
+                  />
+                </div>
+
+                <button
+                  type="button"
+                  className="onglets-fleche suiv"
+                  aria-label={t.ecranSuiv}
+                  onClick={() => setEcranActif((i) => (i + 1) % ECRANS.length)}
+                >
+                  ›
+                </button>
               </div>
             </div>
           </div>

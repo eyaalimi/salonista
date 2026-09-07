@@ -277,20 +277,42 @@ body[data-lang="ar"] .onglets-barre button{
 .onglets-barre button:hover{color:var(--espresso);}
 .onglets-barre button.on{color:var(--bordeaux);border-bottom-color:var(--bordeaux);}
 
-/* Le cadre garde une hauteur FIXE : sans elle, chaque changement d'onglet
-   ferait sauter toute la page, les captures n'ayant pas le meme rapport. */
+/* Pas de cadre : ni fond, ni bordure, ni marge interieure. La capture porte
+   deja le sien — celui de l'application — et l'entourer d'un second en
+   ajoutait un dans le cadre.
+   `position:relative` sert d'ancrage aux fleches. */
 .onglets-vue{
-  margin-top:clamp(22px,3vw,36px);background:var(--ivoire-2);
-  border:1px solid var(--hair);padding:clamp(8px,1.2vw,14px);
+  position:relative;margin-top:clamp(22px,3vw,36px);
   display:flex;align-items:center;justify-content:center;
-  /* Cale sur le rapport reel des captures (~1540x950, soit 1,6). Sans cette
-     hauteur, des tableaux de treize lignes seraient reduits a une bande
-     illisible. */
-  aspect-ratio:16/10;
 }
-.onglets-vue img{
-  max-width:100%;max-height:100%;width:auto;height:auto;object-fit:contain;
+/* Le volet porte la largeur : les fleches sont posees par-dessus en absolu et
+   ne doivent pas la reduire. */
+.onglets-vue [role="tabpanel"]{width:100%;}
+.onglets-vue img{width:100%;height:auto;display:block;}
+
+/* Fleches de part et d'autre de la capture, comme sur un carrousel. Elles
+   DOUBLENT les onglets plutot que de les remplacer : les onglets nomment les
+   ecrans, les fleches permettent de les parcourir sans viser un libelle. */
+.onglets-fleche{
+  position:absolute;top:50%;transform:translateY(-50%);z-index:2;
+  display:none;align-items:center;justify-content:center;
+  width:48px;height:48px;cursor:pointer;
+  background:#fff;border:1px solid var(--hair);color:var(--espresso);
+  font-size:1.1rem;line-height:1;
+  box-shadow:0 10px 30px -14px rgba(36,28,24,.45);
+  transition:border-color .3s var(--ease),color .3s var(--ease);
 }
+/* Masquees sous 900px : elles chevaucheraient la capture, deja etroite, et la
+   barre d'onglets defile tres bien au doigt. */
+@media(min-width:900px){.onglets-fleche{display:flex;}}
+.onglets-fleche:hover{border-color:var(--bordeaux);color:var(--bordeaux);}
+/* Debordent a moitie hors de la capture, comme sur les carrousels : posees
+   dedans, elles masqueraient la barre laterale de l'application. */
+.onglets-fleche.prec{inset-inline-start:-24px;}
+.onglets-fleche.suiv{inset-inline-end:-24px;}
+/* Les chevrons sont des caracteres, pas des icones : ils doivent pointer dans
+   le sens de la lecture. */
+[dir="rtl"] .onglets-fleche{transform:translateY(-50%) scaleX(-1);}
 
 /* ---------------- editorial ---------------- */
 .edito{display:grid;gap:clamp(36px,5vw,70px);align-items:center;}
