@@ -65,10 +65,6 @@ export const CONTENU = {
       "Le catalogue des produits : nom, référence, prix, stock restant et état de chaque article.",
     altEcranTiroir:
       "Le tiroir de caisse ouvert : fond de caisse, ventes en espèces, ventes par carte, pourboires et dépenses.",
-    e2: "Le cœur du salon",
-    h3a: "Plus qu'une caisse.",
-    h3b: "Le cœur de votre salon.",
-    p3: "Vos rendez-vous, vos prestations, vos clientes et vos ventes réunis dans un seul écran — pensé pour le comptoir d'un salon, pas pour un bureau.",
     // Les VALEURS des quatre chiffres vivent ici, pas dans le JSX : « min »
     // et « DT » sont des mots, et restaient en francais a cote d'un libelle
     // arabe.
@@ -95,8 +91,6 @@ export const CONTENU = {
     s5: "Comprenez ce qui fait grandir votre salon.",
     l6: "Hors connexion",
     s6: "Votre caisse fonctionne même sans internet.",
-    h5a: "Vous prenez soin de vos clientes.",
-    h5b: "Nous nous occupons du reste.",
     e4: "La différence",
     h6a: "Le même salon,",
     h6b: "deux journées.",
@@ -196,10 +190,6 @@ export const CONTENU = {
       "قائمة المنتوجات : الاسم، المرجع، الثمن، الستوك الباقي وحالة كل منتوج.",
     altEcranTiroir:
       "التيروار محلول : فوند الكاس، مبيعات كاش، مبيعات كارط، البقشيش والمصاريف.",
-    e2: "قلب الصالون",
-    h3a: "أكثر من كاس.",
-    h3b: "قلب صالونك.",
-    p3: "مواعيدك، خدماتك، حرفاؤك ومبيعاتك في شاشة وحدة — مصمّمة لكونتوار صالون، موش لمكتب.",
     figv1: "5 دقايق",
     fig1: "باش تبدا",
     figv2: "0 دينار",
@@ -223,8 +213,6 @@ export const CONTENU = {
     s5: "افهم شنوّة يكبّر صالونك.",
     l6: "بلا أنترنات",
     s6: "الكاس تخدم حتى بلا أنترنات.",
-    h5a: "انت تعتني بحرفاءك.",
-    h5b: "واحنا نتكفّلو بالباقي.",
     e4: "الفرق",
     h6a: "نفس الصالون،",
     h6b: "نهارين مختلفين.",

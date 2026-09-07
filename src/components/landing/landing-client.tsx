@@ -61,9 +61,6 @@ export default function LandingClient() {
   /* ---------- navigation opaque au defilement ---------- */
   const [navOpaque, setNavOpaque] = useState(false);
 
-  /* ---------- revelations, parallaxe, fonctionnalites ---------- */
-  const [featureActive, setFeatureActive] = useState(0);
-
   /* ---------- onglets des ecrans de la caisse ---------- */
   const [ecranActif, setEcranActif] = useState(0);
 
@@ -93,22 +90,6 @@ export default function LandingClient() {
       });
     } else {
       document.querySelectorAll(".rv, .rvl").forEach((el) => el.classList.add("in"));
-    }
-
-    /* L'image des fonctionnalites suit la ligne en cours de lecture. */
-    let ioFeat: IntersectionObserver | null = null;
-    if ("IntersectionObserver" in window) {
-      ioFeat = new IntersectionObserver(
-        (entrees) => {
-          for (const e of entrees) {
-            if (!e.isIntersecting) continue;
-            const i = Number((e.target as HTMLElement).dataset.i);
-            if (!Number.isNaN(i)) setFeatureActive(i);
-          }
-        },
-        { rootMargin: "-45% 0px -45% 0px", threshold: 0 },
-      );
-      document.querySelectorAll(".feat").forEach((el) => ioFeat?.observe(el));
     }
 
     /* Parallaxe : une seule lecture du layout par frame. */
@@ -152,7 +133,6 @@ export default function LandingClient() {
       window.removeEventListener("scroll", auScroll);
       window.removeEventListener("resize", auResize);
       ioReveal?.disconnect();
-      ioFeat?.disconnect();
       document.body.classList.remove("js");
     };
   }, []);
@@ -226,29 +206,16 @@ export default function LandingClient() {
     ? { right: `${coupe}%`, left: "auto" }
     : { left: `${coupe}%`, right: "auto" };
 
-  /**
-   * Chaque ligne montre le PRODUIT quand une capture existe.
-   *
-   * « Clientes » illustrait sa ligne avec une photo d'ongles portant un
-   * filigrane visible (« INDIRA_GANDI1994 ») : une image prise sur le compte
-   * de quelqu'un, sans licence, publiee sur salonista.tn. Elle passe sur la
-   * vraie liste des clientes et de leurs points.
-   *
-   * « Stock » garde une photo d'ambiance faute de capture : aucun ecran de
-   * l'inventaire n'a ete photographie. `img: null` masque la vignette plutot
-   * que d'illustrer le stock par un massage des pieds, ce que faisait
-   * f-stock.jpg.
-   */
-  /* Le nom de fichier porte son extension : les captures d'origine sont en
-     .jpg, les nouvelles en .webp. La coder en dur ici produisait un 404 des
-     qu'un fichier changeait de format. */
+  /* Six cartes, sans illustration : les captures de la caisse sont montrees
+     juste au-dessus, en grand et nommees. Les repeter ici en vignettes
+     n'apprenait rien et faisait charger six images de plus. */
   const FONCTIONS = [
-    { no: "01", label: t.l1, phrase: t.s1, img: "ui-caisse-mobile.webp" },
-    { no: "02", label: t.l2, phrase: t.s2, img: "ecran-rdv.webp" },
-    { no: "03", label: t.l3, phrase: t.s3, img: "ecran-clientes.webp" },
-    { no: "04", label: t.l4, phrase: t.s4, img: "ecran-produits.webp" },
-    { no: "05", label: t.l5, phrase: t.s5, img: "ecran-salon.webp" },
-    { no: "06", label: t.l6, phrase: t.s6, img: "ecran-tiroir.webp" },
+    { no: "01", label: t.l1, phrase: t.s1 },
+    { no: "02", label: t.l2, phrase: t.s2 },
+    { no: "03", label: t.l3, phrase: t.s3 },
+    { no: "04", label: t.l4, phrase: t.s4 },
+    { no: "05", label: t.l5, phrase: t.s5 },
+    { no: "06", label: t.l6, phrase: t.s6 },
   ];
 
   /**
@@ -271,17 +238,6 @@ export default function LandingClient() {
     { label: t.ecProduits, img: "ecran-produits", alt: t.altEcranProduits },
     { label: t.ecTiroir, img: "ecran-tiroir", alt: t.altEcranTiroir },
   ];
-
-  /* Les captures a empiler dans le panneau lateral, sans doublon. */
-  const IMAGES_ETAGE = [...new Set(FONCTIONS.map((f) => f.img).filter(Boolean))];
-
-  /* Sur une ligne sans capture, on GARDE la derniere affichee : le panneau
-     deviendrait sinon un rectangle vide au milieu de la lecture. */
-  const imageActive =
-    FONCTIONS.slice(0, featureActive + 1)
-      .map((f) => f.img)
-      .filter(Boolean)
-      .pop() ?? IMAGES_ETAGE[0];
 
   const QUESTIONS = [
     { q: t.q1, a: t.a1 },
@@ -475,43 +431,27 @@ export default function LandingClient() {
                 </button>
               </div>
             </div>
-          </div>
-        </section>
 
-        {/* ---------------- editorial ---------------- */}
-        <section className="sec" style={{ paddingTop: 0 }}>
-          <div className="shell edito">
-            <div className="edito-img rvl">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src={`${IMG}editorial.jpg`} alt="" width={630} height={1120} loading="lazy" data-par="0.05" />
-            </div>
-            <div>
-              <p className="eyebrow rv">{t.e2}</p>
-              <h2 className="rv d1" style={{ marginTop: 18 }}>
-                <span>{t.h3a}</span>
-                <br />
-                <em style={{ fontStyle: "italic", color: "var(--bordeaux)" }}>{t.h3b}</em>
-              </h2>
-              <p className="lede rv d2" style={{ marginTop: 26 }}>
-                {t.p3}
-              </p>
-              <div className="figures rv d3">
-                <div className="fig">
-                  <b>{t.figv1}</b>
-                  <span>{t.fig1}</span>
-                </div>
-                <div className="fig">
-                  <b>{t.figv2}</b>
-                  <span>{t.fig2}</span>
-                </div>
-                <div className="fig">
-                  <b>{t.figv3}</b>
-                  <span>{t.fig3}</span>
-                </div>
-                <div className="fig">
-                  <b>{t.figv4}</b>
-                  <span>{t.fig4}</span>
-                </div>
+            {/* Les quatre chiffres vivaient dans la section « Plus qu'une
+                caisse », supprimee. « 0 DT pour demarrer » est un argument de
+                vente, pas de la decoration : ils suivent maintenant les
+                captures, la ou le visiteur vient de voir le produit. */}
+            <div className="figures rv">
+              <div className="fig">
+                <b>{t.figv1}</b>
+                <span>{t.fig1}</span>
+              </div>
+              <div className="fig">
+                <b>{t.figv2}</b>
+                <span>{t.fig2}</span>
+              </div>
+              <div className="fig">
+                <b>{t.figv3}</b>
+                <span>{t.fig3}</span>
+              </div>
+              <div className="fig">
+                <b>{t.figv4}</b>
+                <span>{t.fig4}</span>
               </div>
             </div>
           </div>
@@ -527,55 +467,20 @@ export default function LandingClient() {
               </h2>
             </div>
 
-            <div className="feat-wrap">
-              <div className="feat-list">
-                {FONCTIONS.map((f, i) => (
-                  <article
-                    key={f.no}
-                    className={`feat${featureActive === i ? " live" : ""}`}
-                    data-i={i}
-                  >
-                    <span className="no">{f.no}</span>
-                    <span className="lb">{f.label}</span>
-                    <p className="ph">{f.phrase}</p>
-                    {f.img && (
-                      <div className="inline-img">
-                        {/* eslint-disable-next-line @next/next/no-img-element */}
-                        <img src={`${IMG}${f.img}`} alt="" loading="lazy" />
-                      </div>
-                    )}
-                  </article>
-                ))}
-              </div>
-
-              <div className="feat-stage">
-                {IMAGES_ETAGE.map((src) => (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img
-                    key={src}
-                    src={`${IMG}${src}`}
-                    alt=""
-                    loading="lazy"
-                    className={imageActive === src ? "on" : undefined}
-                  />
-                ))}
-              </div>
+            {/* Six cartes, sans image : les captures de la caisse sont deja
+                montrees juste au-dessus, en grand et nommees. Les repeter ici
+                en vignettes n'apprenait rien et alourdissait la page.
+                Le panneau lateral qui suivait la lecture disparait avec
+                elles — son seul role etait d'afficher ces vignettes. */}
+            <div className="cartes rv">
+              {FONCTIONS.map((f) => (
+                <article key={f.no} className="carte">
+                  <span className="no">{f.no}</span>
+                  <span className="lb">{f.label}</span>
+                  <p className="ph">{f.phrase}</p>
+                </article>
+              ))}
             </div>
-          </div>
-        </section>
-
-        {/* ---------------- respiration ---------------- */}
-        <section className="emo">
-          <div className="emo-media" data-par="0.12">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src={`${IMG}emotion.jpg`} alt="" width={1500} height={1590} loading="lazy" />
-          </div>
-          <div className="emo-in">
-            <h2 className="rv">
-              <span>{t.h5a}</span>
-              <br />
-              <em>{t.h5b}</em>
-            </h2>
           </div>
         </section>
 
