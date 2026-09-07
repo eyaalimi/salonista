@@ -293,50 +293,60 @@ export default function LandingClient() {
 
       <div id="top">
         {/* ---------------- hero ---------------- */}
+        {/**
+         * Le hero montre le PRODUIT, pas une photo d'ambiance.
+         *
+         * Il affichait une photo de spa plein ecran : un visiteur y lisait
+         * « institut de beaute haut de gamme » la ou Salonista vend une
+         * caisse. La vraie capture de l'application, sur un telephone,
+         * repond en une seconde a « c'est quoi ? ».
+         *
+         * La carte flottante qui simulait un encaissement a disparu : la
+         * capture montre desormais un vrai panier a 100,000 TND, et deux
+         * totaux differents cote a cote se contredisaient.
+         */}
         <section className="hero">
-          <div className="hero-media" data-par="0.16">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src={`${IMG}hero.jpg`} alt="" width={1760} height={990} fetchPriority="high" />
-          </div>
-          <div className="hero-scrim" />
           <div className="shell hero-in">
-            <p className="eyebrow rv in">{t.eyebrow}</p>
-            <h1 className="rv in d1">
-              <span>{t.h1a}</span>
-              <br />
-              <em>{t.h1b}</em>
-            </h1>
-            <div className="hero-cta rv in d2">
-              <a className="btn btn-solid" href="/pos-start">
-                <span>{t.cta}</span>
-                <span className="arrowc">→</span>
-              </a>
-              <a className="btn btn-ghost" href="#produit">
-                <span>{t.cta2}</span>
-              </a>
+            <div className="hero-texte">
+              <p className="eyebrow rv in">{t.eyebrow}</p>
+              <h1 className="rv in d1">
+                <span>{t.h1a}</span>
+                <br />
+                <em>{t.h1b}</em>
+              </h1>
+              <div className="hero-cta rv in d2">
+                <a className="btn btn-solid" href="/pos-start">
+                  <span>{t.cta}</span>
+                  <span className="arrowc">→</span>
+                </a>
+                <a className="btn btn-line" href="#produit">
+                  <span>{t.cta2}</span>
+                </a>
+              </div>
+              <div className="hero-foot rv in d3">
+                <span>{t.hf1}</span>
+                <span>{t.hf2}</span>
+                <span>{t.hf3}</span>
+              </div>
             </div>
-            <div className="hero-foot rv in d3">
-              <span>{t.hf1}</span>
-              <span>{t.hf2}</span>
-              <span>{t.hf3}</span>
+
+            {/* `fetchPriority="high"` : c'est l'image la plus grande de la
+                zone visible au chargement, donc celle que mesure le LCP. */}
+            <div className="hero-appareil rv in d2">
+              <div className="hero-telephone">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={`${IMG}ui-caisse-mobile.webp`}
+                  srcSet={`${IMG}ui-caisse-mobile-400.webp 400w, ${IMG}ui-caisse-mobile-800.webp 800w, ${IMG}ui-caisse-mobile-1256.webp 1256w`}
+                  sizes="(min-width: 1080px) 320px, (min-width: 760px) 280px, 240px"
+                  alt={t.altCaisse}
+                  width={628}
+                  height={984}
+                  fetchPriority="high"
+                />
+              </div>
             </div>
           </div>
-          <aside className="hero-chip rv in d3">
-            <div className="l1">{t.chip1}</div>
-            <div className="l2">
-              <span>{t.chip2}</span>
-              <b>35,000</b>
-            </div>
-            <div className="l2">
-              <span>{t.chip3}</span>
-              <b>25,000</b>
-            </div>
-            <div className="l3">
-              <span>{t.chip4}</span>
-              <span>60,000</span>
-            </div>
-            <div className="ok">{t.chip5}</div>
-          </aside>
         </section>
 
         {/* ---------------- la caisse ---------------- */}
