@@ -66,17 +66,6 @@ export const CONTENU = {
       "Le catalogue des produits : nom, référence, prix, stock restant et état de chaque article.",
     altEcranTiroir:
       "Le tiroir de caisse ouvert : fond de caisse, ventes en espèces, ventes par carte, pourboires et dépenses.",
-    // Les VALEURS des quatre chiffres vivent ici, pas dans le JSX : « min »
-    // et « DT » sont des mots, et restaient en francais a cote d'un libelle
-    // arabe.
-    figv1: "5 min",
-    fig1: "Pour commencer",
-    figv2: "0 DT",
-    fig2: "Pour démarrer",
-    figv3: "24/7",
-    fig3: "Vos données accessibles",
-    figv4: "100%",
-    fig4: "Pensé pour les salons",
     e3: "Ce qu'elle sait faire",
     h4a: "Six gestes du",
     h4b: "quotidien.",
@@ -195,14 +184,6 @@ export const CONTENU = {
       "قائمة المنتوجات : الاسم، المرجع، الثمن، الستوك الباقي وحالة كل منتوج.",
     altEcranTiroir:
       "التيروار محلول : فوند الكاس، مبيعات كاش، مبيعات كارط، البقشيش والمصاريف.",
-    figv1: "5 دقايق",
-    fig1: "باش تبدا",
-    figv2: "0 دينار",
-    fig2: "باش تنطلق",
-    figv3: "24/7",
-    fig3: "معطياتك موجودة",
-    figv4: "100%",
-    fig4: "مصمّمة للصالونات",
     e3: "شنوّة تنجم تعمل",
     h4a: "ستة حركات",
     h4b: "كل يوم.",
