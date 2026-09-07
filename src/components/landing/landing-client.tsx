@@ -432,28 +432,6 @@ export default function LandingClient() {
               </div>
             </div>
 
-            {/* Les quatre chiffres vivaient dans la section « Plus qu'une
-                caisse », supprimee. « 0 DT pour demarrer » est un argument de
-                vente, pas de la decoration : ils suivent maintenant les
-                captures, la ou le visiteur vient de voir le produit. */}
-            <div className="figures rv">
-              <div className="fig">
-                <b>{t.figv1}</b>
-                <span>{t.fig1}</span>
-              </div>
-              <div className="fig">
-                <b>{t.figv2}</b>
-                <span>{t.fig2}</span>
-              </div>
-              <div className="fig">
-                <b>{t.figv3}</b>
-                <span>{t.fig3}</span>
-              </div>
-              <div className="fig">
-                <b>{t.figv4}</b>
-                <span>{t.fig4}</span>
-              </div>
-            </div>
           </div>
         </section>
 
