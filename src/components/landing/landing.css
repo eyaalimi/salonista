@@ -1,25 +1,33 @@
-/* Page d'accueil Salonista — direction editoriale ivoire / espresso / bordeaux.
+/* Page d'accueil Salonista.
    Cette feuille n'est importee que par src/app/page.tsx : elle ne part donc
-   que dans le bundle de la route "/", jamais dans le reste du site. */
+   que dans le bundle de la route "/", jamais dans le reste du site.
+
+   COULEURS : la page suivait sa propre direction (ivoire / espresso /
+   bordeaux / or), sans rapport avec le reste de Salonista. Elle prend
+   desormais la charte — creme, prune, rose, menthe — definie dans
+   globals.css. Les noms locaux sont conserves et REMAPPES : chaque regle plus
+   bas continue de fonctionner, et la bascule tient en un seul endroit.
+
+   Ratios verifies sur le creme : prune 15,40:1 ; prune-soft 7,82:1 ;
+   rose-fonce 5,15:1 ; menthe-deep 4,94:1. */
 
 :root{
-  --ivoire:#F7F3ED;
-  --ivoire-2:#EFE7DC;
-  --espresso:#241C18;
-  --espresso-2:#1A1310;
-  --taupe:#6E6157;
-  --bordeaux:#6B1F35;
-  --bordeaux-2:#571828;
-  --blush:#E7D3CD;
-  /* Or clair, reserve aux TRAITS et aux BORDURES : #C0A177 ne mesure que
-     2,21:1 sur l'ivoire, tres loin des 4,5:1 exiges pour du texte et des
-     3:1 exiges pour un pictogramme. */
-  --champagne:#C0A177;
-  /* Sa version lisible, pour tout ce qui se LIT : numeros des
-     fonctionnalites, coches de « Pourquoi », marqueur +/− de la FAQ.
-     5,04:1 sur l'ivoire, 4,55:1 sur l'ivoire fonce. */
-  --or-texte:#836237;
-  --hair:#DED3C6;
+  --ivoire:#FFF6F1;    /* creme — fond de page */
+  --ivoire-2:#FFE0E8;  /* rose-soft — fonds de blocs */
+  --espresso:#3A1024;  /* prune — texte principal */
+  --espresso-2:#2B0B1A; /* prune assombri — fonds sombres */
+  --taupe:#6B4157;     /* prune-soft — texte secondaire */
+  --bordeaux:#C42A5A;  /* rose-fonce — accent et texte d'accent */
+  --bordeaux-2:#A31F48; /* sa version survolee */
+  --blush:#FFE0E8;     /* rose-soft — accent sur fond sombre */
+  /* Le rose VIF (#FF5C8A) ne mesure que 2,76:1 sur le creme : c'est un FOND
+     de bouton, jamais du texte. Le prune s'y pose a 5,59:1. */
+  --rose-vif:#FF5C8A;
+  /* Menthe : reservee aux confirmations, comme dans la caisse. */
+  --menthe-deep:#1F7A5A;
+  /* Remplace l'or : tout ce qui se LIT en accent secondaire. */
+  --or-texte:#6B4157;
+  --hair:#EFE2DC;      /* hairline */
 
   /* Les polices de la charte, reprises telles quelles de globals.css.
      La landing declarait « Instrument Serif », qui n'existe nulle part
@@ -90,25 +98,26 @@ body[data-lang="ar"] .eyebrow{font-family:var(--ar);letter-spacing:0;text-transf
 .rule{height:1px;background:var(--hair);border:0;margin:0;}
 
 /* ---------------- boutons ---------------- */
+/* Boutons en pilule, comme partout dans Salonista (--radius-pill). Ils etaient
+   a angles droits, seuls de leur espece dans l'application.
+   Le remplissage vertical au survol disparait : la charte ne prevoit ni
+   animation d'apparition ni transformation de fond. */
 .btn{
   display:inline-flex;align-items:center;justify-content:center;gap:.7rem;
-  min-height:56px;padding:0 2rem;font-family:var(--ui);font-size:.9rem;font-weight:500;
-  letter-spacing:.06em;text-transform:uppercase;border:1px solid transparent;cursor:pointer;
-  position:relative;overflow:hidden;transition:color .5s var(--ease),border-color .5s var(--ease);
+  min-height:52px;padding:0 1.8rem;border-radius:999px;
+  font-family:var(--ui);font-size:.92rem;font-weight:600;
+  letter-spacing:.02em;border:1px solid transparent;cursor:pointer;
+  transition:background-color .3s var(--ease),color .3s var(--ease),border-color .3s var(--ease);
 }
-body[data-lang="ar"] .btn{font-family:var(--ar);text-transform:none;letter-spacing:0;font-size:.95rem;}
-.btn span{position:relative;z-index:1;}
-.btn::after{
-  content:"";position:absolute;inset:0;background:var(--bordeaux-2);
-  transform:scaleY(0);transform-origin:bottom;transition:transform .5s var(--ease);
-}
-.btn:hover::after{transform:scaleY(1);}
-.btn-solid{background:var(--bordeaux);color:#F7F3ED;}
-.btn-solid:hover{color:#fff;}
-.btn-line{border-color:currentColor;color:var(--espresso);}
-.btn-line:hover{color:#F7F3ED;}
-.btn-ghost{border-color:rgba(247,243,237,.45);color:#F7F3ED;}
-.btn-ghost:hover{color:#fff;}
+body[data-lang="ar"] .btn{font-family:var(--ar);letter-spacing:0;font-size:.98rem;}
+/* Rose VIF en fond, prune en texte : 5,59:1. Jamais de blanc dessus, qui
+   retomberait a 2,94:1. Une seule action rose par vue, regle de la charte. */
+.btn-solid{background:var(--rose-vif);color:var(--espresso);}
+.btn-solid:hover{background:#F94A7C;}
+.btn-line{border-color:var(--hair);background:#fff;color:var(--espresso);}
+.btn-line:hover{border-color:var(--bordeaux);color:var(--bordeaux);}
+.btn-ghost{border-color:rgba(255,246,241,.45);color:var(--ivoire);}
+.btn-ghost:hover{border-color:var(--ivoire);}
 .arrowc{transition:transform .5s var(--ease);}
 .btn:hover .arrowc{transform:translateX(5px);}
 [dir="rtl"] .btn:hover .arrowc{transform:translateX(-5px);}
@@ -123,7 +132,9 @@ body[data-lang="ar"] .btn{font-family:var(--ar);text-transform:none;letter-spaci
    `solid` reste posee par le JS et n'ajoute plus qu'une ombre de separation. */
 .nav{
   position:fixed;top:0;left:0;right:0;z-index:90;
-  background:rgba(247,243,237,.92);backdrop-filter:blur(14px) saturate(1.1);
+  /* Blanc, pas creme : la barre se detache du fond de page au lieu de s'y
+     fondre. */
+  background:rgba(255,255,255,.94);backdrop-filter:blur(14px) saturate(1.1);
   border-bottom:1px solid transparent;
   transition:border-color .55s var(--ease);
 }
@@ -358,7 +369,7 @@ body[data-lang="ar"] .carte .ph{line-height:1.45;}
 .cmp-b{background:var(--ivoire-2);color:var(--espresso);display:flex;justify-content:flex-end;}
 .cmp-b .inner{width:min(100%,420px);}
 @media(max-width:700px){.cmp-b .inner{width:min(100%,300px);}.cmp li{font-size:.9rem;}}
-.cmp-a{position:absolute;inset:0;background:var(--espresso);color:#EDE4DA;width:50%;overflow:hidden;}
+.cmp-a{position:absolute;inset:0;background:var(--espresso);color:rgba(255,246,241,.9);width:50%;overflow:hidden;}
 /* Le contenu du volet sombre garde la largeur du conteneur : sans cela il
    se re-mettrait en page a chaque pixel de deplacement du curseur. */
 .cmp-a .inner{width:calc(100vw - 2 * var(--gut));max-width:calc(var(--maxw) - 2 * var(--gut));}
@@ -368,8 +379,10 @@ body[data-lang="ar"] .cmp .tag{letter-spacing:0;text-transform:none;font-size:.8
 .cmp ul{list-style:none;margin:26px 0 0;padding:0;display:grid;gap:13px;max-width:32ch;}
 .cmp li{display:flex;gap:12px;font-size:.98rem;font-weight:300;}
 .cmp li i{font-style:normal;flex:none;width:14px;opacity:.55;}
-.cmp-a li i{color:#B08C8C;}
-.cmp-b li i{color:var(--bordeaux);}
+/* Le volet « avant » garde des tirets ternes ; le volet « avec Salonista »
+   coche en menthe, la couleur que la charte reserve aux confirmations. */
+.cmp-a li i{color:rgba(255,246,241,.5);}
+.cmp-b li i{color:var(--menthe-deep);}
 .handle{position:absolute;top:0;bottom:0;left:50%;width:1px;background:var(--champagne);z-index:5;cursor:ew-resize;}
 .handle::before{
   content:"";position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);
@@ -390,7 +403,8 @@ body[data-lang="ar"] .cmp .tag{letter-spacing:0;text-transform:none;font-size:.8
 @media(min-width:960px){.why{grid-template-columns:1fr 1fr;align-items:start;}}
 .why-list{border-top:1px solid var(--hair);}
 .why-list div{display:flex;gap:16px;align-items:baseline;padding-block:19px;border-bottom:1px solid var(--hair);font-size:1rem;font-weight:300;}
-.why-list i{font-style:normal;color:var(--or-texte);flex:none;}
+/* Menthe : la couleur que la charte reserve aux confirmations. */
+.why-list i{font-style:normal;color:var(--menthe-deep);flex:none;}
 
 /* ---------------- faq ---------------- */
 .faq{max-width:840px;margin-inline:auto;margin-top:clamp(38px,5vw,64px);}
@@ -406,12 +420,14 @@ details[open] summary::after{content:"–";}
 details p{padding-bottom:26px;max-width:62ch;color:var(--taupe);font-weight:300;}
 
 /* ---------------- final ---------------- */
-.final{background:var(--espresso);color:#F7F3ED;text-align:center;}
+/* Bloc de cloture sur fond prune. Le rose-soft porte l'accent : 11,6:1 sur le
+   prune, la ou le rose vif du bouton reste reserve a l'action. */
+.final{background:var(--espresso);color:var(--ivoire);text-align:center;}
 .final h2{color:#fff;max-width:18ch;margin-inline:auto;}
-.final h2 em{font-style:italic;color:var(--blush);}
-.final .lede{color:rgba(247,243,237,.7);margin:22px auto 0;text-align:center;}
+.final h2 em{font-style:normal;color:var(--blush);}
+.final .lede{color:rgba(255,246,241,.78);margin:22px auto 0;text-align:center;}
 .final .btn{margin-top:34px;}
-.final .fine{margin-top:20px;font-size:.74rem;letter-spacing:.16em;text-transform:uppercase;color:rgba(247,243,237,.45);}
+.final .fine{margin-top:20px;font-size:.74rem;letter-spacing:.16em;text-transform:uppercase;color:rgba(255,246,241,.6);}
 body[data-lang="ar"] .final .fine{letter-spacing:0;text-transform:none;font-size:.88rem;}
 
 footer{padding-block:38px 110px;}
@@ -420,7 +436,7 @@ footer{padding-block:38px 110px;}
 
 .sticky-cta{
   position:fixed;left:0;right:0;bottom:0;z-index:95;padding:12px var(--gut) calc(12px + env(safe-area-inset-bottom));
-  background:rgba(247,243,237,.94);backdrop-filter:blur(12px);border-top:1px solid var(--hair);
+  background:rgba(255,255,255,.96);backdrop-filter:blur(12px);border-top:1px solid var(--hair);
 }
 .sticky-cta .btn{width:100%;}
 @media(min-width:760px){.sticky-cta{display:none;}}

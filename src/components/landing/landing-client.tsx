@@ -351,7 +351,7 @@ export default function LandingClient() {
               <p className="eyebrow">{t.e1}</p>
               <h2>
                 <span>{t.h2a}</span>{" "}
-                <em style={{ fontStyle: "italic", color: "var(--bordeaux)" }}>{t.h2b}</em>
+                <em style={{ color: "var(--bordeaux)" }}>{t.h2b}</em>
               </h2>
             </div>
 
@@ -463,7 +463,7 @@ export default function LandingClient() {
             <div className="sec-head rv">
               <p className="eyebrow">{t.e3}</p>
               <h2>
-                <span>{t.h4a}</span> <em style={{ fontStyle: "italic" }}>{t.h4b}</em>
+                <span>{t.h4a}</span> <em>{t.h4b}</em>
               </h2>
             </div>
 
@@ -491,7 +491,7 @@ export default function LandingClient() {
               <p className="eyebrow">{t.e4}</p>
               <h2>
                 <span>{t.h6a}</span>{" "}
-                <em style={{ fontStyle: "italic", color: "var(--bordeaux)" }}>{t.h6b}</em>
+                <em style={{ color: "var(--bordeaux)" }}>{t.h6b}</em>
               </h2>
             </div>
 
@@ -548,7 +548,7 @@ export default function LandingClient() {
               <h2 style={{ marginTop: 18 }}>
                 <span>{t.h7a}</span>
                 <br />
-                <em style={{ fontStyle: "italic", color: "var(--bordeaux)" }}>{t.h7b}</em>
+                <em style={{ color: "var(--bordeaux)" }}>{t.h7b}</em>
               </h2>
             </div>
             <div className="why-list rv d1">
