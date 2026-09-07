@@ -43,6 +43,10 @@ export const CONTENU = {
     ecCommissions: "Commissions",
     ecProduits: "Produits",
     ecTiroir: "Tiroir",
+    // Les fleches n'affichent qu'un chevron : sans ce libelle, un lecteur
+    // d'ecran annoncerait « bouton ‹ ».
+    ecranPrec: "Écran précédent",
+    ecranSuiv: "Écran suivant",
     // Chaque capture est decrite : un lecteur d'ecran doit apprendre ce que
     // montre l'ecran, pas entendre huit fois « image ».
     altEcranSalon:
@@ -174,6 +178,8 @@ export const CONTENU = {
     ecCommissions: "العمولات",
     ecProduits: "المنتوجات",
     ecTiroir: "التيروار",
+    ecranPrec: "الشاشة السابقة",
+    ecranSuiv: "الشاشة الموالية",
     altEcranSalon:
       "لوحة الصالون : مدخول النهار، عدد الحرفاء، معدل الباني والخدمة الأكثر طلبا.",
     altEcranCaisse:
