@@ -206,18 +206,13 @@ body[data-lang="ar"] .nav-links a{text-transform:none;letter-spacing:0;font-size
    coupe franche laisserait un bord net au milieu de la page. */
 .hero-photo{position:relative;margin-inline:calc(var(--gut) * -1);}
 @media(min-width:900px){
-  .hero-photo{
-    margin-inline:0;margin-inline-end:calc(var(--gut) * -1);
-    /* Deborde aussi vers le haut et le bas pour remplir la hauteur du bloc. */
-    margin-block:calc(clamp(36px,5vw,72px) * -1);
-  }
+  .hero-photo{margin-inline:0;margin-inline-end:calc(var(--gut) * -1);}
 }
-.hero-photo img{
-  width:100%;height:auto;display:block;
-  aspect-ratio:16/10;object-fit:cover;object-position:center 30%;
-}
+/* La photo est montree ENTIERE, dans son 16/9 d'origine : le comptoir a
+   droite et le terminal de paiement font partie de la scene, les rogner
+   ramenerait l'image a un portrait. */
+.hero-photo img{width:100%;height:auto;display:block;}
 @media(min-width:900px){
-  .hero-photo img{aspect-ratio:auto;min-height:clamp(420px,48vw,600px);}
   /* Le fondu ne s'applique qu'a partir de deux colonnes : empile, la photo
      occupe toute la largeur et n'a aucun bord a fondre. */
   .hero-photo{

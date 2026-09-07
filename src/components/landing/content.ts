@@ -23,7 +23,7 @@ export const CONTENU = {
     // Decrit la photo pour qui ne la voit pas : un lecteur d'ecran doit
     // apprendre ce que montre l'image, pas entendre « image ».
     altHero:
-      "Une employée de salon, téléphone en main, encaisse une cliente avec Salonista au comptoir de son salon.",
+      "Une employée de salon, en tablier, consulte la caisse Salonista sur son téléphone, debout au comptoir de son salon.",
     hf1: "Aucune carte bancaire",
     hf2: "Prête en cinq minutes",
     hf3: "Fonctionne sans internet",
@@ -128,7 +128,7 @@ export const CONTENU = {
     heroLede:
       "خلّص، سيّر مواعيدك وتابع حرفاءك من تليفون، تابليت ولا كمبيوتر. مجانا، وتخدم حتى بلا أنترنات.",
     altHero:
-      "عاملة في صالون، التليفون في يدها، تخلّص حريفة بسالونيستا في الكونتوار.",
+      "عاملة في صالون، بالتابليي، تشوف كاس سالونيستا في تليفونها، واقفة في الكونتوار.",
     cta3: "ابدأ الكاس متاعي مجانا",
     eyebrow: "كاس لصالونات التجميل · تونس",
     h1a: "المعيار الجديد",
