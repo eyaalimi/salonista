@@ -64,6 +64,9 @@ export default function LandingClient() {
   /* ---------- revelations, parallaxe, fonctionnalites ---------- */
   const [featureActive, setFeatureActive] = useState(0);
 
+  /* ---------- onglets des ecrans de la caisse ---------- */
+  const [ecranActif, setEcranActif] = useState(0);
+
   useEffect(() => {
     document.body.classList.add("js");
 
@@ -248,6 +251,16 @@ export default function LandingClient() {
     { no: "06", label: t.l6, phrase: t.s6, img: "ui-tiroir.jpg" },
   ];
 
+  /* Les ecrans de la caisse, un par onglet. Uniquement ceux dont une capture
+     existe : un onglet sans image montrerait un cadre vide. */
+  const ECRANS = [
+    { label: t.c1, img: "ui-caisse.jpg", alt: t.altEcranCaisse },
+    { label: t.c2, img: "ui-agenda.jpg", alt: t.altEcranAgenda },
+    { label: t.c3, img: "ui-fidelite.jpg", alt: t.altEcranClientes },
+    { label: t.c7, img: "ui-stats.jpg", alt: t.altEcranStats },
+    { label: t.tiroir, img: "ui-tiroir.jpg", alt: t.altEcranTiroir },
+  ];
+
   /* Les captures a empiler dans le panneau lateral, sans doublon. */
   const IMAGES_ETAGE = [...new Set(FONCTIONS.map((f) => f.img).filter(Boolean))];
 
@@ -375,34 +388,53 @@ export default function LandingClient() {
               </h2>
             </div>
 
-            <div className="compo">
-              <div className="compo-main rvl">
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src={`${IMG}ui-caisse.jpg`} alt={t.c1} width={1100} height={683} loading="lazy" />
+            {/**
+             * Un onglet par ecran de la caisse.
+             *
+             * Remplace un collage fige de quatre captures superposees : on y
+             * voyait des bouts d'interface sans savoir a quoi ils
+             * correspondaient. Ici chaque capture est nommee et se regarde en
+             * entier.
+             *
+             * Seuls les ecrans REELLEMENT captures ont un onglet. En ajouter
+             * un sans image afficherait un cadre vide, avec l'icone de lien
+             * casse a la place de la capture.
+             */}
+            <div className="onglets rv">
+              <div className="onglets-barre" role="tablist" aria-label={t.e1}>
+                {ECRANS.map((e, i) => (
+                  <button
+                    key={e.img}
+                    type="button"
+                    role="tab"
+                    id={`onglet-${i}`}
+                    aria-selected={ecranActif === i}
+                    aria-controls={`volet-${i}`}
+                    className={ecranActif === i ? "on" : undefined}
+                    onClick={() => setEcranActif(i)}
+                  >
+                    {e.label}
+                  </button>
+                ))}
               </div>
-              <div className="float f-a rv" data-par="-0.05">
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src={`${IMG}ui-agenda.jpg`} alt={t.c2} width={820} height={269} loading="lazy" />
-              </div>
-              <div className="float f-b rv d1" data-par="0.07">
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src={`${IMG}ui-fidelite.jpg`} alt={t.c3} width={817} height={197} loading="lazy" />
-              </div>
-              <div className="float f-c rv d2" data-par="-0.09">
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src={`${IMG}ui-stats.jpg`} alt={t.c7} width={820} height={228} loading="lazy" />
-              </div>
-            </div>
 
-            <div className="chips rv">
-              <span>{t.c1}</span>
-              <span>{t.c2}</span>
-              <span>{t.c3}</span>
-              <span>{t.c4}</span>
-              <span>{t.c5}</span>
-              <span>{t.c6}</span>
-              <span>{t.c7}</span>
-              <span>{t.c8}</span>
+              {/* Un seul volet est monte a la fois : les captures pesent
+                  jusqu'a 110 Ko et les charger toutes d'un coup retarderait
+                  le reste de la page. `loading="lazy"` fait le reste. */}
+              <div
+                className="onglets-vue"
+                role="tabpanel"
+                id={`volet-${ecranActif}`}
+                aria-labelledby={`onglet-${ecranActif}`}
+              >
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  key={ECRANS[ecranActif].img}
+                  src={`${IMG}${ECRANS[ecranActif].img}`}
+                  alt={ECRANS[ecranActif].alt}
+                  loading="lazy"
+                />
+              </div>
             </div>
           </div>
         </section>

@@ -33,11 +33,20 @@ export const CONTENU = {
     c1: "Encaissement",
     c2: "Agenda",
     c3: "Clientes",
-    c4: "Services",
-    c5: "Produits",
-    c6: "Stock",
     c7: "Statistiques",
-    c8: "Historique des ventes",
+    tiroir: "Tiroir",
+    // Chaque capture est decrite : un lecteur d'ecran doit apprendre ce que
+    // montre l'ecran, pas entendre huit fois « image ».
+    altEcranCaisse:
+      "L'écran d'encaissement : la grille des services du salon à gauche, le panier et le bouton Encaisser à droite.",
+    altEcranAgenda:
+      "L'agenda du jour : deux rendez-vous, leur horaire, la prestation et la mention Encaissé.",
+    altEcranClientes:
+      "La liste des clientes avec, pour chacune, son solde de points de fidélité, ses points gagnés et ses points utilisés.",
+    altEcranStats:
+      "Les statistiques du salon : clientes servies, panier moyen, nouvelles clientes et service le plus demandé.",
+    altEcranTiroir:
+      "Le tiroir de caisse ouvert : fond de caisse, ventes en espèces, ventes par carte, pourboires et dépenses.",
     e2: "Le cœur du salon",
     h3a: "Plus qu'une caisse.",
     h3b: "Le cœur de votre salon.",
@@ -142,11 +151,18 @@ export const CONTENU = {
     c1: "الخلاص",
     c2: "المواعيد",
     c3: "الحرفاء",
-    c4: "الخدمات",
-    c5: "المنتوجات",
-    c6: "الستوك",
     c7: "الإحصائيات",
-    c8: "تاريخ المبيعات",
+    tiroir: "التيروار",
+    altEcranCaisse:
+      "شاشة الخلاص : خدمات الصالون على اليمين، والباني وزر الخلاص على اليسار.",
+    altEcranAgenda:
+      "مواعيد النهار : زوز مواعيد، الوقت متاعهم، الخدمة، وعلامة « تخلّص ».",
+    altEcranClientes:
+      "قائمة الحرفاء وكل وحدة بالنقاط متاعها : الرصيد، النقاط المربوحة والنقاط المستعملة.",
+    altEcranStats:
+      "إحصائيات الصالون : عدد الحرفاء، معدل الباني، الحرفاء الجدد، والخدمة الأكثر طلبا.",
+    altEcranTiroir:
+      "التيروار محلول : فوند الكاس، مبيعات كاش، مبيعات كارط، البقشيش والمصاريف.",
     e2: "قلب الصالون",
     h3a: "أكثر من كاس.",
     h3b: "قلب صالونك.",
