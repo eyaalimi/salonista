@@ -215,14 +215,38 @@ export default function LandingClient() {
     ? { right: `${coupe}%`, left: "auto" }
     : { left: `${coupe}%`, right: "auto" };
 
+  /**
+   * Chaque ligne montre le PRODUIT quand une capture existe.
+   *
+   * « Clientes » illustrait sa ligne avec une photo d'ongles portant un
+   * filigrane visible (« INDIRA_GANDI1994 ») : une image prise sur le compte
+   * de quelqu'un, sans licence, publiee sur salonista.tn. Elle passe sur la
+   * vraie liste des clientes et de leurs points.
+   *
+   * « Stock » garde une photo d'ambiance faute de capture : aucun ecran de
+   * l'inventaire n'a ete photographie. `img: null` masque la vignette plutot
+   * que d'illustrer le stock par un massage des pieds, ce que faisait
+   * f-stock.jpg.
+   */
   const FONCTIONS = [
-    { no: "01", label: t.l1, phrase: t.s1, img: "f-encaissement" },
-    { no: "02", label: t.l2, phrase: t.s2, img: "f-agenda" },
-    { no: "03", label: t.l3, phrase: t.s3, img: "f-clients" },
-    { no: "04", label: t.l4, phrase: t.s4, img: "f-stock" },
+    { no: "01", label: t.l1, phrase: t.s1, img: "ui-caisse" },
+    { no: "02", label: t.l2, phrase: t.s2, img: "ui-agenda" },
+    { no: "03", label: t.l3, phrase: t.s3, img: "ui-fidelite" },
+    { no: "04", label: t.l4, phrase: t.s4, img: null },
     { no: "05", label: t.l5, phrase: t.s5, img: "ui-stats" },
     { no: "06", label: t.l6, phrase: t.s6, img: "ui-tiroir" },
   ];
+
+  /* Les captures a empiler dans le panneau lateral, sans doublon. */
+  const IMAGES_ETAGE = [...new Set(FONCTIONS.map((f) => f.img).filter(Boolean))];
+
+  /* Sur une ligne sans capture, on GARDE la derniere affichee : le panneau
+     deviendrait sinon un rectangle vide au milieu de la lecture. */
+  const imageActive =
+    FONCTIONS.slice(0, featureActive + 1)
+      .map((f) => f.img)
+      .filter(Boolean)
+      .pop() ?? IMAGES_ETAGE[0];
 
   const QUESTIONS = [
     { q: t.q1, a: t.a1 },
@@ -418,23 +442,25 @@ export default function LandingClient() {
                     <span className="no">{f.no}</span>
                     <span className="lb">{f.label}</span>
                     <p className="ph">{f.phrase}</p>
-                    <div className="inline-img">
-                      {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <img src={`${IMG}${f.img}.jpg`} alt="" loading="lazy" />
-                    </div>
+                    {f.img && (
+                      <div className="inline-img">
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img src={`${IMG}${f.img}.jpg`} alt="" loading="lazy" />
+                      </div>
+                    )}
                   </article>
                 ))}
               </div>
 
               <div className="feat-stage">
-                {FONCTIONS.map((f, i) => (
+                {IMAGES_ETAGE.map((src) => (
                   // eslint-disable-next-line @next/next/no-img-element
                   <img
-                    key={f.no}
-                    src={`${IMG}${f.img}.jpg`}
+                    key={src}
+                    src={`${IMG}${src}.jpg`}
                     alt=""
                     loading="lazy"
-                    className={featureActive === i ? "on" : undefined}
+                    className={imageActive === src ? "on" : undefined}
                   />
                 ))}
               </div>
