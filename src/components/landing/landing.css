@@ -68,7 +68,7 @@ h1,h2,h3,.display{
    police systeme au hasard. La liste couvre chaque regle qui pose
    `font-family:var(--display)` — une omission se verrait tout de suite, la
    ligne concernee changeant de police au milieu du texte. */
-body[data-lang="ar"] :is(h1,h2,h3,.display,.fig b,.feat .no,.feat .ph,.cmp h3,summary){
+body[data-lang="ar"] :is(h1,h2,h3,.display,.fig b,.carte .no,.carte .ph,.cmp h3,summary){
   font-family:var(--ar);font-weight:700;line-height:1.35;letter-spacing:0;
 }
 /* Une grotesque grasse occupe plus de place qu'un serif fin a taille egale :
@@ -314,51 +314,43 @@ body[data-lang="ar"] .onglets-barre button{
    le sens de la lecture. */
 [dir="rtl"] .onglets-fleche{transform:translateY(-50%) scaleX(-1);}
 
-/* ---------------- editorial ---------------- */
-.edito{display:grid;gap:clamp(36px,5vw,70px);align-items:center;}
-@media(min-width:960px){.edito{grid-template-columns:.85fr 1.15fr;}}
-.edito-img{position:relative;overflow:hidden;}
-.edito-img img{width:100%;aspect-ratio:3/4;object-fit:cover;will-change:transform;}
-.figures{display:grid;grid-template-columns:repeat(2,1fr);gap:1px;background:var(--hair);margin-top:44px;border:1px solid var(--hair);}
+/* ---------------- les quatre chiffres ----------------
+   Deplaces depuis la section « Plus qu'une caisse », supprimee : ils suivent
+   maintenant les captures. */
+.figures{
+  display:grid;grid-template-columns:repeat(2,1fr);gap:1px;background:var(--hair);
+  margin-top:clamp(44px,6vw,76px);border:1px solid var(--hair);
+}
 @media(min-width:720px){.figures{grid-template-columns:repeat(4,1fr);}}
 .fig{background:var(--ivoire);padding:26px 20px;}
 .fig b{display:block;font-family:var(--display);font-weight:800;letter-spacing:-.02em;font-size:clamp(1.8rem,3.2vw,2.6rem);line-height:1;}
 .fig span{display:block;margin-top:10px;font-size:.74rem;letter-spacing:.14em;text-transform:uppercase;color:var(--taupe);}
 body[data-lang="ar"] .fig span{letter-spacing:0;text-transform:none;font-size:.88rem;}
 
-/* ---------------- features ---------------- */
-.feat-wrap{display:grid;gap:clamp(30px,4vw,64px);margin-top:clamp(46px,6vw,80px);}
-@media(min-width:1000px){.feat-wrap{grid-template-columns:1fr .78fr;align-items:start;}}
-.feat-list{border-top:1px solid var(--hair);}
-.feat{
-  display:grid;grid-template-columns:auto 1fr;gap:18px 24px;align-items:baseline;
-  padding-block:clamp(24px,3vw,38px);border-bottom:1px solid var(--hair);cursor:default;
-  transition:opacity .6s var(--ease);
+/* ---------------- les six gestes, en cartes ----------------
+   Remplace une liste dont chaque ligne s'estompait au defilement et pilotait
+   un panneau d'images a cote. Les captures sont deja montrees plus haut, en
+   grand et nommees : les repeter en vignettes n'apprenait rien. */
+.cartes{
+  display:grid;gap:1px;background:var(--hair);
+  margin-top:clamp(40px,5vw,68px);border:1px solid var(--hair);
 }
-@media(min-width:1000px){.feat{opacity:.34;}.feat.live{opacity:1;}}
-.feat .no{font-family:var(--display);font-weight:700;font-size:1rem;color:var(--or-texte);letter-spacing:.04em;}
-.feat .lb{font-size:.68rem;letter-spacing:.24em;text-transform:uppercase;color:var(--taupe);grid-column:2;}
-body[data-lang="ar"] .feat .lb{letter-spacing:0;text-transform:none;font-size:.86rem;}
-.feat .ph{grid-column:2;margin-top:8px;font-family:var(--display);font-weight:700;letter-spacing:-.02em;font-size:clamp(1.3rem,2.3vw,1.9rem);line-height:1.15;}
-body[data-lang="ar"] .feat .ph{line-height:1.4;}
-.feat .inline-img{grid-column:1/-1;margin-top:18px;}
-@media(min-width:1000px){.feat .inline-img{display:none;}}
-.feat .inline-img img{width:100%;aspect-ratio:4/3;object-fit:cover;}
-.feat-stage{display:none;}
-@media(min-width:1000px){
-  .feat-stage{display:block;position:sticky;top:130px;aspect-ratio:3/4;overflow:hidden;background:var(--ivoire-2);}
-  .feat-stage img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;opacity:0;transform:scale(1.06);transition:opacity .8s var(--ease),transform 1.2s var(--ease);}
-  .feat-stage img.on{opacity:1;transform:scale(1);}
+@media(min-width:680px){.cartes{grid-template-columns:repeat(2,1fr);}}
+@media(min-width:1000px){.cartes{grid-template-columns:repeat(3,1fr);}}
+/* Le fond des cartes recouvre celui de la grille : ce sont les 1px de `gap`
+   qui laissent voir le filet, sans bordure a dessiner sur chaque carte. */
+.carte{
+  background:var(--ivoire);padding:clamp(26px,3vw,38px);
+  display:flex;flex-direction:column;gap:10px;
 }
-
-/* ---------------- emotion ---------------- */
-.emo{position:relative;min-height:min(76vh,640px);display:grid;place-items:center;overflow:hidden;background:var(--espresso-2);}
-.emo-media{position:absolute;inset:-10% 0;will-change:transform;}
-.emo-media img{width:100%;height:100%;object-fit:cover;object-position:center 35%;}
-.emo::before{content:"";position:absolute;inset:0;z-index:1;background:rgba(26,19,16,.5);}
-.emo-in{position:relative;z-index:2;text-align:center;color:#fff;padding:clamp(70px,10vw,130px) var(--gut);}
-.emo h2{max-width:17ch;margin-inline:auto;}
-.emo h2 em{font-style:italic;color:var(--blush);}
+.carte .no{font-family:var(--display);font-weight:700;font-size:.95rem;color:var(--or-texte);letter-spacing:.04em;}
+.carte .lb{font-size:.68rem;letter-spacing:.24em;text-transform:uppercase;color:var(--taupe);}
+body[data-lang="ar"] .carte .lb{letter-spacing:0;text-transform:none;font-size:.86rem;}
+.carte .ph{
+  font-family:var(--display);font-weight:700;letter-spacing:-.02em;
+  font-size:clamp(1.2rem,2vw,1.55rem);line-height:1.2;margin-top:2px;
+}
+body[data-lang="ar"] .carte .ph{line-height:1.45;}
 
 /* ---------------- avant / avec ---------------- */
 .cmp{position:relative;margin-top:clamp(44px,6vw,76px);overflow:hidden;user-select:none;touch-action:pan-y;}
@@ -445,7 +437,5 @@ body.js .rvl.in img{clip-path:inset(0 0 0 0);transition:clip-path 1.35s var(--ea
 @media(prefers-reduced-motion:reduce){
   html{scroll-behavior:auto;}
   body.js .rv,body.js .rvl,body.js .rvl img{opacity:1!important;transform:none!important;clip-path:none!important;transition:none!important;}
-  .emo-media,.edito-img img{transform:none!important;}
-  .feat{opacity:1!important;}
   *{animation:none!important;}
 }
