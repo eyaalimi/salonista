@@ -45,12 +45,20 @@
 }
 
 *{box-sizing:border-box;}
-html{scroll-behavior:smooth;}
+/* Cette feuille n'est chargee que par la route "/" : colorer <html> ici ne
+   touche aucune autre page. C'est ce qui evite de voir le blanc froid du
+   <body> lors d'un rebond de defilement, en haut comme en bas. */
+html{scroll-behavior:smooth;background:#FFF6F1;}
 /* Le layout racine pose deja des classes Tailwind sur <body> (bg-brand-cream,
    text-brand-ink) : une regle d'element ne les battrait pas. On habille donc
    le conteneur de la page, dont tout le reste herite. */
 body{overflow-x:hidden;}
+/* `flex:1` : le layout racine fait du <body> une colonne flex, et .lp-root n'y
+   occupait que sa hauteur de contenu. Sous le pied de page apparaissait alors
+   le fond du body — #FBFAF7, un blanc froid de l'ancienne charte — en bande
+   visible contre le creme de la landing. */
 .lp-root{
+  flex:1;
   background:var(--ivoire);color:var(--espresso);
   font-family:var(--ui);font-size:16px;font-weight:400;line-height:1.6;
   -webkit-font-smoothing:antialiased;
