@@ -181,9 +181,15 @@ body[data-lang="ar"] .nav-links a{text-transform:none;letter-spacing:0;font-size
 }
 .hero-in{display:grid;gap:clamp(34px,4vw,56px);align-items:center;}
 @media(min-width:900px){
-  /* La colonne texte est la plus etroite : la photo porte le regard, le
-     texte se lit en une phrase. */
-  .hero-in{grid-template-columns:minmax(0,.92fr) minmax(0,1.08fr);}
+  /* La photo prend la plus grande part : c'est elle qui porte le regard, le
+     texte tient en une phrase. Le rapport suit celui des pages de logiciels
+     de caisse — un tiers de texte, deux tiers d'image. */
+  .hero-in{grid-template-columns:minmax(0,.78fr) minmax(0,1.22fr);}
+  /* La photo remonte DERRIERE la barre de navigation et redescend sous le
+     bloc : elle touche les deux bords de la section, comme une scene qui
+     continue hors de l'ecran. Le padding du hero est annule pour elle seule. */
+  .hero{padding-block:0;}
+  .hero-texte{padding-block:calc(78px + clamp(36px,5vw,72px)) clamp(44px,6vw,80px);}
 }
 .hero .eyebrow{color:var(--bordeaux);}
 .hero h1{margin-top:18px;max-width:13ch;color:var(--espresso);}
@@ -205,19 +211,27 @@ body[data-lang="ar"] .nav-links a{text-transform:none;letter-spacing:0;font-size
    l'ecran. Le degrade la fond dans le blanc sur son bord gauche, sinon la
    coupe franche laisserait un bord net au milieu de la page. */
 .hero-photo{position:relative;margin-inline:calc(var(--gut) * -1);}
-@media(min-width:900px){
-  .hero-photo{margin-inline:0;margin-inline-end:calc(var(--gut) * -1);}
-}
-/* La photo est montree ENTIERE, dans son 16/9 d'origine : le comptoir a
-   droite et le terminal de paiement font partie de la scene, les rogner
-   ramenerait l'image a un portrait. */
 .hero-photo img{width:100%;height:auto;display:block;}
+
 @media(min-width:900px){
-  /* Le fondu ne s'applique qu'a partir de deux colonnes : empile, la photo
-     occupe toute la largeur et n'a aucun bord a fondre. */
+  /* La photo occupe toute la hauteur de la colonne et deborde a droite.
+     `align-self:stretch` est indispensable : sans lui, `align-items:center`
+     de la grille reduirait la colonne a la hauteur de l'image. */
   .hero-photo{
-    -webkit-mask-image:linear-gradient(to right,transparent 0,#000 14%,#000 100%);
-    mask-image:linear-gradient(to right,transparent 0,#000 14%,#000 100%);
+    margin-inline:0;margin-inline-end:calc(var(--gut) * -1);
+    align-self:stretch;min-height:clamp(500px,54vw,680px);
+    /* Le fondu ne s'applique qu'a partir de deux colonnes : empilee, la photo
+       prend toute la largeur et n'a aucun bord a fondre. */
+    -webkit-mask-image:linear-gradient(to right,transparent 0,#000 16%,#000 100%);
+    mask-image:linear-gradient(to right,transparent 0,#000 16%,#000 100%);
+  }
+  /* `absolute` + `object-fit:cover` : l'image remplit la colonne quelle que
+     soit la hauteur du texte a cote, en rognant plutot qu'en se deformant.
+     `object-position` garde la femme et le telephone dans le cadre — c'est le
+     bord DROIT du comptoir qui se perd, pas le sujet. */
+  .hero-photo img{
+    position:absolute;inset:0;width:100%;height:100%;
+    object-fit:cover;object-position:28% center;
   }
 }
 /* En arabe la colonne photo passe a gauche : le fondu doit changer de bord,
@@ -238,22 +252,43 @@ section{position:relative;}
 .sec-head h2{margin-top:18px;}
 .sec-head .lede{margin-top:24px;}
 
-/* ---------------- composition produit ---------------- */
-.compo{position:relative;margin-top:clamp(48px,7vw,96px);padding-block:clamp(0px,3vw,40px);}
-.compo-main{position:relative;z-index:2;width:min(100%,860px);margin-inline:auto;box-shadow:0 60px 110px -60px rgba(36,28,24,.55);}
-.float{position:absolute;z-index:3;width:min(46vw,330px);background:var(--ivoire);padding:8px;box-shadow:0 40px 80px -40px rgba(36,28,24,.5);will-change:transform;display:none;}
-@media(min-width:900px){.float{display:block;}}
-.float img{width:100%;}
-.f-a{left:0;top:8%;}
-.f-b{right:0;top:38%;}
-.f-c{left:4%;bottom:-4%;}
-.chips{display:flex;flex-wrap:wrap;gap:8px 0;margin-top:clamp(56px,7vw,90px);border-top:1px solid var(--hair);padding-top:26px;}
-.chips span{
-  font-size:.72rem;letter-spacing:.18em;text-transform:uppercase;color:var(--taupe);
-  padding-inline-end:26px;margin-inline-end:26px;border-inline-end:1px solid var(--hair);
+/* ---------------- ecrans de la caisse, en onglets ----------------
+   Remplace un collage fige de quatre captures superposees, ou l'on voyait des
+   bouts d'interface sans savoir a quoi ils correspondaient. */
+.onglets{margin-top:clamp(40px,5vw,72px);}
+
+/* La barre defile horizontalement plutot que de passer a la ligne : cinq
+   libelles empiles sur telephone auraient repousse la capture hors de vue. */
+.onglets-barre{
+  display:flex;gap:4px;overflow-x:auto;scrollbar-width:none;
+  border-bottom:1px solid var(--hair);
 }
-.chips span:last-child{border:0;}
-body[data-lang="ar"] .chips span{letter-spacing:0;text-transform:none;font-size:.88rem;}
+.onglets-barre::-webkit-scrollbar{display:none;}
+.onglets-barre button{
+  flex:none;background:none;border:0;cursor:pointer;font-family:var(--ui);
+  font-size:.72rem;font-weight:600;letter-spacing:.16em;text-transform:uppercase;
+  color:var(--taupe);padding:0 18px;min-height:48px;
+  border-bottom:2px solid transparent;margin-bottom:-1px;
+  transition:color .3s var(--ease),border-color .3s var(--ease);
+}
+body[data-lang="ar"] .onglets-barre button{
+  font-family:var(--ar);letter-spacing:0;text-transform:none;font-size:.9rem;
+}
+.onglets-barre button:hover{color:var(--espresso);}
+.onglets-barre button.on{color:var(--bordeaux);border-bottom-color:var(--bordeaux);}
+
+/* Le cadre garde une hauteur FIXE : sans elle, chaque changement d'onglet
+   ferait sauter toute la page, les captures n'ayant pas le meme rapport. */
+.onglets-vue{
+  margin-top:clamp(22px,3vw,36px);background:var(--ivoire-2);
+  border:1px solid var(--hair);padding:clamp(10px,1.6vw,18px);
+  display:flex;align-items:center;justify-content:center;
+  min-height:clamp(220px,42vw,560px);
+}
+.onglets-vue img{
+  max-width:100%;max-height:clamp(200px,40vw,524px);
+  width:auto;height:auto;object-fit:contain;
+}
 
 /* ---------------- editorial ---------------- */
 .edito{display:grid;gap:clamp(36px,5vw,70px);align-items:center;}
@@ -386,7 +421,7 @@ body.js .rvl.in img{clip-path:inset(0 0 0 0);transition:clip-path 1.35s var(--ea
 @media(prefers-reduced-motion:reduce){
   html{scroll-behavior:auto;}
   body.js .rv,body.js .rvl,body.js .rvl img{opacity:1!important;transform:none!important;clip-path:none!important;transition:none!important;}
-  .emo-media,.float,.edito-img img{transform:none!important;}
+  .emo-media,.edito-img img{transform:none!important;}
   .feat{opacity:1!important;}
   *{animation:none!important;}
 }
