@@ -34,17 +34,31 @@ export const CONTENU = {
     c2: "Agenda",
     c3: "Clientes",
     c7: "Statistiques",
-    tiroir: "Tiroir",
+    // Les huit onglets, dans l'ordre du menu lateral de la caisse.
+    ecSalon: "Mon salon",
+    ecCaisse: "Caisse",
+    ecRdv: "Rendez-vous",
+    ecClientes: "Clientes",
+    ecFidelite: "Fidélité",
+    ecCommissions: "Commissions",
+    ecProduits: "Produits",
+    ecTiroir: "Tiroir",
     // Chaque capture est decrite : un lecteur d'ecran doit apprendre ce que
     // montre l'ecran, pas entendre huit fois « image ».
+    altEcranSalon:
+      "Le tableau de bord du salon : recette de la journée, clientes servies, panier moyen et service le plus demandé.",
     altEcranCaisse:
       "L'écran d'encaissement : la grille des services du salon à gauche, le panier et le bouton Encaisser à droite.",
-    altEcranAgenda:
-      "L'agenda du jour : deux rendez-vous, leur horaire, la prestation et la mention Encaissé.",
+    altEcranRdv:
+      "L'agenda du jour : trois rendez-vous avec leur horaire et leur prestation, et le calendrier du mois à côté.",
     altEcranClientes:
-      "La liste des clientes avec, pour chacune, son solde de points de fidélité, ses points gagnés et ses points utilisés.",
-    altEcranStats:
-      "Les statistiques du salon : clientes servies, panier moyen, nouvelles clientes et service le plus demandé.",
+      "La fiche des clientes : nombre de visites, total dépensé et solde de points de fidélité pour chacune.",
+    altEcranFidelite:
+      "Le programme de fidélité : réglage du cashback, portefeuilles des clientes et classement des plus fidèles.",
+    altEcranCommissions:
+      "Le suivi des commissions dues à l'équipe : taux de chaque employée, base de calcul et montant à payer.",
+    altEcranProduits:
+      "Le catalogue des produits : nom, référence, prix, stock restant et état de chaque article.",
     altEcranTiroir:
       "Le tiroir de caisse ouvert : fond de caisse, ventes en espèces, ventes par carte, pourboires et dépenses.",
     e2: "Le cœur du salon",
@@ -152,15 +166,28 @@ export const CONTENU = {
     c2: "المواعيد",
     c3: "الحرفاء",
     c7: "الإحصائيات",
-    tiroir: "التيروار",
+    ecSalon: "صالوني",
+    ecCaisse: "الكاس",
+    ecRdv: "المواعيد",
+    ecClientes: "الحرفاء",
+    ecFidelite: "الوفاء",
+    ecCommissions: "العمولات",
+    ecProduits: "المنتوجات",
+    ecTiroir: "التيروار",
+    altEcranSalon:
+      "لوحة الصالون : مدخول النهار، عدد الحرفاء، معدل الباني والخدمة الأكثر طلبا.",
     altEcranCaisse:
       "شاشة الخلاص : خدمات الصالون على اليمين، والباني وزر الخلاص على اليسار.",
-    altEcranAgenda:
-      "مواعيد النهار : زوز مواعيد، الوقت متاعهم، الخدمة، وعلامة « تخلّص ».",
+    altEcranRdv:
+      "مواعيد النهار : ثلاثة مواعيد بالوقت والخدمة، وتقويم الشهر بجنبهم.",
     altEcranClientes:
-      "قائمة الحرفاء وكل وحدة بالنقاط متاعها : الرصيد، النقاط المربوحة والنقاط المستعملة.",
-    altEcranStats:
-      "إحصائيات الصالون : عدد الحرفاء، معدل الباني، الحرفاء الجدد، والخدمة الأكثر طلبا.",
+      "بطاقة الحرفاء : عدد الزيارات، المبلغ المصروف ورصيد نقاط الوفاء لكل وحدة.",
+    altEcranFidelite:
+      "برنامج الوفاء : إعداد الكاشباك، محافظ الحرفاء وترتيب الأكثر وفاء.",
+    altEcranCommissions:
+      "متابعة العمولات متاع الفريق : نسبة كل عاملة، قاعدة الحساب والمبلغ اللي يتخلّص.",
+    altEcranProduits:
+      "قائمة المنتوجات : الاسم، المرجع، الثمن، الستوك الباقي وحالة كل منتوج.",
     altEcranTiroir:
       "التيروار محلول : فوند الكاس، مبيعات كاش، مبيعات كارط، البقشيش والمصاريف.",
     e2: "قلب الصالون",

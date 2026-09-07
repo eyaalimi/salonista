@@ -244,21 +244,32 @@ export default function LandingClient() {
      qu'un fichier changeait de format. */
   const FONCTIONS = [
     { no: "01", label: t.l1, phrase: t.s1, img: "ui-caisse-mobile.webp" },
-    { no: "02", label: t.l2, phrase: t.s2, img: "ui-agenda.jpg" },
-    { no: "03", label: t.l3, phrase: t.s3, img: "ui-fidelite.jpg" },
-    { no: "04", label: t.l4, phrase: t.s4, img: null },
-    { no: "05", label: t.l5, phrase: t.s5, img: "ui-stats.jpg" },
-    { no: "06", label: t.l6, phrase: t.s6, img: "ui-tiroir.jpg" },
+    { no: "02", label: t.l2, phrase: t.s2, img: "ecran-rdv.webp" },
+    { no: "03", label: t.l3, phrase: t.s3, img: "ecran-clientes.webp" },
+    { no: "04", label: t.l4, phrase: t.s4, img: "ecran-produits.webp" },
+    { no: "05", label: t.l5, phrase: t.s5, img: "ecran-salon.webp" },
+    { no: "06", label: t.l6, phrase: t.s6, img: "ecran-tiroir.webp" },
   ];
 
-  /* Les ecrans de la caisse, un par onglet. Uniquement ceux dont une capture
-     existe : un onglet sans image montrerait un cadre vide. */
+  /**
+   * Les huit ecrans de la caisse, un par onglet, dans l'ordre du menu lateral
+   * de l'application.
+   *
+   * Les captures nominatives sont FLOUTEES a la source : noms de clientes,
+   * numeros de telephone et noms d'employees. Ce sont de vraies personnes du
+   * salon de demonstration — les publier sur salonista.tn les exposerait sans
+   * qu'elles aient rien demande. Les montants et la structure restent
+   * lisibles, c'est ce que la page doit montrer.
+   */
   const ECRANS = [
-    { label: t.c1, img: "ui-caisse.jpg", alt: t.altEcranCaisse },
-    { label: t.c2, img: "ui-agenda.jpg", alt: t.altEcranAgenda },
-    { label: t.c3, img: "ui-fidelite.jpg", alt: t.altEcranClientes },
-    { label: t.c7, img: "ui-stats.jpg", alt: t.altEcranStats },
-    { label: t.tiroir, img: "ui-tiroir.jpg", alt: t.altEcranTiroir },
+    { label: t.ecSalon, img: "ecran-salon", alt: t.altEcranSalon },
+    { label: t.ecCaisse, img: "ecran-caisse", alt: t.altEcranCaisse },
+    { label: t.ecRdv, img: "ecran-rdv", alt: t.altEcranRdv },
+    { label: t.ecClientes, img: "ecran-clientes", alt: t.altEcranClientes },
+    { label: t.ecFidelite, img: "ecran-fidelite", alt: t.altEcranFidelite },
+    { label: t.ecCommissions, img: "ecran-commissions", alt: t.altEcranCommissions },
+    { label: t.ecProduits, img: "ecran-produits", alt: t.altEcranProduits },
+    { label: t.ecTiroir, img: "ecran-tiroir", alt: t.altEcranTiroir },
   ];
 
   /* Les captures a empiler dans le panneau lateral, sans doublon. */
@@ -430,7 +441,9 @@ export default function LandingClient() {
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
                   key={ECRANS[ecranActif].img}
-                  src={`${IMG}${ECRANS[ecranActif].img}`}
+                  src={`${IMG}${ECRANS[ecranActif].img}.webp`}
+                  srcSet={`${IMG}${ECRANS[ecranActif].img}-760.webp 760w, ${IMG}${ECRANS[ecranActif].img}-1100.webp 1100w, ${IMG}${ECRANS[ecranActif].img}-1540.webp 1540w`}
+                  sizes="(min-width: 1400px) 1300px, 92vw"
                   alt={ECRANS[ecranActif].alt}
                   loading="lazy"
                 />
