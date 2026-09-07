@@ -13,7 +13,7 @@ import "@/components/landing/landing.css";
 export const metadata: Metadata = {
   title: "Salonista — la caisse gratuite des salons de beauté",
   description:
-    "Encaissement, agenda, clientes, stock et statistiques dans un seul écran. Gratuit, sans engagement, et fonctionne même sans internet. Pour les salons de beauté en Tunisie.",
+    "Encaissement, agenda, clientes, stock et statistiques dans un seul écran. Gratuit et sans engagement. Pour les salons de beauté en Tunisie.",
   alternates: { canonical: "/" },
   openGraph: {
     type: "website",
