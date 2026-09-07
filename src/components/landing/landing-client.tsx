@@ -7,6 +7,14 @@ const IMG = "/images/lp/";
 const CLE_LANGUE = "salonista-lang";
 
 /**
+ * La photo du hero : une employee de salon, telephone en main, servant de la
+ * caisse. Nommee ici plutot qu'en dur dans le JSX — c'est le seul fichier a
+ * remplacer quand une meilleure prise de vue arrive, et les trois variantes
+ * suivent la meme racine.
+ */
+const HERO_PHOTO = "hero-caisse";
+
+/**
  * La page d'accueil publique.
  *
  * Tout est ici : navigation, hero, presentation de la caisse, comparatif
@@ -228,13 +236,16 @@ export default function LandingClient() {
    * que d'illustrer le stock par un massage des pieds, ce que faisait
    * f-stock.jpg.
    */
+  /* Le nom de fichier porte son extension : les captures d'origine sont en
+     .jpg, les nouvelles en .webp. La coder en dur ici produisait un 404 des
+     qu'un fichier changeait de format. */
   const FONCTIONS = [
-    { no: "01", label: t.l1, phrase: t.s1, img: "ui-caisse" },
-    { no: "02", label: t.l2, phrase: t.s2, img: "ui-agenda" },
-    { no: "03", label: t.l3, phrase: t.s3, img: "ui-fidelite" },
+    { no: "01", label: t.l1, phrase: t.s1, img: "ui-caisse-mobile.webp" },
+    { no: "02", label: t.l2, phrase: t.s2, img: "ui-agenda.jpg" },
+    { no: "03", label: t.l3, phrase: t.s3, img: "ui-fidelite.jpg" },
     { no: "04", label: t.l4, phrase: t.s4, img: null },
-    { no: "05", label: t.l5, phrase: t.s5, img: "ui-stats" },
-    { no: "06", label: t.l6, phrase: t.s6, img: "ui-tiroir" },
+    { no: "05", label: t.l5, phrase: t.s5, img: "ui-stats.jpg" },
+    { no: "06", label: t.l6, phrase: t.s6, img: "ui-tiroir.jpg" },
   ];
 
   /* Les captures a empiler dans le panneau lateral, sans doublon. */
@@ -294,16 +305,17 @@ export default function LandingClient() {
       <div id="top">
         {/* ---------------- hero ---------------- */}
         {/**
-         * Le hero montre le PRODUIT, pas une photo d'ambiance.
+         * Hero en deux temps : une phrase courte a gauche, une photo humaine
+         * a droite qui deborde du cadre.
          *
-         * Il affichait une photo de spa plein ecran : un visiteur y lisait
-         * « institut de beaute haut de gamme » la ou Salonista vend une
-         * caisse. La vraie capture de l'application, sur un telephone,
-         * repond en une seconde a « c'est quoi ? ».
+         * Il affichait une photo de spa plein ecran, avec le texte pose par
+         * dessus : un visiteur y lisait « institut de beaute haut de gamme »
+         * la ou Salonista vend une caisse. Le fond est desormais blanc, le
+         * texte tient en une phrase, et la photo montre quelqu'un en train de
+         * SE SERVIR du produit.
          *
-         * La carte flottante qui simulait un encaissement a disparu : la
-         * capture montre desormais un vrai panier a 100,000 TND, et deux
-         * totaux differents cote a cote se contredisaient.
+         * La carte flottante qui simulait un encaissement a disparu : elle
+         * annoncait 60,000 TND quand la capture en montre 100,000.
          */}
         <section className="hero">
           <div className="shell hero-in">
@@ -314,6 +326,7 @@ export default function LandingClient() {
                 <br />
                 <em>{t.h1b}</em>
               </h1>
+              <p className="hero-lede rv in d2">{t.heroLede}</p>
               <div className="hero-cta rv in d2">
                 <a className="btn btn-solid" href="/pos-start">
                   <span>{t.cta}</span>
@@ -332,19 +345,17 @@ export default function LandingClient() {
 
             {/* `fetchPriority="high"` : c'est l'image la plus grande de la
                 zone visible au chargement, donc celle que mesure le LCP. */}
-            <div className="hero-appareil rv in d2">
-              <div className="hero-telephone">
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img
-                  src={`${IMG}ui-caisse-mobile.webp`}
-                  srcSet={`${IMG}ui-caisse-mobile-400.webp 400w, ${IMG}ui-caisse-mobile-800.webp 800w, ${IMG}ui-caisse-mobile-1256.webp 1256w`}
-                  sizes="(min-width: 1080px) 320px, (min-width: 760px) 280px, 240px"
-                  alt={t.altCaisse}
-                  width={628}
-                  height={984}
-                  fetchPriority="high"
-                />
-              </div>
+            <div className="hero-photo rv in d2">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={`${IMG}${HERO_PHOTO}.webp`}
+                srcSet={`${IMG}${HERO_PHOTO}-800.webp 800w, ${IMG}${HERO_PHOTO}-1200.webp 1200w, ${IMG}${HERO_PHOTO}-1600.webp 1600w`}
+                sizes="(min-width: 900px) 52vw, 100vw"
+                alt={t.altHero}
+                width={1376}
+                height={918}
+                fetchPriority="high"
+              />
             </div>
           </div>
         </section>
@@ -455,7 +466,7 @@ export default function LandingClient() {
                     {f.img && (
                       <div className="inline-img">
                         {/* eslint-disable-next-line @next/next/no-img-element */}
-                        <img src={`${IMG}${f.img}.jpg`} alt="" loading="lazy" />
+                        <img src={`${IMG}${f.img}`} alt="" loading="lazy" />
                       </div>
                     )}
                   </article>
@@ -467,7 +478,7 @@ export default function LandingClient() {
                   // eslint-disable-next-line @next/next/no-img-element
                   <img
                     key={src}
-                    src={`${IMG}${src}.jpg`}
+                    src={`${IMG}${src}`}
                     alt=""
                     loading="lazy"
                     className={imageActive === src ? "on" : undefined}

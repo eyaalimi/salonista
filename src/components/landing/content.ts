@@ -17,10 +17,13 @@ export const CONTENU = {
     h1a: "Le nouveau standard",
     h1b: "pour gérer votre salon.",
     cta2: "Découvrir Salonista",
-    // Decrit la capture pour qui ne la voit pas : un lecteur d'ecran doit
-    // apprendre ce que fait le produit, pas entendre « image ».
-    altCaisse:
-      "La caisse Salonista sur un téléphone : la grille des services d'un salon, et le panier en cours à 100,000 TND.",
+    // Une seule phrase sous le titre : ce que fait le produit, pour qui.
+    heroLede:
+      "Encaissez, gérez vos rendez-vous et suivez vos clientes depuis un téléphone, une tablette ou un ordinateur. Gratuit, et sans internet s'il le faut.",
+    // Decrit la photo pour qui ne la voit pas : un lecteur d'ecran doit
+    // apprendre ce que montre l'image, pas entendre « image ».
+    altHero:
+      "Une employée de salon, téléphone en main, encaisse une cliente avec Salonista au comptoir de son salon.",
     hf1: "Aucune carte bancaire",
     hf2: "Prête en cinq minutes",
     hf3: "Fonctionne sans internet",
@@ -122,8 +125,10 @@ export const CONTENU = {
     nav4: "أسئلة",
     cta: "ابدأ مجانا",
     cta2: "اكتشف سالونيستا",
-    altCaisse:
-      "كاس سالونيستا في تليفون : خدمات الصالون، والباني الحالي بـ 100,000 دينار.",
+    heroLede:
+      "خلّص، سيّر مواعيدك وتابع حرفاءك من تليفون، تابليت ولا كمبيوتر. مجانا، وتخدم حتى بلا أنترنات.",
+    altHero:
+      "عاملة في صالون، التليفون في يدها، تخلّص حريفة بسالونيستا في الكونتوار.",
     cta3: "ابدأ الكاس متاعي مجانا",
     eyebrow: "كاس لصالونات التجميل · تونس",
     h1a: "المعيار الجديد",
