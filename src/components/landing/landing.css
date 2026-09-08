@@ -232,6 +232,16 @@ body[data-lang="ar"] .nav-links a{text-transform:none;letter-spacing:0;font-size
 .hero-photo{position:relative;margin-inline:calc(var(--gut) * -1);}
 .hero-photo img{width:100%;height:auto;display:block;}
 
+/* Sur telephone, la photo entiere en 16/9 reduit la femme et son telephone a
+   quelques dizaines de pixels : on RESSERRE sur eux. `70% center` decale vers
+   la droite, ou se trouve le telephone. */
+@media(max-width:899px){
+  .hero-photo img{
+    aspect-ratio:4/3;height:auto;
+    object-fit:cover;object-position:70% center;
+  }
+}
+
 @media(min-width:900px){
   /* La photo va jusqu'au BORD DE L'ECRAN, pas seulement au bord de la
      gouttiere : `100vw` moins la moitie gauche de la page. Elle s'arretait a
@@ -312,6 +322,37 @@ body[data-lang="ar"] .onglets-barre button{
    ne doivent pas la reduire. */
 .onglets-vue [role="tabpanel"]{width:100%;}
 .onglets-vue img{width:100%;height:auto;display:block;}
+
+/* SUR TELEPHONE, la capture DEFILE au lieu de retrecir.
+   Reduite a la largeur d'un ecran de 390 px, une capture de 1540 px voit son
+   texte de 13 px tomber a 3 px : le visiteur mobile voyait huit onglets qui
+   ne montraient rien. Elle garde donc une largeur lisible et se balaye du
+   doigt — le geste attendu sur un tableau trop large.
+   `touch-action:pan-x` : le balayage horizontal fait defiler la capture, le
+   vertical continue de faire defiler la page. */
+@media(max-width:899px){
+  .onglets-vue{
+    display:block;overflow-x:auto;overscroll-behavior-x:contain;
+    touch-action:pan-x pan-y;-webkit-overflow-scrolling:touch;
+    /* Deborde des gouttieres : la capture commence au bord de l'ecran, ce qui
+       montre qu'elle continue au-dela. */
+    margin-inline:calc(var(--gut) * -1);padding-inline:var(--gut);
+    scrollbar-width:none;
+  }
+  .onglets-vue::-webkit-scrollbar{display:none;}
+  .onglets-vue [role="tabpanel"]{width:auto;}
+  /* 860 px : assez large pour que les libelles et les montants restent
+     lisibles, assez etroit pour que deux balayages suffisent a tout voir. */
+  .onglets-vue img{width:860px;max-width:none;}
+}
+/* L'astuce n'existe que la ou le defilement existe. */
+.onglets-astuce{display:none;}
+@media(max-width:899px){
+  .onglets-astuce{
+    display:block;margin-top:12px;font-size:.78rem;color:var(--taupe);
+    text-align:center;
+  }
+}
 
 /* Fleches de part et d'autre de la capture, comme sur un carrousel. Elles
    DOUBLENT les onglets plutot que de les remplacer : les onglets nomment les
@@ -432,11 +473,26 @@ body[data-lang="ar"] .final .fine{letter-spacing:0;text-transform:none;font-size
 footer{padding-block:38px 110px;}
 .foot{display:flex;flex-wrap:wrap;gap:14px 30px;align-items:center;justify-content:space-between;font-size:.8rem;color:var(--taupe);}
 .foot .brand{color:var(--espresso);font-size:1.35rem;}
+/* « J'ai deja un compte » faisait 19 px de haut, sans marge de frappe : c'est
+   le lien dont se servent les salons qui reviennent. */
+.foot a{
+  display:inline-flex;align-items:center;min-height:44px;
+  color:var(--bordeaux);
+}
+.foot a:hover{text-decoration:underline;}
 
+/* La barre fixe ne se montre qu'une fois le hero passe. En haut de page elle
+   repetait le bouton deja visible a l'ecran, et mangeait 76 px de hauteur sur
+   un telephone — la ou chaque ligne compte. */
 .sticky-cta{
   position:fixed;left:0;right:0;bottom:0;z-index:95;padding:12px var(--gut) calc(12px + env(safe-area-inset-bottom));
   background:rgba(255,255,255,.96);backdrop-filter:blur(12px);border-top:1px solid var(--hair);
+  transform:translateY(100%);transition:transform .35s var(--ease);
 }
+.sticky-cta.on{transform:none;}
+/* Sans JS, la barre reste visible : mieux vaut un doublon qu'un bouton
+   inaccessible. */
+body:not(.js) .sticky-cta{transform:none;}
 .sticky-cta .btn{width:100%;}
 @media(min-width:760px){.sticky-cta{display:none;}}
 

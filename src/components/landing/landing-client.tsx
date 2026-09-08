@@ -415,7 +415,10 @@ export default function LandingClient() {
                     key={ECRANS[ecranActif].img}
                     src={`${IMG}${ECRANS[ecranActif].img}.webp`}
                     srcSet={`${IMG}${ECRANS[ecranActif].img}-760.webp 760w, ${IMG}${ECRANS[ecranActif].img}-1100.webp 1100w, ${IMG}${ECRANS[ecranActif].img}-1540.webp 1540w`}
-                    sizes="(min-width: 1400px) 1300px, 92vw"
+                    /* Sous 900 px la capture ne retrecit PAS : elle garde
+                       860 px et defile. Annoncer « 92vw » ferait telecharger
+                       une variante trop petite, donc floue. */
+                    sizes="(max-width: 899px) 860px, (min-width: 1400px) 1300px, 92vw"
                     alt={ECRANS[ecranActif].alt}
                     loading="lazy"
                   />
@@ -430,6 +433,10 @@ export default function LandingClient() {
                   ›
                 </button>
               </div>
+
+              {/* Une zone qui defile sans le dire ne se decouvre pas. Le
+                  message ne s'affiche que la ou le defilement existe. */}
+              <p className="onglets-astuce">{t.balayer}</p>
             </div>
 
           </div>
@@ -586,7 +593,9 @@ export default function LandingClient() {
         </footer>
       </div>
 
-      <div className="sticky-cta">
+      {/* `navOpaque` vaut true des 60 px de defilement : la barre apparait
+          quand le bouton du hero commence a sortir de l'ecran, et pas avant. */}
+      <div className={`sticky-cta${navOpaque ? " on" : ""}`}>
         <a className="btn btn-solid" href="/pos-start">
           <span>{t.cta}</span>
           <span className="arrowc">→</span>

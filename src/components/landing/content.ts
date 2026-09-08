@@ -48,6 +48,7 @@ export const CONTENU = {
     // d'ecran annoncerait « bouton ‹ ».
     ecranPrec: "Écran précédent",
     ecranSuiv: "Écran suivant",
+    balayer: "Balayez la capture pour voir tout l'écran",
     // Chaque capture est decrite : un lecteur d'ecran doit apprendre ce que
     // montre l'ecran, pas entendre huit fois « image ».
     altEcranSalon:
@@ -168,6 +169,7 @@ export const CONTENU = {
     ecTiroir: "التيروار",
     ecranPrec: "الشاشة السابقة",
     ecranSuiv: "الشاشة الموالية",
+    balayer: "جرّ الصورة باش تشوف الشاشة الكاملة",
     altEcranSalon:
       "لوحة الصالون : مدخول النهار، عدد الحرفاء، معدل الباني والخدمة الأكثر طلبا.",
     altEcranCaisse:
