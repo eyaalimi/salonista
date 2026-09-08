@@ -341,17 +341,31 @@ body[data-lang="ar"] .onglets-barre button{
   }
   .onglets-vue::-webkit-scrollbar{display:none;}
   .onglets-vue [role="tabpanel"]{width:auto;}
-  /* 860 px : assez large pour que les libelles et les montants restent
-     lisibles, assez etroit pour que deux balayages suffisent a tout voir. */
+  /* Faute de capture mobile, la version bureau garde 860 px et defile :
+     assez large pour rester lisible, assez etroit pour que deux balayages
+     suffisent. */
   .onglets-vue img{width:860px;max-width:none;}
+
+  /* AVEC une capture mobile, rien ne defile : elle est deja a la taille d'un
+     telephone et tient dans l'ecran. La classe est posee par React sur le
+     conteneur — `:has()` aurait suffi mais reste absent des navigateurs plus
+     anciens, et c'est justement la que la page doit tenir. */
+  .onglets-vue.mobile-natif{
+    overflow-x:visible;margin-inline:0;padding-inline:0;
+  }
+  .onglets-vue.mobile-natif img{
+    width:100%;max-width:340px;height:auto;margin-inline:auto;
+  }
 }
-/* L'astuce n'existe que la ou le defilement existe. */
+/* L'astuce ne s'affiche que quand la capture defile VRAIMENT — donc pas quand
+   une version mobile est servie. */
 .onglets-astuce{display:none;}
 @media(max-width:899px){
   .onglets-astuce{
     display:block;margin-top:12px;font-size:.78rem;color:var(--taupe);
     text-align:center;
   }
+  .onglets-astuce.masquee{display:none;}
 }
 
 /* Fleches de part et d'autre de la capture, comme sur un carrousel. Elles

@@ -38,6 +38,7 @@ export const CONTENU = {
     // Les huit onglets, dans l'ordre du menu lateral de la caisse.
     ecSalon: "Mon salon",
     ecCaisse: "Caisse",
+    ecEncaissement: "Encaissement",
     ecRdv: "Rendez-vous",
     ecClientes: "Clientes",
     ecFidelite: "Fidélité",
@@ -55,6 +56,8 @@ export const CONTENU = {
       "Le tableau de bord du salon : recette de la journée, clientes servies, panier moyen et service le plus demandé.",
     altEcranCaisse:
       "L'écran d'encaissement : la grille des services du salon à gauche, le panier et le bouton Encaisser à droite.",
+    altEcranEncaissement:
+      "Le panier au moment de régler : le service, son prix, les produits suggérés et le bouton Encaisser avec le total.",
     altEcranRdv:
       "L'agenda du jour : trois rendez-vous avec leur horaire et leur prestation, et le calendrier du mois à côté.",
     altEcranClientes:
@@ -161,6 +164,7 @@ export const CONTENU = {
     c7: "الإحصائيات",
     ecSalon: "صالوني",
     ecCaisse: "الكاس",
+    ecEncaissement: "الخلاص",
     ecRdv: "المواعيد",
     ecClientes: "الحرفاء",
     ecFidelite: "الوفاء",
@@ -174,6 +178,8 @@ export const CONTENU = {
       "لوحة الصالون : مدخول النهار، عدد الحرفاء، معدل الباني والخدمة الأكثر طلبا.",
     altEcranCaisse:
       "شاشة الخلاص : خدمات الصالون على اليمين، والباني وزر الخلاص على اليسار.",
+    altEcranEncaissement:
+      "الباني وقت الخلاص : الخدمة، ثمنها، المنتوجات المقترحة وزر الخلاص بالجملة.",
     altEcranRdv:
       "مواعيد النهار : ثلاثة مواعيد بالوقت والخدمة، وتقويم الشهر بجنبهم.",
     altEcranClientes:
