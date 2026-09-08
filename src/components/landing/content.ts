@@ -25,9 +25,6 @@ export const CONTENU = {
     // apprendre ce que montre l'image, pas entendre « image ».
     altHero:
       "Une employée de salon, en tablier, consulte la caisse Salonista sur son téléphone, debout au comptoir de son salon.",
-    hf1: "Aucune carte bancaire",
-    hf2: "Prête en cinq minutes",
-    hf3: "Sans engagement",
     e1: "La caisse",
     h2a: "Tout ce dont votre salon a besoin.",
     h2b: "Au même endroit.",
@@ -156,9 +153,6 @@ export const CONTENU = {
     eyebrow: "كاس لصالونات التجميل · تونس",
     h1a: "المعيار الجديد",
     h1b: "لتسيير صالونك.",
-    hf1: "بلا كارط بنكية",
-    hf2: "جاهزة في خمس دقايق",
-    hf3: "بلا التزام",
     e1: "الكاس",
     h2a: "كل ما يلزم صالونك.",
     h2b: "في بلاصة وحدة.",

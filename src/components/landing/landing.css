@@ -97,9 +97,22 @@ h1{font-size:clamp(2.6rem,7.2vw,6rem);}
 h2{font-size:clamp(2rem,4.8vw,3.8rem);}
 .display-md{font-size:clamp(1.6rem,3.2vw,2.5rem);}
 
+/* Le surtitre etait du texte nu en majuscules tres espacees : il flottait
+   au-dessus du titre sans lui appartenir, et son gris pale le faisait passer
+   pour un reste de mise en page.
+   Il devient une PASTILLE, la meme forme que les etiquettes de la caisse.
+
+   Fond BLANC et non rose pale, pour deux raisons mesurees : le rose fonce sur
+   rose pale ne donne que 4,46:1, sous le seuil de 4,5 ; et la section
+   « Pourquoi » a justement un fond rose pale, ou la pastille aurait disparu.
+   Sur blanc : 5,49:1, et elle tranche aussi bien sur le creme que sur le
+   rose. */
 .eyebrow{
-  font-family:var(--ui);font-size:.68rem;font-weight:500;
-  text-transform:uppercase;letter-spacing:.28em;color:var(--taupe);
+  display:inline-block;
+  font-family:var(--ui);font-size:.72rem;font-weight:600;
+  text-transform:uppercase;letter-spacing:.12em;
+  color:var(--bordeaux);background:#fff;
+  padding:7px 14px;border-radius:999px;
 }
 body[data-lang="ar"] .eyebrow{font-family:var(--ar);letter-spacing:0;text-transform:none;font-size:.86rem;}
 .lede{font-size:1.06rem;line-height:1.7;color:var(--taupe);max-width:46ch;font-weight:300;}
@@ -210,7 +223,10 @@ body[data-lang="ar"] .nav-links a{text-transform:none;letter-spacing:0;font-size
   .hero{padding-block:0;}
   .hero-texte{padding-block:calc(78px + clamp(36px,5vw,72px)) clamp(44px,6vw,80px);}
 }
-.hero .eyebrow{color:var(--bordeaux);}
+/* Le hero est sur fond BLANC : la pastille blanche y serait invisible. Elle
+   passe au rose pale, ou le contraste du texte (4,46:1) est en dessous du
+   seuil AA — on remonte donc au prune, qui donne 7,82:1. */
+.hero .eyebrow{background:var(--ivoire-2);color:var(--taupe);}
 .hero h1{margin-top:18px;max-width:13ch;color:var(--espresso);}
 /* L'italique du serif d'origine n'existe pas en Bricolage : c'est la couleur
    qui porte l'accent, pas l'inclinaison. */
@@ -220,10 +236,6 @@ body[data-lang="ar"] .nav-links a{text-transform:none;letter-spacing:0;font-size
   color:var(--taupe);
 }
 .hero-cta{display:flex;flex-wrap:wrap;gap:14px;margin-top:32px;}
-.hero-foot{
-  display:flex;flex-wrap:wrap;gap:10px 28px;margin-top:34px;padding-top:18px;
-  border-top:1px solid var(--hair);font-size:.85rem;color:var(--taupe);
-}
 
 /* La photo deborde a DROITE, hors de la gouttiere, comme sur les pages de
    logiciels : elle donne l'impression d'une scene qui continue au-dela de
@@ -280,10 +292,14 @@ body[data-lang="ar"] .nav-links a{text-transform:none;letter-spacing:0;font-size
 section{position:relative;}
 .sec{padding-block:clamp(80px,11vw,170px);}
 .sec-head{max-width:min(100%,940px);}
-.sec-head h2{max-width:15ch;}
-.sec-head .eyebrow{max-width:40ch;}
-.sec-head h2{margin-top:18px;}
+.sec-head h2{max-width:15ch;margin-top:18px;}
 .sec-head .lede{margin-top:24px;}
+
+/* En-tete centre, pour la FAQ. Le `max-width:15ch` du titre est LEVE ici,
+   mais il faut alors le recentrer explicitement : sans `margin-inline:auto`,
+   le titre debordait a droite du conteneur. */
+.sec-head.centre{max-width:none;text-align:center;}
+.sec-head.centre h2{max-width:24ch;margin-inline:auto;}
 
 /* ---------------- ecrans de la caisse, en onglets ----------------
    Remplace un collage fige de quatre captures superposees, ou l'on voyait des

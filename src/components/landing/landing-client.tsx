@@ -341,11 +341,6 @@ export default function LandingClient() {
                   <span>{t.cta2}</span>
                 </a>
               </div>
-              <div className="hero-foot rv in d3">
-                <span>{t.hf1}</span>
-                <span>{t.hf2}</span>
-                <span>{t.hf3}</span>
-              </div>
             </div>
 
             {/* `fetchPriority="high"` : c'est l'image la plus grande de la
@@ -614,9 +609,9 @@ export default function LandingClient() {
         {/* ---------------- FAQ ---------------- */}
         <section className="sec" id="faq">
           <div className="shell">
-            <div className="sec-head rv" style={{ maxWidth: "none", textAlign: "center" }}>
+            <div className="sec-head centre rv">
               <p className="eyebrow">{t.e6}</p>
-              <h2 style={{ marginTop: 16, maxWidth: "none" }}>{t.h8}</h2>
+              <h2>{t.h8}</h2>
             </div>
             <div className="faq rv d1">
               {QUESTIONS.map((item, i) => (
