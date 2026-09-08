@@ -36,6 +36,10 @@ export const CONTENU = {
     c3: "Clientes",
     c7: "Statistiques",
     // Les huit onglets, dans l'ordre du menu lateral de la caisse.
+    // Le choix de l'appareil, au-dessus des onglets.
+    appareilTitre: "Voir la caisse sur",
+    appareilPc: "Sur ordinateur",
+    appareilMobile: "Sur téléphone",
     ecSalon: "Mon salon",
     ecCaisse: "Caisse",
     ecEncaissement: "Encaissement",
@@ -162,6 +166,9 @@ export const CONTENU = {
     c2: "المواعيد",
     c3: "الحرفاء",
     c7: "الإحصائيات",
+    appareilTitre: "شوف الكاس على",
+    appareilPc: "على الكمبيوتر",
+    appareilMobile: "على التليفون",
     ecSalon: "صالوني",
     ecCaisse: "الكاس",
     ecEncaissement: "الخلاص",
