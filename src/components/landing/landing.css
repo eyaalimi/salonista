@@ -290,6 +290,23 @@ section{position:relative;}
    bouts d'interface sans savoir a quoi ils correspondaient. */
 .onglets{margin-top:clamp(40px,5vw,72px);}
 
+/* Le choix « sur ordinateur / sur telephone ». Deux pilules, la selectionnee
+   en prune plein : le prestataire voit les DEUX vues et choisit, rien n'est
+   devine de son appareil. */
+.appareils{
+  display:inline-flex;gap:4px;padding:4px;margin-bottom:clamp(20px,2.6vw,32px);
+  background:var(--ivoire-2);border-radius:999px;
+}
+.appareils button{
+  background:none;border:0;cursor:pointer;font-family:var(--ui);
+  font-size:.82rem;font-weight:600;color:var(--taupe);
+  padding:0 20px;min-height:44px;border-radius:999px;
+  transition:background-color .3s var(--ease),color .3s var(--ease);
+}
+body[data-lang="ar"] .appareils button{font-family:var(--ar);font-size:.9rem;}
+.appareils button:hover{color:var(--espresso);}
+.appareils button.on{background:var(--espresso);color:var(--ivoire);}
+
 /* La barre defile horizontalement plutot que de passer a la ligne : cinq
    libelles empiles sur telephone auraient repousse la capture hors de vue. */
 .onglets-barre{
@@ -323,6 +340,18 @@ body[data-lang="ar"] .onglets-barre button{
 .onglets-vue [role="tabpanel"]{width:100%;}
 .onglets-vue img{width:100%;height:auto;display:block;}
 
+/* LA VUE TELEPHONE. La capture est haute et etroite : etiree sur toute la
+   largeur elle serait absurde. Elle est posee dans une maquette de telephone,
+   comme dans le hero, et centree. */
+.vue-mobile [role="tabpanel"]{
+  width:auto;display:flex;justify-content:center;
+}
+.vue-mobile img{
+  width:300px;max-width:100%;border-radius:26px;
+  border:8px solid var(--espresso);
+  box-shadow:0 40px 80px -40px rgba(58,16,36,.45);
+}
+
 /* SUR TELEPHONE, la capture DEFILE au lieu de retrecir.
    Reduite a la largeur d'un ecran de 390 px, une capture de 1540 px voit son
    texte de 13 px tomber a 3 px : le visiteur mobile voyait huit onglets qui
@@ -330,8 +359,10 @@ body[data-lang="ar"] .onglets-barre button{
    doigt — le geste attendu sur un tableau trop large.
    `touch-action:pan-x` : le balayage horizontal fait defiler la capture, le
    vertical continue de faire defiler la page. */
+/* Ne concerne QUE la vue « sur ordinateur » : une capture de telephone tient
+   deja dans l'ecran et n'a rien a faire defiler. */
 @media(max-width:899px){
-  .onglets-vue{
+  .vue-pc{
     display:block;overflow-x:auto;overscroll-behavior-x:contain;
     touch-action:pan-x pan-y;-webkit-overflow-scrolling:touch;
     /* Deborde des gouttieres : la capture commence au bord de l'ecran, ce qui
@@ -339,33 +370,21 @@ body[data-lang="ar"] .onglets-barre button{
     margin-inline:calc(var(--gut) * -1);padding-inline:var(--gut);
     scrollbar-width:none;
   }
-  .onglets-vue::-webkit-scrollbar{display:none;}
-  .onglets-vue [role="tabpanel"]{width:auto;}
-  /* Faute de capture mobile, la version bureau garde 860 px et defile :
-     assez large pour rester lisible, assez etroit pour que deux balayages
-     suffisent. */
-  .onglets-vue img{width:860px;max-width:none;}
-
-  /* AVEC une capture mobile, rien ne defile : elle est deja a la taille d'un
-     telephone et tient dans l'ecran. La classe est posee par React sur le
-     conteneur — `:has()` aurait suffi mais reste absent des navigateurs plus
-     anciens, et c'est justement la que la page doit tenir. */
-  .onglets-vue.mobile-natif{
-    overflow-x:visible;margin-inline:0;padding-inline:0;
-  }
-  .onglets-vue.mobile-natif img{
-    width:100%;max-width:340px;height:auto;margin-inline:auto;
-  }
+  .vue-pc::-webkit-scrollbar{display:none;}
+  .vue-pc [role="tabpanel"]{width:auto;}
+  /* 860 px : assez large pour que les libelles et les montants restent
+     lisibles, assez etroit pour que deux balayages suffisent a tout voir. */
+  .vue-pc img{width:860px;max-width:none;}
+  /* La maquette de telephone retrecit un peu sur un petit ecran. */
+  .vue-mobile img{width:260px;}
 }
-/* L'astuce ne s'affiche que quand la capture defile VRAIMENT — donc pas quand
-   une version mobile est servie. */
+/* L'astuce n'existe que la ou le defilement existe. */
 .onglets-astuce{display:none;}
 @media(max-width:899px){
   .onglets-astuce{
     display:block;margin-top:12px;font-size:.78rem;color:var(--taupe);
     text-align:center;
   }
-  .onglets-astuce.masquee{display:none;}
 }
 
 /* Fleches de part et d'autre de la capture, comme sur un carrousel. Elles
@@ -388,6 +407,11 @@ body[data-lang="ar"] .onglets-barre button{
    dedans, elles masqueraient la barre laterale de l'application. */
 .onglets-fleche.prec{inset-inline-start:-24px;}
 .onglets-fleche.suiv{inset-inline-end:-24px;}
+/* En vue telephone la capture ne fait que 300 px et le conteneur reste large :
+   les fleches se collent aux bords de la section plutot que de flotter loin
+   de l'image. */
+.vue-mobile .onglets-fleche.prec{inset-inline-start:0;}
+.vue-mobile .onglets-fleche.suiv{inset-inline-end:0;}
 /* Les chevrons sont des caracteres, pas des icones : ils doivent pointer dans
    le sens de la lecture. */
 [dir="rtl"] .onglets-fleche{transform:translateY(-50%) scaleX(-1);}

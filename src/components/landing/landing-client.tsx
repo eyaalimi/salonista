@@ -63,6 +63,11 @@ export default function LandingClient() {
 
   /* ---------- onglets des ecrans de la caisse ---------- */
   const [ecranActif, setEcranActif] = useState(0);
+  /* « Sur ordinateur » ou « sur telephone » : le prestataire voit les DEUX,
+     et choisit ce qu'il regarde. Rien n'est devine de son appareil — beaucoup
+     decouvrent la page sur telephone mais installeront la caisse sur le
+     comptoir, ou l'inverse. */
+  const [appareil, setAppareil] = useState<"pc" | "mobile">("pc");
 
   useEffect(() => {
     document.body.classList.add("js");
@@ -228,25 +233,36 @@ export default function LandingClient() {
    * qu'elles aient rien demande. Les montants et la structure restent
    * lisibles, c'est ce que la page doit montrer.
    */
-  /* `mob` : la capture prise sur TELEPHONE, servie sous 900 px. Une capture de
-     bureau de 1540 px y devenait illisible ; celle-ci montre exactement ce que
-     verra une caissiere sur son propre telephone.
-     Les ecrans sans capture mobile (« Mon salon », « Fidelite ») gardent la
-     version bureau, qui defile alors horizontalement. */
-  const ECRANS = [
-    { label: t.ecSalon, img: "ecran-salon", mob: null, alt: t.altEcranSalon },
-    { label: t.ecCaisse, img: "ecran-caisse", mob: "m-caisse", alt: t.altEcranCaisse },
-    // L'encaissement n'a QUE la version mobile : c'est le panier au moment de
-    // regler, le geste central du produit. `img` sert de repli sur grand
-    // ecran, ou la capture s'affiche simplement plus petite.
-    { label: t.ecEncaissement, img: "m-encaissement", mob: "m-encaissement", alt: t.altEcranEncaissement },
-    { label: t.ecRdv, img: "ecran-rdv", mob: "m-rdv", alt: t.altEcranRdv },
-    { label: t.ecClientes, img: "ecran-clientes", mob: "m-clientes", alt: t.altEcranClientes },
-    { label: t.ecFidelite, img: "ecran-fidelite", mob: null, alt: t.altEcranFidelite },
-    { label: t.ecCommissions, img: "ecran-commissions", mob: "m-commissions", alt: t.altEcranCommissions },
-    { label: t.ecProduits, img: "ecran-produits", mob: "m-produits", alt: t.altEcranProduits },
-    { label: t.ecTiroir, img: "ecran-tiroir", mob: "m-tiroir", alt: t.altEcranTiroir },
+  /* Les ecrans en version ORDINATEUR, larges. */
+  const ECRANS_PC = [
+    { label: t.ecSalon, img: "ecran-salon", alt: t.altEcranSalon },
+    { label: t.ecCaisse, img: "ecran-caisse", alt: t.altEcranCaisse },
+    { label: t.ecRdv, img: "ecran-rdv", alt: t.altEcranRdv },
+    { label: t.ecClientes, img: "ecran-clientes", alt: t.altEcranClientes },
+    { label: t.ecFidelite, img: "ecran-fidelite", alt: t.altEcranFidelite },
+    { label: t.ecCommissions, img: "ecran-commissions", alt: t.altEcranCommissions },
+    { label: t.ecProduits, img: "ecran-produits", alt: t.altEcranProduits },
+    { label: t.ecTiroir, img: "ecran-tiroir", alt: t.altEcranTiroir },
   ];
+
+  /* Les memes ecrans, pris SUR TELEPHONE. Ce ne sont pas les captures de
+     bureau redimensionnees : l'application change de mise en page, et c'est
+     precisement ce que le prestataire doit voir avant de s'inscrire. */
+  const ECRANS_MOBILE = [
+    { label: t.ecCaisse, img: "m-caisse", alt: t.altEcranCaisse },
+    { label: t.ecEncaissement, img: "m-encaissement", alt: t.altEcranEncaissement },
+    { label: t.ecRdv, img: "m-rdv", alt: t.altEcranRdv },
+    { label: t.ecClientes, img: "m-clientes", alt: t.altEcranClientes },
+    { label: t.ecCommissions, img: "m-commissions", alt: t.altEcranCommissions },
+    { label: t.ecProduits, img: "m-produits", alt: t.altEcranProduits },
+    { label: t.ecTiroir, img: "m-tiroir", alt: t.altEcranTiroir },
+  ];
+
+  /* L'appareil choisi, et les ecrans qui vont avec. L'index est remis a zero
+     au changement : les deux listes n'ont ni la meme longueur ni le meme
+     ordre, et garder l'index aurait ouvert un onglet sans rapport. */
+  const ECRANS = appareil === "pc" ? ECRANS_PC : ECRANS_MOBILE;
+  const ecranSur = Math.min(ecranActif, ECRANS.length - 1);
 
   const QUESTIONS = [
     { q: t.q1, a: t.a1 },
@@ -377,6 +393,35 @@ export default function LandingClient() {
              * casse a la place de la capture.
              */}
             <div className="onglets rv">
+              {/* Le choix de l'appareil. Il precede les onglets parce qu'il
+                  change la liste en dessous. */}
+              <div className="appareils" role="tablist" aria-label={t.appareilTitre}>
+                <button
+                  type="button"
+                  role="tab"
+                  aria-selected={appareil === "pc"}
+                  className={appareil === "pc" ? "on" : undefined}
+                  onClick={() => {
+                    setAppareil("pc");
+                    setEcranActif(0);
+                  }}
+                >
+                  {t.appareilPc}
+                </button>
+                <button
+                  type="button"
+                  role="tab"
+                  aria-selected={appareil === "mobile"}
+                  className={appareil === "mobile" ? "on" : undefined}
+                  onClick={() => {
+                    setAppareil("mobile");
+                    setEcranActif(0);
+                  }}
+                >
+                  {t.appareilMobile}
+                </button>
+              </div>
+
               <div className="onglets-barre" role="tablist" aria-label={t.e1}>
                 {ECRANS.map((e, i) => (
                   <button
@@ -384,9 +429,9 @@ export default function LandingClient() {
                     type="button"
                     role="tab"
                     id={`onglet-${i}`}
-                    aria-selected={ecranActif === i}
+                    aria-selected={ecranSur === i}
                     aria-controls={`volet-${i}`}
-                    className={ecranActif === i ? "on" : undefined}
+                    className={ecranSur === i ? "on" : undefined}
                     onClick={() => setEcranActif(i)}
                   >
                     {e.label}
@@ -399,9 +444,7 @@ export default function LandingClient() {
                   Elles bouclent — depuis le premier ecran, « precedent » ramene
                   au dernier. Desactivees aux extremites, deux boutons grises
                   sur huit ecrans donneraient l'impression d'une panne. */}
-              <div
-                className={`onglets-vue${ECRANS[ecranActif].mob ? " mobile-natif" : ""}`}
-              >
+              <div className={`onglets-vue vue-${appareil}`}>
                 <button
                   type="button"
                   className="onglets-fleche prec"
@@ -418,34 +461,29 @@ export default function LandingClient() {
                     le reste de la page. */}
                 <div
                   role="tabpanel"
-                  id={`volet-${ecranActif}`}
-                  aria-labelledby={`onglet-${ecranActif}`}
+                  id={`volet-${ecranSur}`}
+                  aria-labelledby={`onglet-${ecranSur}`}
                 >
-                  {/* `<picture>` plutot qu'une bascule en JS : le navigateur
-                      choisit AVANT de telecharger, et ne charge donc jamais la
-                      capture de bureau sur un telephone. */}
-                  <picture key={ECRANS[ecranActif].img}>
-                    {ECRANS[ecranActif].mob && (
-                      <source
-                        media="(max-width: 899px)"
-                        srcSet={`${IMG}${ECRANS[ecranActif].mob}-420.webp 420w, ${IMG}${ECRANS[ecranActif].mob}-591.webp 591w`}
-                        sizes="100vw"
-                      />
-                    )}
-                    {/* Pas de `eslint-disable` ici : la regle
-                        `no-img-element` ne se declenche pas sur un <img>
-                        enfant d'un <picture>. */}
-                    <img
-                      src={`${IMG}${ECRANS[ecranActif].img}.webp`}
-                      srcSet={`${IMG}${ECRANS[ecranActif].img}-760.webp 760w, ${IMG}${ECRANS[ecranActif].img}-1100.webp 1100w, ${IMG}${ECRANS[ecranActif].img}-1540.webp 1540w`}
-                      /* Sans capture mobile, la version bureau garde 860 px et
-                         defile. Annoncer « 92vw » ferait telecharger une
-                         variante trop petite, donc floue. */
-                      sizes="(max-width: 899px) 860px, (min-width: 1400px) 1300px, 92vw"
-                      alt={ECRANS[ecranActif].alt}
-                      loading="lazy"
-                    />
-                  </picture>
+                  {/* Les captures mobiles n'existent qu'en 420 et 591 px, les
+                      captures de bureau en 760, 1100 et 1540 : deux jeux de
+                      variantes, deux `srcSet`. */}
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    key={ECRANS[ecranSur].img}
+                    src={`${IMG}${ECRANS[ecranSur].img}.webp`}
+                    srcSet={
+                      appareil === "mobile"
+                        ? `${IMG}${ECRANS[ecranSur].img}-420.webp 420w, ${IMG}${ECRANS[ecranSur].img}-591.webp 591w`
+                        : `${IMG}${ECRANS[ecranSur].img}-760.webp 760w, ${IMG}${ECRANS[ecranSur].img}-1100.webp 1100w, ${IMG}${ECRANS[ecranSur].img}-1540.webp 1540w`
+                    }
+                    sizes={
+                      appareil === "mobile"
+                        ? "300px"
+                        : "(max-width: 899px) 860px, (min-width: 1400px) 1300px, 92vw"
+                    }
+                    alt={ECRANS[ecranSur].alt}
+                    loading="lazy"
+                  />
                 </div>
 
                 <button
@@ -460,11 +498,9 @@ export default function LandingClient() {
 
               {/* Une zone qui defile sans le dire ne se decouvre pas. Le
                   message ne s'affiche que la ou le defilement existe. */}
-              <p
-                className={`onglets-astuce${ECRANS[ecranActif].mob ? " masquee" : ""}`}
-              >
-                {t.balayer}
-              </p>
+              {/* L'astuce ne vaut que pour les captures de BUREAU, larges, sur
+                  un petit ecran. Une capture mobile tient deja dedans. */}
+              {appareil === "pc" && <p className="onglets-astuce">{t.balayer}</p>}
             </div>
 
           </div>
