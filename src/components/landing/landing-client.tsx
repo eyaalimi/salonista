@@ -228,15 +228,24 @@ export default function LandingClient() {
    * qu'elles aient rien demande. Les montants et la structure restent
    * lisibles, c'est ce que la page doit montrer.
    */
+  /* `mob` : la capture prise sur TELEPHONE, servie sous 900 px. Une capture de
+     bureau de 1540 px y devenait illisible ; celle-ci montre exactement ce que
+     verra une caissiere sur son propre telephone.
+     Les ecrans sans capture mobile (« Mon salon », « Fidelite ») gardent la
+     version bureau, qui defile alors horizontalement. */
   const ECRANS = [
-    { label: t.ecSalon, img: "ecran-salon", alt: t.altEcranSalon },
-    { label: t.ecCaisse, img: "ecran-caisse", alt: t.altEcranCaisse },
-    { label: t.ecRdv, img: "ecran-rdv", alt: t.altEcranRdv },
-    { label: t.ecClientes, img: "ecran-clientes", alt: t.altEcranClientes },
-    { label: t.ecFidelite, img: "ecran-fidelite", alt: t.altEcranFidelite },
-    { label: t.ecCommissions, img: "ecran-commissions", alt: t.altEcranCommissions },
-    { label: t.ecProduits, img: "ecran-produits", alt: t.altEcranProduits },
-    { label: t.ecTiroir, img: "ecran-tiroir", alt: t.altEcranTiroir },
+    { label: t.ecSalon, img: "ecran-salon", mob: null, alt: t.altEcranSalon },
+    { label: t.ecCaisse, img: "ecran-caisse", mob: "m-caisse", alt: t.altEcranCaisse },
+    // L'encaissement n'a QUE la version mobile : c'est le panier au moment de
+    // regler, le geste central du produit. `img` sert de repli sur grand
+    // ecran, ou la capture s'affiche simplement plus petite.
+    { label: t.ecEncaissement, img: "m-encaissement", mob: "m-encaissement", alt: t.altEcranEncaissement },
+    { label: t.ecRdv, img: "ecran-rdv", mob: "m-rdv", alt: t.altEcranRdv },
+    { label: t.ecClientes, img: "ecran-clientes", mob: "m-clientes", alt: t.altEcranClientes },
+    { label: t.ecFidelite, img: "ecran-fidelite", mob: null, alt: t.altEcranFidelite },
+    { label: t.ecCommissions, img: "ecran-commissions", mob: "m-commissions", alt: t.altEcranCommissions },
+    { label: t.ecProduits, img: "ecran-produits", mob: "m-produits", alt: t.altEcranProduits },
+    { label: t.ecTiroir, img: "ecran-tiroir", mob: "m-tiroir", alt: t.altEcranTiroir },
   ];
 
   const QUESTIONS = [
@@ -390,7 +399,9 @@ export default function LandingClient() {
                   Elles bouclent — depuis le premier ecran, « precedent » ramene
                   au dernier. Desactivees aux extremites, deux boutons grises
                   sur huit ecrans donneraient l'impression d'une panne. */}
-              <div className="onglets-vue">
+              <div
+                className={`onglets-vue${ECRANS[ecranActif].mob ? " mobile-natif" : ""}`}
+              >
                 <button
                   type="button"
                   className="onglets-fleche prec"
@@ -410,18 +421,31 @@ export default function LandingClient() {
                   id={`volet-${ecranActif}`}
                   aria-labelledby={`onglet-${ecranActif}`}
                 >
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img
-                    key={ECRANS[ecranActif].img}
-                    src={`${IMG}${ECRANS[ecranActif].img}.webp`}
-                    srcSet={`${IMG}${ECRANS[ecranActif].img}-760.webp 760w, ${IMG}${ECRANS[ecranActif].img}-1100.webp 1100w, ${IMG}${ECRANS[ecranActif].img}-1540.webp 1540w`}
-                    /* Sous 900 px la capture ne retrecit PAS : elle garde
-                       860 px et defile. Annoncer « 92vw » ferait telecharger
-                       une variante trop petite, donc floue. */
-                    sizes="(max-width: 899px) 860px, (min-width: 1400px) 1300px, 92vw"
-                    alt={ECRANS[ecranActif].alt}
-                    loading="lazy"
-                  />
+                  {/* `<picture>` plutot qu'une bascule en JS : le navigateur
+                      choisit AVANT de telecharger, et ne charge donc jamais la
+                      capture de bureau sur un telephone. */}
+                  <picture key={ECRANS[ecranActif].img}>
+                    {ECRANS[ecranActif].mob && (
+                      <source
+                        media="(max-width: 899px)"
+                        srcSet={`${IMG}${ECRANS[ecranActif].mob}-420.webp 420w, ${IMG}${ECRANS[ecranActif].mob}-591.webp 591w`}
+                        sizes="100vw"
+                      />
+                    )}
+                    {/* Pas de `eslint-disable` ici : la regle
+                        `no-img-element` ne se declenche pas sur un <img>
+                        enfant d'un <picture>. */}
+                    <img
+                      src={`${IMG}${ECRANS[ecranActif].img}.webp`}
+                      srcSet={`${IMG}${ECRANS[ecranActif].img}-760.webp 760w, ${IMG}${ECRANS[ecranActif].img}-1100.webp 1100w, ${IMG}${ECRANS[ecranActif].img}-1540.webp 1540w`}
+                      /* Sans capture mobile, la version bureau garde 860 px et
+                         defile. Annoncer « 92vw » ferait telecharger une
+                         variante trop petite, donc floue. */
+                      sizes="(max-width: 899px) 860px, (min-width: 1400px) 1300px, 92vw"
+                      alt={ECRANS[ecranActif].alt}
+                      loading="lazy"
+                    />
+                  </picture>
                 </div>
 
                 <button
@@ -436,7 +460,11 @@ export default function LandingClient() {
 
               {/* Une zone qui defile sans le dire ne se decouvre pas. Le
                   message ne s'affiche que la ou le defilement existe. */}
-              <p className="onglets-astuce">{t.balayer}</p>
+              <p
+                className={`onglets-astuce${ECRANS[ecranActif].mob ? " masquee" : ""}`}
+              >
+                {t.balayer}
+              </p>
             </div>
 
           </div>
