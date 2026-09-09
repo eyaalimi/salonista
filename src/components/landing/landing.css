@@ -271,16 +271,16 @@ body[data-lang="ar"] .nav-links a{text-transform:none;letter-spacing:0;font-size
 .hero-photo{position:relative;margin-inline:calc(var(--gut) * -1);}
 .hero-photo img{width:100%;height:auto;display:block;}
 
-/* Sur telephone, la photo entiere en 16/9 reduit la femme et son telephone a
-   quelques dizaines de pixels : on RESSERRE sur eux. `70% center` decale vers
-   la droite, ou se trouve le telephone.
-   Le 5/4 plutot que le 4/3 : a 350 px de large, il economise 30 px de hauteur
-   sans rien perdre du sujet — et ces 30 px decident si le bouton passe ou non
-   au-dessus de la ligne de flottaison. */
+/* Sur telephone, la photo entiere en 16/9 rend les ecrans minuscules : on
+   RESSERRE. Le cadrage est CENTRE et non decale a droite — la photo montre
+   trois appareils repartis sur toute sa largeur, et un cadrage a 70 % coupait
+   la tablette de gauche. Verifie en extrayant les deux fenetres.
+   Le 5/4 plutot que le 4/3 economise 30 px de hauteur, et ces 30 px decident
+   de ce qui tient au-dessus de la ligne de flottaison. */
 @media(max-width:899px){
   .hero-photo img{
     aspect-ratio:5/4;height:auto;
-    object-fit:cover;object-position:70% center;
+    object-fit:cover;object-position:center;
   }
 }
 
@@ -300,13 +300,12 @@ body[data-lang="ar"] .nav-links a{text-transform:none;letter-spacing:0;font-size
     -webkit-mask-image:linear-gradient(to right,transparent 0,#000 16%,#000 100%);
     mask-image:linear-gradient(to right,transparent 0,#000 16%,#000 100%);
   }
-  /* La colonne est plus etroite que la photo (1,52 contre 1,79) : c'est donc
-     sur les COTES que `cover` rogne. `35%` garde la femme, le telephone et le
-     terminal de paiement dans le cadre ; a `28%`, le bord droit du comptoir
-     mangeait le terminal. */
+  /* La colonne est plus etroite que la photo : c'est donc sur les COTES que
+     `cover` rogne. Cadrage CENTRE — les trois appareils sont repartis sur
+     toute la largeur, et tout decalage en sacrifiait un. */
   .hero-photo img{
     position:absolute;inset:0;width:100%;height:100%;
-    object-fit:cover;object-position:35% center;
+    object-fit:cover;object-position:center;
   }
 }
 /* En arabe la colonne photo passe a gauche : le fondu doit changer de bord,

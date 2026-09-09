@@ -24,7 +24,7 @@ export const CONTENU = {
     // Decrit la photo pour qui ne la voit pas : un lecteur d'ecran doit
     // apprendre ce que montre l'image, pas entendre « image ».
     altHero:
-      "Une employée de salon, en tablier, consulte la caisse Salonista sur son téléphone, debout au comptoir de son salon.",
+      "Au comptoir d'un salon, la caisse Salonista ouverte sur trois appareils : un ordinateur portable, une tablette, et un téléphone tenu en main par une employée.",
     e1: "La caisse",
     h2a: "Tout ce dont votre salon a besoin.",
     h2b: "Au même endroit.",
@@ -148,7 +148,7 @@ export const CONTENU = {
     heroLede:
       "خلّص، سيّر مواعيدك وتابع حرفاءك من تليفون، تابليت ولا كمبيوتر. مجانا، وبلا التزام.",
     altHero:
-      "عاملة في صالون، بالتابليي، تشوف كاس سالونيستا في تليفونها، واقفة في الكونتوار.",
+      "في كونتوار صالون، كاس سالونيستا محلولة على ثلاثة أجهزة : كمبيوتر، تابليت، وتليفون في يد عاملة.",
     cta3: "ابدأ الكاس متاعي مجانا",
     eyebrow: "كاس لصالونات التجميل · تونس",
     h1a: "المعيار الجديد",
