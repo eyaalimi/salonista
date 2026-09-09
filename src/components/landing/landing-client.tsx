@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { CONTENU, type Langue } from "./content";
 
 const IMG = "/images/lp/";
@@ -142,75 +142,6 @@ export default function LandingClient() {
     };
   }, []);
 
-  /* ---------- comparatif avant / avec ---------- */
-  const cmpRef = useRef<HTMLDivElement>(null);
-  const [coupe, setCoupe] = useState(50);
-
-  const deplacer = useCallback(
-    (clientX: number) => {
-      const zone = cmpRef.current;
-      if (!zone) return;
-      const r = zone.getBoundingClientRect();
-      const brut = ((clientX - r.left) / r.width) * 100;
-      const p = rtl ? 100 - brut : brut;
-      setCoupe(Math.max(6, Math.min(94, p)));
-    },
-    [rtl],
-  );
-
-  useEffect(() => {
-    const zone = cmpRef.current;
-    if (!zone) return;
-    let glisse = false;
-
-    const debut = (e: MouseEvent | TouchEvent) => {
-      glisse = true;
-      deplacer("touches" in e ? e.touches[0].clientX : e.clientX);
-    };
-    const pendant = (e: MouseEvent | TouchEvent) => {
-      if (!glisse) return;
-      deplacer("touches" in e ? e.touches[0].clientX : e.clientX);
-      if (e.cancelable) e.preventDefault();
-    };
-    const fin = () => {
-      glisse = false;
-    };
-
-    zone.addEventListener("mousedown", debut);
-    zone.addEventListener("touchstart", debut, { passive: true });
-    window.addEventListener("mousemove", pendant);
-    window.addEventListener("touchmove", pendant, { passive: false });
-    window.addEventListener("mouseup", fin);
-    window.addEventListener("touchend", fin);
-
-    return () => {
-      zone.removeEventListener("mousedown", debut);
-      zone.removeEventListener("touchstart", debut);
-      window.removeEventListener("mousemove", pendant);
-      window.removeEventListener("touchmove", pendant);
-      window.removeEventListener("mouseup", fin);
-      window.removeEventListener("touchend", fin);
-    };
-  }, [deplacer]);
-
-  const auClavier = (e: React.KeyboardEvent) => {
-    if (e.key === "ArrowLeft") {
-      setCoupe((p) => Math.max(6, p - 4));
-      e.preventDefault();
-    }
-    if (e.key === "ArrowRight") {
-      setCoupe((p) => Math.min(94, p + 4));
-      e.preventDefault();
-    }
-  };
-
-  const stylePanneauAvant: React.CSSProperties = rtl
-    ? { width: `${coupe}%`, right: 0, left: "auto" }
-    : { width: `${coupe}%`, left: 0, right: "auto" };
-  const stylePoignee: React.CSSProperties = rtl
-    ? { right: `${coupe}%`, left: "auto" }
-    : { left: `${coupe}%`, right: "auto" };
-
   /* Six cartes, sans illustration : les captures de la caisse sont montrees
      juste au-dessus, en grand et nommees. Les repeter ici en vignettes
      n'apprenait rien et faisait charger six images de plus. */
@@ -263,6 +194,19 @@ export default function LandingClient() {
      ordre, et garder l'index aurait ouvert un onglet sans rapport. */
   const ECRANS = appareil === "pc" ? ECRANS_PC : ECRANS_MOBILE;
   const ecranSur = Math.min(ecranActif, ECRANS.length - 1);
+
+  /* Chaque probleme face a SA solution. L'ordre des deux listes d'origine ne
+     se correspondait pas : « des calculs a la main » se retrouvait en face de
+     « l'agenda dans la caisse ». Les paires sont refaites pour que la ligne de
+     droite reponde vraiment a celle de gauche. */
+  const PAIRES: Array<[string, string]> = [
+    [t.av1, t.ap1],
+    [t.av2, t.ap5],
+    [t.av3, t.ap2],
+    [t.av4, t.ap4],
+    [t.av5, t.ap3],
+    [t.av6, t.ap6],
+  ];
 
   const QUESTIONS = [
     { q: t.q1, a: t.a1 },
@@ -539,48 +483,38 @@ export default function LandingClient() {
               </h2>
             </div>
 
-            <div className="cmp rv" ref={cmpRef}>
-              <div className="cmp-pane cmp-b">
-                <div className="inner">
-                  <p className="tag">{t.apres}</p>
-                  <h3 style={{ marginTop: 12 }}>{t.apresT}</h3>
-                  <ul>
-                    {[t.ap1, t.ap2, t.ap3, t.ap4, t.ap5, t.ap6].map((x) => (
-                      <li key={x}>
-                        <i>✓</i>
-                        <span>{x}</span>
-                      </li>
-                    ))}
-                  </ul>
-                </div>
+            {/**
+             * Six paires, chaque probleme face a sa solution.
+             *
+             * Remplace un curseur glissant qui masquait la moitie du contenu
+             * tant qu'on n'avait pas devine le geste — et qui demandait 70
+             * lignes de JavaScript pour la souris, le tactile, le clavier et
+             * l'arabe. Ici tout se lit d'un coup d'oeil, et le lien de cause a
+             * effet est visible : la ligne de droite repond a celle de gauche.
+             */}
+            <div className="paires rv">
+              <div className="paires-tete" aria-hidden="true">
+                <span>{t.avant}</span>
+                <span>{t.apres}</span>
               </div>
-              <div className="cmp-pane cmp-a" style={stylePanneauAvant}>
-                <div className="inner">
-                  <p className="tag">{t.avant}</p>
-                  <h3 style={{ marginTop: 12 }}>{t.avantT}</h3>
-                  <ul>
-                    {[t.av1, t.av2, t.av3, t.av4, t.av5, t.av6].map((x) => (
-                      <li key={x}>
-                        <i>—</i>
-                        <span>{x}</span>
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              </div>
-              <div
-                className="handle"
-                style={stylePoignee}
-                role="slider"
-                tabIndex={0}
-                aria-label={t.hint}
-                aria-valuemin={0}
-                aria-valuemax={100}
-                aria-valuenow={Math.round(coupe)}
-                onKeyDown={auClavier}
-              />
+              <ul className="paires-liste">
+                {PAIRES.map(([probleme, solution]) => (
+                  <li key={probleme}>
+                    <span className="pb">{probleme}</span>
+                    <span className="fleche" aria-hidden="true">
+                      →
+                    </span>
+                    {/* Le libelle est repete pour un lecteur d'ecran : sans
+                        lui, la ligne se lirait « Des cahiers — Une caisse
+                        centralisee », sans dire lequel est l'avant. */}
+                    <span className="sol">
+                      <span className="sr">{t.apres} : </span>
+                      {solution}
+                    </span>
+                  </li>
+                ))}
+              </ul>
             </div>
-            <p className="cmp-hint">{t.hint}</p>
           </div>
         </section>
 
