@@ -60,6 +60,11 @@ export default function LandingClient() {
 
   /* ---------- navigation opaque au defilement ---------- */
   const [navOpaque, setNavOpaque] = useState(false);
+  /* La barre fixe du bas n'a pas le meme seuil que la barre du haut : elle
+     occupe 11 % d'un ecran de telephone, et repeter le bouton du hero pendant
+     qu'il est encore visible ne sert a rien. Elle attend que le hero soit
+     reellement passe. */
+  const [ctaVisible, setCtaVisible] = useState(false);
 
   /* ---------- onglets des ecrans de la caisse ---------- */
   const [ecranActif, setEcranActif] = useState(0);
@@ -113,8 +118,16 @@ export default function LandingClient() {
       }
     };
 
+    /* Le seuil de la barre fixe se mesure sur le hero lui-meme : elle
+       apparait quand son bas passe au-dessus du bord de l'ecran. Une valeur
+       en dur aurait ete fausse des que la hauteur du hero change — et elle
+       change avec la langue, la taille de police et l'orientation. */
+    const hero = document.querySelector(".hero");
+
     const auScroll = () => {
       setNavOpaque(window.scrollY > 60);
+      const bas = hero?.getBoundingClientRect().bottom ?? 0;
+      setCtaVisible(bas < 80);
       if (!enAttente && !reduit) {
         enAttente = true;
         requestAnimationFrame(dessiner);
@@ -270,25 +283,27 @@ export default function LandingClient() {
          * La carte flottante qui simulait un encaissement a disparu : elle
          * annoncait 60,000 TND quand la capture en montre 100,000.
          */}
+        {/**
+         * SUR TELEPHONE, le hero est en TROIS temps : titre, photo, puis la
+         * phrase et le bouton. Le texte occupait 595 px avant la photo sur un
+         * ecran qui en montre 700 : le visiteur lisait une promesse sans
+         * jamais voir le produit. La photo remonte donc au-dessus de la ligne
+         * de flottaison.
+         *
+         * Sur ordinateur, les deux colonnes reprennent leur place : le titre
+         * et sa suite se rejoignent a gauche, la photo tient la droite.
+         * L'ordre du DOM suit la lecture MOBILE ; c'est la grille de bureau
+         * qui recompose, pas l'inverse.
+         */}
         <section className="hero">
           <div className="shell hero-in">
-            <div className="hero-texte">
+            <div className="hero-titre">
               <p className="eyebrow rv in">{t.eyebrow}</p>
               <h1 className="rv in d1">
                 <span>{t.h1a}</span>
                 <br />
                 <em>{t.h1b}</em>
               </h1>
-              <p className="hero-lede rv in d2">{t.heroLede}</p>
-              <div className="hero-cta rv in d2">
-                <a className="btn btn-solid" href="/pos-start">
-                  <span>{t.cta}</span>
-                  <span className="arrowc">→</span>
-                </a>
-                <a className="btn btn-line" href="#produit">
-                  <span>{t.cta2}</span>
-                </a>
-              </div>
             </div>
 
             {/* `fetchPriority="high"` : c'est l'image la plus grande de la
@@ -308,6 +323,22 @@ export default function LandingClient() {
                 height={768}
                 fetchPriority="high"
               />
+            </div>
+
+            <div className="hero-suite">
+              <p className="hero-lede rv in d2">{t.heroLede}</p>
+              <div className="hero-cta rv in d2">
+                <a className="btn btn-solid" href="/pos-start">
+                  <span>{t.cta}</span>
+                  <span className="arrowc">→</span>
+                </a>
+                {/* « Decouvrir Salonista » n'est qu'un lien vers le bas de la
+                    page : en bouton, il prenait autant de place que l'action
+                    principale. Sur telephone il devient un lien discret. */}
+                <a className="btn btn-line hero-second" href="#produit">
+                  <span>{t.cta2}</span>
+                </a>
+              </div>
             </div>
           </div>
         </section>
@@ -590,9 +621,7 @@ export default function LandingClient() {
         </footer>
       </div>
 
-      {/* `navOpaque` vaut true des 60 px de defilement : la barre apparait
-          quand le bouton du hero commence a sortir de l'ecran, et pas avant. */}
-      <div className={`sticky-cta${navOpaque ? " on" : ""}`}>
+      <div className={`sticky-cta${ctaVisible ? " on" : ""}`}>
         <a className="btn btn-solid" href="/pos-start">
           <span>{t.cta}</span>
           <span className="arrowc">→</span>

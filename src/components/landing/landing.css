@@ -207,35 +207,62 @@ body[data-lang="ar"] .nav-links a{text-transform:none;letter-spacing:0;font-size
    Fond BLANC, texte court a gauche, photo humaine a droite qui deborde du
    cadre. Remplace une photo de spa plein ecran avec le texte pose par dessus,
    ou l'on lisait « institut de beaute » plutot que « logiciel de caisse ». */
+/* MOBILE D'ABORD : trois blocs empiles — titre, photo, puis phrase et bouton.
+   Les marges sont resserrees pour que la photo passe au-dessus de la ligne de
+   flottaison. */
 .hero{
   position:relative;background:#fff;overflow:hidden;
-  padding-block:calc(78px + clamp(36px,5vw,72px)) clamp(44px,6vw,80px);
+  padding-block:calc(78px + 20px) clamp(32px,5vw,80px);
 }
-.hero-in{display:grid;gap:clamp(34px,4vw,56px);align-items:center;}
+.hero-in{display:grid;gap:20px;align-items:center;}
+
 @media(min-width:900px){
-  /* La photo prend la plus grande part : c'est elle qui porte le regard, le
-     texte tient en une phrase. Le rapport suit celui des pages de logiciels
-     de caisse — un tiers de texte, deux tiers d'image. */
-  .hero-in{grid-template-columns:minmax(0,.78fr) minmax(0,1.22fr);}
+  /* Deux colonnes : le titre et sa suite se rejoignent a gauche, la photo
+     tient la droite. `grid-template-areas` recompose l'ordre du DOM, qui
+     suit la lecture MOBILE. */
+  .hero-in{
+    grid-template-columns:minmax(0,.78fr) minmax(0,1.22fr);
+    grid-template-areas:"titre photo" "suite photo";
+    align-content:center;gap:0 clamp(34px,4vw,56px);
+  }
+  .hero-titre{grid-area:titre;align-self:end;}
+  .hero-suite{grid-area:suite;align-self:start;}
+  .hero-photo{grid-area:photo;}
   /* La photo remonte DERRIERE la barre de navigation et redescend sous le
-     bloc : elle touche les deux bords de la section, comme une scene qui
-     continue hors de l'ecran. Le padding du hero est annule pour elle seule. */
+     bloc : elle touche les deux bords de la section. Le padding du hero est
+     donc annule et reporte sur les deux blocs de texte. */
   .hero{padding-block:0;}
-  .hero-texte{padding-block:calc(78px + clamp(36px,5vw,72px)) clamp(44px,6vw,80px);}
+  .hero-titre{padding-top:calc(78px + clamp(36px,5vw,72px));}
+  .hero-suite{padding-bottom:clamp(44px,6vw,80px);}
 }
 /* Le hero est sur fond BLANC : la pastille blanche y serait invisible. Elle
    passe au rose pale, ou le contraste du texte (4,46:1) est en dessous du
    seuil AA — on remonte donc au prune, qui donne 7,82:1. */
 .hero .eyebrow{background:var(--ivoire-2);color:var(--taupe);}
-.hero h1{margin-top:18px;max-width:13ch;color:var(--espresso);}
+/* Pas de `max-width` sur telephone : a 13ch le titre cassait a la quatrieme
+   ligne alors que l'ecran en tenait trois. */
+.hero h1{margin-top:14px;color:var(--espresso);}
+@media(min-width:900px){.hero h1{margin-top:18px;max-width:13ch;}}
 /* L'italique du serif d'origine n'existe pas en Bricolage : c'est la couleur
    qui porte l'accent, pas l'inclinaison. */
 .hero h1 em{font-style:normal;color:var(--bordeaux);}
 .hero-lede{
-  margin-top:22px;max-width:44ch;font-size:1.04rem;line-height:1.65;
+  margin-top:0;max-width:44ch;font-size:1.02rem;line-height:1.6;
   color:var(--taupe);
 }
-.hero-cta{display:flex;flex-wrap:wrap;gap:14px;margin-top:32px;}
+@media(min-width:900px){.hero-lede{margin-top:22px;font-size:1.04rem;line-height:1.65;}}
+.hero-cta{display:flex;flex-wrap:wrap;gap:12px;margin-top:20px;}
+@media(min-width:900px){.hero-cta{gap:14px;margin-top:32px;}}
+/* Sur telephone, le lien secondaire devient un simple lien souligne : en
+   bouton, il prenait 52 px et autant d'attention que l'action principale. */
+@media(max-width:899px){
+  .hero-second{
+    min-height:44px;padding:0;border:0;background:none;
+    color:var(--bordeaux);text-decoration:underline;text-underline-offset:4px;
+    font-size:.92rem;
+  }
+  .hero-second:hover{border:0;background:none;}
+}
 
 /* La photo deborde a DROITE, hors de la gouttiere, comme sur les pages de
    logiciels : elle donne l'impression d'une scene qui continue au-dela de
@@ -246,10 +273,13 @@ body[data-lang="ar"] .nav-links a{text-transform:none;letter-spacing:0;font-size
 
 /* Sur telephone, la photo entiere en 16/9 reduit la femme et son telephone a
    quelques dizaines de pixels : on RESSERRE sur eux. `70% center` decale vers
-   la droite, ou se trouve le telephone. */
+   la droite, ou se trouve le telephone.
+   Le 5/4 plutot que le 4/3 : a 350 px de large, il economise 30 px de hauteur
+   sans rien perdre du sujet — et ces 30 px decident si le bouton passe ou non
+   au-dessus de la ligne de flottaison. */
 @media(max-width:899px){
   .hero-photo img{
-    aspect-ratio:4/3;height:auto;
+    aspect-ratio:5/4;height:auto;
     object-fit:cover;object-position:70% center;
   }
 }
@@ -444,10 +474,13 @@ body[data-lang="ar"] .onglets-barre button{
 @media(min-width:1000px){.cartes{grid-template-columns:repeat(3,1fr);}}
 /* Le fond des cartes recouvre celui de la grille : ce sont les 1px de `gap`
    qui laissent voir le filet, sans bordure a dessiner sur chaque carte. */
+/* 20px de marge interieure sur telephone plutot que 26 : six cartes empilees
+   faisaient 850 px de defilement pour six phrases courtes. */
 .carte{
-  background:var(--ivoire);padding:clamp(26px,3vw,38px);
-  display:flex;flex-direction:column;gap:10px;
+  background:var(--ivoire);padding:20px;
+  display:flex;flex-direction:column;gap:6px;
 }
+@media(min-width:680px){.carte{padding:clamp(26px,3vw,38px);gap:10px;}}
 .carte .no{font-family:var(--display);font-weight:700;font-size:.95rem;color:var(--or-texte);letter-spacing:.04em;}
 .carte .lb{font-size:.68rem;letter-spacing:.24em;text-transform:uppercase;color:var(--taupe);}
 body[data-lang="ar"] .carte .lb{letter-spacing:0;text-transform:none;font-size:.86rem;}
@@ -480,26 +513,32 @@ body[data-lang="ar"] .carte .ph{line-height:1.45;}
 body[data-lang="ar"] .paires-tete{letter-spacing:0;text-transform:none;font-size:.86rem;}
 
 .paires-liste{list-style:none;margin:0;padding:0;}
+/* Sur telephone, la fleche se place A COTE du probleme plutot que sur sa
+   propre ligne : chaque paire passe de trois lignes a deux, et la section
+   perd un tiers de sa hauteur. */
 .paires-liste li{
-  display:grid;gap:6px clamp(16px,3vw,48px);align-items:center;
-  padding-block:clamp(16px,2.2vw,22px);border-bottom:1px solid var(--hair);
+  display:grid;grid-template-columns:auto 1fr;gap:2px 10px;align-items:baseline;
+  padding-block:14px;border-bottom:1px solid var(--hair);
 }
+/* Sur telephone : le probleme occupe la ligne du haut, la fleche et la
+   solution celle du bas. La fleche garde sa colonne etroite a gauche, ce qui
+   aligne toutes les solutions entre elles. */
+.paires-liste .pb{grid-column:1/-1;color:var(--taupe);font-size:.95rem;}
+.paires-liste .fleche{grid-column:1;color:var(--menthe-deep);font-size:1rem;}
+.paires-liste .sol{grid-column:2;color:var(--espresso);font-size:1rem;font-weight:600;}
+
 @media(min-width:760px){
-  .paires-liste li{grid-template-columns:1fr 28px 1fr;gap:clamp(16px,3vw,48px);}
+  .paires-liste li{
+    grid-template-columns:1fr 28px 1fr;gap:clamp(16px,3vw,48px);
+    align-items:center;padding-block:clamp(16px,2.2vw,22px);
+  }
+  .paires-liste .pb{grid-column:1;font-size:1rem;}
+  .paires-liste .fleche{grid-column:2;font-size:1.1rem;text-align:center;}
+  .paires-liste .sol{grid-column:3;}
 }
-/* Le probleme est terne, la solution est nette : c'est le contraste entre les
-   deux qui porte le message, pas une couleur d'alerte. */
-.paires-liste .pb{color:var(--taupe);font-size:1rem;}
-.paires-liste .sol{color:var(--espresso);font-size:1rem;font-weight:600;}
-.paires-liste .fleche{
-  color:var(--menthe-deep);font-size:1.1rem;text-align:center;
-  /* Empilee sur telephone, la fleche pointe vers le BAS : la solution est en
-     dessous, plus a droite. */
-  transform:rotate(90deg);
-}
-@media(min-width:760px){.paires-liste .fleche{transform:none;}}
-[dir="rtl"] .paires-liste .fleche{transform:rotate(90deg) scaleY(-1);}
-@media(min-width:760px){[dir="rtl"] .paires-liste .fleche{transform:scaleX(-1);}}
+/* La fleche pointe dans le sens de la lecture : vers la droite en francais,
+   vers la gauche en arabe. */
+[dir="rtl"] .paires-liste .fleche{transform:scaleX(-1);}
 
 /* Visible d'un lecteur d'ecran, absent a l'oeil. */
 .sr{
