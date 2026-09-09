@@ -271,15 +271,14 @@ body[data-lang="ar"] .nav-links a{text-transform:none;letter-spacing:0;font-size
 .hero-photo{position:relative;margin-inline:calc(var(--gut) * -1);}
 .hero-photo img{width:100%;height:auto;display:block;}
 
-/* Sur telephone, la photo entiere en 16/9 rend les ecrans minuscules : on
-   RESSERRE en 5/4, ce qui economise aussi 30 px de hauteur — et ces 30 px
-   decident de ce qui tient au-dessus de la ligne de flottaison.
-   `80%` cale la fenetre a droite, comme sur ordinateur : c'est la que se
-   trouvent l'ordinateur portable, la tablette et la femme. */
+/* Sur telephone, le 5/4 economise 30 px de hauteur par rapport au format
+   d'origine — et ces 30 px decident de ce qui tient au-dessus de la ligne de
+   flottaison. 83 % de la largeur restent visibles, et le sujet etant centre,
+   le cadrage centre garde la femme et sa tablette entieres. */
 @media(max-width:899px){
   .hero-photo img{
     aspect-ratio:5/4;height:auto;
-    object-fit:cover;object-position:80% center;
+    object-fit:cover;object-position:center;
   }
 }
 
@@ -299,16 +298,13 @@ body[data-lang="ar"] .nav-links a{text-transform:none;letter-spacing:0;font-size
     -webkit-mask-image:linear-gradient(to right,transparent 0,#000 16%,#000 100%);
     mask-image:linear-gradient(to right,transparent 0,#000 16%,#000 100%);
   }
-  /* La colonne fait un rapport de 1,18 quand la photo en fait 1,78 : seuls
-     66 % de sa largeur sont visibles, et `cover` rogne donc massivement sur
-     les COTES.
-     `75%` cale la fenetre sur la partie DROITE, la ou se trouvent l'ordinateur
-     portable, la tablette tenue en main et la femme. Au centre, la femme
-     etait coupee en deux et la tablette sortait du cadre — mesure sur la
-     largeur reelle de la colonne, pas sur une estimation. */
+  /* La colonne fait un rapport de 1,18, la photo 1,50 : 79 % de sa largeur
+     restent visibles. Le rognage est donc doux, et le sujet etant CENTRE dans
+     la photo, un cadrage centre le garde entier — femme et tablette compris.
+     Verifie en extrayant la fenetre a la largeur reelle de la colonne. */
   .hero-photo img{
     position:absolute;inset:0;width:100%;height:100%;
-    object-fit:cover;object-position:75% center;
+    object-fit:cover;object-position:center;
   }
 }
 /* En arabe la colonne photo passe a gauche : le fondu doit changer de bord,
