@@ -179,11 +179,15 @@ export default function LandingClient() {
   /* Les memes ecrans, pris SUR TELEPHONE. Ce ne sont pas les captures de
      bureau redimensionnees : l'application change de mise en page, et c'est
      precisement ce que le prestataire doit voir avant de s'inscrire. */
+  /* Meme ordre que la liste ordinateur, avec « Encaissement » en plus : cet
+     ecran n'existe que sur telephone, c'est le panier au moment de regler. */
   const ECRANS_MOBILE = [
+    { label: t.ecSalon, img: "m-salon", alt: t.altEcranSalon },
     { label: t.ecCaisse, img: "m-caisse", alt: t.altEcranCaisse },
     { label: t.ecEncaissement, img: "m-encaissement", alt: t.altEcranEncaissement },
     { label: t.ecRdv, img: "m-rdv", alt: t.altEcranRdv },
     { label: t.ecClientes, img: "m-clientes", alt: t.altEcranClientes },
+    { label: t.ecFidelite, img: "m-fidelite", alt: t.altEcranFidelite },
     { label: t.ecCommissions, img: "m-commissions", alt: t.altEcranCommissions },
     { label: t.ecProduits, img: "m-produits", alt: t.altEcranProduits },
     { label: t.ecTiroir, img: "m-tiroir", alt: t.altEcranTiroir },
