@@ -48,7 +48,11 @@
 /* Cette feuille n'est chargee que par la route "/" : colorer <html> ici ne
    touche aucune autre page. C'est ce qui evite de voir le blanc froid du
    <body> lors d'un rebond de defilement, en haut comme en bas. */
-html{scroll-behavior:smooth;background:#FFF6F1;}
+/* `overflow-x:hidden` doit etre pose sur <html> AUTANT que sur <body> : sur
+   le seul <body>, le navigateur remonte le defilement horizontal au document
+   et la page entiere se decale — le selecteur d'appareil et les onglets se
+   retrouvaient coupes a gauche des qu'on faisait glisser une capture. */
+html{scroll-behavior:smooth;background:#FFF6F1;overflow-x:hidden;}
 /* Le layout racine pose deja des classes Tailwind sur <body> (bg-brand-cream,
    text-brand-ink) : une regle d'element ne les battrait pas. On habille donc
    le conteneur de la page, dont tout le reste herite. */
@@ -268,7 +272,9 @@ body[data-lang="ar"] .nav-links a{text-transform:none;letter-spacing:0;font-size
    logiciels : elle donne l'impression d'une scene qui continue au-dela de
    l'ecran. Le degrade la fond dans le blanc sur son bord gauche, sinon la
    coupe franche laisserait un bord net au milieu de la page. */
-.hero-photo{position:relative;margin-inline:calc(var(--gut) * -1);}
+/* `max-width:100vw` : la marge negative elargit la boite au-dela du
+   conteneur, et sans borne elle depassait l'ecran. */
+.hero-photo{position:relative;margin-inline:calc(var(--gut) * -1);max-width:100vw;}
 .hero-photo img{width:100%;height:auto;display:block;}
 
 /* Sur telephone, le 5/4 economise 30 px de hauteur par rapport au format
@@ -355,6 +361,9 @@ body[data-lang="ar"] .appareils button{font-family:var(--ar);font-size:.9rem;}
    libelles empiles sur telephone auraient repousse la capture hors de vue. */
 .onglets-barre{
   display:flex;gap:4px;overflow-x:auto;scrollbar-width:none;
+  /* Meme protection que la capture : neuf onglets ne tiennent pas sur un
+     telephone, et sans `contain` le balayage se propageait a la page. */
+  overscroll-behavior-x:contain;
   border-bottom:1px solid var(--hair);
 }
 .onglets-barre::-webkit-scrollbar{display:none;}
@@ -407,11 +416,19 @@ body[data-lang="ar"] .onglets-barre button{
    deja dans l'ecran et n'a rien a faire defiler. */
 @media(max-width:899px){
   .vue-pc{
-    display:block;overflow-x:auto;overscroll-behavior-x:contain;
+    display:block;overflow-x:auto;
+    /* `contain` empeche le balayage de se propager au document une fois le
+       bout de la capture atteint : sans lui, le geste continuait en decalant
+       la page entiere. */
+    overscroll-behavior-x:contain;
     touch-action:pan-x pan-y;-webkit-overflow-scrolling:touch;
     /* Deborde des gouttieres : la capture commence au bord de l'ecran, ce qui
-       montre qu'elle continue au-dela. */
+       montre qu'elle continue au-dela.
+       `max-width:100vw` borne la boite a l'ecran — sans elle, la marge
+       negative l'elargissait au-dela et c'est la PAGE qui debordait, pas
+       seulement son contenu. */
     margin-inline:calc(var(--gut) * -1);padding-inline:var(--gut);
+    max-width:100vw;
     scrollbar-width:none;
   }
   .vue-pc::-webkit-scrollbar{display:none;}
