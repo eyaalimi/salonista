@@ -253,8 +253,18 @@ body[data-lang="ar"] .nav-links a{text-transform:none;letter-spacing:0;font-size
 }
 /* Pas de `max-width` : le titre porte ses propres retours a la ligne, une
    largeur maximale n'ajouterait qu'une quatrieme coupure involontaire. */
-.hero h1{margin-top:16px;color:var(--espresso);line-height:1.12;}
-@media(min-width:900px){.hero h1{margin-top:20px;}}
+/* Le titre general monte a 6rem : dimensionne pour DEUX lignes, il debordait
+   des qu'on est passe a TROIS — la derniere ligne sortait du cadre. Le hero
+   reprend donc sa propre echelle, plafonnee a 4rem, et la borne haute suit
+   la hauteur de fenetre (`vh`) autant que sa largeur : c'est la hauteur qui
+   manquait, pas la largeur. */
+.hero h1{
+  margin-top:16px;color:var(--espresso);line-height:1.08;
+  font-size:clamp(2.1rem,5.2vw,3.3rem);
+}
+@media(min-width:900px){
+  .hero h1{margin-top:20px;font-size:clamp(2.4rem,min(4.4vw,7.2vh),4rem);}
+}
 /* Sur telephone, les trois lignes forcees deborderaient : les <br> sont
    neutralises et le titre se replie tout seul. */
 @media(max-width:599px){
@@ -298,20 +308,6 @@ body[data-lang="ar"] .hero-plus{font-family:var(--ar);}
 .hero-cta{display:flex;flex-wrap:wrap;gap:12px;margin-top:26px;}
 @media(min-width:900px){.hero-cta{gap:14px;margin-top:30px;}}
 
-/* La ligne de reassurance repete les promesses au moment du clic. En
-   menthe-deep (5,26:1 sur blanc) : c'est la couleur des confirmations dans
-   toute la charte. */
-.hero-rassure{
-  display:flex;flex-wrap:wrap;gap:6px 18px;
-  margin-top:18px;list-style:none;padding:0;
-  font-family:var(--ui);font-size:.88rem;font-weight:600;color:var(--menthe-deep);
-}
-body[data-lang="ar"] .hero-rassure{font-family:var(--ar);}
-.hero-rassure li{display:flex;gap:6px;align-items:center;}
-.hero-note{
-  margin-top:10px;font-family:var(--ui);font-size:.85rem;color:var(--taupe);
-}
-body[data-lang="ar"] .hero-note{font-family:var(--ar);}
 /* Sur telephone, le lien secondaire devient un simple lien souligne : en
    bouton, il prenait 52 px et autant d'attention que l'action principale. */
 @media(max-width:899px){
@@ -334,12 +330,13 @@ body[data-lang="ar"] .hero-note{font-family:var(--ar);}
 
 /* Sur telephone, le 5/4 economise 30 px de hauteur par rapport au format
    d'origine — et ces 30 px decident de ce qui tient au-dessus de la ligne de
-   flottaison. 83 % de la largeur restent visibles, et le sujet etant centre,
-   le cadrage centre garde la femme et sa tablette entieres. */
+   flottaison. 83 % de la largeur restent visibles ; le cadrage suit celui du
+   bureau (`82%`), fenetre extraite et regardee, qui garde la femme et sa
+   tablette entieres. */
 @media(max-width:899px){
   .hero-photo img{
     aspect-ratio:5/4;height:auto;
-    object-fit:cover;object-position:center;
+    object-fit:cover;object-position:82% center;
   }
 }
 
@@ -359,13 +356,17 @@ body[data-lang="ar"] .hero-note{font-family:var(--ar);}
     -webkit-mask-image:linear-gradient(to right,transparent 0,#000 16%,#000 100%);
     mask-image:linear-gradient(to right,transparent 0,#000 16%,#000 100%);
   }
-  /* La colonne fait un rapport de 1,18, la photo 1,50 : 79 % de sa largeur
-     restent visibles. Le rognage est donc doux, et le sujet etant CENTRE dans
-     la photo, un cadrage centre le garde entier — femme et tablette compris.
-     Verifie en extrayant la fenetre a la largeur reelle de la colonne. */
+  /* Le titre passe a TROIS lignes : la colonne photo a grandi en hauteur,
+     donc son rapport a baisse et le rognage horizontal s'est resserre. Au
+     cadrage CENTRE, la femme se retrouvait coupee sur le bord droit.
+     Le cadrage part donc vers la DROITE (`82%`) : la fenetre ainsi extraite
+     la contient entierement, tablette comprise, et laisse voir les etageres
+     du salon derriere elle.
+     Verifie en extrayant les fenetres candidates a la largeur reelle de la
+     colonne et en les REGARDANT, pas en calculant un pourcentage. */
   .hero-photo img{
     position:absolute;inset:0;width:100%;height:100%;
-    object-fit:cover;object-position:center;
+    object-fit:cover;object-position:82% center;
   }
 }
 /* En arabe la colonne photo passe a gauche : le fondu doit changer de bord,
@@ -375,6 +376,13 @@ body[data-lang="ar"] .hero-note{font-family:var(--ar);}
     -webkit-mask-image:linear-gradient(to left,transparent 0,#000 14%,#000 100%);
     mask-image:linear-gradient(to left,transparent 0,#000 14%,#000 100%);
   }
+  /* En arabe la photo passe a GAUCHE et son fondu mange le bord DROIT.
+     Le cadrage ne se mirroite PAS pour autant : le sujet n'est pas centre
+     dans la photo mais a droite, si bien qu'un `18%` symetrique le poussait
+     precisement sous le fondu. Fenetre extraite et regardee : c'est `100%`
+     qui laisse la femme a bonne distance du bord fondu, les etageres du
+     salon absorbant le degrade a sa place. */
+  [dir="rtl"] .hero-photo img{object-position:100% center;}
 }
 
 /* ---------------- rythme des sections ---------------- */
