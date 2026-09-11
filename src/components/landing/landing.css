@@ -469,61 +469,42 @@ body[data-lang="ar"] .carte .lb{letter-spacing:0;text-transform:none;font-size:.
 }
 body[data-lang="ar"] .carte .ph{line-height:1.45;}
 
-/* ---------------- avant / avec, en paires ----------------
-   Remplace un curseur glissant qui cachait la moitie du contenu tant qu'on
-   n'avait pas devine le geste. Chaque probleme fait face a sa solution : la
-   transformation se lit d'un coup d'oeil. */
-.paires{margin-top:clamp(36px,5vw,60px);}
+/* ---------------- offre de lancement ----------------
+   Bandeau rose-soft : badge, gros titre, phrase, bouton, reassurance. Tout
+   est centre, en une seule colonne etroite. */
+.lanc-in{
+  display:flex;flex-direction:column;align-items:center;text-align:center;
+  gap:18px;max-width:56ch;margin-inline:auto;
+}
+.lanc-in h2{margin-top:4px;}
+/* `.eyebrow` de base garde son fond blanc et son rose-fonce (5,49:1) : le
+   badge n'est jamais pose directement sur le rose-soft de la section, il
+   porte son propre fond blanc qui l'en isole. Aucune surcharge necessaire. */
+.lanc-lede{margin-top:0;margin-inline:auto;}
+.lanc-fine{
+  margin-top:2px;font-family:var(--ui);font-size:.82rem;font-weight:600;
+  color:var(--espresso);
+}
+body[data-lang="ar"] .lanc-fine{font-family:var(--ar);}
 
-/* Les deux libelles de colonne. `aria-hidden` dans le JSX : ils sont
-   decoratifs, chaque ligne portant deja son propre libelle lu. */
-.paires-tete{
-  display:none;gap:clamp(16px,3vw,48px);
-  padding-bottom:14px;border-bottom:1px solid var(--hair);
-  font-size:.7rem;font-weight:600;letter-spacing:.18em;text-transform:uppercase;
-  color:var(--taupe);
+/* ---------------- trois etapes ----------------
+   Suit directement le bandeau : la meme action ("Inscrire mon salon"),
+   deroulee en trois gestes concrets. */
+.etapes{
+  display:grid;gap:clamp(28px,5vw,56px);margin-top:clamp(40px,5vw,64px);
+  text-align:center;
 }
-@media(min-width:760px){
-  .paires-tete{display:grid;grid-template-columns:1fr 28px 1fr;}
-  /* La fleche occupe la colonne du milieu : les deux libelles se calent donc
-     exactement au-dessus de leur colonne. */
-  .paires-tete span:last-child{grid-column:3;}
+@media(min-width:700px){.etapes{grid-template-columns:repeat(3,1fr);}}
+.etape-no{
+  display:block;font-family:var(--display);font-weight:700;font-size:1.1rem;
+  color:var(--or-texte);letter-spacing:.04em;
 }
-body[data-lang="ar"] .paires-tete{letter-spacing:0;text-transform:none;font-size:.86rem;}
-
-.paires-liste{list-style:none;margin:0;padding:0;}
-/* Sur telephone, la fleche se place A COTE du probleme plutot que sur sa
-   propre ligne : chaque paire passe de trois lignes a deux, et la section
-   perd un tiers de sa hauteur. */
-.paires-liste li{
-  display:grid;grid-template-columns:auto 1fr;gap:2px 10px;align-items:baseline;
-  padding-block:14px;border-bottom:1px solid var(--hair);
+.etape-texte{
+  margin-top:10px;font-family:var(--ui);font-weight:600;font-size:1.02rem;
+  color:var(--espresso);
 }
-/* Sur telephone : le probleme occupe la ligne du haut, la fleche et la
-   solution celle du bas. La fleche garde sa colonne etroite a gauche, ce qui
-   aligne toutes les solutions entre elles. */
-.paires-liste .pb{grid-column:1/-1;color:var(--taupe);font-size:.95rem;}
-.paires-liste .fleche{grid-column:1;color:var(--menthe-deep);font-size:1rem;}
-.paires-liste .sol{grid-column:2;color:var(--espresso);font-size:1rem;font-weight:600;}
-
-@media(min-width:760px){
-  .paires-liste li{
-    grid-template-columns:1fr 28px 1fr;gap:clamp(16px,3vw,48px);
-    align-items:center;padding-block:clamp(16px,2.2vw,22px);
-  }
-  .paires-liste .pb{grid-column:1;font-size:1rem;}
-  .paires-liste .fleche{grid-column:2;font-size:1.1rem;text-align:center;}
-  .paires-liste .sol{grid-column:3;}
-}
-/* La fleche pointe dans le sens de la lecture : vers la droite en francais,
-   vers la gauche en arabe. */
-[dir="rtl"] .paires-liste .fleche{transform:scaleX(-1);}
-
-/* Visible d'un lecteur d'ecran, absent a l'oeil. */
-.sr{
-  position:absolute;width:1px;height:1px;padding:0;margin:-1px;
-  overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0;
-}
+body[data-lang="ar"] .etape-texte{font-family:var(--ar);font-weight:700;}
+.etapes-cta{display:flex;justify-content:center;margin-top:clamp(36px,5vw,52px);}
 
 /* ---------------- pourquoi ---------------- */
 .why{display:grid;gap:clamp(34px,4vw,64px);}
