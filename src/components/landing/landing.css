@@ -560,9 +560,16 @@ body[data-lang="ar"] .final .fine{letter-spacing:0;text-transform:none;font-size
 /* ---------------- toujours avec vous, section sombre ----------------
    Seule section sombre de la page : elle casse le rythme clair pour mettre
    en avant le telephone, l'usage le plus frequent au comptoir. */
-.mob{background:var(--espresso);color:var(--ivoire);overflow:hidden;}
+/* `.sec` impose un padding de 80 a 170px, calcule pour des blocs de texte
+   longs. Ici le contenu est court (un telephone de 220px, deux lignes de
+   texte) : garde le meme padding laissait un vide enorme au-dessus et
+   au-dessous du bloc colore, visible a l'oeil sur toute capture d'ecran. */
+.mob{
+  background:var(--espresso);color:var(--ivoire);overflow:hidden;
+  padding-block:clamp(48px,7vw,96px);
+}
 .mob-in{
-  display:grid;gap:48px;align-items:center;
+  display:grid;gap:40px;align-items:center;
 }
 @media(min-width:900px){
   .mob-in{grid-template-columns:minmax(0,1fr) minmax(0,.9fr);gap:clamp(40px,6vw,90px);}
@@ -580,7 +587,10 @@ body[data-lang="ar"] .final .fine{letter-spacing:0;text-transform:none;font-size
 .mob-lede{color:rgba(255,246,241,.78);margin-top:22px;}
 .mob .rule{background:rgba(255,246,241,.18);margin-top:28px;max-width:220px;}
 
-.mob-vitrine{position:relative;display:flex;justify-content:center;padding-block:20px;}
+/* Pas de padding vertical propre : les etiquettes flottantes ont deja besoin
+   de place au-dessus et en dessous du telephone, un padding ici l'aurait
+   ajoutee en double. */
+.mob-vitrine{position:relative;display:flex;justify-content:center;}
 @media(min-width:900px){.mob-vitrine{justify-content:flex-end;}}
 
 /* Le telephone porte une vraie capture de la caisse, pas une maquette vide :
