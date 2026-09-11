@@ -368,6 +368,48 @@ export default function LandingClient() {
           </div>
         </section>
 
+        {/* ---------------- toujours avec vous (mobile) ---------------- */}
+        {/**
+         * Section sombre, seule de son espece sur la page : elle casse le
+         * rythme clair pour mettre en avant ce que le prestataire utilise le
+         * plus souvent au comptoir -- son telephone. Une vraie capture de la
+         * caisse mobile plutot qu'une maquette vide, deux etiquettes de
+         * chiffres flottent a cote comme sur la reference fournie.
+         */}
+        <section className="sec mob" id="mobile">
+          <div className="shell mob-in">
+            <div className="mob-texte rv">
+              <p className="eyebrow mob-eyebrow">{t.mobEyebrow}</p>
+              <h2>
+                <span>{t.mobH2a}</span> <em>{t.mobH2b}</em>
+              </h2>
+              <p className="lede mob-lede">{t.mobLede}</p>
+            </div>
+
+            <div className="mob-vitrine rv">
+              <div className="mob-tel">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={`${IMG}m-caisse-420.webp`}
+                  srcSet={`${IMG}m-caisse-420.webp 420w, ${IMG}m-caisse-591.webp 591w`}
+                  sizes="220px"
+                  alt={t.mobAlt}
+                  loading="lazy"
+                />
+              </div>
+
+              <div className="mob-chip mob-chip1" aria-hidden="true">
+                <span className="mob-chip-label">{t.mobChip1Label}</span>
+                <span className="mob-chip-valeur">{t.mobChip1Valeur}</span>
+              </div>
+              <div className="mob-chip mob-chip2 mob-chip-menthe" aria-hidden="true">
+                <span className="mob-chip-label">{t.mobChip2Label}</span>
+                <span className="mob-chip-valeur">{t.mobChip2Valeur}</span>
+              </div>
+            </div>
+          </div>
+        </section>
+
         {/* ---------------- fonctionnalites ---------------- */}
         <section className="sec" style={{ paddingTop: 0 }}>
           <div className="shell">

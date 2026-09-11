@@ -64,6 +64,19 @@ export const CONTENU = {
     tzTexte4: "Visualisez facilement l'activité de votre salon.",
     tzAlt4:
       "Un apercu du suivi des commissions : le montant à payer et le montant déjà payé.",
+    // Section sombre : le telephone n'est pas un simple relais du bureau,
+    // c'est l'usage le plus frequent au comptoir — un point fort a part.
+    mobEyebrow: "Toujours avec vous",
+    mobH2a: "Votre caisse vous",
+    mobH2b: "accompagne partout.",
+    mobLede:
+      "Au salon, chez vous ou en déplacement, gardez un œil sur votre activité quand vous en avez besoin.",
+    mobAlt:
+      "La caisse sur téléphone : la grille des services du salon et le panier, avec le bouton d'encaissement en bas de l'écran.",
+    mobChip1Label: "Chiffre d'affaires",
+    mobChip1Valeur: "420,000 TND",
+    mobChip2Label: "Ventes du jour",
+    mobChip2Valeur: "12 ventes",
     e3: "Ce qu'elle sait faire",
     h4a: "Six gestes du",
     h4b: "quotidien.",
@@ -172,6 +185,17 @@ export const CONTENU = {
     tzTitre4: "ابقى متحكّم",
     tzTexte4: "شوف بسهولة نشاط صالونك.",
     tzAlt4: "جزء من متابعة العمولات : المبلغ اللي يتخلّص والمبلغ اللي تخلّص.",
+    mobEyebrow: "دايما معاك",
+    mobH2a: "الكاس متاعك",
+    mobH2b: "تلحقك في كل بلاصة.",
+    mobLede:
+      "في الصالون، في الدار ولا في الطريق، عين على نشاطك وقتلي تلزمك.",
+    mobAlt:
+      "الكاس في التليفون : خدمات الصالون والباني، وزر الخلاص في تحت الشاشة.",
+    mobChip1Label: "رقم المعاملات",
+    mobChip1Valeur: "420,000 دينار",
+    mobChip2Label: "بيوعات النهار",
+    mobChip2Valeur: "12 بيعة",
     e3: "شنوّة تنجم تعمل",
     h4a: "ستة حركات",
     h4b: "كل يوم.",

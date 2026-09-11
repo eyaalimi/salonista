@@ -557,6 +557,66 @@ details p{padding-bottom:26px;max-width:62ch;color:var(--taupe);font-weight:300;
 .final .fine{margin-top:20px;font-size:.74rem;letter-spacing:.16em;text-transform:uppercase;color:rgba(255,246,241,.6);}
 body[data-lang="ar"] .final .fine{letter-spacing:0;text-transform:none;font-size:.88rem;}
 
+/* ---------------- toujours avec vous, section sombre ----------------
+   Seule section sombre de la page : elle casse le rythme clair pour mettre
+   en avant le telephone, l'usage le plus frequent au comptoir. */
+.mob{background:var(--espresso);color:var(--ivoire);overflow:hidden;}
+.mob-in{
+  display:grid;gap:48px;align-items:center;
+}
+@media(min-width:900px){
+  .mob-in{grid-template-columns:minmax(0,1fr) minmax(0,.9fr);gap:clamp(40px,6vw,90px);}
+}
+
+/* `.eyebrow` de base est fait pour un fond clair (texte bordeaux sur blanc) :
+   sur le prune il tomberait a un contraste illisible. Le rose vif donne
+   5,59:1 sur ce fond, largement au-dessus du seuil. */
+.mob-eyebrow{background:rgba(255,246,241,.1);color:var(--rose-vif);}
+.mob h2{color:#fff;margin-top:14px;}
+.mob h2 em{font-style:normal;color:var(--blush);}
+/* `.lede` de base est en taupe (fait pour un fond clair) : illisible sur
+   prune. L'ivoire a 78% garde 8,37:1, assez proche du blanc plein pour ne
+   pas creer un second niveau de hierarchie inutile. */
+.mob-lede{color:rgba(255,246,241,.78);margin-top:22px;}
+.mob .rule{background:rgba(255,246,241,.18);margin-top:28px;max-width:220px;}
+
+.mob-vitrine{position:relative;display:flex;justify-content:center;padding-block:20px;}
+@media(min-width:900px){.mob-vitrine{justify-content:flex-end;}}
+
+/* Le telephone porte une vraie capture de la caisse, pas une maquette vide :
+   c'est la preuve, pas juste l'idee. */
+.mob-tel{
+  position:relative;width:220px;border-radius:32px;overflow:hidden;
+  border:8px solid #1a0714;box-shadow:0 40px 80px -30px rgba(0,0,0,.55);
+}
+.mob-tel img{width:100%;height:auto;display:block;}
+
+/* Les deux etiquettes flottent a cote du telephone, comme sur la reference :
+   des chiffres concrets plutot qu'une promesse abstraite. */
+.mob-chip{
+  position:absolute;background:var(--ivoire);color:var(--espresso);
+  border-radius:14px;padding:12px 16px;
+  box-shadow:0 20px 40px -20px rgba(0,0,0,.5);
+  display:flex;flex-direction:column;gap:2px;
+}
+.mob-chip-label{font-size:.68rem;font-weight:600;letter-spacing:.06em;color:var(--taupe);}
+.mob-chip-valeur{font-family:var(--display);font-weight:700;font-size:1.05rem;letter-spacing:-.01em;}
+body[data-lang="ar"] .mob-chip-label{font-family:var(--ar);letter-spacing:0;font-size:.82rem;}
+/* La deuxieme etiquette prend le menthe : c'est une confirmation d'activite
+   (des ventes ont eu lieu), le seul usage du menthe dans la charte. */
+.mob-chip-menthe{background:var(--menthe);}
+.mob-chip1{top:8%;left:calc(50% - 168px);}
+.mob-chip2{bottom:14%;left:calc(50% + 92px);}
+@media(min-width:900px){
+  .mob-chip1{top:6%;left:auto;right:calc(220px + 32px);}
+  .mob-chip2{bottom:10%;left:auto;right:-24px;}
+}
+/* En arabe le telephone est toujours a droite de son texte (RTL inverse
+   l'ordre des colonnes de la grille), donc les etiquettes suivent le meme
+   cote plutot que de se retrouver de l'autre bord. */
+[dir="rtl"] .mob-chip1{right:auto;left:calc(220px + 32px);}
+[dir="rtl"] .mob-chip2{right:auto;left:-24px;}
+
 footer{padding-block:38px 110px;}
 .foot{display:flex;flex-wrap:wrap;gap:14px 30px;align-items:center;justify-content:space-between;font-size:.8rem;color:var(--taupe);}
 .foot .brand{color:var(--espresso);font-size:1.35rem;}
