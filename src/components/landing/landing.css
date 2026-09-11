@@ -398,147 +398,67 @@ section{position:relative;}
 .sec-head.centre{max-width:none;text-align:center;}
 .sec-head.centre h2{max-width:24ch;margin-inline:auto;}
 
-/* ---------------- ecrans de la caisse, en onglets ----------------
-   Remplace un collage fige de quatre captures superposees, ou l'on voyait des
-   bouts d'interface sans savoir a quoi ils correspondaient. */
-.onglets{margin-top:clamp(40px,5vw,72px);}
+/* ---------------- la caisse, en teaser ----------------
+   Remplace le navigateur d'ecrans (choix d'appareil + neuf onglets + deux
+   fleches) : la landing n'a plus besoin de montrer l'ecran ENTIER, elle
+   montre un fragment de quatre, comme un menu qu'on feuillette. */
+.teasers{
+  display:grid;gap:1px;background:var(--hair);
+  margin-top:clamp(36px,5vw,60px);border:1px solid var(--hair);
+}
+@media(min-width:680px){.teasers{grid-template-columns:repeat(2,1fr);}}
 
-/* Le choix « sur ordinateur / sur telephone ». Deux pilules, la selectionnee
-   en prune plein : le prestataire voit les DEUX vues et choisit, rien n'est
-   devine de son appareil. */
-.appareils{
-  display:inline-flex;gap:4px;padding:4px;margin-bottom:clamp(20px,2.6vw,32px);
-  background:var(--ivoire-2);border-radius:999px;
+.teaser{
+  background:var(--ivoire);padding:20px;
+  display:flex;flex-direction:column;gap:10px;
 }
-.appareils button{
-  background:none;border:0;cursor:pointer;font-family:var(--ui);
-  font-size:.82rem;font-weight:600;color:var(--taupe);
-  padding:0 20px;min-height:44px;border-radius:999px;
-  transition:background-color .3s var(--ease),color .3s var(--ease);
-}
-body[data-lang="ar"] .appareils button{font-family:var(--ar);font-size:.9rem;}
-.appareils button:hover{color:var(--espresso);}
-.appareils button.on{background:var(--espresso);color:var(--ivoire);}
+@media(min-width:680px){.teaser{padding:clamp(24px,2.8vw,32px);}}
 
-/* La barre defile horizontalement plutot que de passer a la ligne : cinq
-   libelles empiles sur telephone auraient repousse la capture hors de vue. */
-.onglets-barre{
-  display:flex;gap:4px;overflow-x:auto;scrollbar-width:none;
-  /* Meme protection que la capture : neuf onglets ne tiennent pas sur un
-     telephone, et sans `contain` le balayage se propageait a la page. */
-  overscroll-behavior-x:contain;
-  border-bottom:1px solid var(--hair);
+.teaser-tete{display:flex;align-items:baseline;justify-content:space-between;gap:12px;}
+.teaser-no{font-family:var(--display);font-weight:700;font-size:.95rem;color:var(--or-texte);letter-spacing:.04em;}
+.teaser-label{
+  font-family:var(--ui);font-size:.68rem;font-weight:600;letter-spacing:.16em;
+  text-transform:uppercase;color:var(--taupe);
 }
-.onglets-barre::-webkit-scrollbar{display:none;}
-.onglets-barre button{
-  flex:none;background:none;border:0;cursor:pointer;font-family:var(--ui);
-  font-size:.72rem;font-weight:600;letter-spacing:.16em;text-transform:uppercase;
-  color:var(--taupe);padding:0 18px;min-height:48px;
-  border-bottom:2px solid transparent;margin-bottom:-1px;
-  transition:color .3s var(--ease),border-color .3s var(--ease);
-}
-body[data-lang="ar"] .onglets-barre button{
-  font-family:var(--ar);letter-spacing:0;text-transform:none;font-size:.9rem;
-}
-.onglets-barre button:hover{color:var(--espresso);}
-.onglets-barre button.on{color:var(--bordeaux);border-bottom-color:var(--bordeaux);}
+body[data-lang="ar"] .teaser-label{font-family:var(--ar);letter-spacing:0;text-transform:none;font-size:.86rem;}
 
-/* Pas de cadre : ni fond, ni bordure, ni marge interieure. La capture porte
-   deja le sien — celui de l'application — et l'entourer d'un second en
-   ajoutait un dans le cadre.
-   `position:relative` sert d'ancrage aux fleches. */
-.onglets-vue{
-  position:relative;margin-top:clamp(22px,3vw,36px);
-  display:flex;align-items:center;justify-content:center;
+/* Le fragment : un bout de vraie capture, jamais l'ecran entier. Une hauteur
+   fixe et non un ratio — les quatre sources n'ont pas la meme forme, et
+   c'est precisement une FENETRE decoupee dans chacune qu'on veut, pas
+   l'image entiere reduite. */
+.teaser-apercu{
+  position:relative;height:150px;overflow:hidden;
+  border-radius:14px;background:var(--ivoire-2);
 }
-/* Le volet porte la largeur : les fleches sont posees par-dessus en absolu et
-   ne doivent pas la reduire. */
-.onglets-vue [role="tabpanel"]{width:100%;}
-.onglets-vue img{width:100%;height:auto;display:block;}
-
-/* LA VUE TELEPHONE. La capture est haute et etroite : etiree sur toute la
-   largeur elle serait absurde. Elle est posee dans une maquette de telephone,
-   comme dans le hero, et centree. */
-.vue-mobile [role="tabpanel"]{
-  width:auto;display:flex;justify-content:center;
+.teaser-apercu img{
+  position:absolute;top:0;left:0;width:100%;height:auto;display:block;
 }
-.vue-mobile img{
-  width:300px;max-width:100%;border-radius:26px;
-  border:8px solid var(--espresso);
-  box-shadow:0 40px 80px -40px rgba(58,16,36,.45);
+/* Le fondu bas dit "il y a plus a decouvrir" plutot que de couper net sur un
+   bouton ou un montant a moitie visible. */
+.teaser-apercu::after{
+  content:"";position:absolute;inset:auto 0 0 0;height:56%;
+  background:linear-gradient(to bottom,transparent,var(--ivoire-2) 92%);
 }
 
-/* SUR TELEPHONE, la capture DEFILE au lieu de retrecir.
-   Reduite a la largeur d'un ecran de 390 px, une capture de 1540 px voit son
-   texte de 13 px tomber a 3 px : le visiteur mobile voyait huit onglets qui
-   ne montraient rien. Elle garde donc une largeur lisible et se balaye du
-   doigt — le geste attendu sur un tableau trop large.
-   `touch-action:pan-x` : le balayage horizontal fait defiler la capture, le
-   vertical continue de faire defiler la page. */
-/* Ne concerne QUE la vue « sur ordinateur » : une capture de telephone tient
-   deja dans l'ecran et n'a rien a faire defiler. */
-@media(max-width:899px){
-  .vue-pc{
-    display:block;overflow-x:auto;
-    /* `contain` empeche le balayage de se propager au document une fois le
-       bout de la capture atteint : sans lui, le geste continuait en decalant
-       la page entiere. */
-    overscroll-behavior-x:contain;
-    touch-action:pan-x pan-y;-webkit-overflow-scrolling:touch;
-    /* Deborde des gouttieres : la capture commence au bord de l'ecran, ce qui
-       montre qu'elle continue au-dela.
-       `max-width:100vw` borne la boite a l'ecran — sans elle, la marge
-       negative l'elargissait au-dela et c'est la PAGE qui debordait, pas
-       seulement son contenu. */
-    margin-inline:calc(var(--gut) * -1);padding-inline:var(--gut);
-    max-width:100vw;
-    scrollbar-width:none;
-  }
-  .vue-pc::-webkit-scrollbar{display:none;}
-  .vue-pc [role="tabpanel"]{width:auto;}
-  /* 860 px : assez large pour que les libelles et les montants restent
-     lisibles, assez etroit pour que deux balayages suffisent a tout voir. */
-  .vue-pc img{width:860px;max-width:none;}
-  /* La maquette de telephone retrecit un peu sur un petit ecran. */
-  .vue-mobile img{width:260px;}
+/* La carte "accessible partout" n'a pas de capture : trois silhouettes
+   d'appareil suffisent, sans inventer un ecran qui n'existe pas. */
+.teaser-appareils{
+  display:flex;align-items:center;justify-content:center;gap:14px;
+  background:var(--ivoire-2);
 }
-/* L'astuce n'existe que la ou le defilement existe. */
-.onglets-astuce{display:none;}
-@media(max-width:899px){
-  .onglets-astuce{
-    display:block;margin-top:12px;font-size:.78rem;color:var(--taupe);
-    text-align:center;
-  }
+.teaser-appareils::after{content:none;}
+.teaser-appareils span{
+  display:block;border:2.5px solid var(--taupe);border-radius:10px;opacity:.55;
 }
+.app-tel{width:34px;height:64px;border-radius:8px;}
+.app-tab{width:52px;height:78px;}
+.app-pc{width:76px;height:56px;}
 
-/* Fleches de part et d'autre de la capture, comme sur un carrousel. Elles
-   DOUBLENT les onglets plutot que de les remplacer : les onglets nomment les
-   ecrans, les fleches permettent de les parcourir sans viser un libelle. */
-.onglets-fleche{
-  position:absolute;top:50%;transform:translateY(-50%);z-index:2;
-  display:none;align-items:center;justify-content:center;
-  width:48px;height:48px;cursor:pointer;
-  background:#fff;border:1px solid var(--hair);color:var(--espresso);
-  font-size:1.1rem;line-height:1;
-  box-shadow:0 10px 30px -14px rgba(36,28,24,.45);
-  transition:border-color .3s var(--ease),color .3s var(--ease);
+.teaser-titre{
+  font-family:var(--display);font-weight:800;letter-spacing:-.01em;
+  font-size:clamp(1.05rem,1.6vw,1.22rem);color:var(--espresso);margin-top:4px;
 }
-/* Masquees sous 900px : elles chevaucheraient la capture, deja etroite, et la
-   barre d'onglets defile tres bien au doigt. */
-@media(min-width:900px){.onglets-fleche{display:flex;}}
-.onglets-fleche:hover{border-color:var(--bordeaux);color:var(--bordeaux);}
-/* Debordent a moitie hors de la capture, comme sur les carrousels : posees
-   dedans, elles masqueraient la barre laterale de l'application. */
-.onglets-fleche.prec{inset-inline-start:-24px;}
-.onglets-fleche.suiv{inset-inline-end:-24px;}
-/* En vue telephone la capture ne fait que 300 px et le conteneur reste large :
-   les fleches se collent aux bords de la section plutot que de flotter loin
-   de l'image. */
-.vue-mobile .onglets-fleche.prec{inset-inline-start:0;}
-.vue-mobile .onglets-fleche.suiv{inset-inline-end:0;}
-/* Les chevrons sont des caracteres, pas des icones : ils doivent pointer dans
-   le sens de la lecture. */
-[dir="rtl"] .onglets-fleche{transform:translateY(-50%) scaleX(-1);}
+.teaser-texte{font-size:.9rem;line-height:1.5;color:var(--taupe);}
 
 /* ---------------- les six gestes, en cartes ----------------
    Remplace une liste dont chaque ligne s'estompait au defilement et pilotait

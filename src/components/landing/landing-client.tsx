@@ -66,14 +66,6 @@ export default function LandingClient() {
      reellement passe. */
   const [ctaVisible, setCtaVisible] = useState(false);
 
-  /* ---------- onglets des ecrans de la caisse ---------- */
-  const [ecranActif, setEcranActif] = useState(0);
-  /* « Sur ordinateur » ou « sur telephone » : le prestataire voit les DEUX,
-     et choisit ce qu'il regarde. Rien n'est devine de son appareil — beaucoup
-     decouvrent la page sur telephone mais installeront la caisse sur le
-     comptoir, ou l'inverse. */
-  const [appareil, setAppareil] = useState<"pc" | "mobile">("pc");
-
   useEffect(() => {
     document.body.classList.add("js");
 
@@ -168,49 +160,20 @@ export default function LandingClient() {
   ];
 
   /**
-   * Les huit ecrans de la caisse, un par onglet, dans l'ordre du menu lateral
-   * de l'application.
-   *
-   * Les captures nominatives sont FLOUTEES a la source : noms de clientes,
-   * numeros de telephone et noms d'employees. Ce sont de vraies personnes du
-   * salon de demonstration — les publier sur salonista.tn les exposerait sans
-   * qu'elles aient rien demande. Les montants et la structure restent
-   * lisibles, c'est ce que la page doit montrer.
+   * Quatre apercus de la caisse, en teaser : chacun montre un FRAGMENT d'un
+   * ecran reel — jamais l'ecran entier, jamais la barre laterale ou les
+   * noms de clientes. Le detail complet se decouvre en activant sa caisse
+   * gratuite, pas sur la landing.
    */
-  /* Les ecrans en version ORDINATEUR, larges. */
-  const ECRANS_PC = [
-    { label: t.ecSalon, img: "ecran-salon", alt: t.altEcranSalon },
-    { label: t.ecCaisse, img: "ecran-caisse", alt: t.altEcranCaisse },
-    { label: t.ecRdv, img: "ecran-rdv", alt: t.altEcranRdv },
-    { label: t.ecClientes, img: "ecran-clientes", alt: t.altEcranClientes },
-    { label: t.ecFidelite, img: "ecran-fidelite", alt: t.altEcranFidelite },
-    { label: t.ecCommissions, img: "ecran-commissions", alt: t.altEcranCommissions },
-    { label: t.ecProduits, img: "ecran-produits", alt: t.altEcranProduits },
-    { label: t.ecTiroir, img: "ecran-tiroir", alt: t.altEcranTiroir },
-  ];
-
-  /* Les memes ecrans, pris SUR TELEPHONE. Ce ne sont pas les captures de
-     bureau redimensionnees : l'application change de mise en page, et c'est
-     precisement ce que le prestataire doit voir avant de s'inscrire. */
-  /* Meme ordre que la liste ordinateur, avec « Encaissement » en plus : cet
-     ecran n'existe que sur telephone, c'est le panier au moment de regler. */
-  const ECRANS_MOBILE = [
-    { label: t.ecSalon, img: "m-salon", alt: t.altEcranSalon },
-    { label: t.ecCaisse, img: "m-caisse", alt: t.altEcranCaisse },
-    { label: t.ecEncaissement, img: "m-encaissement", alt: t.altEcranEncaissement },
-    { label: t.ecRdv, img: "m-rdv", alt: t.altEcranRdv },
-    { label: t.ecClientes, img: "m-clientes", alt: t.altEcranClientes },
-    { label: t.ecFidelite, img: "m-fidelite", alt: t.altEcranFidelite },
-    { label: t.ecCommissions, img: "m-commissions", alt: t.altEcranCommissions },
-    { label: t.ecProduits, img: "m-produits", alt: t.altEcranProduits },
-    { label: t.ecTiroir, img: "m-tiroir", alt: t.altEcranTiroir },
-  ];
-
-  /* L'appareil choisi, et les ecrans qui vont avec. L'index est remis a zero
-     au changement : les deux listes n'ont ni la meme longueur ni le meme
-     ordre, et garder l'index aurait ouvert un onglet sans rapport. */
-  const ECRANS = appareil === "pc" ? ECRANS_PC : ECRANS_MOBILE;
-  const ecranSur = Math.min(ecranActif, ECRANS.length - 1);
+  const TEASERS = [
+    { no: "01", img: "ecran-caisse", label: t.tzLabel1, titre: t.tzTitre1, texte: t.tzTexte1, alt: t.tzAlt1 },
+    { no: "02", img: "ecran-salon", label: t.tzLabel2, titre: t.tzTitre2, texte: t.tzTexte2, alt: t.tzAlt2 },
+    // La troisieme carte n'a pas de capture : elle illustre les TROIS
+    // appareils, pas un ecran precis. Un cadre vide dirait moins qu'une
+    // fausse capture qui n'existe pas.
+    { no: "03", img: null, label: t.tzLabel3, titre: t.tzTitre3, texte: t.tzTexte3, alt: "" },
+    { no: "04", img: "ecran-commissions", label: t.tzLabel4, titre: t.tzTitre4, texte: t.tzTexte4, alt: t.tzAlt4 },
+  ] as const;
 
   /* Chaque probleme face a SA solution. L'ordre des deux listes d'origine ne
      se correspondait pas : « des calculs a la main » se retrouvait en face de
@@ -361,140 +324,62 @@ export default function LandingClient() {
           </div>
         </section>
 
-        {/* ---------------- la caisse ---------------- */}
+        {/* ---------------- la caisse, en teaser ---------------- */}
+        {/**
+         * Remplace le navigateur d'ecrans (choix d'appareil + neuf onglets +
+         * fleches) par QUATRE cartes en apercu. Le selecteur montrait tout
+         * l'ecran tout de suite ; ici chaque carte ne montre qu'un FRAGMENT
+         * -- juste assez pour donner envie d'ouvrir sa caisse gratuite et
+         * voir le reste. Le detail complet n'a plus besoin d'exister sur la
+         * landing, il existe dans le produit.
+         */}
         <section className="sec" id="produit">
           <div className="shell">
             <div className="sec-head rv">
               <p className="eyebrow">{t.e1}</p>
               <h2>
-                <span>{t.h2a}</span>{" "}
-                <em style={{ color: "var(--bordeaux)" }}>{t.h2b}</em>
+                <span>{t.h2a}</span> <em style={{ color: "var(--bordeaux)" }}>{t.h2b}</em>
               </h2>
+              <p className="lede" style={{ marginTop: 16 }}>{t.h2lede}</p>
             </div>
 
-            {/**
-             * Un onglet par ecran de la caisse.
-             *
-             * Remplace un collage fige de quatre captures superposees : on y
-             * voyait des bouts d'interface sans savoir a quoi ils
-             * correspondaient. Ici chaque capture est nommee et se regarde en
-             * entier.
-             *
-             * Seuls les ecrans REELLEMENT captures ont un onglet. En ajouter
-             * un sans image afficherait un cadre vide, avec l'icone de lien
-             * casse a la place de la capture.
-             */}
-            <div className="onglets rv">
-              {/* Le choix de l'appareil. Il precede les onglets parce qu'il
-                  change la liste en dessous. */}
-              <div className="appareils" role="tablist" aria-label={t.appareilTitre}>
-                <button
-                  type="button"
-                  role="tab"
-                  aria-selected={appareil === "pc"}
-                  className={appareil === "pc" ? "on" : undefined}
-                  onClick={() => {
-                    setAppareil("pc");
-                    setEcranActif(0);
-                  }}
-                >
-                  {t.appareilPc}
-                </button>
-                <button
-                  type="button"
-                  role="tab"
-                  aria-selected={appareil === "mobile"}
-                  className={appareil === "mobile" ? "on" : undefined}
-                  onClick={() => {
-                    setAppareil("mobile");
-                    setEcranActif(0);
-                  }}
-                >
-                  {t.appareilMobile}
-                </button>
-              </div>
+            <div className="teasers rv">
+              {TEASERS.map((tz) => (
+                <article key={tz.no} className="teaser">
+                  <div className="teaser-tete">
+                    <span className="teaser-no">{tz.no}</span>
+                    <span className="teaser-label">{tz.label}</span>
+                  </div>
 
-              <div className="onglets-barre" role="tablist" aria-label={t.e1}>
-                {ECRANS.map((e, i) => (
-                  <button
-                    key={e.img}
-                    type="button"
-                    role="tab"
-                    id={`onglet-${i}`}
-                    aria-selected={ecranSur === i}
-                    aria-controls={`volet-${i}`}
-                    className={ecranSur === i ? "on" : undefined}
-                    onClick={() => setEcranActif(i)}
-                  >
-                    {e.label}
-                  </button>
-                ))}
-              </div>
+                  {tz.img ? (
+                    <div className="teaser-apercu" aria-hidden="true">
+                      {/* Le fragment est FLOU en bordure basse : la coupure
+                          nette dirait "image tronquee", le fondu dit
+                          "il y a plus a decouvrir". */}
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img
+                        src={`${IMG}${tz.img}-760.webp`}
+                        alt=""
+                        loading="lazy"
+                      />
+                    </div>
+                  ) : (
+                    /* La carte "accessible partout" n'a pas de capture :
+                       elle illustre trois appareils, pas un ecran precis.
+                       Trois rectangles suffisent a le dire sans capture
+                       inventee. */
+                    <div className="teaser-apercu teaser-appareils" aria-hidden="true">
+                      <span className="app-tel" />
+                      <span className="app-tab" />
+                      <span className="app-pc" />
+                    </div>
+                  )}
 
-              {/* Les fleches vivent HORS du `tabpanel` : ce role ne doit
-                  contenir que le contenu du volet, pas ses commandes.
-                  Elles bouclent — depuis le premier ecran, « precedent » ramene
-                  au dernier. Desactivees aux extremites, deux boutons grises
-                  sur huit ecrans donneraient l'impression d'une panne. */}
-              <div className={`onglets-vue vue-${appareil}`}>
-                <button
-                  type="button"
-                  className="onglets-fleche prec"
-                  aria-label={t.ecranPrec}
-                  onClick={() =>
-                    setEcranActif((i) => (i - 1 + ECRANS.length) % ECRANS.length)
-                  }
-                >
-                  ‹
-                </button>
-
-                {/* Un seul volet est monte a la fois : les captures pesent
-                    jusqu'a 80 Ko et les charger toutes d'un coup retarderait
-                    le reste de la page. */}
-                <div
-                  role="tabpanel"
-                  id={`volet-${ecranSur}`}
-                  aria-labelledby={`onglet-${ecranSur}`}
-                >
-                  {/* Les captures mobiles n'existent qu'en 420 et 591 px, les
-                      captures de bureau en 760, 1100 et 1540 : deux jeux de
-                      variantes, deux `srcSet`. */}
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img
-                    key={ECRANS[ecranSur].img}
-                    src={`${IMG}${ECRANS[ecranSur].img}.webp`}
-                    srcSet={
-                      appareil === "mobile"
-                        ? `${IMG}${ECRANS[ecranSur].img}-420.webp 420w, ${IMG}${ECRANS[ecranSur].img}-591.webp 591w`
-                        : `${IMG}${ECRANS[ecranSur].img}-760.webp 760w, ${IMG}${ECRANS[ecranSur].img}-1100.webp 1100w, ${IMG}${ECRANS[ecranSur].img}-1540.webp 1540w`
-                    }
-                    sizes={
-                      appareil === "mobile"
-                        ? "300px"
-                        : "(max-width: 899px) 860px, (min-width: 1400px) 1300px, 92vw"
-                    }
-                    alt={ECRANS[ecranSur].alt}
-                    loading="lazy"
-                  />
-                </div>
-
-                <button
-                  type="button"
-                  className="onglets-fleche suiv"
-                  aria-label={t.ecranSuiv}
-                  onClick={() => setEcranActif((i) => (i + 1) % ECRANS.length)}
-                >
-                  ›
-                </button>
-              </div>
-
-              {/* Une zone qui defile sans le dire ne se decouvre pas. Le
-                  message ne s'affiche que la ou le defilement existe. */}
-              {/* L'astuce ne vaut que pour les captures de BUREAU, larges, sur
-                  un petit ecran. Une capture mobile tient deja dedans. */}
-              {appareil === "pc" && <p className="onglets-astuce">{t.balayer}</p>}
+                  <h3 className="teaser-titre">{tz.titre}</h3>
+                  <p className="teaser-texte">{tz.texte}</p>
+                </article>
+              ))}
             </div>
-
           </div>
         </section>
 

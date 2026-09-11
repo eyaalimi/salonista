@@ -33,52 +33,35 @@ export const CONTENU = {
     // apprendre ce que montre l'image, pas entendre « image ».
     altHero:
       "Au comptoir d'un salon, une employée présente la caisse Salonista sur une tablette : la grille des services avec leurs prix, et le panier en cours.",
-    e1: "La caisse",
-    h2a: "Tout ce dont votre salon a besoin.",
-    h2b: "Au même endroit.",
-    c1: "Encaissement",
-    c2: "Agenda",
-    c3: "Clientes",
-    c7: "Statistiques",
-    // Les huit onglets, dans l'ordre du menu lateral de la caisse.
-    // Le choix de l'appareil, au-dessus des onglets.
-    appareilTitre: "Voir la caisse sur",
-    appareilPc: "Sur ordinateur",
-    appareilMobile: "Sur téléphone",
-    ecSalon: "Mon salon",
-    ecCaisse: "Caisse",
-    ecEncaissement: "Encaissement",
-    ecRdv: "Rendez-vous",
-    ecClientes: "Clientes",
-    ecFidelite: "Fidélité",
-    ecCommissions: "Commissions",
-    ecProduits: "Produits",
-    ecTiroir: "Tiroir",
-    // Les fleches n'affichent qu'un chevron : sans ce libelle, un lecteur
-    // d'ecran annoncerait « bouton ‹ ».
-    ecranPrec: "Écran précédent",
-    ecranSuiv: "Écran suivant",
-    balayer: "Balayez la capture pour voir tout l'écran",
-    // Chaque capture est decrite : un lecteur d'ecran doit apprendre ce que
-    // montre l'ecran, pas entendre huit fois « image ».
-    altEcranSalon:
-      "Le tableau de bord du salon : recette de la journée, clientes servies, panier moyen et service le plus demandé.",
-    altEcranCaisse:
-      "L'écran d'encaissement : la grille des services du salon à gauche, le panier et le bouton Encaisser à droite.",
-    altEcranEncaissement:
-      "Le panier au moment de régler : le service, son prix, les produits suggérés et le bouton Encaisser avec le total.",
-    altEcranRdv:
-      "L'agenda du jour : trois rendez-vous avec leur horaire et leur prestation, et le calendrier du mois à côté.",
-    altEcranClientes:
-      "La fiche des clientes : nombre de visites, total dépensé et solde de points de fidélité pour chacune.",
-    altEcranFidelite:
-      "Le programme de fidélité : réglage du cashback, portefeuilles des clientes et classement des plus fidèles.",
-    altEcranCommissions:
-      "Le suivi des commissions dues à l'équipe : taux de chaque employée, base de calcul et montant à payer.",
-    altEcranProduits:
-      "Le catalogue des produits : nom, référence, prix, stock restant et état de chaque article.",
-    altEcranTiroir:
-      "Le tiroir de caisse ouvert : fond de caisse, ventes en espèces, ventes par carte, pourboires et dépenses.",
+    e1: "L'essentiel, bien pensé",
+    h2a: "Une caisse pensée",
+    h2b: "pour votre salon.",
+    // Une seule phrase, pas une liste : les quatre cartes portent deja le
+    // detail. Reprend le ton du reste de la landing plutot que de repeter
+    // « caisse pour salons de beaute », deja dans l'eyebrow du hero.
+    h2lede:
+      "Salonista est une caisse digitale simple, conçue spécialement pour les professionnels de la beauté.",
+    // Quatre cartes en apercu, comme un menu qu'on feuillette avant d'ouvrir
+    // le produit : chacune montre un bout d'ecran REEL, jamais l'ecran
+    // entier — le detail se decouvre en activant sa caisse gratuite, pas ici.
+    tzLabel1: "Caisse",
+    tzTitre1: "Encaissez simplement",
+    tzTexte1: "Enregistrez vos ventes et prestations rapidement.",
+    tzAlt1:
+      "Un apercu de l'ecran d'encaissement : la grille des services du salon et le debut du panier.",
+    tzLabel2: "Mon salon",
+    tzTitre2: "Suivez votre chiffre d'affaires",
+    tzTexte2: "Consultez vos revenus et vos ventes en temps réel.",
+    tzAlt2:
+      "Un apercu du tableau de bord : le montant gagné sur la période, en évidence.",
+    tzLabel3: "Partout",
+    tzTitre3: "Accessible partout",
+    tzTexte3: "Utilisez votre caisse depuis votre téléphone, tablette ou PC.",
+    tzLabel4: "Pilotage",
+    tzTitre4: "Gardez le contrôle",
+    tzTexte4: "Visualisez facilement l'activité de votre salon.",
+    tzAlt4:
+      "Un apercu du suivi des commissions : le montant à payer et le montant déjà payé.",
     e3: "Ce qu'elle sait faire",
     h4a: "Six gestes du",
     h4b: "quotidien.",
@@ -166,46 +149,26 @@ export const CONTENU = {
     b2: "مجانية 100%",
     b3: "تليفون · تابليت · كمبيوتر",
     b4: "بيوعات وخدمات",
-    e1: "الكاس",
-    h2a: "كل ما يلزم صالونك.",
-    h2b: "في بلاصة وحدة.",
-    c1: "الخلاص",
-    c2: "المواعيد",
-    c3: "الحرفاء",
-    c7: "الإحصائيات",
-    appareilTitre: "شوف الكاس على",
-    appareilPc: "على الكمبيوتر",
-    appareilMobile: "على التليفون",
-    ecSalon: "صالوني",
-    ecCaisse: "الكاس",
-    ecEncaissement: "الخلاص",
-    ecRdv: "المواعيد",
-    ecClientes: "الحرفاء",
-    ecFidelite: "الوفاء",
-    ecCommissions: "العمولات",
-    ecProduits: "المنتوجات",
-    ecTiroir: "التيروار",
-    ecranPrec: "الشاشة السابقة",
-    ecranSuiv: "الشاشة الموالية",
-    balayer: "جرّ الصورة باش تشوف الشاشة الكاملة",
-    altEcranSalon:
-      "لوحة الصالون : مدخول النهار، عدد الحرفاء، معدل الباني والخدمة الأكثر طلبا.",
-    altEcranCaisse:
-      "شاشة الخلاص : خدمات الصالون على اليمين، والباني وزر الخلاص على اليسار.",
-    altEcranEncaissement:
-      "الباني وقت الخلاص : الخدمة، ثمنها، المنتوجات المقترحة وزر الخلاص بالجملة.",
-    altEcranRdv:
-      "مواعيد النهار : ثلاثة مواعيد بالوقت والخدمة، وتقويم الشهر بجنبهم.",
-    altEcranClientes:
-      "بطاقة الحرفاء : عدد الزيارات، المبلغ المصروف ورصيد نقاط الوفاء لكل وحدة.",
-    altEcranFidelite:
-      "برنامج الوفاء : إعداد الكاشباك، محافظ الحرفاء وترتيب الأكثر وفاء.",
-    altEcranCommissions:
-      "متابعة العمولات متاع الفريق : نسبة كل عاملة، قاعدة الحساب والمبلغ اللي يتخلّص.",
-    altEcranProduits:
-      "قائمة المنتوجات : الاسم، المرجع، الثمن، الستوك الباقي وحالة كل منتوج.",
-    altEcranTiroir:
-      "التيروار محلول : فوند الكاس، مبيعات كاش، مبيعات كارط، البقشيش والمصاريف.",
+    e1: "الأساسي، مدروس مليح",
+    h2a: "كاس مدروسة",
+    h2b: "لصالونك.",
+    h2lede:
+      "سالونيستا كاس رقمية بسيطة، معمولة خصيصا لمحترفين التجميل.",
+    tzLabel1: "الكاس",
+    tzTitre1: "اخلّص بسهولة",
+    tzTexte1: "سجّل بيوعاتك وخدماتك بسرعة.",
+    tzAlt1: "جزء من شاشة الخلاص : خدمات الصالون وبداية الباني.",
+    tzLabel2: "صالوني",
+    tzTitre2: "تابع رقم معاملاتك",
+    tzTexte2: "شوف مداخيلك وبيوعاتك في الوقت الحقيقي.",
+    tzAlt2: "جزء من لوحة القيادة : المبلغ اللي ربحتو في الفترة، واضح.",
+    tzLabel3: "في كل بلاصة",
+    tzTitre3: "متوفرة في كل بلاصة",
+    tzTexte3: "استعمل الكاس متاعك من التليفون، التابليت ولا الكمبيوتر.",
+    tzLabel4: "التسيير",
+    tzTitre4: "ابقى متحكّم",
+    tzTexte4: "شوف بسهولة نشاط صالونك.",
+    tzAlt4: "جزء من متابعة العمولات : المبلغ اللي يتخلّص والمبلغ اللي تخلّص.",
     e3: "شنوّة تنجم تعمل",
     h4a: "ستة حركات",
     h4b: "كل يوم.",
