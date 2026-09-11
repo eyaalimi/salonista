@@ -150,20 +150,19 @@ body[data-lang="ar"] .btn{font-family:var(--ar);letter-spacing:0;font-size:.98re
 [dir="rtl"] .btn:hover .arrowc{transform:scaleX(-1) translateX(5px);}
 
 /* ---------------- nav ---------------- */
-/* La barre est opaque DES LE DEPART.
+/* La barre est opaque DES LE DEPART, et PRUNE : elle tranche franchement sur
+   le hero blanc au lieu de s'y fondre, et pose la couleur de marque des la
+   premiere ligne de la page.
    Elle etait transparente sur un hero sombre plein ecran, et ne devenait
-   ivoire qu'au defilement. Le hero est desormais clair : du texte creme sur
-   du creme aurait ete illisible pendant les 60 premiers pixels. La classe
-   `solid` reste posee par le JS et n'ajoute plus qu'une ombre de separation. */
+   claire qu'au defilement. La classe `solid` reste posee par le JS et
+   n'ajoute plus qu'un trait de separation. */
 .nav{
   position:fixed;top:0;left:0;right:0;z-index:90;
-  /* Blanc, pas creme : la barre se detache du fond de page au lieu de s'y
-     fondre. */
-  background:rgba(255,255,255,.94);backdrop-filter:blur(14px) saturate(1.1);
+  background:var(--espresso);
   border-bottom:1px solid transparent;
   transition:border-color .55s var(--ease);
 }
-.nav.solid{border-bottom-color:var(--hair);}
+.nav.solid{border-bottom-color:rgba(255,246,241,.16);}
 .nav-in{display:flex;align-items:center;gap:22px;height:78px;}
 /* Le nom de marque suit <Logo> (src/components/logo.tsx) et NON les titres :
    il est en Playfair partout ailleurs sur le site, avec le « salon » en
@@ -172,38 +171,44 @@ body[data-lang="ar"] .btn{font-family:var(--ar);letter-spacing:0;font-size:.98re
 .brand{
   font-family:var(--font-playfair, Georgia), serif;font-weight:500;
   font-size:1.65rem;letter-spacing:-.015em;line-height:1.05;
-  color:var(--espresso);direction:ltr;
+  color:var(--ivoire);direction:ltr;
 }
-/* Le point de la marque en rose FONCE : la barre est ivoire, ou le rose vif
-   ne mesure que 2,94:1. Meme regle que <Logo>. */
-.brand b{font-weight:inherit;color:#C42A5A;}
+/* Le point reprend le rose VIF : la barre est prune, ou il mesure 5,59:1.
+   C'est le rose FONCE qui echouerait ici (2,99:1) — l'inverse exact de la
+   regle qui vaut sur fond clair. Meme logique que <Logo>, dont le point suit
+   le fond. */
+.brand b{font-weight:inherit;color:var(--rose-vif);}
 .brand em{font-style:italic;}
 .nav-links{display:none;gap:30px;margin-inline:auto;}
 @media(min-width:1080px){.nav-links{display:flex;}}
+/* Ivoire sur la barre prune : 15,40:1. Le taupe d'avant etait prevu pour un
+   fond blanc et tomberait a 2,27:1 ici. */
 .nav-links a{
   font-size:.76rem;font-weight:500;letter-spacing:.14em;text-transform:uppercase;
-  color:var(--taupe);transition:color .55s var(--ease);position:relative;padding-block:6px;
+  color:var(--ivoire);transition:opacity .55s var(--ease);position:relative;padding-block:6px;
 }
 body[data-lang="ar"] .nav-links a{text-transform:none;letter-spacing:0;font-size:.92rem;}
-.nav-links a:hover{color:var(--espresso);}
+/* L'etat de survol joue sur l'OPACITE et non sur la couleur : a .78, le
+   rapport reste de 8,37:1, la ou un gris fixe demanderait d'etre remesure. */
+.nav-links a:hover{opacity:.78;}
 .nav-links a::after{content:"";position:absolute;left:0;right:0;bottom:0;height:1px;background:currentColor;transform:scaleX(0);transform-origin:left;transition:transform .45s var(--ease);}
 .nav-links a:hover::after{transform:scaleX(1);}
-.nav.solid .nav-links a:hover{color:var(--espresso);}
 .lang{display:flex;align-items:center;gap:2px;margin-inline-start:auto;flex:none;}
 @media(min-width:1080px){.lang{margin-inline-start:0;}}
 /* 44px et non 40 : c'est le SEUL bouton de la barre sous 760px, la ou le
    « Commencer gratuitement » est masque. En dessous de 44, on rate la cible
    au pouce. */
-/* Le taupe plein, pas une version transparente : a .65 d'opacite la langue
-   non selectionnee tombait a 2,38:1 sur l'ivoire, alors que c'est le bouton
-   qui sert precisement a changer de langue. */
+/* Ivoire sur la barre prune. La langue NON selectionnee est portee a .72
+   d'opacite (8,37:1) et non a .65 : le bouton qui sert precisement a changer
+   de langue doit rester lisible pour qui ne lit pas l'autre. */
 .lang button{
   background:none;border:0;cursor:pointer;font-family:var(--ui);font-size:.74rem;font-weight:500;
-  letter-spacing:.12em;padding:11px 12px;color:var(--taupe);transition:color .4s var(--ease);min-height:44px;
+  letter-spacing:.12em;padding:11px 12px;color:var(--ivoire);opacity:.72;
+  transition:opacity .4s var(--ease);min-height:44px;
 }
 .lang button[data-l="ar"]{font-family:var(--ar);font-size:.86rem;letter-spacing:0;}
-.lang button[aria-pressed="true"]{color:var(--espresso);}
-.lang i{width:1px;height:13px;background:currentColor;opacity:.3;}
+.lang button[aria-pressed="true"]{opacity:1;}
+.lang i{width:1px;height:13px;background:var(--ivoire);opacity:.3;}
 .nav .btn{min-height:44px;padding:0 1.2rem;font-size:.72rem;display:none;}
 @media(min-width:760px){.nav .btn{display:inline-flex;}}
 
@@ -240,23 +245,73 @@ body[data-lang="ar"] .nav-links a{text-transform:none;letter-spacing:0;font-size
   .hero-suite{padding-bottom:clamp(44px,6vw,80px);}
 }
 /* Le hero est sur fond BLANC : la pastille blanche y serait invisible. Elle
-   passe au rose pale, ou le contraste du texte (4,46:1) est en dessous du
-   seuil AA — on remonte donc au prune, qui donne 7,82:1. */
-.hero .eyebrow{background:var(--ivoire-2);color:var(--taupe);}
-/* Pas de `max-width` sur telephone : a 13ch le titre cassait a la quatrieme
-   ligne alors que l'ecran en tenait trois. */
-.hero h1{margin-top:14px;color:var(--espresso);}
-@media(min-width:900px){.hero h1{margin-top:18px;max-width:13ch;}}
+   passe au rose pale, ou le taupe donne 6,78:1. La bordure la detache du
+   fond, comme sur la maquette. */
+.hero .eyebrow{
+  background:var(--ivoire-2);color:var(--taupe);
+  border:1px solid rgba(107,65,87,.18);
+}
+/* Pas de `max-width` : le titre porte ses propres retours a la ligne, une
+   largeur maximale n'ajouterait qu'une quatrieme coupure involontaire. */
+.hero h1{margin-top:16px;color:var(--espresso);line-height:1.12;}
+@media(min-width:900px){.hero h1{margin-top:20px;}}
+/* Sur telephone, les trois lignes forcees deborderaient : les <br> sont
+   neutralises et le titre se replie tout seul. */
+@media(max-width:599px){
+  .hero h1 br{display:none;}
+  .hero h1 span::after,.hero h1 em::after{content:" ";}
+}
 /* L'italique du serif d'origine n'existe pas en Bricolage : c'est la couleur
    qui porte l'accent, pas l'inclinaison. */
 .hero h1 em{font-style:normal;color:var(--bordeaux);}
+/* Le trait separe le titre de ce qui l'explique, comme sur la maquette. Il
+   est masque sur telephone, ou le titre et sa suite sont deja separes par la
+   photo. */
+.hero-trait{
+  display:none;height:1px;background:var(--hair);border:0;
+  margin:0 0 24px;max-width:clamp(220px,26vw,340px);
+}
+@media(min-width:900px){.hero-trait{display:block;}}
+
 .hero-lede{
   margin-top:0;max-width:44ch;font-size:1.02rem;line-height:1.6;
   color:var(--taupe);
 }
-@media(min-width:900px){.hero-lede{margin-top:22px;font-size:1.04rem;line-height:1.65;}}
-.hero-cta{display:flex;flex-wrap:wrap;gap:12px;margin-top:20px;}
-@media(min-width:900px){.hero-cta{gap:14px;margin-top:32px;}}
+@media(min-width:900px){.hero-lede{margin-top:0;font-size:1.04rem;line-height:1.65;}}
+
+/* Les quatre benefices, sur deux colonnes. En prune et non en taupe : ce
+   sont des arguments de vente, ils doivent se lire avant la phrase. */
+.hero-plus{
+  display:grid;grid-template-columns:1fr;gap:10px 26px;
+  margin-top:20px;list-style:none;padding:0;
+  font-family:var(--ui);font-size:.92rem;line-height:1.45;color:var(--espresso);
+  font-weight:500;
+}
+@media(min-width:520px){.hero-plus{grid-template-columns:1fr 1fr;}}
+body[data-lang="ar"] .hero-plus{font-family:var(--ar);}
+.hero-plus li{display:flex;gap:8px;align-items:flex-start;}
+/* Rose FONCE et non rose vif : 5,49:1 sur blanc contre 2,94:1. Le losange
+   est un signe decoratif, mais il est colle au texte — le laisser palir
+   ferait une puce fantome. */
+.hero-plus li span{color:var(--bordeaux);flex:none;line-height:1.45;}
+
+.hero-cta{display:flex;flex-wrap:wrap;gap:12px;margin-top:26px;}
+@media(min-width:900px){.hero-cta{gap:14px;margin-top:30px;}}
+
+/* La ligne de reassurance repete les promesses au moment du clic. En
+   menthe-deep (5,26:1 sur blanc) : c'est la couleur des confirmations dans
+   toute la charte. */
+.hero-rassure{
+  display:flex;flex-wrap:wrap;gap:6px 18px;
+  margin-top:18px;list-style:none;padding:0;
+  font-family:var(--ui);font-size:.88rem;font-weight:600;color:var(--menthe-deep);
+}
+body[data-lang="ar"] .hero-rassure{font-family:var(--ar);}
+.hero-rassure li{display:flex;gap:6px;align-items:center;}
+.hero-note{
+  margin-top:10px;font-family:var(--ui);font-size:.85rem;color:var(--taupe);
+}
+body[data-lang="ar"] .hero-note{font-family:var(--ar);}
 /* Sur telephone, le lien secondaire devient un simple lien souligne : en
    bouton, il prenait 52 px et autant d'attention que l'action principale. */
 @media(max-width:899px){
