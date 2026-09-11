@@ -627,6 +627,56 @@ body[data-lang="ar"] .mob-chip-label{font-family:var(--ar);letter-spacing:0;font
 [dir="rtl"] .mob-chip1{right:auto;left:calc(220px + 32px);}
 [dir="rtl"] .mob-chip2{right:auto;left:-24px;}
 
+/* ---------------- une experience continue ----------------
+   Prolonge la section sombre precedente : ce n'est plus UN appareil qui est
+   mis en avant, mais les TROIS a la fois, sur fond clair et centre. */
+.continu-rangee{
+  margin-top:clamp(44px,6vw,72px);
+  display:flex;flex-wrap:wrap;justify-content:center;align-items:flex-end;
+  gap:clamp(28px,4vw,56px);
+}
+.continu-appareil{display:flex;flex-direction:column;align-items:center;gap:14px;margin:0;}
+.continu-appareil figcaption{
+  order:-1;font-family:var(--ui);font-size:.7rem;font-weight:600;
+  letter-spacing:.16em;text-transform:uppercase;color:var(--taupe);
+}
+body[data-lang="ar"] .continu-appareil figcaption{font-family:var(--ar);letter-spacing:0;text-transform:none;font-size:.86rem;}
+
+/* Le telephone, cadre noir fin comme dans la section precedente. */
+.continu-cadre-tel{
+  width:140px;border-radius:26px;overflow:hidden;
+  border:7px solid var(--espresso);box-shadow:0 30px 60px -28px rgba(58,16,36,.4);
+}
+.continu-cadre-tel img{width:100%;height:auto;display:block;}
+
+/* Le PC : la capture porte sa propre barre de titre prune, donc le cadre
+   n'ajoute qu'un contour fin plutot qu'un second bandeau. Le socle est un
+   simple trapeze CSS, sans image. */
+.continu-cadre-pc{
+  width:min(320px,82vw);border-radius:10px 10px 4px 4px;overflow:hidden;
+  border:1px solid var(--hair);box-shadow:0 30px 60px -24px rgba(58,16,36,.28);
+}
+.continu-cadre-pc img{width:100%;height:auto;display:block;}
+.continu-socle{
+  width:60%;height:10px;margin-top:-1px;
+  background:var(--espresso);border-radius:0 0 6px 6px;
+  clip-path:polygon(8% 0,92% 0,100% 100%,0% 100%);
+}
+
+/* La tablette : cadre un peu plus epais que le telephone, coins moins
+   arrondis — elle se distingue au premier coup d'oeil sans etiquette. */
+.continu-cadre-tab{
+  width:200px;border-radius:16px;overflow:hidden;
+  border:9px solid var(--espresso);box-shadow:0 30px 60px -28px rgba(58,16,36,.4);
+}
+.continu-cadre-tab img{width:100%;height:auto;display:block;}
+
+.continu-fine{
+  margin-top:clamp(40px,6vw,64px);text-align:center;
+  font-family:var(--ui);font-weight:600;letter-spacing:.04em;color:var(--bordeaux);
+}
+body[data-lang="ar"] .continu-fine{font-family:var(--ar);letter-spacing:0;}
+
 footer{padding-block:38px 110px;}
 .foot{display:flex;flex-wrap:wrap;gap:14px 30px;align-items:center;justify-content:space-between;font-size:.8rem;color:var(--taupe);}
 .foot .brand{color:var(--espresso);font-size:1.35rem;}

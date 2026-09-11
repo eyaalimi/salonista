@@ -410,6 +410,71 @@ export default function LandingClient() {
           </div>
         </section>
 
+        {/* ---------------- une experience continue ---------------- */}
+        {/**
+         * Prolonge la section precedente : ce n'est plus UN appareil qui est
+         * mis en avant, mais les TROIS a la fois, sur fond clair et centre.
+         * Chaque cadre porte une vraie capture, jamais une silhouette vide.
+         */}
+        <section className="sec continu">
+          <div className="shell">
+            <div className="sec-head rv centre">
+              <p className="eyebrow">{t.continuEyebrow}</p>
+              <h2>
+                <span>{t.continuH2a}</span> <em style={{ color: "var(--bordeaux)" }}>{t.continuH2b}</em>
+              </h2>
+              <p className="lede" style={{ marginInline: "auto", marginTop: 16 }}>{t.continuLede}</p>
+            </div>
+
+            <div className="continu-rangee rv">
+              <figure className="continu-appareil continu-tel">
+                <figcaption>{t.continuTel}</figcaption>
+                <div className="continu-cadre continu-cadre-tel">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src={`${IMG}m-caisse-420.webp`}
+                    srcSet={`${IMG}m-caisse-420.webp 420w, ${IMG}m-caisse-591.webp 591w`}
+                    sizes="140px"
+                    alt={t.continuAltTel}
+                    loading="lazy"
+                  />
+                </div>
+              </figure>
+
+              <figure className="continu-appareil continu-pc">
+                <figcaption>{t.continuPc}</figcaption>
+                <div className="continu-cadre continu-cadre-pc">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src={`${IMG}ecran-salon-760.webp`}
+                    srcSet={`${IMG}ecran-salon-760.webp 760w, ${IMG}ecran-salon-1100.webp 1100w`}
+                    sizes="(min-width: 700px) 320px, 82vw"
+                    alt={t.continuAltPc}
+                    loading="lazy"
+                  />
+                </div>
+                <div className="continu-socle" aria-hidden="true" />
+              </figure>
+
+              <figure className="continu-appareil continu-tab">
+                <figcaption>{t.continuTab}</figcaption>
+                <div className="continu-cadre continu-cadre-tab">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src={`${IMG}t-caisse-420.webp`}
+                    srcSet={`${IMG}t-caisse-420.webp 420w, ${IMG}t-caisse-760.webp 760w`}
+                    sizes="200px"
+                    alt={t.continuAltTab}
+                    loading="lazy"
+                  />
+                </div>
+              </figure>
+            </div>
+
+            <p className="continu-fine rv">{t.continuFine}</p>
+          </div>
+        </section>
+
         {/* ---------------- fonctionnalites ---------------- */}
         <section className="sec" style={{ paddingTop: 0 }}>
           <div className="shell">
