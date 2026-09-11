@@ -160,18 +160,15 @@ export default function LandingClient() {
   ];
 
   /**
-   * Quatre apercus de la caisse, en teaser : chacun montre un FRAGMENT d'un
-   * ecran reel — jamais l'ecran entier, jamais la barre laterale ou les
-   * noms de clientes. Le detail complet se decouvre en activant sa caisse
-   * gratuite, pas sur la landing.
+   * Quatre apercus de la caisse, en teaser : chacun montre la capture
+   * ENTIERE, sans rognage ni fondu. La troisieme montre le programme de
+   * fidelite — nom du salon et identites des clientes FLOUTES a la source,
+   * comme partout ailleurs sur cette page.
    */
   const TEASERS = [
     { no: "01", img: "ecran-caisse", label: t.tzLabel1, titre: t.tzTitre1, texte: t.tzTexte1, alt: t.tzAlt1 },
     { no: "02", img: "ecran-salon", label: t.tzLabel2, titre: t.tzTitre2, texte: t.tzTexte2, alt: t.tzAlt2 },
-    // La troisieme carte n'a pas de capture : elle illustre les TROIS
-    // appareils, pas un ecran precis. Un cadre vide dirait moins qu'une
-    // fausse capture qui n'existe pas.
-    { no: "03", img: null, label: t.tzLabel3, titre: t.tzTitre3, texte: t.tzTexte3, alt: "" },
+    { no: "03", img: "ecran-fidelite2", label: t.tzLabel3, titre: t.tzTitre3, texte: t.tzTexte3, alt: t.tzAlt3 },
     { no: "04", img: "ecran-commissions", label: t.tzLabel4, titre: t.tzTitre4, texte: t.tzTexte4, alt: t.tzAlt4 },
   ] as const;
 
@@ -351,29 +348,17 @@ export default function LandingClient() {
                     <span className="teaser-label">{tz.label}</span>
                   </div>
 
-                  {tz.img ? (
-                    <div className="teaser-apercu" aria-hidden="true">
-                      {/* Le fragment est FLOU en bordure basse : la coupure
-                          nette dirait "image tronquee", le fondu dit
-                          "il y a plus a decouvrir". */}
-                      {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <img
-                        src={`${IMG}${tz.img}-760.webp`}
-                        alt=""
-                        loading="lazy"
-                      />
-                    </div>
-                  ) : (
-                    /* La carte "accessible partout" n'a pas de capture :
-                       elle illustre trois appareils, pas un ecran precis.
-                       Trois rectangles suffisent a le dire sans capture
-                       inventee. */
-                    <div className="teaser-apercu teaser-appareils" aria-hidden="true">
-                      <span className="app-tel" />
-                      <span className="app-tab" />
-                      <span className="app-pc" />
-                    </div>
-                  )}
+                  {/* La capture s'affiche ENTIERE, a son propre ratio : pas
+                      de rognage, pas de fondu. Chacune est decrite pour qui
+                      ne la voit pas. */}
+                  <div className="teaser-apercu">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img
+                      src={`${IMG}${tz.img}-760.webp`}
+                      alt={tz.alt}
+                      loading="lazy"
+                    />
+                  </div>
 
                   <h3 className="teaser-titre">{tz.titre}</h3>
                   <p className="teaser-texte">{tz.texte}</p>

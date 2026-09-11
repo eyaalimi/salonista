@@ -426,33 +426,14 @@ body[data-lang="ar"] .teaser-label{font-family:var(--ar);letter-spacing:0;text-t
    fixe et non un ratio — les quatre sources n'ont pas la meme forme, et
    c'est precisement une FENETRE decoupee dans chacune qu'on veut, pas
    l'image entiere reduite. */
+/* La capture s'affiche ENTIERE : la boite prend le ratio de l'image, pas de
+   hauteur fixe qui la rognerait. Remplace un fragment fixe de 150px avec
+   fondu bas — ici on montre tout, rien a decouvrir plus tard. */
 .teaser-apercu{
-  position:relative;height:150px;overflow:hidden;
-  border-radius:14px;background:var(--ivoire-2);
+  border-radius:14px;overflow:hidden;background:var(--ivoire-2);
+  border:1px solid var(--hair);
 }
-.teaser-apercu img{
-  position:absolute;top:0;left:0;width:100%;height:auto;display:block;
-}
-/* Le fondu bas dit "il y a plus a decouvrir" plutot que de couper net sur un
-   bouton ou un montant a moitie visible. */
-.teaser-apercu::after{
-  content:"";position:absolute;inset:auto 0 0 0;height:56%;
-  background:linear-gradient(to bottom,transparent,var(--ivoire-2) 92%);
-}
-
-/* La carte "accessible partout" n'a pas de capture : trois silhouettes
-   d'appareil suffisent, sans inventer un ecran qui n'existe pas. */
-.teaser-appareils{
-  display:flex;align-items:center;justify-content:center;gap:14px;
-  background:var(--ivoire-2);
-}
-.teaser-appareils::after{content:none;}
-.teaser-appareils span{
-  display:block;border:2.5px solid var(--taupe);border-radius:10px;opacity:.55;
-}
-.app-tel{width:34px;height:64px;border-radius:8px;}
-.app-tab{width:52px;height:78px;}
-.app-pc{width:76px;height:56px;}
+.teaser-apercu img{width:100%;height:auto;display:block;}
 
 .teaser-titre{
   font-family:var(--display);font-weight:800;letter-spacing:-.01em;
