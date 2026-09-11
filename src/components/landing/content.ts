@@ -77,6 +77,22 @@ export const CONTENU = {
     mobChip1Valeur: "420,000 TND",
     mobChip2Label: "Ventes du jour",
     mobChip2Valeur: "12 ventes",
+    // Trois appareils, une seule caisse : telephone, PC/ordinateur, tablette.
+    continuEyebrow: "Une expérience continue",
+    continuH2a: "Un seul outil.",
+    continuH2b: "Tous vos écrans.",
+    continuLede:
+      "Commencez sur votre téléphone. Continuez sur votre tablette. Retrouvez votre activité sur votre PC.",
+    continuTel: "Smartphone",
+    continuPc: "PC / Ordinateur",
+    continuTab: "Tablette",
+    continuAltTel:
+      "La caisse sur téléphone : les ventes du jour, en évidence.",
+    continuAltPc:
+      "La caisse sur ordinateur : le chiffre d'affaires du jour et la grille des services.",
+    continuAltTab:
+      "La caisse sur tablette : le panier en cours avec le bouton d'encaissement.",
+    continuFine: "Simple. Accessible. Connecté.",
     e3: "Ce qu'elle sait faire",
     h4a: "Six gestes du",
     h4b: "quotidien.",
@@ -196,6 +212,18 @@ export const CONTENU = {
     mobChip1Valeur: "420,000 دينار",
     mobChip2Label: "بيوعات النهار",
     mobChip2Valeur: "12 بيعة",
+    continuEyebrow: "تجربة متواصلة",
+    continuH2a: "أداة واحدة.",
+    continuH2b: "كل الشاشات متاعك.",
+    continuLede:
+      "ابدا في التليفون. كمّل في التابليت. لقى نشاطك في الكمبيوتر.",
+    continuTel: "تليفون",
+    continuPc: "كمبيوتر",
+    continuTab: "تابليت",
+    continuAltTel: "الكاس في التليفون : بيوعات النهار، واضحة.",
+    continuAltPc: "الكاس في الكمبيوتر : رقم معاملات النهار وخدمات الصالون.",
+    continuAltTab: "الكاس في التابليت : الباني الحالي وزر الخلاص.",
+    continuFine: "بسيطة. متوفرة. مربوطة.",
     e3: "شنوّة تنجم تعمل",
     h4a: "ستة حركات",
     h4b: "كل يوم.",
