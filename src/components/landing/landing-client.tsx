@@ -172,19 +172,6 @@ export default function LandingClient() {
     { no: "04", img: "ecran-commissions", label: t.tzLabel4, titre: t.tzTitre4, texte: t.tzTexte4, alt: t.tzAlt4 },
   ] as const;
 
-  /* Chaque probleme face a SA solution. L'ordre des deux listes d'origine ne
-     se correspondait pas : « des calculs a la main » se retrouvait en face de
-     « l'agenda dans la caisse ». Les paires sont refaites pour que la ligne de
-     droite reponde vraiment a celle de gauche. */
-  const PAIRES: Array<[string, string]> = [
-    [t.av1, t.ap1],
-    [t.av2, t.ap5],
-    [t.av3, t.ap2],
-    [t.av4, t.ap4],
-    [t.av5, t.ap3],
-    [t.av6, t.ap6],
-  ];
-
   const QUESTIONS = [
     { q: t.q1, a: t.a1 },
     { q: t.q2, a: t.a2 },
@@ -502,48 +489,52 @@ export default function LandingClient() {
           </div>
         </section>
 
-        {/* ---------------- avant / avec ---------------- */}
-        <section className="sec">
+        {/* ---------------- offre de lancement + mise en route ---------------- */}
+        {/**
+         * Remplace le comparatif "avant / avec" par un bandeau d'offre : un
+         * badge, un gros titre, une phrase, un bouton, une reassurance, puis
+         * trois etapes numerotees vers la meme action. Rose-soft plutot que
+         * le dore de la reference -- ce projet a migre la landing hors de
+         * cette couleur (2,21:1, illisible en fond) il y a plusieurs commits.
+         */}
+        <section className="sec lanc" style={{ background: "var(--ivoire-2)" }}>
+          <div className="shell lanc-in">
+            <p className="eyebrow rv">{t.lancEyebrow}</p>
+            <h2 className="rv d1">
+              <span>{t.h6a}</span>
+              <br />
+              <em style={{ color: "var(--bordeaux)" }}>{t.h6b}</em>
+            </h2>
+            <p className="lede lanc-lede rv d2">{t.lancLede}</p>
+            <a className="btn btn-solid rv d2" href="/pos-start">
+              <span>{t.lancCta}</span>
+              <span className="arrowc">→</span>
+            </a>
+            <p className="lanc-fine rv d3">{t.lancFine}</p>
+          </div>
+        </section>
+
+        <section className="sec" style={{ paddingBlock: "clamp(48px,7vw,90px)" }}>
           <div className="shell">
-            <div className="sec-head rv">
-              <p className="eyebrow">{t.e4}</p>
-              <h2>
-                <span>{t.h6a}</span>{" "}
-                <em style={{ color: "var(--bordeaux)" }}>{t.h6b}</em>
-              </h2>
+            <div className="sec-head rv centre">
+              <p className="eyebrow">{t.etapesEyebrow}</p>
+              <h2>{t.etapesTitre}</h2>
             </div>
 
-            {/**
-             * Six paires, chaque probleme face a sa solution.
-             *
-             * Remplace un curseur glissant qui masquait la moitie du contenu
-             * tant qu'on n'avait pas devine le geste — et qui demandait 70
-             * lignes de JavaScript pour la souris, le tactile, le clavier et
-             * l'arabe. Ici tout se lit d'un coup d'oeil, et le lien de cause a
-             * effet est visible : la ligne de droite repond a celle de gauche.
-             */}
-            <div className="paires rv">
-              <div className="paires-tete" aria-hidden="true">
-                <span>{t.avant}</span>
-                <span>{t.apres}</span>
-              </div>
-              <ul className="paires-liste">
-                {PAIRES.map(([probleme, solution]) => (
-                  <li key={probleme}>
-                    <span className="pb">{probleme}</span>
-                    <span className="fleche" aria-hidden="true">
-                      →
-                    </span>
-                    {/* Le libelle est repete pour un lecteur d'ecran : sans
-                        lui, la ligne se lirait « Des cahiers — Une caisse
-                        centralisee », sans dire lequel est l'avant. */}
-                    <span className="sol">
-                      <span className="sr">{t.apres} : </span>
-                      {solution}
-                    </span>
-                  </li>
-                ))}
-              </ul>
+            <div className="etapes rv">
+              {[t.etape1, t.etape2, t.etape3].map((etape, i) => (
+                <div key={etape} className="etape">
+                  <span className="etape-no">{String(i + 1).padStart(2, "0")}</span>
+                  <p className="etape-texte">{etape}</p>
+                </div>
+              ))}
+            </div>
+
+            <div className="etapes-cta">
+              <a className="btn btn-solid" href="/pos-start">
+                <span>{t.cta}</span>
+                <span className="arrowc">→</span>
+              </a>
             </div>
           </div>
         </section>
