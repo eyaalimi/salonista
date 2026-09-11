@@ -299,10 +299,15 @@ export default function LandingClient() {
           <div className="shell hero-in">
             <div className="hero-titre">
               <p className="eyebrow rv in">{t.eyebrow}</p>
+              {/* Trois lignes courtes empilees, chacune lisible d'un coup
+                  d'oeil. Le <br> est porte par le CSS sur telephone, ou
+                  trois lignes forcees deborderaient. */}
               <h1 className="rv in d1">
                 <span>{t.h1a}</span>
                 <br />
-                <em>{t.h1b}</em>
+                <span>{t.h1b}</span>
+                <br />
+                <em>{t.h1c}</em>
               </h1>
             </div>
 
@@ -325,7 +330,21 @@ export default function LandingClient() {
             </div>
 
             <div className="hero-suite">
+              <hr className="hero-trait rv in d2" />
               <p className="hero-lede rv in d2">{t.heroLede}</p>
+
+              {/* Les quatre benefices, en deux colonnes. Une <ul> et non des
+                  <div> : c'est une liste, et un lecteur d'ecran doit
+                  l'annoncer comme telle. */}
+              <ul className="hero-plus rv in d2">
+                {[t.b1, t.b2, t.b3, t.b4].map((b) => (
+                  <li key={b}>
+                    <span aria-hidden="true">✦</span>
+                    {b}
+                  </li>
+                ))}
+              </ul>
+
               <div className="hero-cta rv in d2">
                 <a className="btn btn-solid" href="/pos-start">
                   <span>{t.cta}</span>
@@ -338,6 +357,18 @@ export default function LandingClient() {
                   <span>{t.cta2}</span>
                 </a>
               </div>
+
+              {/* Ligne de reassurance : les memes promesses, repetees juste
+                  sous le bouton, au moment ou l'on hesite a cliquer. */}
+              <ul className="hero-rassure rv in d2">
+                {[t.r1, t.r2, t.r3, t.r4].map((r) => (
+                  <li key={r}>
+                    <span aria-hidden="true">✓</span>
+                    {r}
+                  </li>
+                ))}
+              </ul>
+              <p className="hero-note rv in d2">{t.heroNote}</p>
             </div>
           </div>
         </section>

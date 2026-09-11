@@ -13,14 +13,28 @@ export const CONTENU = {
     nav3: "Tarifs",
     nav4: "FAQ",
     cta: "Commencer gratuitement",
-    eyebrow: "Caisse pour salons de beauté · Tunisie",
-    h1a: "Le nouveau standard",
-    h1b: "pour gérer votre salon.",
+    eyebrow: "Offre de lancement · 100% gratuite",
+    // Le titre tient en TROIS lignes courtes : chacune se lit d'un coup
+    // d'oeil, et la derniere porte la promesse.
+    h1a: "Votre caisse digitale.",
+    h1b: "Votre salon.",
+    h1c: "Plus simplement.",
     cta2: "Découvrir Salonista",
+    // Les quatre benefices, en grille sous la phrase d'accroche.
+    b1: "Caisse digitale pour salons de beauté",
+    b2: "100% gratuite",
+    b3: "Téléphone · Tablette · PC",
+    b4: "Ventes & prestations",
+    // Ligne de reassurance sous le bouton, puis l'ancrage local.
+    r1: "100% gratuite",
+    r2: "Téléphone",
+    r3: "Tablette",
+    r4: "PC",
+    heroNote: "Pensée pour les salons de beauté en Tunisie",
     // Une seule phrase sous le titre : ce que fait le produit, pour qui.
     // NE PAS y remettre « sans internet » : la caisse en a besoin.
     heroLede:
-      "Encaissez, gérez vos rendez-vous et suivez vos clientes depuis un téléphone, une tablette ou un ordinateur. Gratuit, sans engagement.",
+      "Gérez vos ventes, suivez votre chiffre d'affaires et gardez le contrôle de votre salon depuis votre téléphone, tablette ou PC.",
     // Decrit la photo pour qui ne la voit pas : un lecteur d'ecran doit
     // apprendre ce que montre l'image, pas entendre « image ».
     altHero:
@@ -146,13 +160,23 @@ export const CONTENU = {
     cta: "ابدأ مجانا",
     cta2: "اكتشف سالونيستا",
     heroLede:
-      "خلّص، سيّر مواعيدك وتابع حرفاءك من تليفون، تابليت ولا كمبيوتر. مجانا، وبلا التزام.",
+      "سيّر بيوعاتك، تابع رقم معاملاتك وابقى متحكّم في صالونك من التليفون، التابليت ولا الكمبيوتر متاعك.",
     altHero:
       "في كونتوار صالون، عاملة تورّي كاس سالونيستا في تابليت : خدمات الصالون بأثمنتها، والباني الحالي.",
     cta3: "ابدأ الكاس متاعي مجانا",
-    eyebrow: "كاس لصالونات التجميل · تونس",
-    h1a: "المعيار الجديد",
-    h1b: "لتسيير صالونك.",
+    eyebrow: "عرض الانطلاق · مجاني 100%",
+    h1a: "الكاس الرقمية متاعك.",
+    h1b: "صالونك.",
+    h1c: "بكل بساطة.",
+    b1: "كاس رقمية لصالونات التجميل",
+    b2: "مجانية 100%",
+    b3: "تليفون · تابليت · كمبيوتر",
+    b4: "بيوعات وخدمات",
+    r1: "مجانية 100%",
+    r2: "تليفون",
+    r3: "تابليت",
+    r4: "كمبيوتر",
+    heroNote: "مصمّمة لصالونات التجميل في تونس",
     e1: "الكاس",
     h2a: "كل ما يلزم صالونك.",
     h2b: "في بلاصة وحدة.",
