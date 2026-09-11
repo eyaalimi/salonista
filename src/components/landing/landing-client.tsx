@@ -446,8 +446,8 @@ export default function LandingClient() {
                 <div className="continu-cadre continu-cadre-pc">
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img
-                    src={`${IMG}ecran-salon-760.webp`}
-                    srcSet={`${IMG}ecran-salon-760.webp 760w, ${IMG}ecran-salon-1100.webp 1100w`}
+                    src={`${IMG}ecran-caisse2-760.webp`}
+                    srcSet={`${IMG}ecran-caisse2-760.webp 760w, ${IMG}ecran-caisse2.webp 1920w`}
                     sizes="(min-width: 700px) 320px, 82vw"
                     alt={t.continuAltPc}
                     loading="lazy"

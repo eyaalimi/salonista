@@ -89,9 +89,9 @@ export const CONTENU = {
     continuAltTel:
       "La caisse sur téléphone : les ventes du jour, en évidence.",
     continuAltPc:
-      "La caisse sur ordinateur : le chiffre d'affaires du jour et la grille des services.",
+      "La caisse sur ordinateur : la grille des services du salon et le panier à droite.",
     continuAltTab:
-      "La caisse sur tablette : le panier en cours avec le bouton d'encaissement.",
+      "La caisse sur tablette : la grille des services du salon et le panier à droite.",
     continuFine: "Simple. Accessible. Connecté.",
     e3: "Ce qu'elle sait faire",
     h4a: "Six gestes du",
@@ -221,8 +221,8 @@ export const CONTENU = {
     continuPc: "كمبيوتر",
     continuTab: "تابليت",
     continuAltTel: "الكاس في التليفون : بيوعات النهار، واضحة.",
-    continuAltPc: "الكاس في الكمبيوتر : رقم معاملات النهار وخدمات الصالون.",
-    continuAltTab: "الكاس في التابليت : الباني الحالي وزر الخلاص.",
+    continuAltPc: "الكاس في الكمبيوتر : خدمات الصالون على اليسار والباني على اليمين.",
+    continuAltTab: "الكاس في التابليت : خدمات الصالون على اليسار والباني على اليمين.",
     continuFine: "بسيطة. متوفرة. مربوطة.",
     e3: "شنوّة تنجم تعمل",
     h4a: "ستة حركات",
