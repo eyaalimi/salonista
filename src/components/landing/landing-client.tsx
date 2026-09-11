@@ -357,18 +357,6 @@ export default function LandingClient() {
                   <span>{t.cta2}</span>
                 </a>
               </div>
-
-              {/* Ligne de reassurance : les memes promesses, repetees juste
-                  sous le bouton, au moment ou l'on hesite a cliquer. */}
-              <ul className="hero-rassure rv in d2">
-                {[t.r1, t.r2, t.r3, t.r4].map((r) => (
-                  <li key={r}>
-                    <span aria-hidden="true">✓</span>
-                    {r}
-                  </li>
-                ))}
-              </ul>
-              <p className="hero-note rv in d2">{t.heroNote}</p>
             </div>
           </div>
         </section>

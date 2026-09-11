@@ -25,12 +25,6 @@ export const CONTENU = {
     b2: "100% gratuite",
     b3: "Téléphone · Tablette · PC",
     b4: "Ventes & prestations",
-    // Ligne de reassurance sous le bouton, puis l'ancrage local.
-    r1: "100% gratuite",
-    r2: "Téléphone",
-    r3: "Tablette",
-    r4: "PC",
-    heroNote: "Pensée pour les salons de beauté en Tunisie",
     // Une seule phrase sous le titre : ce que fait le produit, pour qui.
     // NE PAS y remettre « sans internet » : la caisse en a besoin.
     heroLede:
@@ -172,11 +166,6 @@ export const CONTENU = {
     b2: "مجانية 100%",
     b3: "تليفون · تابليت · كمبيوتر",
     b4: "بيوعات وخدمات",
-    r1: "مجانية 100%",
-    r2: "تليفون",
-    r3: "تابليت",
-    r4: "كمبيوتر",
-    heroNote: "مصمّمة لصالونات التجميل في تونس",
     e1: "الكاس",
     h2a: "كل ما يلزم صالونك.",
     h2b: "في بلاصة وحدة.",
