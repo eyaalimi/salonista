@@ -7,6 +7,10 @@ import { signIn } from "next-auth/react";
 import { Logo } from "@/components/logo";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+/* Le MEME validateur que le serveur (`exigerTelephoneSalon` s'appuie dessus) :
+   deux regles ecrites separement finiraient par diverger, et le bouton
+   s'activerait pour un numero que l'API refuse. */
+import { tryNormalizePhone } from "@/lib/phone";
 
 /** Doit rester aligne sur la verification du serveur (`api/pos/signup`). */
 const MIN_PASSWORD_LENGTH = 6;
@@ -33,6 +37,13 @@ export default function StartClient() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [salonName, setSalonName] = useState("");
+  /**
+   * Les HUIT chiffres locaux seulement : le « +216 » est affiche a cote du
+   * champ, pas dans la valeur. Le serveur normalise de toute facon
+   * (`exigerTelephoneSalon`), mais laisser la personne retaper un indicatif
+   * deja visible a l'ecran invite a la double saisie (« +216 +216 20… »).
+   */
+  const [phone, setPhone] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   /**
@@ -75,6 +86,8 @@ export default function StartClient() {
           email: email.trim(),
           password,
           salonName: salonName.trim() || undefined,
+          // Les huit chiffres locaux : le serveur les normalise en `+216…`.
+          phone: phone.trim(),
         }),
       });
       const data = await res.json();
@@ -266,6 +279,33 @@ export default function StartClient() {
               placeholder="Ex : Salon Fatma"
             />
 
+            <div>
+              {/* Le libelle porte « tunisien » parce que le « +216 » affiche
+                  est `aria-hidden` : sans cela, un lecteur d'ecran annoncerait
+                  « Ton telephone » sans dire quel format on attend. */}
+              <Input
+                label="Ton téléphone (tunisien)"
+                id="phone"
+                type="tel"
+                required
+                inputMode="numeric"
+                autoComplete="tel-national"
+                leading="+216"
+                value={phone}
+                /* Seuls les chiffres et les espaces passent : coller un
+                   « +216 20 123 456 » depuis un contact ne doit pas produire
+                   un indicatif en double avec celui deja affiche. */
+                onChange={(e) =>
+                  setPhone(e.target.value.replace(/[^\d\s]/g, "").slice(0, 11))
+                }
+                placeholder="20 123 456"
+              />
+              <p className="mt-2 px-1 text-sm leading-relaxed text-prune-soft">
+                Il sert à envoyer les confirmations de rendez-vous à tes
+                clientes par WhatsApp.
+              </p>
+            </div>
+
             <Input
               label="Ton email"
               id="email"
@@ -316,7 +356,10 @@ export default function StartClient() {
               type="submit"
               fullWidth
               disabled={
-                busy || !email.trim() || password.length < MIN_PASSWORD_LENGTH
+                busy ||
+                !email.trim() ||
+                !tryNormalizePhone(phone) ||
+                password.length < MIN_PASSWORD_LENGTH
               }
             >
               {busy ? "Activation…" : "Activer ma caisse gratuite →"}
