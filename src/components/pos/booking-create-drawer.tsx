@@ -220,6 +220,13 @@ export function BookingCreateDrawer({
         : selectedSlot!;
       const body = {
         customerId,
+        /*
+         * Le nom compte AUSSI quand le telephone est vide : sans lui, aucune
+         * fiche n'etait creee, la reservation se rattachait au compte du
+         * salon et l'agenda affichait le nom du SALON a la place de celui de
+         * la cliente. Le serveur cree alors une fiche sans telephone.
+         */
+        customerName: customerId ? undefined : nom.trim() || undefined,
         walkIn,
         startTime: startIso,
         offerIds: walkIn ? [] : selectedOffers,
