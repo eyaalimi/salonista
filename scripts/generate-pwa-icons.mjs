@@ -20,7 +20,10 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(__dirname, "..");
 const SVG_PATH = path.join(ROOT, "src/app/icon.svg");
 const OUT_DIR = path.join(ROOT, "public/icons");
-const BACKGROUND = "#1F1A1C";
+/* Doit rester aligne sur le `<rect>` de src/app/icon.svg : c'est la couleur
+   qui remplit la zone de securite des icones maskable, autour du carre rendu.
+   Un desaccord laisserait une bordure de l'ancienne charte. */
+const BACKGROUND = "#3A1024";
 
 async function renderSquare(svg, size, padding = 0) {
   const innerSize = size - padding * 2;

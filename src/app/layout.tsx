@@ -76,7 +76,9 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
-  themeColor: "#1F1A1C",
+  // Prune de la charte, aligne sur `theme_color` du manifeste et sur le fond
+  // de l'icone. C'etait le charbon #1F1A1C de l'ancienne charte or/charbon.
+  themeColor: "#3A1024",
 };
 
 export default function RootLayout({
