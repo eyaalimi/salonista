@@ -1,6 +1,7 @@
 import { NextRequest } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requirePermission, requireEmployee, toResponse } from "@/lib/employee-session";
+import { decideFicheClient, placeholderTelephone } from "@/lib/booking-customer";
 
 export async function GET(req: NextRequest) {
   let employee;
@@ -76,6 +77,13 @@ export async function GET(req: NextRequest) {
 
 type CreateBody = {
   customerId?: string | null;
+  /**
+   * Nom saisi quand la cliente n'a pas de fiche ET pas de telephone. Sans
+   * lui, la reservation retombait sur le `User` du salon (voir plus bas) et
+   * le calendrier affichait le nom du SALON a la place de celui de la
+   * cliente.
+   */
+  customerName?: string | null;
   walkIn?: boolean;
   startTime: string;
   offerIds?: string[];
@@ -107,13 +115,34 @@ export async function POST(req: NextRequest) {
   const isWalkIn = !!body.walkIn;
   const offerIds = body.offerIds ?? [];
 
+  /*
+   * Une cliente nommee mais SANS telephone n'avait aucune fiche : le nom
+   * etait perdu, la reservation retombait sur le `User` du salon (fallback
+   * ci-dessous) et le calendrier affichait le nom du SALON. La decision et
+   * le placeholder vivent dans src/lib/booking-customer.ts (pur, teste).
+   */
+  let customerId = body.customerId ?? null;
+  const decision = decideFicheClient(customerId, body.customerName);
+  if (decision.action === "creer") {
+    const cree = await prisma.customer.create({
+      data: {
+        phone: placeholderTelephone(),
+        firstName: decision.firstName,
+        lastName: decision.lastName,
+        firstSalonId: employee.providerId,
+      },
+      select: { id: true },
+    });
+    customerId = cree.id;
+  }
+
   // Resolve owning client User: POS-created bookings still need a clientId
   // (the schema requires it). Use the customer's linked User if present,
   // otherwise the provider's own User as a fallback (so we never block).
   let clientUserId: string | null = null;
-  if (body.customerId) {
+  if (customerId) {
     const customer = await prisma.customer.findUnique({
-      where: { id: body.customerId },
+      where: { id: customerId },
       select: { userId: true },
     });
     clientUserId = customer?.userId ?? null;
@@ -178,7 +207,10 @@ export async function POST(req: NextRequest) {
       const booking = await tx.booking.create({
         data: {
           clientId: clientUserId,
-          customerId: body.customerId ?? null,
+          // `customerId` et non `body.customerId` : la fiche creee juste
+          // au-dessus pour une cliente sans telephone doit etre rattachee,
+          // sinon le nom saisi reste orphelin.
+          customerId,
           walkIn: isWalkIn,
           createdViaPos: true,
           phantom: false,
