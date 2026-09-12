@@ -592,7 +592,6 @@ export default function LandingClient() {
               <span>{t.cta3}</span>
               <span className="arrowc">→</span>
             </a>
-            <p className="fine rv d3">{t.fine}</p>
           </div>
         </section>
 
@@ -601,7 +600,6 @@ export default function LandingClient() {
             <span className="brand">
               <em>salon</em>ista<b>.</b>
             </span>
-            <span>{t.foot}</span>
             <a href="/login">{t.deja}</a>
           </div>
         </footer>

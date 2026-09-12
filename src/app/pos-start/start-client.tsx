@@ -279,32 +279,23 @@ export default function StartClient() {
               placeholder="Ex : Salon Fatma"
             />
 
-            <div>
-              {/* Le libelle porte « tunisien » parce que le « +216 » affiche
-                  est `aria-hidden` : sans cela, un lecteur d'ecran annoncerait
-                  « Ton telephone » sans dire quel format on attend. */}
-              <Input
-                label="Ton téléphone (tunisien)"
-                id="phone"
-                type="tel"
-                required
-                inputMode="numeric"
-                autoComplete="tel-national"
-                leading="+216"
-                value={phone}
-                /* Seuls les chiffres et les espaces passent : coller un
-                   « +216 20 123 456 » depuis un contact ne doit pas produire
-                   un indicatif en double avec celui deja affiche. */
-                onChange={(e) =>
-                  setPhone(e.target.value.replace(/[^\d\s]/g, "").slice(0, 11))
-                }
-                placeholder="20 123 456"
-              />
-              <p className="mt-2 px-1 text-sm leading-relaxed text-prune-soft">
-                Il sert à envoyer les confirmations de rendez-vous à tes
-                clientes par WhatsApp.
-              </p>
-            </div>
+            <Input
+              label="Ton téléphone"
+              id="phone"
+              type="tel"
+              required
+              inputMode="numeric"
+              autoComplete="tel-national"
+              leading="+216"
+              value={phone}
+              /* Seuls les chiffres et les espaces passent : coller un
+                 « +216 20 123 456 » depuis un contact ne doit pas produire
+                 un indicatif en double avec celui deja affiche. */
+              onChange={(e) =>
+                setPhone(e.target.value.replace(/[^\d\s]/g, "").slice(0, 11))
+              }
+              placeholder="20 123 456"
+            />
 
             <Input
               label="Ton email"

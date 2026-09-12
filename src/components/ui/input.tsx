@@ -14,6 +14,9 @@ export function Input({
   leading,
   trailing,
   className = "",
+  /* Extrait du reste : `{...props}` est etale APRES nos attributs, il
+     ecraserait sinon le `aria-describedby` qui decrit le prefixe. */
+  "aria-describedby": describedBy,
   ...props
 }: {
   label: string;
@@ -35,9 +38,14 @@ export function Input({
         {label}
       </label>
       <div className="relative flex items-center">
+        {/* Le prefixe n'est PAS `aria-hidden` : il porte le format attendu
+            (un indicatif pays, par exemple). Masque, un lecteur d'ecran
+            annoncerait « Ton telephone » sans dire quel numero on attend. Il
+            est lie au champ par `aria-describedby`, donc lu apres le libelle
+            plutot qu'a la place. */}
         {leading && (
           <div
-            aria-hidden="true"
+            id={`${id}-leading`}
             className="pointer-events-none absolute left-5 flex items-center text-base text-prune-soft"
           >
             {leading}
@@ -45,6 +53,13 @@ export function Input({
         )}
         <input
           id={id}
+          /* Un `aria-describedby` fourni par l'appelant est conserve : le
+             prefixe s'y ajoute au lieu de l'ecraser. */
+          aria-describedby={
+            [leading ? `${id}-leading` : null, describedBy]
+              .filter(Boolean)
+              .join(" ") || undefined
+          }
           className={
             "ds-focus w-full min-h-[52px] px-5 text-base text-prune " +
             "rounded-[var(--radius-pill)] border-2 border-hairline bg-white " +
