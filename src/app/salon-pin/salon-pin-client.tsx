@@ -344,7 +344,28 @@ export default function SalonPinClient() {
           <div className="flex items-start justify-between gap-4">
             <div>
               <p className="luxury-badge mb-2">{salon.salonName}</p>
-              <h2 className="luxury-heading text-2xl text-brand-ink">Sélectionnez votre profil pour commencer</h2>
+              {/* « Selectionnez votre profil » n'a aucun sens quand le salon
+                  n'a qu'un membre : on lui presentait un choix entre une
+                  seule tuile. Le titre dit alors ce qu'il en est, et invite a
+                  constituer l'equipe. */}
+              <h2 className="luxury-heading text-2xl text-brand-ink">
+                {salon.employees.length > 1
+                  ? "Sélectionnez votre profil pour commencer"
+                  : "Vous êtes seul·e sur cette caisse"}
+              </h2>
+              {salon.employees.length <= 1 && (
+                <p className="mt-2 text-sm text-brand-ink-soft">
+                  Pour basculer d&apos;un membre à l&apos;autre, ajoutez
+                  d&apos;abord votre équipe depuis{" "}
+                  <Link
+                    href="/pos/employees"
+                    className="font-semibold text-brand-ink underline underline-offset-2"
+                  >
+                    Équipe
+                  </Link>
+                  .
+                </p>
+              )}
             </div>
             <button
               type="button"

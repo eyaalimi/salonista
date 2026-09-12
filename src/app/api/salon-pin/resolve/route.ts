@@ -19,6 +19,8 @@
 import { NextRequest } from "next/server";
 import { randomInt } from "crypto";
 import { hash } from "bcryptjs";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { tryNormalizePhone } from "@/lib/phone";
 import { sendDevicePairingCodeEmail } from "@/lib/mail";
@@ -130,12 +132,45 @@ function masquerEmail(email: string): string {
 }
 
 export async function GET(req: NextRequest) {
+  /*
+   * UNE SESSION VAUT L'APPAIRAGE. Le cookie prouve qu'un appareil a recu le
+   * code envoye au proprietaire ; une session authentifiee prouve davantage,
+   * puisqu'elle a demande l'email ET le mot de passe. Exiger les deux n'ajoute
+   * aucune securite, et le cookie expire au bout de 30 jours : passe ce delai,
+   * un proprietaire connecte qui cliquait sur « basculer vers un autre
+   * membre » devait resaisir l'email de son propre salon.
+   *
+   * La porte anonyme reste fermee : sans session ET sans cookie, on retombe
+   * sur le 404 qui renvoie vers l'envoi d'un code.
+   */
+  const session = await getServerSession(authOptions);
+  let providerId: string | null = null;
+  if (session?.user) {
+    /*
+     * `session.employee` d'abord : une session ouverte par PIN porte
+     * directement son `providerId`. On ne peut PAS deduire le salon de
+     * `user.id` dans ce cas — un employe sans compte a un identifiant de la
+     * forme `pin:<id>`, qui ne correspond a aucun `ProviderProfile.userId`.
+     */
+    if (session.employee) {
+      providerId = session.employee.providerId;
+    } else if (session.user.role === "PROVIDER") {
+      const sien = await prisma.providerProfile.findUnique({
+        where: { userId: session.user.id },
+        select: { id: true },
+      });
+      providerId = sien?.id ?? null;
+    }
+  }
+
   const cookie = req.cookies.get(REMEMBER_COOKIE)?.value;
-  if (!cookie) {
+  providerId = providerId ?? cookie ?? null;
+
+  if (!providerId) {
     return Response.json({ error: "Aucun salon mémorisé" }, { status: 404 });
   }
   const provider = await prisma.providerProfile.findUnique({
-    where: { id: cookie },
+    where: { id: providerId },
     select: { id: true, salonName: true },
   });
   if (!provider) {
