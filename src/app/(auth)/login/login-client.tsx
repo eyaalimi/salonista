@@ -7,6 +7,7 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { RoleTabs, ROLE_OPTIONS, type RoleKey } from "@/components/ui/role-tabs";
+import { MARKETPLACE_PUBLIQUE } from "@/lib/flags";
 
 export default function LoginClient() {
   return (
@@ -20,7 +21,20 @@ function LoginPageInner() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const callbackUrl = searchParams.get("callbackUrl") || "/api/auth/redirect";
-  const [role, setRole] = useState<RoleKey>("CLIENT");
+  /*
+   * Tant que la place de marche est fermee, SEUL le salon a un espace ou
+   * aller : la cliente et l'influenceuse n'ont plus de parcours public. Le
+   * selecteur est donc masque et le role par defaut devient PROVIDER — sinon
+   * un salon qui se deconnecte de sa caisse atterrissait sur « Reserve ton
+   * prochain soin » et un lien d'inscription cliente.
+   *
+   * Cela ne change RIEN a l'authentification : ce selecteur ne pilote que
+   * l'accroche et la destination d'inscription (voir role-tabs.tsx). Une
+   * cliente deja inscrite se connecte toujours normalement.
+   */
+  const [role, setRole] = useState<RoleKey>(
+    MARKETPLACE_PUBLIQUE ? "CLIENT" : "PROVIDER",
+  );
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
@@ -63,12 +77,14 @@ function LoginPageInner() {
       </div>
 
       <div className="w-full max-w-[420px] rounded-[var(--radius-card)] bg-white p-6 sm:p-8 flex flex-col gap-6">
-        <div className="flex flex-col gap-3">
-          <span className="text-xs font-semibold uppercase tracking-[0.12em] text-prune-soft">
-            Je suis
-          </span>
-          <RoleTabs value={role} onChange={setRole} />
-        </div>
+        {MARKETPLACE_PUBLIQUE && (
+          <div className="flex flex-col gap-3">
+            <span className="text-xs font-semibold uppercase tracking-[0.12em] text-prune-soft">
+              Je suis
+            </span>
+            <RoleTabs value={role} onChange={setRole} />
+          </div>
+        )}
 
         {error && (
           <p
@@ -141,7 +157,14 @@ function LoginPageInner() {
         </Link>
         <p className="text-prune-soft">
           Pas encore de compte ?{" "}
-          <Link href={current.registerHref} className="font-semibold text-rose-fonce">
+          {/* Marche fermee : l'inscription d'un salon passe par /pos-start,
+              qui cree la caisse et le PIN — c'est la destination vers
+              laquelle pointe toute la page d'accueil. `registerHref` reste
+              intact dans ROLE_OPTIONS pour la reouverture. */}
+          <Link
+            href={MARKETPLACE_PUBLIQUE ? current.registerHref : "/pos-start"}
+            className="font-semibold text-rose-fonce"
+          >
             Créer un compte
           </Link>
         </p>
