@@ -151,8 +151,6 @@ export const CONTENU = {
     h9b: "qu'une simple caisse.",
     p9: "Commencez gratuitement aujourd'hui.",
     cta3: "Démarrer ma caisse gratuitement",
-    fine: "Aucune carte bancaire requise",
-    foot: "Caisse pour salons de beauté · Tunisie",
     deja: "J'ai déjà un compte",
   },
   ar: {
@@ -269,8 +267,6 @@ export const CONTENU = {
     h9a: "صالونك يستاهل أكثر",
     h9b: "من كاس عادية.",
     p9: "ابدأ مجانا اليوم.",
-    fine: "بلا كارط بنكية",
-    foot: "كاس لصالونات التجميل · تونس",
     deja: "عندي كونط",
   },
 } as const;

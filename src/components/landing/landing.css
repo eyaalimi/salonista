@@ -543,8 +543,6 @@ details p{padding-bottom:26px;max-width:62ch;color:var(--taupe);font-weight:300;
 .final h2 em{font-style:normal;color:var(--blush);}
 .final .lede{color:rgba(255,246,241,.78);margin:22px auto 0;text-align:center;}
 .final .btn{margin-top:34px;}
-.final .fine{margin-top:20px;font-size:.74rem;letter-spacing:.16em;text-transform:uppercase;color:rgba(255,246,241,.6);}
-body[data-lang="ar"] .final .fine{letter-spacing:0;text-transform:none;font-size:.88rem;}
 
 /* ---------------- toujours avec vous, section sombre ----------------
    Seule section sombre de la page : elle casse le rythme clair pour mettre
