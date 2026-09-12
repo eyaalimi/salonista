@@ -256,6 +256,17 @@ export default function StartClient() {
             <Logo className="text-2xl" href={null} />
           </div>
 
+          {/* Installee, l'application tourne en `standalone` : ni barre
+              d'adresse, ni bouton retour du navigateur. Sans ce lien, cette
+              page est un cul-de-sac — on ne peut plus qu'aller au bout de
+              l'inscription ou fermer l'application. */}
+          <Link
+            href="/login"
+            className="ds-focus mb-5 inline-block text-sm font-semibold text-prune-soft hover:text-prune"
+          >
+            ← Retour à la connexion
+          </Link>
+
           <h1 className="ds-display text-[2rem] leading-[1.1] text-prune sm:text-4xl">
             Démarre ta caisse
             <br />
