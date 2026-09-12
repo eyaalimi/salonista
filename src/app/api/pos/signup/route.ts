@@ -26,6 +26,7 @@ import { hash } from "bcryptjs";
 import { prisma } from "@/lib/prisma";
 import { mergePermissions } from "@/lib/permissions";
 import { decidePosSignup } from "@/lib/pos-signup-decision";
+import { exigerTelephoneSalon } from "@/lib/phone";
 
 /** Meme minimum que la reinitialisation de mot de passe, pour rester coherent. */
 const MIN_PASSWORD_LENGTH = 6;
@@ -34,6 +35,14 @@ type Body = {
   email?: string;
   salonName?: string;
   password?: string;
+  /**
+   * OBLIGATOIRE. C'est le numero qui portera les confirmations de
+   * reservation et les validations d'arrivee par WhatsApp — la modification
+   * de profil l'exige deja (`exigerTelephoneSalon`). L'inscription etait le
+   * dernier endroit ou un salon pouvait naitre sans numero, donc injoignable
+   * jusqu'a ce qu'il pense a completer son profil.
+   */
+  phone?: string;
 };
 
 function isValidEmail(s: string): boolean {
@@ -67,6 +76,13 @@ export async function POST(req: NextRequest) {
       { error: `Mot de passe trop court (min. ${MIN_PASSWORD_LENGTH} caractères)` },
       { status: 400 },
     );
+  }
+
+  // Meme regle et meme message que la modification de profil : un salon sans
+  // numero n'est joignable par aucun des canaux de confirmation.
+  const verdictTelephone = exigerTelephoneSalon(body?.phone);
+  if (!verdictTelephone.ok) {
+    return Response.json({ error: verdictTelephone.message }, { status: 400 });
   }
 
   // Cette route est publique : elle ne touche JAMAIS a un compte existant.
@@ -116,6 +132,9 @@ export async function POST(req: NextRequest) {
       data: {
         userId: user.id,
         salonName,
+        // Le numero NORMALISE (`+216…`), jamais la saisie brute : c'est le
+        // format que lisent les envois WhatsApp et l'affichage.
+        phone: verdictTelephone.phone,
         category: "AUTRE",
         onboardingDismissedAt: null,
       },
