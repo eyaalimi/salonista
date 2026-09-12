@@ -1,5 +1,10 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
-  <rect width="64" height="64" rx="14" fill="#1F1A1C"/>
-  <text x="32" y="42" font-family="Georgia, 'Playfair Display', serif" font-size="34" font-style="italic" font-weight="600" text-anchor="middle" fill="#D4A574">S</text>
-  <circle cx="46" cy="44" r="2.5" fill="#D4A574"/>
+  <!-- Fond PRUNE (#3A1024) et non plus le charbon #1F1A1C : la charte or /
+       charbon a ete abandonnee, l'icone etait le dernier endroit a la porter.
+       Le « S » en creme donne 15,40:1, le point en rose vif 5,59:1.
+       Le rose FONCE (#C42A5A) serait illisible ici (2,99:1) — c'est la meme
+       inversion que la barre de navigation prune de la page d'accueil. -->
+  <rect width="64" height="64" rx="14" fill="#3A1024"/>
+  <text x="32" y="42" font-family="Georgia, 'Playfair Display', serif" font-size="34" font-style="italic" font-weight="600" text-anchor="middle" fill="#FFF6F1">S</text>
+  <circle cx="46" cy="44" r="2.5" fill="#FF5C8A"/>
 </svg>
