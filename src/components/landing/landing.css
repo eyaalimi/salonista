@@ -472,17 +472,25 @@ body[data-lang="ar"] .carte .ph{line-height:1.45;}
 /* ---------------- offre de lancement ----------------
    Bandeau rose-soft : badge, gros titre, phrase, bouton, reassurance. Tout
    est centre, en une seule colonne etroite. */
+/* `max-width` en `ch` et non en pixels : l'unite suit la taille de police, si
+   bien que la colonne s'elargit avec le titre au lieu de le faire casser. A
+   56ch le titre tenait sur TROIS lignes sur un fond pleine largeur. */
 .lanc-in{
   display:flex;flex-direction:column;align-items:center;text-align:center;
-  gap:18px;max-width:56ch;margin-inline:auto;
+  gap:20px;max-width:74ch;margin-inline:auto;
 }
-.lanc-in h2{margin-top:4px;}
+/* Une echelle propre, au-dessus du `h2` general (3,8rem au plafond) : c'est
+   l'annonce principale de la page apres le hero, elle doit peser plus qu'un
+   titre de section courante. */
+.lanc-in h2{margin-top:4px;font-size:clamp(2.3rem,5.6vw,4.6rem);}
 /* `.eyebrow` de base garde son fond blanc et son rose-fonce (5,49:1) : le
    badge n'est jamais pose directement sur le rose-soft de la section, il
    porte son propre fond blanc qui l'en isole. Aucune surcharge necessaire. */
-.lanc-lede{margin-top:0;margin-inline:auto;}
+/* `.lede` plafonne a 46ch, trop etroit sous un titre desormais large : la
+   phrase cassait en trois lignes tres courtes. */
+.lanc-lede{margin-top:0;margin-inline:auto;max-width:60ch;font-size:1.14rem;}
 .lanc-fine{
-  margin-top:2px;font-family:var(--ui);font-size:.82rem;font-weight:600;
+  margin-top:2px;font-family:var(--ui);font-size:.9rem;font-weight:600;
   color:var(--espresso);
 }
 body[data-lang="ar"] .lanc-fine{font-family:var(--ar);}
