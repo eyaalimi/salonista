@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useCallback, useEffect } from "react";
+import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { signIn } from "next-auth/react";
 import { Logo } from "@/components/logo";
@@ -228,6 +229,20 @@ export default function SalonPinClient() {
 
       {step === "identify" && !bootstrapping && !salon && (
         <section className="w-full max-w-md rounded-3xl border border-brand-line bg-brand-sand p-10 shadow-sm">
+          {/* Retour vers la CAISSE et non vers l'accueil : cet ecran n'est
+              pas une connexion (la page serveur renvoie vers /login sans
+              session), on y arrive depuis « basculer vers un autre membre ».
+              Renvoyer vers la landing publique sortirait la personne de son
+              espace de travail.
+              Pas de boucle a craindre avec la redirection inverse de /pos :
+              pour un compte PROVIDER, `getCurrentEmployee` rend toujours le
+              proprietaire, qu'un employe soit selectionne ou non. */}
+          <Link
+            href="/pos"
+            className="mb-4 inline-block text-xs uppercase tracking-[0.18em] text-brand-ink-soft hover:text-brand-ink"
+          >
+            ← Retour à la caisse
+          </Link>
           <p className="luxury-badge mb-3">Caisse</p>
           <h1 className="luxury-heading text-3xl text-brand-ink">Connexion salon</h1>
           <p className="mt-3 text-sm text-brand-ink-soft">
@@ -260,6 +275,21 @@ export default function SalonPinClient() {
           avec le seul email du salon. */}
       {step === "code" && appairage && (
         <section className="w-full max-w-md rounded-3xl border border-brand-line bg-brand-sand p-10 shadow-sm">
+          {/* Retour a la saisie de l'identifiant : c'est le geste attendu
+              quand on s'est trompe d'email et qu'on attend un code qui
+              n'arrivera jamais. Le code saisi est efface avec lui. */}
+          <button
+            type="button"
+            onClick={() => {
+              setStep("identify");
+              setAppairage(null);
+              setCode("");
+              setError(null);
+            }}
+            className="mb-4 text-xs uppercase tracking-[0.18em] text-brand-ink-soft hover:text-brand-ink"
+          >
+            ← Retour
+          </button>
           <p className="luxury-badge mb-3">{appairage.salonName}</p>
           <h1 className="luxury-heading text-3xl text-brand-ink">
             Autoriser cet appareil
