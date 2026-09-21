@@ -540,6 +540,50 @@ restent en base, seules les **routes publiques** changent.
   qui pose `font-family:var(--display)`, sinon la ligne concernée change de
   police au milieu du texte arabe.
 
+### 21. La fiche cliente appartient au salon, pas à la plateforme
+
+`Customer.phone` était `@unique` **sur toute la base**. Une même personne ne
+pouvait donc exister qu'une fois : le premier salon qui saisissait son numéro
+« prenait » la cliente pour tous les autres.
+
+Concrètement, un nouveau salon qui créait « Eya Alimi / 56549547 » recevait en
+retour la fiche d'un **autre salon**, déjà remplie à un autre nom — et ne
+pouvait pas créer la sienne, la contrainte la rejetant.
+
+**Une cliente fréquente plusieurs salons. Chacun tient SA fiche**, avec ses
+notes, son historique et sa cagnotte. L'unicité porte donc sur le **couple**
+`@@unique([firstSalonId, phone])` : deux salons peuvent détenir le même
+numéro, un même salon ne peut pas dupliquer une cliente.
+
+Trois lectures fuyaient, toutes corrigées — elles cherchaient par téléphone
+**sans** `firstSalonId` :
+
+| Route | Ce qu'elle livrait |
+|---|---|
+| `POST /api/customers` | la fiche du salon voisin, au lieu d'en créer une |
+| `GET /api/pos/customers/search` | nom, prénom et e-mail d'une cliente d'ailleurs |
+| `GET /api/customers/lookup` | idem, via une branche `scope: "external"` supprimée |
+
+Quatre règles à ne pas défaire :
+
+- **Toute lecture de `Customer` par téléphone porte `firstSalonId`.** C'est la
+  seule chose qui sépare les clientèles de deux salons.
+- **`findUnique({ where: { phone } })` ne compile plus** — et c'est voulu. Le
+  compilateur est ici le garde-fou : il a rattrapé trois appels que la relecture
+  avait manqués.
+- **`Customer.userId` a perdu son `@unique`.** Si deux salons ont chacun une
+  fiche pour la même cliente inscrite sur la place de marché, les deux doivent
+  pouvoir pointer vers son compte. `User.customer` est donc une **liste**, et
+  `/api/cliente/fidelite` agrège les cagnottes de tous ses salons — c'est sa
+  page à elle.
+- **Les statistiques de `lookup` ne comptent que les visites de ce salon.**
+  Ce qu'une cliente dépense chez le voisin ne le regarde pas.
+
+La migration `20260921100000_fiche_cliente_par_salon` rattache d'abord les
+fiches sans salon (via leur première réservation), puis **désambiguïse** les
+doublons éventuels en suffixant leur numéro au lieu de les supprimer — des
+ventes et des réservations y pendent.
+
 ---
 
 ## Repo layout

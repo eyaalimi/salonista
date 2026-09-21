@@ -31,12 +31,20 @@ export async function POST(req: NextRequest) {
   }
 
   const providerId = employee.providerId;
-  const existing = await prisma.customer.findUnique({ where: { phone } });
+
+  /*
+   * La recherche est BORNEE AU SALON. Auparavant elle portait sur le seul
+   * telephone, globalement unique : un salon qui saisissait le numero d'une
+   * cliente venue d'ailleurs recevait la fiche de l'autre salon, deja remplie
+   * a un autre nom. Une cliente frequente plusieurs salons — chacun tient sa
+   * propre fiche.
+   */
+  const existing = await prisma.customer.findFirst({
+    where: { phone, firstSalonId: providerId },
+  });
 
   if (existing) {
-    // A phone number identifies one person across all salons. Whether they
-    // first registered here or elsewhere, the salon can still encaisser them.
-    // Return the existing record so the caller can attach it to a sale.
+    // Deja connue ICI : on rend sa fiche plutot que d'en creer une seconde.
     return Response.json(existing, { status: 200 });
   }
 

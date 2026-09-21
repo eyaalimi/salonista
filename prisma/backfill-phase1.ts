@@ -40,7 +40,10 @@ async function backfillCustomersFromClients() {
       continue;
     }
 
-    const existing = await prisma.customer.findUnique({
+    // `findFirst` et non `findUnique` : le telephone n'est plus unique
+    // globalement, il l'est par salon. Ce script d'historique tourne avant
+    // qu'un second salon existe, une premiere correspondance suffit.
+    const existing = await prisma.customer.findFirst({
       where: { phone: normalized },
     });
 
@@ -91,7 +94,7 @@ async function backfillBookingCustomerIds() {
     if (!b.client.phone) continue;
     const normalized = tryNormalizePhone(b.client.phone);
     if (!normalized) continue;
-    const customer = await prisma.customer.findUnique({
+    const customer = await prisma.customer.findFirst({
       where: { phone: normalized },
       select: { id: true },
     });
