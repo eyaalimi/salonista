@@ -7,6 +7,7 @@ import { OnlineStatusBadge } from "@/components/pos/online-status-badge";
 import { CashDrawerIndicator } from "@/components/pos/cash-drawer-indicator";
 import { UniversalSearch } from "@/components/pos/universal-search";
 import { NextBookingTicker } from "@/components/pos/next-booking-ticker";
+import { RefreshButton } from "@/components/pos/refresh-button";
 
 type Provider = { salonName: string; city: string | null };
 type Employee = { id: string; displayName: string; role: string; permissions: Record<string, boolean> };
@@ -127,6 +128,10 @@ export function PosTopbar({
       <div className="flex items-center gap-3 shrink-0">
         <NextBookingTicker />
         <OnlineStatusBadge />
+        {/* Installee en standalone, la PWA n'a pas de barre d'adresse : sans
+            ce bouton, une tablette restait bloquee sur l'ancienne version
+            apres un deploiement. */}
+        <RefreshButton />
         <span className="pos-mono text-xs text-pos-ink-4 hidden md:inline">{now}</span>
         {hasPos && employee.permissions["pos.cash_drawer"] && <CashDrawerIndicator canOpen={true} employeeName={employee.displayName} />}
 
@@ -166,6 +171,9 @@ export function PosTopbar({
                 <Users size={16} className="text-pos-ink-3" />
                 Basculer vers un autre membre
               </button>
+              {/* Libelle en toutes lettres, la ou il y a la place : dans la
+                  barre, le bouton se reduit a une icone sous 1024px. */}
+              <RefreshButton variant="menu" />
               <button
                 type="button"
                 role="menuitem"
