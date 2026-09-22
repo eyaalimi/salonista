@@ -584,6 +584,31 @@ fiches sans salon (via leur première réservation), puis **désambiguïse** les
 doublons éventuels en suffixant leur numéro au lieu de les supprimer — des
 ventes et des réservations y pendent.
 
+### 22. La PWA n'a pas de bouton « actualiser » — il faut le fournir
+
+Installée en `display: standalone`, la caisse n'a **pas de barre d'adresse**.
+Après un déploiement, une tablette de comptoir restait donc bloquée sur
+l'ancienne version, sans aucun moyen pour la caissière de la mettre à jour.
+
+[`<RefreshButton>`](src/components/pos/refresh-button.tsx) comble ce manque,
+depuis la barre du haut (icône) et le menu du compte (libellé en toutes
+lettres — dans la barre, il se réduit à une icône sous 1024px).
+
+**Ce n'est surtout pas un `location.reload()`.** Le service worker sert
+`/_next/static/` en **CacheFirst pendant 30 jours** ; un rechargement nu
+ramènerait du HTML frais accroché à de l'**ancien JavaScript** — un état plus
+cassé que celui qu'on voulait réparer. L'ordre compte :
+
+1. refuser s'il reste des **ventes non synchronisées** (même règle que la
+   déconnexion : elles ne sont nulle part ailleurs) ;
+2. vider les caches (`caches.keys` → `caches.delete`) ;
+3. `registration.update()` pour aller chercher un nouveau service worker ;
+4. `location.replace` — et non `reload`, qui empilerait une entrée
+   d'historique à chaque clic.
+
+**Pensez à incrémenter `SW_VERSION`** dans [public/sw.js](public/sw.js) quand
+un changement doit atteindre les clients installés.
+
 ---
 
 ## Repo layout
