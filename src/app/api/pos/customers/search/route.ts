@@ -44,12 +44,18 @@ export async function GET(req: NextRequest) {
 
   if (looksLikePhone) {
     const norm = tryNormalizePhone(q);
-    // Try exact normalized lookup first
+    // Try exact normalized lookup first, DANS CE SALON.
+    //
+    // Cette recherche portait sur le seul telephone, sans `firstSalonId` : en
+    // tapant le numero d'une cliente venue d'un autre salon, la caisse
+    // affichait sa fiche — nom, prenom, email compris. Les deux autres
+    // branches de cette route etaient deja bornees au salon ; celle-ci ne
+    // l'etait pas.
     if (norm) {
       const exact = (await (prisma as never as {
-        customer: { findUnique: (args: unknown) => Promise<Row | null> };
-      }).customer.findUnique({
-        where: { phone: norm },
+        customer: { findFirst: (args: unknown) => Promise<Row | null> };
+      }).customer.findFirst({
+        where: { phone: norm, firstSalonId: providerId },
         select: { id: true, phone: true, firstName: true, lastName: true, email: true },
       })) as Row | null;
       if (exact) customers = [exact];

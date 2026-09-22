@@ -22,40 +22,41 @@ export async function GET(req: NextRequest) {
     return Response.json({ error: "Numéro de téléphone invalide" }, { status: 400 });
   }
 
-  const customer = await prisma.customer.findUnique({ where: { phone } });
+  const providerId = employee.providerId;
+
+  /*
+   * On ne cherche QUE dans les fiches de ce salon. La recherche portait avant
+   * sur le seul telephone, unique a l'echelle de la base : elle remontait la
+   * fiche d'un autre salon, et la branche « external » en rendait meme le nom
+   * et le prenom. Un salon n'a pas a savoir qui sont les clientes du salon
+   * d'en face, ni sous quel nom elles y sont enregistrees.
+   *
+   * Une fiche peut aussi appartenir au salon par ses reservations plutot que
+   * par `firstSalonId` — cas des clientes venues de la place de marche, dont
+   * la fiche a ete creee ailleurs.
+   */
+  const customer =
+    (await prisma.customer.findFirst({
+      where: { phone, firstSalonId: providerId },
+    })) ??
+    (await prisma.customer.findFirst({
+      where: {
+        phone,
+        bookings: { some: { items: { some: { offer: { providerId } } } } },
+      },
+    }));
+
   if (!customer) {
     return Response.json({ found: false });
   }
 
-  const providerId = employee.providerId;
-
-  let isOwn = customer.firstSalonId === providerId;
-  if (!isOwn) {
-    const hasBookingHere = await prisma.booking.findFirst({
-      where: {
-        customerId: customer.id,
-        items: { some: { offer: { providerId } } },
-      },
-      select: { id: true },
-    });
-    if (hasBookingHere) isOwn = true;
-  }
-
-  if (!isOwn) {
-    return Response.json({
-      found: true,
-      scope: "external",
-      customer: {
-        id: customer.id,
-        phone: customer.phone,
-        firstName: customer.firstName,
-        lastName: customer.lastName,
-      },
-    });
-  }
-
+  // Les statistiques ne comptent que les visites DANS CE SALON : le total
+  // depense chez le salon d'a cote ne regarde pas celui-ci.
   const bookings = await prisma.booking.findMany({
-    where: { customerId: customer.id },
+    where: {
+      customerId: customer.id,
+      items: { some: { offer: { providerId } } },
+    },
     select: {
       totalPrice: true,
       createdAt: true,

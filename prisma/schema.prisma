@@ -143,20 +143,20 @@ enum ExpenseCategory {
 }
 
 model User {
-  id            String    @id @default(cuid())
-  email         String    @unique
-  phone         String?
-  passwordHash  String?
-  role          Role      @default(CLIENT)
-  name          String?
-  avatar        String?
-  emailVerified         DateTime?
-  emailVerifyToken      String?   @unique
-  emailVerifyExpires    DateTime?
-  passwordResetToken    String?   @unique
-  passwordResetExpires  DateTime?
-  createdAt             DateTime  @default(now())
-  updatedAt             DateTime  @updatedAt
+  id                   String    @id @default(cuid())
+  email                String    @unique
+  phone                String?
+  passwordHash         String?
+  role                 Role      @default(CLIENT)
+  name                 String?
+  avatar               String?
+  emailVerified        DateTime?
+  emailVerifyToken     String?   @unique
+  emailVerifyExpires   DateTime?
+  passwordResetToken   String?   @unique
+  passwordResetExpires DateTime?
+  createdAt            DateTime  @default(now())
+  updatedAt            DateTime  @updatedAt
 
   providerProfile   ProviderProfile?
   influencerProfile InfluencerProfile?
@@ -164,7 +164,8 @@ model User {
   reviews           Review[]
   accounts          Account[]
   sessions          Session[]
-  customer          Customer?
+  /// Une fiche PAR salon frequente : la fiche cliente est propre au salon.
+  customer          Customer[]
   employeeAccounts  SalonEmployee[]
 }
 
@@ -204,44 +205,44 @@ model VerificationToken {
 }
 
 model ProviderProfile {
-  id              String   @id @default(cuid())
-  userId          String   @unique
-  salonName       String
-  category        Category
-  description     String?
+  id                    String    @id @default(cuid())
+  userId                String    @unique
+  salonName             String
+  category              Category
+  description           String?
   /// Numero et nom de rue. Le reste de l'adresse vit dans `governorate` et
   /// `city` : l'adresse libre donnait « Hometna, Ba7dha sousse ».
-  address         String?
+  address               String?
   /// La DELEGATION (ex. « Hammam Sousse »). Le nom `city` est conserve parce
   /// qu'il est lu a 47 endroits du code — le renommer n'apporterait rien et
   /// casserait autant d'appels.
-  city            String?
+  city                  String?
   /// Le gouvernorat, choisi parmi les 24 (voir src/lib/tunisie-geo.ts).
   /// Nullable pour les salons inscrits avant : la route l'exige a la
   /// prochaine modification de profil.
-  governorate     String?
-  lat             Float?
-  lng             Float?
-  phone           String?
-  photos          String[]
+  governorate           String?
+  lat                   Float?
+  lng                   Float?
+  phone                 String?
+  photos                String[]
   /// Logo du salon. Distinct de `photos` : celles-ci illustrent les
   /// prestations, le logo identifie l'enseigne (ticket, en-tete, avatar).
-  logo            String?
-  openingHours    Json?
-  matriculeFiscal String?
+  logo                  String?
+  openingHours          Json?
+  matriculeFiscal       String?
   /// Le salon collecte-t-il la TVA ? `false` par defaut : la majorite des
   /// salons tunisiens ne sont pas assujettis. Tant que c'est faux, le serveur
   /// impose 0 % sur les offres et les produits — voir src/lib/tva-salon.ts.
-  vatRegistered   Boolean  @default(false)
-  receiptFooter   String?
+  vatRegistered         Boolean   @default(false)
+  receiptFooter         String?
   onboardingDismissedAt DateTime?
-  verified        Boolean  @default(false)
+  verified              Boolean   @default(false)
   /// Salon de demonstration : exclu de l'index Google (noindex + absent du
   /// sitemap) mais parfaitement consultable. Permet de garder des donnees de
   /// test en ligne sans polluer les resultats de recherche, et de les retirer
   /// le jour du lancement sans produire de 404.
-  demo            Boolean  @default(false)
-  createdAt       DateTime @default(now())
+  demo                  Boolean   @default(false)
+  createdAt             DateTime  @default(now())
 
   user                  User                   @relation(fields: [userId], references: [id], onDelete: Cascade)
   offers                Offer[]
@@ -276,27 +277,27 @@ model InfluencerProfile {
 }
 
 model Offer {
-  id              String    @id @default(cuid())
-  providerId      String
-  title           String
-  description     String?
-  originalPrice   Decimal?  @db.Decimal(10, 3)
-  discountPrice   Decimal   @db.Decimal(10, 3)
-  category        Category
-  photos          String[]
-  durationMinutes Int       @default(60)
-  taxRate         Decimal   @default(19.00) @db.Decimal(5, 2)
-  active          Boolean   @default(true)
-  publishedToMarketplace Boolean @default(false)
-  createdAt       DateTime  @default(now())
+  id                     String   @id @default(cuid())
+  providerId             String
+  title                  String
+  description            String?
+  originalPrice          Decimal? @db.Decimal(10, 3)
+  discountPrice          Decimal  @db.Decimal(10, 3)
+  category               Category
+  photos                 String[]
+  durationMinutes        Int      @default(60)
+  taxRate                Decimal  @default(19.00) @db.Decimal(5, 2)
+  active                 Boolean  @default(true)
+  publishedToMarketplace Boolean  @default(false)
+  createdAt              DateTime @default(now())
 
-  provider              ProviderProfile             @relation(fields: [providerId], references: [id], onDelete: Cascade)
-  trackingLinks         TrackingLink[]
-  bookingItems          BookingItem[]
-  reviews               Review[]
-  slots                 TimeSlot[]
-  collaborationOffers   CollaborationOffer[]
-  saleItems             SaleItem[]
+  provider            ProviderProfile      @relation(fields: [providerId], references: [id], onDelete: Cascade)
+  trackingLinks       TrackingLink[]
+  bookingItems        BookingItem[]
+  reviews             Review[]
+  slots               TimeSlot[]
+  collaborationOffers CollaborationOffer[]
+  saleItems           SaleItem[]
 }
 
 model TimeSlot {
@@ -344,33 +345,33 @@ model Click {
 }
 
 model Booking {
-  id                 String        @id @default(cuid())
-  clientId           String
-  customerId         String?
-  walkIn             Boolean       @default(false)
-  createdViaPos      Boolean       @default(false)
-  phantom            Boolean       @default(false)
-  assignedEmployeeId String?
-  status             BookingStatus @default(PENDING)
-  paymentStatus      PaymentStatus @default(UNPAID)
-  totalPrice         Decimal       @db.Decimal(10, 3)
-  notes              String?
-  qrCode             String?       @unique
-  qrVerified         Boolean       @default(false)
-  qrVerifiedAt       DateTime?
+  id                     String        @id @default(cuid())
+  clientId               String
+  customerId             String?
+  walkIn                 Boolean       @default(false)
+  createdViaPos          Boolean       @default(false)
+  phantom                Boolean       @default(false)
+  assignedEmployeeId     String?
+  status                 BookingStatus @default(PENDING)
+  paymentStatus          PaymentStatus @default(UNPAID)
+  totalPrice             Decimal       @db.Decimal(10, 3)
+  notes                  String?
+  qrCode                 String?       @unique
+  qrVerified             Boolean       @default(false)
+  qrVerifiedAt           DateTime?
   qrVerifiedByEmployeeId String?
-  paidAt             DateTime?
-  createdAt          DateTime      @default(now())
+  paidAt                 DateTime?
+  createdAt              DateTime      @default(now())
 
-  client             User           @relation(fields: [clientId], references: [id], onDelete: Cascade)
-  customer           Customer?      @relation(fields: [customerId], references: [id], onDelete: SetNull)
-  assignedEmployee   SalonEmployee? @relation("BookingAssignedEmployee", fields: [assignedEmployeeId], references: [id], onDelete: SetNull)
+  client               User           @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  customer             Customer?      @relation(fields: [customerId], references: [id], onDelete: SetNull)
+  assignedEmployee     SalonEmployee? @relation("BookingAssignedEmployee", fields: [assignedEmployeeId], references: [id], onDelete: SetNull)
   qrVerifiedByEmployee SalonEmployee? @relation("VerifiedBookings", fields: [qrVerifiedByEmployeeId], references: [id], onDelete: SetNull)
-  items              BookingItem[]
-  click              Click?
-  commission         Commission?
-  review             Review?
-  sale               Sale?
+  items                BookingItem[]
+  click                Click?
+  commission           Commission?
+  review               Review?
+  sale                 Sale?
 
   @@index([customerId])
   @@index([assignedEmployeeId])
@@ -431,19 +432,19 @@ model Review {
 }
 
 model CollaborationRequest {
-  id             String       @id @default(cuid())
-  providerId     String
-  influencerId   String
-  commissionPct  Decimal      @db.Decimal(5, 2)
-  durationDays   Int
-  message        String?
-  status         CollabStatus @default(PENDING)
-  createdAt      DateTime     @default(now())
-  respondedAt    DateTime?
+  id            String       @id @default(cuid())
+  providerId    String
+  influencerId  String
+  commissionPct Decimal      @db.Decimal(5, 2)
+  durationDays  Int
+  message       String?
+  status        CollabStatus @default(PENDING)
+  createdAt     DateTime     @default(now())
+  respondedAt   DateTime?
 
-  provider     ProviderProfile      @relation(fields: [providerId], references: [id], onDelete: Cascade)
-  influencer   InfluencerProfile    @relation(fields: [influencerId], references: [id], onDelete: Cascade)
-  offers       CollaborationOffer[]
+  provider   ProviderProfile      @relation(fields: [providerId], references: [id], onDelete: Cascade)
+  influencer InfluencerProfile    @relation(fields: [influencerId], references: [id], onDelete: Cascade)
+  offers     CollaborationOffer[]
 
   @@index([providerId, status])
   @@index([influencerId, status])
@@ -463,51 +464,68 @@ model CollaborationOffer {
   @@index([offerId])
 }
 
+/// Une FICHE CLIENTE, propre a UN salon — pas une identite globale.
+///
+/// `phone` etait `@unique` a l'echelle de toute la base. Une cliente inscrite
+/// chez un salon devenait donc introuvable-mais-bloquante pour tous les
+/// autres : en saisissant son numero, un nouveau salon recuperait la fiche
+/// du salon d'a cote, nom et prenom compris. Une cliente frequente plusieurs
+/// salons ; chacun tient SA fiche, avec ses notes et son historique.
+///
+/// L'unicite porte desormais sur le COUPLE (salon, telephone). Deux salons
+/// peuvent detenir le meme numero ; un meme salon ne peut pas creer deux
+/// fiches pour une meme cliente.
+///
+/// `userId` a perdu son `@unique` pour la meme raison : si deux salons ont
+/// chacun une fiche pour la meme cliente inscrite sur la place de marche,
+/// les deux doivent pouvoir pointer vers son compte.
 model Customer {
   id           String    @id @default(cuid())
-  phone        String    @unique
+  phone        String
   firstName    String?
   lastName     String?
   email        String?
   birthday     DateTime?
   notes        String?
-  userId       String?   @unique
+  userId       String?
   firstSalonId String?
   createdAt    DateTime  @default(now())
   updatedAt    DateTime  @updatedAt
 
-  user           User?           @relation(fields: [userId], references: [id], onDelete: SetNull)
-  bookings       Booking[]
-  sales          Sale[]
-  rewardWallets  RewardWallet[]
+  user          User?          @relation(fields: [userId], references: [id], onDelete: SetNull)
+  bookings      Booking[]
+  sales         Sale[]
+  rewardWallets RewardWallet[]
 
+  @@unique([firstSalonId, phone])
   @@index([phone])
   @@index([firstSalonId])
+  @@index([userId])
 }
 
 model SalonEmployee {
-  id             String       @id @default(cuid())
-  providerId     String
-  userId         String?
-  displayName    String
-  phone          String?
-  email          String?
-  pinHash        String?
-  role           EmployeeRole @default(CASHIER)
-  permissions    Json?
+  id                String       @id @default(cuid())
+  providerId        String
+  userId            String?
+  displayName       String
+  phone             String?
+  email             String?
+  pinHash           String?
+  role              EmployeeRole @default(CASHIER)
+  permissions       Json?
   // Flat commission percentage on service SaleItems attributed to this
   // employee. NULL = no commission owed (default). Snapshotted onto
   // SaleItem.commissionRateSnapshot at sale creation time so later rate
   // changes don't rewrite historical amounts.
-  commissionRate Decimal?     @db.Decimal(5, 2)
-  active         Boolean      @default(true)
-  lastLoginAt    DateTime?
+  commissionRate    Decimal?     @db.Decimal(5, 2)
+  active            Boolean      @default(true)
+  lastLoginAt       DateTime?
   /// Echecs consecutifs de saisie du PIN. Remis a zero au premier succes.
-  pinFailedAttempts Int       @default(0)
+  pinFailedAttempts Int          @default(0)
   /// Verrouillage temporaire apres trop d'echecs. NULL = ouvert.
   pinLockedUntil    DateTime?
-  createdAt      DateTime     @default(now())
-  updatedAt      DateTime     @updatedAt
+  createdAt         DateTime     @default(now())
+  updatedAt         DateTime     @updatedAt
 
   provider           ProviderProfile     @relation(fields: [providerId], references: [id], onDelete: Cascade)
   user               User?               @relation(fields: [userId], references: [id], onDelete: SetNull)
@@ -599,13 +617,13 @@ model StockMovement {
 }
 
 model Sale {
-  id                String     @id @default(cuid())
-  providerId        String
-  customerId        String?
-  employeeId        String
-  bookingId         String?    @unique
-  receiptNumber     String
-  status            SaleStatus @default(DRAFT)
+  id            String     @id @default(cuid())
+  providerId    String
+  customerId    String?
+  employeeId    String
+  bookingId     String?    @unique
+  receiptNumber String
+  status        SaleStatus @default(DRAFT)
 
   subtotal          Decimal  @db.Decimal(10, 3)
   discountAmount    Decimal  @default(0) @db.Decimal(10, 3)
@@ -688,13 +706,13 @@ model SaleItem {
 }
 
 model Payment {
-  id                   String        @id @default(cuid())
-  saleId               String
-  method               PaymentMethod
-  amount               Decimal       @db.Decimal(10, 3)
-  reference            String?
-  cashDrawerSessionId  String?
-  createdAt            DateTime      @default(now())
+  id                  String        @id @default(cuid())
+  saleId              String
+  method              PaymentMethod
+  amount              Decimal       @db.Decimal(10, 3)
+  reference           String?
+  cashDrawerSessionId String?
+  createdAt           DateTime      @default(now())
 
   sale              Sale               @relation(fields: [saleId], references: [id], onDelete: Cascade)
   cashDrawerSession CashDrawerSession? @relation(fields: [cashDrawerSessionId], references: [id], onDelete: SetNull)
@@ -764,10 +782,10 @@ model SaleSequence {
 }
 
 model CashDrawerSession {
-  id           String           @id @default(cuid())
-  providerId   String
-  employeeId   String
-  status       CashDrawerStatus @default(OPEN)
+  id         String           @id @default(cuid())
+  providerId String
+  employeeId String
+  status     CashDrawerStatus @default(OPEN)
 
   openedAt     DateTime  @default(now())
   closedAt     DateTime?
@@ -784,8 +802,8 @@ model CashDrawerSession {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  provider ProviderProfile @relation(fields: [providerId], references: [id], onDelete: Cascade)
-  employee SalonEmployee   @relation("CashDrawerEmployee", fields: [employeeId], references: [id])
+  provider ProviderProfile     @relation(fields: [providerId], references: [id], onDelete: Cascade)
+  employee SalonEmployee       @relation("CashDrawerEmployee", fields: [employeeId], references: [id])
   payments Payment[]
   expenses CashDrawerExpense[]
 
@@ -795,13 +813,13 @@ model CashDrawerSession {
 }
 
 model CashDrawerExpense {
-  id                    String           @id @default(cuid())
-  cashDrawerSessionId   String
-  employeeId            String
-  amount                Decimal          @db.Decimal(10, 3)
-  reason                String
-  category              ExpenseCategory  @default(AUTRE)
-  createdAt             DateTime         @default(now())
+  id                  String          @id @default(cuid())
+  cashDrawerSessionId String
+  employeeId          String
+  amount              Decimal         @db.Decimal(10, 3)
+  reason              String
+  category            ExpenseCategory @default(AUTRE)
+  createdAt           DateTime        @default(now())
 
   cashDrawerSession CashDrawerSession @relation(fields: [cashDrawerSessionId], references: [id], onDelete: Restrict)
   employee          SalonEmployee     @relation("CashDrawerExpenseEmployee", fields: [employeeId], references: [id])
@@ -811,32 +829,32 @@ model CashDrawerExpense {
 }
 
 model RewardProgram {
-  id                      String            @id @default(cuid())
-  providerId              String            @unique
+  id         String @id @default(cuid())
+  providerId String @unique
 
-  pointsPerDinar          Decimal           @default(1.000) @db.Decimal(10, 3)
-  dinarPerPoint           Decimal           @default(0.010) @db.Decimal(10, 3)
+  pointsPerDinar Decimal @default(1.000) @db.Decimal(10, 3)
+  dinarPerPoint  Decimal @default(0.010) @db.Decimal(10, 3)
 
-  minPointsToRedeem       Int               @default(100)
-  maxRedemptionPctPerSale Int               @default(50)
+  minPointsToRedeem       Int @default(100)
+  maxRedemptionPctPerSale Int @default(50)
 
-  eligibleOn              RewardEligibility @default(BOTH)
+  eligibleOn RewardEligibility @default(BOTH)
 
-  inactivityExpireMonths  Int?
+  inactivityExpireMonths Int?
 
-  welcomeBonusPoints      Int               @default(0)
-  birthdayBonusPoints     Int               @default(0)
+  welcomeBonusPoints  Int @default(0)
+  birthdayBonusPoints Int @default(0)
 
-  active                  Boolean           @default(true)
-  displayName             String?
+  active      Boolean @default(true)
+  displayName String?
 
   // Optional WhatsApp notification template shown to the cashier as a
   // one-tap wa.me link after a sale earned points. Supports {name},
   // {earned}, {balance} placeholders. NULL = no WhatsApp prompt.
-  whatsappMessage         String?
+  whatsappMessage String?
 
-  createdAt               DateTime          @default(now())
-  updatedAt               DateTime          @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   provider ProviderProfile @relation(fields: [providerId], references: [id], onDelete: Cascade)
   wallets  RewardWallet[]
@@ -845,21 +863,21 @@ model RewardProgram {
 }
 
 model RewardWallet {
-  id                    String   @id @default(cuid())
-  programId             String
-  providerId            String
-  customerId            String
+  id         String @id @default(cuid())
+  programId  String
+  providerId String
+  customerId String
 
-  balance               Int      @default(0)
-  lifetimeEarned        Int      @default(0)
-  lifetimeRedeemed      Int      @default(0)
+  balance          Int @default(0)
+  lifetimeEarned   Int @default(0)
+  lifetimeRedeemed Int @default(0)
 
   welcomeBonusApplied   Boolean  @default(false)
   lastBirthdayBonusYear Int?
   lastActivityAt        DateTime @default(now())
 
-  createdAt             DateTime @default(now())
-  updatedAt             DateTime @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   program      RewardProgram       @relation(fields: [programId], references: [id], onDelete: Cascade)
   provider     ProviderProfile     @relation(fields: [providerId], references: [id], onDelete: Cascade)
@@ -872,19 +890,19 @@ model RewardWallet {
 }
 
 model RewardTransaction {
-  id                   String                  @id @default(cuid())
-  walletId             String
-  delta                Int
-  balanceAfter         Int
-  reason               RewardTransactionReason
+  id           String                  @id @default(cuid())
+  walletId     String
+  delta        Int
+  balanceAfter Int
+  reason       RewardTransactionReason
 
   saleId               String?
   refundId             String?
   adjustedByEmployeeId String?
 
-  note                 String?
+  note String?
 
-  createdAt            DateTime @default(now())
+  createdAt DateTime @default(now())
 
   wallet     RewardWallet   @relation(fields: [walletId], references: [id], onDelete: Cascade)
   sale       Sale?          @relation(fields: [saleId], references: [id], onDelete: SetNull)
@@ -959,13 +977,13 @@ model RateLimitEntry {
 /// Le code est stocke HACHE : une fuite de la base ne doit pas livrer des
 /// codes utilisables.
 model DevicePairingCode {
-  id         String   @id @default(cuid())
+  id         String    @id @default(cuid())
   providerId String
   codeHash   String
-  attempts   Int      @default(0)
+  attempts   Int       @default(0)
   expiresAt  DateTime
   usedAt     DateTime?
-  createdAt  DateTime @default(now())
+  createdAt  DateTime  @default(now())
 
   provider ProviderProfile @relation(fields: [providerId], references: [id], onDelete: Cascade)
 
