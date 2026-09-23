@@ -168,6 +168,14 @@ function LoginPageInner() {
             Créer un compte
           </Link>
         </p>
+        <p className="flex flex-wrap justify-center gap-x-4 gap-y-1 text-xs text-prune-soft">
+          <Link href="/confidentialite" className="ds-focus underline underline-offset-4">
+            Politique de confidentialité
+          </Link>
+          <Link href="/conditions" className="ds-focus underline underline-offset-4">
+            Conditions d&apos;utilisation
+          </Link>
+        </p>
       </div>
     </div>
   );

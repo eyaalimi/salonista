@@ -600,7 +600,13 @@ export default function LandingClient() {
             <span className="brand">
               <em>salon</em>ista<b>.</b>
             </span>
-            <a href="/login">{t.deja}</a>
+            {/* Liens legaux exiges par Meta pour diffuser des publicites et
+                tenir une Page Business — et, plus simplement, par la loi. */}
+            <nav className="foot-liens">
+              <a href="/confidentialite">{t.conf}</a>
+              <a href="/conditions">{t.cond}</a>
+              <a href="/login">{t.deja}</a>
+            </nav>
           </div>
         </footer>
       </div>

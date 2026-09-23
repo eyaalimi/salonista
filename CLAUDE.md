@@ -609,6 +609,36 @@ cassé que celui qu'on voulait réparer. L'ordre compte :
 **Pensez à incrémenter `SW_VERSION`** dans [public/sw.js](public/sw.js) quand
 un changement doit atteindre les clients installés.
 
+### 23. Pages légales : elles décrivent le code, pas un modèle type
+
+`/confidentialite` et `/conditions` existent parce que **Meta les exige** pour
+diffuser des publicités et tenir une Page Business — sans elles, le compte
+publicitaire peut être restreint après quelques jours de diffusion, budget
+déjà dépensé. La loi tunisienne n° 2004-63 les impose aussi.
+
+Les deux pages partagent [`<LegalPage>`](src/components/legal-page.tsx) et la
+classe `.legal-corps` de `globals.css`.
+
+**La règle qui compte : chaque affirmation y est vérifiée dans le dépôt.**
+Une politique fausse est pire que pas de politique. L'état vérifié au
+23/09/2026 :
+
+- **aucun traceur publicitaire** — ni pixel Meta, ni Google Analytics ;
+- **aucune donnée bancaire** — rien n'est encaissé en ligne (voir note 11) ;
+- sous-traitants réels : AWS (Francfort, `eu-central-1` — vérifié sur l'IP),
+  Gmail, Google OAuth, Google Fonts, Cloudflare (DNS seul) ;
+- cloisonnement des fiches clientes par salon (voir note 21).
+
+**Si une de ces choses change, ces pages changent avec.** Ajouter un pixel
+Meta sans mettre à jour `/confidentialite` rendrait la page mensongère — ce
+qui est précisément le motif de restriction qu'on cherchait à éviter.
+
+Les liens figurent dans le pied de la landing (`t.conf` / `t.cond`, en **fr
+et ar**), sur `/login`, et **sous le bouton d'inscription de `/pos-start`** :
+Meta cherche la mention de consentement sur le formulaire lui-même, pas
+seulement en pied de page. Les deux routes sont annoncées dans
+`sitemap.xml` même place de marché fermée.
+
 ---
 
 ## Repo layout

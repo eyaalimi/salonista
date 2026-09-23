@@ -12,6 +12,10 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     return [
       { url: baseUrl, lastModified: new Date(), changeFrequency: "weekly", priority: 1 },
       { url: `${baseUrl}/pos-start`, lastModified: new Date(), changeFrequency: "monthly", priority: 0.9 },
+      // Pages legales : annoncees meme marche fermee. Meta les verifie pour
+      // valider un compte publicitaire, et elles doivent etre trouvables.
+      { url: `${baseUrl}/confidentialite`, lastModified: new Date(), changeFrequency: "yearly", priority: 0.3 },
+      { url: `${baseUrl}/conditions`, lastModified: new Date(), changeFrequency: "yearly", priority: 0.3 },
     ];
   }
 

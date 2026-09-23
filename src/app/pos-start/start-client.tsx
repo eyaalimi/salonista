@@ -366,6 +366,27 @@ export default function StartClient() {
             >
               {busy ? "Activation…" : "Activer ma caisse gratuite →"}
             </Button>
+
+            {/* Mention de consentement sous le bouton. Meta la cherche sur le
+                formulaire d'inscription lui-meme, pas seulement en pied de
+                page — et c'est le moment ou la decision se prend. */}
+            <p className="text-xs leading-relaxed text-prune-soft">
+              En activant ta caisse, tu acceptes nos{" "}
+              <Link
+                href="/conditions"
+                className="ds-focus font-semibold text-rose-fonce underline underline-offset-2"
+              >
+                conditions d&apos;utilisation
+              </Link>{" "}
+              et notre{" "}
+              <Link
+                href="/confidentialite"
+                className="ds-focus font-semibold text-rose-fonce underline underline-offset-2"
+              >
+                politique de confidentialité
+              </Link>
+              .
+            </p>
           </form>
 
           {/* « Fonctionne hors ligne » a ete retire : la caisse a besoin d'un
