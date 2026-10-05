@@ -87,6 +87,12 @@ export default async function SuperadminLayout({
               Campagnes
             </Link>
             <Link
+              href="/superadmin/salons"
+              className="ds-focus text-prune-soft hover:text-prune"
+            >
+              Support
+            </Link>
+            <Link
               href="/superadmin/journal"
               className="ds-focus text-prune-soft hover:text-prune"
             >

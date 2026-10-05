@@ -178,6 +178,15 @@ model User {
   totpLockedUntil    DateTime?
   superadminSince    DateTime?
 
+  /// --- Support (phase 3) ---
+  /// Pose quand le support genere un mot de passe temporaire. Tant qu'il est
+  /// vrai, la connexion aboutit mais l'application exige un changement.
+  mustChangePassword Boolean   @default(false)
+  /// Toute session emise AVANT cette date est refusee. C'est le seul moyen
+  /// d'invalider un JWT, sans etat par construction : on ne peut pas le
+  /// rappeler, seulement refuser de l'honorer.
+  sessionsRevokedAt  DateTime?
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
@@ -275,16 +284,24 @@ model ProviderProfile {
   /// Premier contact connu, repris du cookie : il precede l'inscription,
   /// parfois de plusieurs semaines.
   firstSeenAt DateTime?
+
+  /// --- Suspension (phase 3) ---
+  /// Un salon suspendu ne peut plus encaisser. Les DONNEES RESTENT : la
+  /// suspension est reversible, et un salon qui regularise doit retrouver
+  /// son historique intact.
+  suspendedAt     DateTime?
+  suspendedReason String?
   /// Salon de demonstration : exclu de l'index Google (noindex + absent du
   /// sitemap) mais parfaitement consultable. Permet de garder des donnees de
   /// test en ligne sans polluer les resultats de recherche, et de les retirer
   /// le jour du lancement sans produire de 404.
-  demo        Boolean   @default(false)
-  createdAt   DateTime  @default(now())
+  demo            Boolean   @default(false)
+  createdAt       DateTime  @default(now())
 
   user                  User                   @relation(fields: [userId], references: [id], onDelete: Cascade)
   campaign              Campaign?              @relation(fields: [campaignId], references: [id], onDelete: SetNull)
   campaignEvents        CampaignEvent[]
+  supportNotes          SupportNote[]
   offers                Offer[]
   collaborationRequests CollaborationRequest[]
   employees             SalonEmployee[]
@@ -1074,6 +1091,25 @@ model CampaignEvent {
   @@index([visitorId, type])
   @@index([type, createdAt])
   @@index([providerId])
+}
+
+/// Note interne de support, attachee a un salon.
+///
+/// L'historique des appels : « a rappele pour son PIN », « demande une
+/// facture ». Jamais visible par le salon — c'est un carnet d'equipe.
+model SupportNote {
+  id          String   @id @default(cuid())
+  providerId  String
+  /// Qui a ecrit. L'e-mail est conserve en texte : si le compte superadmin
+  /// disparait, la note doit rester attribuable.
+  authorId    String
+  authorEmail String
+  contenu     String
+  createdAt   DateTime @default(now())
+
+  provider ProviderProfile @relation(fields: [providerId], references: [id], onDelete: Cascade)
+
+  @@index([providerId, createdAt])
 }
 
 model SuperadminAuditLog {

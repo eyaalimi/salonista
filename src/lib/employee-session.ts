@@ -3,6 +3,11 @@ import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { mergePermissions, type Permission } from "@/lib/permissions";
 import type { EmployeeSessionData } from "@/types/next-auth";
+import {
+  COOKIE_VUE_LECTURE,
+  estEcriture,
+  vueLectureActive,
+} from "@/lib/support-salon";
 
 export type EmployeeSession = EmployeeSessionData;
 
@@ -74,6 +79,30 @@ export async function requireEmployee(): Promise<EmployeeSession> {
   if (!employee) {
     throw new HttpError(401, { error: "Authentification requise" });
   }
+
+  /*
+   * SALON SUSPENDU : plus rien, pas meme la lecture du catalogue.
+   *
+   * Le controle est pose dans `requireEmployee` et NON dans
+   * `requirePermission` : plus de vingt routes de la caisse appellent le
+   * premier directement, sans jamais passer par le second. Les avoir
+   * oubliees laissait /api/pos/catalog livrer tout le catalogue d'un salon
+   * suspendu — trouve en testant la suspension pour de vrai.
+   *
+   * Le message EXPLIQUE la situation plutot qu'un « 403 » muet : la personne
+   * au comptoir n'a pas decide de la suspension et doit savoir qui appeler.
+   */
+  const provider = await prisma.providerProfile.findUnique({
+    where: { id: employee.providerId },
+    select: { suspendedAt: true },
+  });
+  if (provider?.suspendedAt) {
+    throw new HttpError(403, {
+      error:
+        "Ce compte est suspendu. Contacte Salonista au plus vite : contact@salonista.tn",
+    });
+  }
+
   return employee;
 }
 
@@ -82,5 +111,40 @@ export async function requirePermission(perm: Permission): Promise<EmployeeSessi
   if (!employee.permissions[perm]) {
     throw new HttpError(403, { error: "Permission insuffisante" });
   }
+
+  /*
+   * VUE « VOIR COMME LE SALON » : lecture seule, garantie ICI.
+   *
+   * Masquer les boutons d'ecriture dans l'interface ne protege de rien — rien
+   * n'empeche d'appeler la route directement. Le refus est donc pose au point
+   * de passage unique de toute la caisse, et porte sur la PERMISSION demandee.
+   *
+   * `estEcriture` refuse PAR DEFAUT : une permission ajoutee plus tard sera
+   * bloquee sans que personne ait a y penser.
+   */
+  if (await vueLectureSeuleActive()) {
+    if (estEcriture(perm)) {
+      throw new HttpError(403, {
+        error: "Mode consultation : aucune modification n'est possible.",
+      });
+    }
+  }
+
   return employee;
+}
+
+/**
+ * Un superadmin consulte-t-il ce salon en lecture seule ?
+ *
+ * Le cookie porte la date d'expiration ; passee celle-ci, la vue se referme
+ * d'elle-meme sans qu'aucune tache de nettoyage soit necessaire.
+ */
+async function vueLectureSeuleActive(): Promise<boolean> {
+  const { cookies } = await import("next/headers");
+  const jar = await cookies();
+  const brut = jar.get(COOKIE_VUE_LECTURE)?.value;
+  if (!brut) return false;
+  const expire = Number(brut);
+  if (!Number.isFinite(expire)) return false;
+  return vueLectureActive(new Date(expire));
 }
