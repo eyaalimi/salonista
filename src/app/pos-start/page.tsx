@@ -1,4 +1,5 @@
 import StartClient from "./start-client";
+import { SuiviVisite } from "@/components/suivi-visite";
 
 export const metadata = {
   title: "Démarrer ma caisse — Salonista",
@@ -7,5 +8,11 @@ export const metadata = {
 };
 
 export default function PosStartPage() {
-  return <StartClient />;
+  return (
+    <>
+      {/* Arriver sur cette page, c'est commencer une inscription. */}
+      <SuiviVisite type="INSCRIPTION_DEBUT" />
+      <StartClient />
+    </>
+  );
 }

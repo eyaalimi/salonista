@@ -687,6 +687,47 @@ qu'annonce `/confidentialite`. La clé étrangère de la *cible* est `SetNull`
 et non `Cascade` : si un salon ferme son compte, la trace de l'intervention
 doit **survivre**.
 
+### 25. Suivi des campagnes : anonyme, et la landing reste statique
+
+Un lien court par campagne (`/c/<slug>`) compte le clic, pose l'attribution,
+puis redirige vers la landing avec les UTM. Créer une campagne passe par
+`npx tsx scripts/campagne.ts creer <slug> "<nom>" "<canal>" [budget-DT] --apply`.
+
+**Cinq points à ne pas défaire :**
+
+- **La landing reste STATIQUE.** Le comptage passe par une route appelée côté
+  client (`/api/suivi/evenement`), pas par une écriture dans le server
+  component : y écrire rendrait `/` dynamique à chaque visite et ferait perdre
+  le cache sur la page la plus vue du site. Vérifier après chaque changement
+  que `npm run build` affiche bien `○ /` et non `ƒ /`.
+- **Le visiteur n'est qu'un nombre tiré au hasard** (128 bits, cookie
+  `HttpOnly` 90 jours). Aucune IP, même hachée, aucune empreinte de
+  navigateur — c'est ce qu'annonce `/confidentialite`.
+- **Première touche gagne** (`fusionnerAttribution`). Un salon qui voit une
+  publicité Facebook, réfléchit trois jours puis revient par Google reste
+  attribué à Facebook : sinon on couperait le budget de la campagne qui
+  fonctionne. 90 jours de cookie, pas 7 — un salon ne s'inscrit pas le jour
+  même.
+- **Le navigateur ne peut déclarer que trois étapes** (`VISITE`,
+  `INSCRIPTION_DEBUT`, `APP_INSTALLEE`). Les autres se **déduisent** des
+  données réelles ; les laisser déclarer permettrait de fabriquer des
+  statistiques de toutes pièces.
+- **`champCsv` préfixe d'une apostrophe tout ce qui commence par `=`, `+`,
+  `-` ou `@`.** Sans cela Excel exécute la cellule comme une formule — un nom
+  de salon suffit à déclencher l'attaque.
+
+**Deux limites connues, assumées :**
+
+- `appinstalled` **n'existe pas sur Safari iOS** : les installations depuis un
+  iPhone ne remontent pas. Le chiffre est un plancher, pas un total.
+- Le filtre anti-robots est **grossier** (motifs d'user-agent). Un robot
+  déguisé passe ; le détecter demanderait une empreinte de navigateur,
+  c'est-à-dire exactement la collecte qu'on s'interdit.
+
+**« Salon actif » = une vente OU une connexion d'employé** sur la fenêtre. La
+définition vit dans [campagne-tableau.ts](src/lib/campagne-tableau.ts) : la
+changer là-bas change tout le tableau de bord d'un coup.
+
 ---
 
 ## Repo layout

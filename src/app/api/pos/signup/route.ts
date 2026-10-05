@@ -27,6 +27,8 @@ import { prisma } from "@/lib/prisma";
 import { mergePermissions } from "@/lib/permissions";
 import { decidePosSignup } from "@/lib/pos-signup-decision";
 import { exigerTelephoneSalon } from "@/lib/phone";
+import { contexteVisiteur, enregistrerEvenement } from "@/lib/campagne-suivi";
+import { estVide } from "@/lib/campagne-attribution";
 
 /** Meme minimum que la reinitialisation de mot de passe, pour rester coherent. */
 const MIN_PASSWORD_LENGTH = 6;
@@ -63,6 +65,10 @@ function genPin4(): string {
 }
 
 export async function POST(req: NextRequest) {
+  // Lu AVANT toute validation : meme si l'inscription echoue, on veut savoir
+  // d'ou venait la personne.
+  const { visitorId, attribution } = contexteVisiteur(req);
+
   const body = (await req.json().catch(() => null)) as Body | null;
   const email = body?.email?.trim().toLowerCase() ?? "";
   const salonName = body?.salonName?.trim() ?? "Mon salon";
@@ -137,6 +143,18 @@ export async function POST(req: NextRequest) {
         phone: verdictTelephone.phone,
         category: "AUTRE",
         onboardingDismissedAt: null,
+        // ATTRIBUTION FIGEE a l'inscription. Le cookie porte la campagne du
+        // PREMIER clic (90 jours) ; on la recopie ici pour qu'elle survive a
+        // l'expiration du cookie et au changement d'appareil.
+        //
+        // Jamais bloquant : un cookie absent ou malforme laisse ces champs
+        // nuls et l'inscription se poursuit. Perdre une statistique est sans
+        // gravite, perdre un client ne l'est pas.
+        campaignId: attribution.campaignId,
+        utmSource: attribution.utmSource,
+        utmMedium: attribution.utmMedium,
+        utmCampaign: attribution.utmCampaign,
+        firstSeenAt: estVide(attribution) ? null : new Date(),
       },
     });
 
@@ -164,6 +182,24 @@ export async function POST(req: NextRequest) {
 
     return { user, provider, owner };
   });
+
+  /*
+   * L'entonnoir, apres coup et HORS transaction : une ecriture de statistique
+   * ne doit jamais pouvoir annuler une inscription reussie.
+   *
+   * Deux etapes d'un coup, parce qu'elles sont simultanees ici : la caisse
+   * est activee dans la meme transaction que l'inscription (abonnement POS
+   * pose plus haut). Les separer laisserait croire a une deperdition entre
+   * les deux alors qu'il n'y en a aucune.
+   */
+  for (const type of ["INSCRIPTION_FIN", "CAISSE_ACTIVEE"] as const) {
+    await enregistrerEvenement({
+      type,
+      visitorId,
+      providerId: result.provider.id,
+      attribution,
+    });
+  }
 
   return Response.json(
     {
