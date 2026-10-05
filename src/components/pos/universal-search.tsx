@@ -90,7 +90,7 @@ export function UniversalSearch() {
         value={query}
         onChange={(e) => setQuery(e.target.value)}
         onKeyDown={onKeyDown}
-        placeholder="Rechercher service ou produit, scanner un code-barres…"
+        placeholder="Rechercher un service ou un produit…"
         className="w-full bg-[#1E1C1D] text-pos-bg placeholder-pos-ink-4/70 text-sm pl-9 pr-16 py-2 rounded-md border border-transparent focus:border-pos-yellow focus:outline-none"
       />
       <kbd className="absolute right-2 top-1/2 -translate-y-1/2 text-[10px] !bg-transparent !text-pos-ink-4 !border-pos-ink-4/40">

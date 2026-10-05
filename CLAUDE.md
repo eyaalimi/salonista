@@ -267,13 +267,16 @@ installer d'application. Ne le remplacez pas par un code brut.
 Deux chemins mènent à la validation, tous deux vers la même page
 `/verification` :
 
-- **L'appareil photo du téléphone** — le lien s'ouvre tout seul.
-- **`/pos/scan`** — un scanner intégré à la caisse, via `BarcodeDetector`
-  (API **native**, aucune dépendance ajoutée). Support inégal : absent de
-  Safari iOS à ce jour, d'où un repli explicite + saisie manuelle du code.
-  L'extraction du code est isolée dans
-  [src/lib/qr-code-reservation.ts](src/lib/qr-code-reservation.ts) (pur, testé)
-  — elle rejette les QR étrangers et les `?code=` portés par d'autres pages.
+- **L'appareil photo du téléphone** — le lien s'ouvre tout seul. C'est le
+  chemin principal, et il ne demande aucune application.
+- **La saisie manuelle du code** (`BT-…`) sur `/verification`, quand le QR
+  est abîmé ou que la cliente ne l'a plus.
+
+**`/pos/scan` a été retiré** (octobre 2026) : un scanner intégré à la caisse
+via `BarcodeDetector`, dont le support était de toute façon absent de Safari
+iOS. L'appareil photo du téléphone faisait déjà le travail.
+[src/lib/qr-code-reservation.ts](src/lib/qr-code-reservation.ts) est conservé
+— pur et testé, il resservira si un scanner revient.
 
 Après « Confirmer l'arrivée », un bouton **« Encaisser maintenant »** ouvre
 `/pos?bookingId=…` et pré-remplit le panier — le même mécanisme que le bouton
@@ -394,7 +397,7 @@ lecture des en-têtes.
 - **La CSP part en `Report-Only`.** Elle contient encore `'unsafe-inline'` et
   `'unsafe-eval'`, imposés par l'hydratation de Next et par Turbopack. Passer
   en mode bloquant demande des nonces par requête — chantier à part.
-  `camera=(self)` est **nécessaire** : `/pos/scan` ouvre la caméra.
+  `camera=()` depuis le retrait de `/pos/scan` : plus rien n'ouvre la caméra.
 - **`typescript: { ignoreBuildErrors: true }` a été retiré.** Les 23 erreurs
   qu'il masquait sont corrigées : le type `Provider` était dupliqué **cinq
   fois** dans l'assistant de démarrage (d'où des types incompatibles portant

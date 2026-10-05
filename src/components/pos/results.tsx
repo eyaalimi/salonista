@@ -4,7 +4,6 @@ import { useEffect, useRef } from "react";
 import { usePosStore, type SearchResult } from "@/lib/pos-store";
 import { formatDT } from "@/lib/money";
 import { usePOSShortcut } from "@/lib/use-pos-shortcuts";
-import { BarcodePrompt } from "@/components/pos/barcode-prompt";
 
 export function Results({ defaultEmployeeId }: { defaultEmployeeId: string }) {
   const results = usePosStore((s) => s.results);
@@ -134,7 +133,6 @@ export function Results({ defaultEmployeeId }: { defaultEmployeeId: string }) {
           </div>
         )}
       </div>
-      <BarcodePrompt defaultEmployeeId={defaultEmployeeId} />
     </div>
   );
 }
