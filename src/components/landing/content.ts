@@ -152,6 +152,8 @@ export const CONTENU = {
     p9: "Commencez gratuitement aujourd'hui.",
     cta3: "Démarrer ma caisse gratuitement",
     deja: "J'ai déjà un compte",
+    conf: "Politique de confidentialité",
+    cond: "Conditions d'utilisation",
   },
   ar: {
   nav1: "الخدمات",
@@ -268,6 +270,8 @@ export const CONTENU = {
     h9b: "من كاس عادية.",
     p9: "ابدأ مجانا اليوم.",
     deja: "عندي كونط",
+    conf: "سياسة الخصوصية",
+    cond: "شروط الاستخدام",
   },
 } as const;
 

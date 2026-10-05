@@ -348,3 +348,44 @@ body {
   letter-spacing: -0.02em;
 }
 .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+
+/* Corps des pages legales (/confidentialite, /conditions). Ces pages sont du
+   texte long ecrit directement en JSX : plutot qu'une classe sur chaque
+   paragraphe, on habille les elements depuis leur conteneur. */
+.legal-corps {
+  color: var(--color-prune-soft);
+  font-size: 1rem;
+  line-height: 1.7;
+}
+.legal-corps h2 {
+  margin-top: 2.5rem;
+  margin-bottom: 0.75rem;
+  color: var(--color-prune);
+  font-family: var(--font-display);
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  font-size: 1.35rem;
+}
+.legal-corps h2:first-child { margin-top: 0; }
+.legal-corps h3 {
+  margin-top: 1.5rem;
+  margin-bottom: 0.5rem;
+  color: var(--color-prune);
+  font-weight: 700;
+  font-size: 1.05rem;
+}
+.legal-corps p { margin-bottom: 1rem; }
+.legal-corps ul { margin: 0 0 1rem 1.25rem; list-style: disc; }
+.legal-corps li { margin-bottom: 0.5rem; }
+.legal-corps strong { color: var(--color-prune); font-weight: 600; }
+/* rose-fonce et non rose vif : 5,15:1 sur creme, le rose vif n'est que
+   2,94:1 et echouerait sur du texte (voir note 18). */
+.legal-corps a { color: var(--color-rose-fonce); text-decoration: underline; text-underline-offset: 3px; }
+.legal-corps table { width: 100%; border-collapse: collapse; margin-bottom: 1.25rem; font-size: .95rem; }
+.legal-corps th, .legal-corps td {
+  border: 1px solid var(--color-hairline);
+  padding: .6rem .75rem;
+  text-align: left;
+  vertical-align: top;
+}
+.legal-corps th { color: var(--color-prune); font-weight: 600; }
