@@ -15,9 +15,15 @@ export default function robots(): MetadataRoute.Robots {
           "/prestataire/",
           "/influenceuse/",
           "/admin/",
+          // L'espace fondateur. Il redirige deja tout visiteur non
+          // superadmin, mais rien ne sert d'y envoyer un robot.
+          "/superadmin",
+          "/superadmin-acces",
           // Fermees tant que la place de marche n'est pas ouverte : elles
           // redirigent vers "/", inutile d'y envoyer un robot.
-          ...(MARKETPLACE_PUBLIQUE ? [] : ["/offres", "/offre/", "/salon/", "/pro"]),
+          ...(MARKETPLACE_PUBLIQUE
+            ? []
+            : ["/offres", "/offre/", "/salon/", "/pro", "/register"]),
         ],
       },
     ],

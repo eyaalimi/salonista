@@ -473,12 +473,13 @@ Salonista lance **d'abord sa caisse**, gratuitement. Le drapeau
 |---|---|
 | `/` | sert la **landing de la caisse** au lieu du fil d'offres |
 | `/offres`, `/offre/[id]`, `/salon/[id]`, `/pro` | `redirect("/")` |
+| `/register` | `redirect("/pos-start")` — il créait des comptes CLIENT et INFLUENCER qui ne menaient nulle part |
 | `/sitemap.xml` | n'annonce plus que `/` et `/pos-start` |
 | `/robots.txt` | interdit `/offres`, `/offre/`, `/salon/`, `/pro` |
 | `<BottomNav>` | ne rend rien — ses quatre entrées mènent à la place de marché |
 
-**Ce qui reste ouvert dans les deux cas** : `/login`, `/register`,
-`/salon-pin`, `/pos-start` et **toute la caisse** (`/pos/*`). Des salons s'en
+**Ce qui reste ouvert dans les deux cas** : `/login`, `/salon-pin`,
+`/pos-start` et **toute la caisse** (`/pos/*`). Des salons s'en
 servent déjà en production — les fermer couperait des clients payants… enfin,
 des clients tout court, la caisse étant gratuite.
 
