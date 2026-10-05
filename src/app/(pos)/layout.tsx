@@ -1,7 +1,7 @@
 import { redirect } from "next/navigation";
 import { IBM_Plex_Sans, IBM_Plex_Mono } from "next/font/google";
 import { SwRegister } from "@/components/sw-register";
-import { SuiviInstallation } from "@/components/suivi-visite";
+import { SuiviInstallation } from "@/components/suivi-installation";
 import { getCurrentEmployee } from "@/lib/employee-session";
 import { getActiveModules } from "@/lib/modules";
 import { prisma } from "@/lib/prisma";
