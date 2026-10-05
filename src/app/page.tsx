@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import LandingClient from "@/components/landing/landing-client";
+import { SuiviVisite } from "@/components/suivi-visite";
 import "@/components/landing/landing.css";
 
 /**
@@ -26,5 +27,13 @@ export const metadata: Metadata = {
 };
 
 export default function Home() {
-  return <LandingClient />;
+  return (
+    <>
+      {/* Sans rendu : declare la visite a l'entonnoir. La page reste
+          STATIQUE — le comptage passe par une route appelee cote client,
+          pour ne pas perdre le cache sur la page la plus vue du site. */}
+      <SuiviVisite type="VISITE" />
+      <LandingClient />
+    </>
+  );
 }

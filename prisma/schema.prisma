@@ -262,14 +262,29 @@ model ProviderProfile {
   receiptFooter         String?
   onboardingDismissedAt DateTime?
   verified              Boolean   @default(false)
+
+  /// --- Attribution marketing (phase 2) ---
+  /// D'ou vient ce salon. Recopie a l'INSCRIPTION depuis le cookie
+  /// d'attribution, puis fige : c'est un instantane, pas un lien vivant.
+  /// La campagne peut etre supprimee sans effacer l'origine (SetNull), mais
+  /// les UTM restent, et avec eux la trace de la provenance.
+  campaignId  String?
+  utmSource   String?
+  utmMedium   String?
+  utmCampaign String?
+  /// Premier contact connu, repris du cookie : il precede l'inscription,
+  /// parfois de plusieurs semaines.
+  firstSeenAt DateTime?
   /// Salon de demonstration : exclu de l'index Google (noindex + absent du
   /// sitemap) mais parfaitement consultable. Permet de garder des donnees de
   /// test en ligne sans polluer les resultats de recherche, et de les retirer
   /// le jour du lancement sans produire de 404.
-  demo                  Boolean   @default(false)
-  createdAt             DateTime  @default(now())
+  demo        Boolean   @default(false)
+  createdAt   DateTime  @default(now())
 
   user                  User                   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  campaign              Campaign?              @relation(fields: [campaignId], references: [id], onDelete: SetNull)
+  campaignEvents        CampaignEvent[]
   offers                Offer[]
   collaborationRequests CollaborationRequest[]
   employees             SalonEmployee[]
@@ -998,6 +1013,69 @@ model UploadLog {
 /// inattendu. La garder en clair serait une donnee personnelle de plus a
 /// proteger, pour aucun gain — et notre page /confidentialite annonce qu'on
 /// ne stocke pas d'IP en clair.
+/// Une campagne marketing : un lien court, des UTM, un budget optionnel.
+model Campaign {
+  id             String    @id @default(cuid())
+  name           String
+  /// Porte par le lien court /c/<slug>. Imprime sur des flyers et dicte au
+  /// telephone : minuscules, chiffres et tirets seulement.
+  slug           String    @unique
+  /// Canal libre (« Facebook », « Flyers Sousse », « Radio »). Du texte et
+  /// non un enum : un canal nouveau ne doit pas demander une migration.
+  channel        String
+  startsAt       DateTime
+  endsAt         DateTime?
+  /// Budget en MILLIMES, entier. Le dinar tunisien a 3 decimales et la
+  /// monnaie ne passe jamais par un flottant. Optionnel : toutes les
+  /// campagnes n'ont pas de budget (bouche-a-oreille, presse gratuite).
+  budgetMillimes Int?
+  utmSource      String?
+  utmMedium      String?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  events    CampaignEvent[]
+  providers ProviderProfile[]
+
+  @@index([startsAt])
+}
+
+/// Un evenement de l'entonnoir d'acquisition.
+///
+/// ANONYME EN AMONT : avant l'inscription, un evenement ne porte qu'un
+/// `visitorId` tire au hasard (128 bits). Aucune IP, meme hachee, aucune
+/// empreinte de navigateur. C'est ce qu'annonce /confidentialite, et c'est
+/// suffisant pour dedupliquer.
+///
+/// Apres l'inscription, il porte un `providerId` et le visiteur devient
+/// facultatif.
+model CampaignEvent {
+  id          String   @id @default(cuid())
+  campaignId  String?
+  /// Identifiant ALEATOIRE du visiteur. N'encode rien : ni IP, ni horodatage.
+  visitorId   String?
+  providerId  String?
+  /// Etape de l'entonnoir. Texte et non enum : ajouter une etape ne doit pas
+  /// imposer une migration. Les valeurs vivent dans campagne-entonnoir.ts.
+  type        String
+  utmSource   String?
+  utmMedium   String?
+  utmCampaign String?
+  metadata    Json?
+  createdAt   DateTime @default(now())
+
+  campaign Campaign?        @relation(fields: [campaignId], references: [id], onDelete: SetNull)
+  provider ProviderProfile? @relation(fields: [providerId], references: [id], onDelete: Cascade)
+
+  /// Les quatre lectures du tableau de bord. L'index compose (campagne,
+  /// type, date) porte l'entonnoir filtre par periode, qui est la requete
+  /// la plus frequente.
+  @@index([campaignId, type, createdAt])
+  @@index([visitorId, type])
+  @@index([type, createdAt])
+  @@index([providerId])
+}
+
 model SuperadminAuditLog {
   id               String   @id @default(cuid())
   /// Qui a agi. Jamais nul : une action sans acteur n'est pas auditable.

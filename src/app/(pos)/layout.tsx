@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import { IBM_Plex_Sans, IBM_Plex_Mono } from "next/font/google";
 import { SwRegister } from "@/components/sw-register";
+import { SuiviInstallation } from "@/components/suivi-visite";
 import { getCurrentEmployee } from "@/lib/employee-session";
 import { getActiveModules } from "@/lib/modules";
 import { prisma } from "@/lib/prisma";
@@ -73,6 +74,10 @@ export default async function PosLayout({ children }: { children: React.ReactNod
           </div>
         )}
         <SwRegister />
+        {/* `appinstalled` n'etait ecoute nulle part : sw-register n'ecoute
+            que `beforeinstallprompt`, qui dit que l'installation est
+            POSSIBLE, pas qu'elle a eu lieu. */}
+        <SuiviInstallation />
       </OnlineStatusProvider>
     </div>
   );
