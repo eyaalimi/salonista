@@ -639,6 +639,54 @@ Meta cherche la mention de consentement sur le formulaire lui-même, pas
 seulement en pied de page. Les deux routes sont annoncées dans
 `sitemap.xml` même place de marché fermée.
 
+### 24. L'espace superadmin : SUPERADMIN n'est pas un ADMIN supérieur
+
+`/superadmin` est réservé aux fondateurs. **Les deux rôles sont disjoints** :
+un ADMIN est refusé dans `/superadmin`, un SUPERADMIN n'hérite d'aucun droit
+sur `/admin`. Rendre le rôle hiérarchique ferait de chaque compte admin
+existant un accès fondateur — c'est précisément ce qu'on évite.
+
+**Trois gardes, pas une** (phase 1 livrée) :
+
+1. **`middleware.ts`** — le `matcher` est une **liste blanche de préfixes** :
+   `/superadmin`, `/superadmin/:path*` ET `/superadmin-acces` y figurent
+   explicitement. `/superadmin/:path*` seul ne couvrirait **pas**
+   `/superadmin` lui-même.
+2. **`exigerSuperadmin()`** ([superadmin-session.ts](src/lib/superadmin-session.ts))
+   dans **chaque page et chaque route API**. Le middleware ne lit qu'un jeton,
+   sans accès à la base : il ne peut pas vérifier la 2FA.
+3. **`journaliser()`** refuse un motif de moins de 10 caractères utiles.
+
+La décision pure vit dans [superadmin-acces.ts](src/lib/superadmin-acces.ts)
+(20 tests, sans Prisma) ; le TOTP dans
+[superadmin-totp.ts](src/lib/superadmin-totp.ts) (17 tests).
+
+**Quatre points à ne pas défaire :**
+
+- **La session courte ne passe PAS par `session.maxAge`.** Ce projet n'en
+  configure aucun, donc les sessions durent 30 jours par défaut ; le
+  raccourcir imposerait une reconnexion quotidienne à **tous** les
+  utilisateurs, salons compris. La fraîcheur TOTP (30 min) est portée par
+  `token.totpValideeA`, écrit via `update()` — le seul moyen d'écrire dans un
+  JWT déjà émis.
+- **`/superadmin-acces` est HORS de `/superadmin`**, à dessein. Le layout de
+  `/superadmin` y redirige quand la 2FA manque ; en App Router un enfant ne
+  peut pas se soustraire au layout de son parent, donc la placer sous
+  `/superadmin/acces` **ferait boucler la redirection à l'infini**.
+- **Le rejeu d'un code TOTP est refusé** (`totpLastUsedStep`), avec le **même
+  message** qu'un code faux : les distinguer apprendrait à un attaquant que
+  son code était bon mais déjà consommé.
+- **Aucune route API n'écrit `role: "SUPERADMIN"`.** Un test inspecte le code
+  source de toutes les routes et échoue si quelqu'un l'ajoute
+  ([superadmin-pas-de-creation-web.test.ts](src/lib/superadmin-pas-de-creation-web.test.ts)).
+  Le seul chemin est `npx tsx scripts/superadmin.ts promote <email> --apply`,
+  qui **inspecte par défaut** et **refuse de révoquer le dernier compte**.
+
+L'IP du journal est **hachée en SHA-256**, jamais en clair — cohérent avec ce
+qu'annonce `/confidentialite`. La clé étrangère de la *cible* est `SetNull`
+et non `Cascade` : si un salon ferme son compte, la trace de l'intervention
+doit **survivre**.
+
 ---
 
 ## Repo layout
