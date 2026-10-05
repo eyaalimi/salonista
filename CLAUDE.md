@@ -716,6 +716,20 @@ puis redirige vers la landing avec les UTM. Créer une campagne passe par
   `-` ou `@`.** Sans cela Excel exécute la cellule comme une formule — un nom
   de salon suffit à déclencher l'attaque.
 
+**Le piège qui a cassé la CI** : `<SuiviInstallation>` vit dans son **propre
+fichier**, séparé de `<SuiviVisite>`. Quand les deux partageaient un module,
+le build Turbopack échouait avec *« Can't resolve
+'@vercel/turbopack-next/internal/font/google/font' »* et 24 erreurs sur les
+faces de police — parce que `src/app/(pos)/layout.tsx` l'importe **et**
+charge `next/font/google`.
+
+Le symptôme n'apparaît **qu'au build, et seulement sans cache** : `npm run
+dev` fonctionne, et un `npm run build` avec un `.next` existant passe aussi.
+D'où un code vert en local et rouge dans GitHub Actions, qui part toujours
+propre. **Pour reproduire : `rm -rf .next && npm run build`** — à faire avant
+de pousser dès qu'un composant client est ajouté à un layout qui charge une
+police.
+
 **Deux limites connues, assumées :**
 
 - `appinstalled` **n'existe pas sur Safari iOS** : les installations depuis un

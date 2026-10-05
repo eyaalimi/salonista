@@ -28,35 +28,3 @@ export function SuiviVisite({ type }: { type: "VISITE" | "INSCRIPTION_DEBUT" }) 
 
   return null;
 }
-
-/**
- * Signale l'installation de la PWA.
- *
- * L'evenement `appinstalled` n'etait ecoute NULLE PART dans le projet :
- * `pwa-install-prompt.tsx` n'ecoute que `beforeinstallprompt`, qui dit
- * seulement que l'installation est POSSIBLE, pas qu'elle a eu lieu.
- *
- * Pose dans le layout de la caisse, la ou un salon installe reellement
- * l'application.
- *
- * LIMITE CONNUE : `appinstalled` n'existe pas sur Safari iOS. Une salon qui
- * installe depuis un iPhone ne sera donc PAS comptee. Le chiffre est un
- * plancher, pas un total — a garder en tete en lisant le tableau de bord.
- */
-export function SuiviInstallation() {
-  useEffect(() => {
-    const signaler = () => {
-      fetch("/api/suivi/evenement", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ type: "APP_INSTALLEE" }),
-        keepalive: true,
-      }).catch(() => {});
-    };
-
-    window.addEventListener("appinstalled", signaler);
-    return () => window.removeEventListener("appinstalled", signaler);
-  }, []);
-
-  return null;
-}
