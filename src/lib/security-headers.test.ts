@@ -33,11 +33,12 @@ describe("securityHeaders", () => {
   });
 
   /**
-   * Le scanner de QR de la caisse ouvre la camera. `camera=()` la couperait
-   * et casserait /pos/scan.
+   * La camera est COUPEE depuis le retrait de /pos/scan : plus rien ne
+   * l'ouvre. Valider une cliente passe par l'appareil photo du telephone,
+   * qui ouvre le lien du QR hors du navigateur.
    */
-  it("laisse la camera au site lui-meme, pour le scanner de QR", () => {
-    expect(valeur(true, "Permissions-Policy")).toContain("camera=(self)");
+  it("coupe la camera : plus rien ne l'utilise", () => {
+    expect(valeur(true, "Permissions-Policy")).toContain("camera=()");
   });
 
   it("coupe le micro et le paiement", () => {

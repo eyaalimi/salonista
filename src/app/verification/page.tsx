@@ -114,12 +114,8 @@ function VerificationPageInner() {
           {!code && (
             <p className="mt-4 rounded-xl bg-brand-cream p-4 text-left text-sm leading-relaxed text-brand-ink-soft">
               Pour valider une cliente, visez son QR code avec l&apos;appareil
-              photo de votre téléphone : le lien s&apos;ouvre tout seul. Depuis
-              la caisse, vous pouvez aussi utiliser{" "}
-              <Link href="/pos/scan" className="font-semibold text-brand-ink underline">
-                Scanner un QR
-              </Link>
-              .
+              photo de votre téléphone : le lien s&apos;ouvre tout seul. Vous
+              pouvez aussi saisir son code ci-dessus.
             </p>
           )}
           <Link href="/" className="inline-block mt-6 text-xs tracking-[0.2em] uppercase text-brand-gold hover:text-brand-ink transition-colors">

@@ -260,11 +260,7 @@ export function PosCalendar({
                 ignorait qu'il suffit de l'appareil photo du telephone. */}
             <p className="mt-3 text-sm text-prune-soft">
               À son arrivée, scannez le QR code de la cliente avec l&apos;appareil
-              photo de votre téléphone, ou depuis{" "}
-              <a href="/pos/scan" className="font-semibold text-prune underline">
-                Scanner
-              </a>
-              .
+              photo de votre téléphone : le lien s&apos;ouvre tout seul.
             </p>
           </div>
         ) : (

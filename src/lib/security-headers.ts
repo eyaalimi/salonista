@@ -92,8 +92,11 @@ export function securityHeaders(production: boolean): EnTete[] {
       // « Me localiser » pour poser le point qui ouvrira l'itineraire des
       // clientes. A `()`, le navigateur refusait la demande en production
       // alors qu'elle marchait en local — l'en-tete n'y est pas pose.
-      // `camera=(self)` l'est aussi : /pos/scan lit les QR codes.
-      value: "camera=(self), microphone=(), geolocation=(self), payment=()",
+      // `camera=()` depuis le retrait de /pos/scan : plus rien n'ouvre la
+      // camera. La validation d'une cliente se fait avec l'appareil photo du
+      // telephone, qui ouvre le lien du QR — hors du navigateur, donc sans
+      // cette permission. La rallumer le jour ou un scanner reviendrait.
+      value: "camera=(), microphone=(), geolocation=(self), payment=()",
     },
     { key: "Content-Security-Policy-Report-Only", value: contentSecurityPolicy() },
   ];
