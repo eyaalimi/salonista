@@ -780,6 +780,36 @@ inconnu appelle en se faisant passer pour un salon.
 Une suspension **conserve toutes les données** : elle est réversible, et un
 salon qui régularise doit retrouver son historique intact.
 
+### 27. Vue d'ensemble : deux signaux, jamais confondus
+
+`/superadmin` répond à deux questions dans cet ordre : « où en est-on ? » et
+« qui faut-il rappeler aujourd'hui ? ». La seconde est la plus utile au
+lancement.
+
+**« Actif » et « à rappeler » sont indépendants, et c'est voulu.** Un salon
+dont l'équipe se connecte chaque matin est **actif**, mais s'il n'a pas
+encaissé depuis 14 jours il reste **à rappeler** — il ouvre l'application sans
+s'en servir, ce qui est précisément le signal à attraper. Les fusionner
+masquerait le problème.
+
+**« Jamais encaissé » et « devenu inactif » sont disjoints.** Un salon qui
+n'a jamais vendu n'est pas un salon qui a décroché : ce sont deux problèmes et
+deux conversations téléphoniques différentes. Le code ne compte jamais le même
+salon dans les deux, et un test le verrouille.
+
+**L'ordre de la liste d'appels est le produit.** Les « jamais encaissé » les
+plus **récents** d'abord : un salon inscrit il y a trois jours se rattrape
+d'un appel, celui d'il y a six mois beaucoup moins. Trier à l'envers mettrait
+les causes perdues en tête de liste.
+
+Un salon **suspendu n'apparaît pas** dans les rappels : son silence est notre
+décision, pas son abandon.
+
+Le seuil est de **14 jours** ([vue-ensemble.ts](src/lib/vue-ensemble.ts)) :
+sept déclencheraient de fausses alertes à chaque congé. L'agrégation réutilise
+`signesDeVieParSalon` — deux agrégats pour tous les salons d'un coup, pas une
+requête par salon.
+
 ---
 
 ## Repo layout
