@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 import { IBM_Plex_Sans, IBM_Plex_Mono } from "next/font/google";
 import { SwRegister } from "@/components/sw-register";
 import { SuiviInstallation } from "@/components/suivi-installation";
+import { BandeauConsultation } from "@/components/pos/bandeau-consultation";
 import { getCurrentEmployee } from "@/lib/employee-session";
 import { getActiveModules } from "@/lib/modules";
 import { prisma } from "@/lib/prisma";
@@ -43,6 +44,9 @@ export default async function PosLayout({ children }: { children: React.ReactNod
     <div data-pos-theme className={`${plexSans.variable} ${plexMono.variable}`}>
       <OnlineStatusProvider>
         <div className="h-dvh flex flex-col overflow-hidden">
+          {/* Rien si personne ne consulte. Informe seulement : la lecture
+              seule est garantie dans requirePermission, cote serveur. */}
+          <BandeauConsultation />
           <div className="h-12 shrink-0">
             <PosTopbar
               provider={provider ? { salonName: provider.salonName, city: provider.city } : null}

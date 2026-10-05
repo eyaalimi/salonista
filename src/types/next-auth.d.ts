@@ -47,5 +47,10 @@ declare module "next-auth/jwt" {
      * Absent pour tout autre role — aucune autre connexion n'est touchee.
      */
     totpValideeA?: number | null;
+    /**
+     * Le support a genere un mot de passe temporaire : l'application doit
+     * exiger un changement avant toute autre action.
+     */
+    mustChangePassword?: boolean;
   }
 }

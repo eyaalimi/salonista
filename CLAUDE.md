@@ -742,6 +742,44 @@ police.
 définition vit dans [campagne-tableau.ts](src/lib/campagne-tableau.ts) : la
 changer là-bas change tout le tableau de bord d'un coup.
 
+### 26. Support des salons : jamais de secret en clair, jamais d'écriture en consultation
+
+`/superadmin/salons` cherche un salon par nom, téléphone, e-mail ou matricule,
+et sa fiche porte les actions de support. **Chaque action exige un motif d'au
+moins 10 caractères** et passe par `journaliser()` **avant** d'agir : si le
+journal échoue, l'action n'a pas lieu.
+
+**On ne révèle JAMAIS un mot de passe ni un PIN existant.** Ils sont hachés,
+donc illisibles — y compris pour nous. Deux chemins seulement : un lien de
+réinitialisation vers l'adresse **déjà enregistrée** (30 min, usage unique),
+ou un mot de passe temporaire **affiché une seule fois**, avec
+`mustChangePassword` posé. Le mot de passe temporaire évite `0/O` et `1/l/I` :
+il est dicté au téléphone.
+
+**Le rappel de vérification d'identité est affiché AVANT l'action**, pas rangé
+dans un manuel. Le risque réel du support n'est pas technique : c'est qu'un
+inconnu appelle en se faisant passer pour un salon.
+
+**Trois points à ne pas défaire :**
+
+- **La suspension est contrôlée dans `requireEmployee`, PAS dans
+  `requirePermission`.** Plus de vingt routes de la caisse appellent le
+  premier directement sans jamais passer par le second — je l'avais d'abord
+  posée au mauvais endroit, et `/api/pos/catalog` livrait tout le catalogue
+  d'un salon suspendu. Trouvé en testant la suspension pour de vrai.
+- **La lecture seule de « voir comme le salon » est garantie côté serveur**,
+  dans `requirePermission`, via `estEcriture()`. Masquer les boutons ne
+  protège de rien. `estEcriture` **refuse par défaut** : une permission
+  ajoutée demain sera bloquée sans que personne ait à y penser.
+- **« Fermer les sessions » n'est pas instantané.** Un JWT est sans état : on
+  ne peut pas le rappeler, seulement refuser de l'honorer. `sessionsRevokedAt`
+  est comparé au `iat` du jeton dans le callback `jwt`, **dans la requête qui
+  lit déjà le rôle** — donc sans lecture supplémentaire. L'effet s'applique au
+  prochain cycle de rafraîchissement, et le message de l'interface le dit.
+
+Une suspension **conserve toutes les données** : elle est réversible, et un
+salon qui régularise doit retrouver son historique intact.
+
 ---
 
 ## Repo layout

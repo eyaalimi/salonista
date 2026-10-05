@@ -186,9 +186,36 @@ export const authOptions: NextAuthOptions = {
       if (token.id && !isPinSession) {
         const dbUser = await prisma.user.findUnique({
           where: { id: token.id as string },
-          select: { role: true },
+          // `sessionsRevokedAt` et `mustChangePassword` sont lus dans la MEME
+          // requete que le role, deja faite a chaque cycle de jeton : la
+          // revocation ne coute donc aucune lecture supplementaire.
+          select: {
+            role: true,
+            sessionsRevokedAt: true,
+            mustChangePassword: true,
+          },
         });
-        if (dbUser) token.role = dbUser.role;
+        if (dbUser) {
+          token.role = dbUser.role;
+          token.mustChangePassword = dbUser.mustChangePassword;
+
+          /*
+           * REVOCATION DES SESSIONS. Un JWT est sans etat : une fois emis, on
+           * ne peut pas le rappeler. On refuse donc de l'honorer, en
+           * comparant sa date d'emission (`iat`, posee par NextAuth) a la
+           * date de revocation.
+           *
+           * Vider `token.id` suffit : `exigerSuperadmin`, le middleware et
+           * toutes les gardes retombent alors sur « non connecte ».
+           */
+          if (
+            dbUser.sessionsRevokedAt &&
+            typeof token.iat === "number" &&
+            token.iat * 1000 < dbUser.sessionsRevokedAt.getTime()
+          ) {
+            return { ...token, id: "", role: "", employee: null };
+          }
+        }
       }
       return token;
     },
