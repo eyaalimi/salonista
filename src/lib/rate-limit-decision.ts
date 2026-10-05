@@ -59,6 +59,17 @@ export const LIMITE_INSCRIPTION: Limite = { max: 5, fenetreMs: 60 * 60 * 1000 };
  */
 export const LIMITE_CONNEXION: Limite = { max: 20, fenetreMs: 15 * 60 * 1000 };
 
+/**
+ * Validations de code TOTP d'un superadmin, par compte.
+ *
+ * Le verrouillage de `superadmin-acces.ts` bloque deja apres 5 ECHECS ; cette
+ * limite-ci compte TOUTES les tentatives, ce qui arrete aussi un script qui
+ * aurait devine un code et le rejouerait. Plus stricte que le PIN de caisse
+ * (10 / 5 min) : un superadmin saisit son code une fois par demi-heure, pas
+ * entre deux clientes.
+ */
+export const LIMITE_TOTP: Limite = { max: 6, fenetreMs: 5 * 60 * 1000 };
+
 /** Etat d'un compteur, tel qu'il est stocke. */
 export type Compteur = {
   count: number;

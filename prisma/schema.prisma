@@ -12,6 +12,11 @@ enum Role {
   INFLUENCER
   PROVIDER
   ADMIN
+  /// Fondateur. N'est PAS un ADMIN superieur : les deux roles sont disjoints.
+  /// Un ADMIN n'entre pas dans /superadmin, un SUPERADMIN n'herite d'aucun
+  /// droit sur /admin. Ne se cree QUE par scripts/superadmin.ts — aucune
+  /// route API ne peut ecrire ce role (un test le verrouille).
+  SUPERADMIN
 }
 
 enum Category {
@@ -155,8 +160,26 @@ model User {
   emailVerifyExpires   DateTime?
   passwordResetToken   String?   @unique
   passwordResetExpires DateTime?
-  createdAt            DateTime  @default(now())
-  updatedAt            DateTime  @updatedAt
+
+  /// --- Double authentification des comptes SUPERADMIN (phase 1) ---
+  /// Ces colonnes ne concernent QUE les superadmins ; elles restent nulles
+  /// pour tout le monde d'autre et ne changent rien aux autres connexions.
+  ///
+  /// Le secret est stocke en clair : c'est inherent au TOTP, le serveur doit
+  /// recalculer le code et ne peut donc pas le hacher. Il n'est JAMAIS rendu
+  /// par une route API apres l'enrolement.
+  totpSecret         String?
+  /// Date a laquelle un premier code valide a prouve que le QR etait bien
+  /// enregistre. Tant qu'elle est nulle, l'enrolement n'est pas termine.
+  totpConfirmedAt    DateTime?
+  /// Dernier pas de 30 s consomme — interdit de rejouer le meme code.
+  totpLastUsedStep   Int?
+  totpFailedAttempts Int       @default(0)
+  totpLockedUntil    DateTime?
+  superadminSince    DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   providerProfile   ProviderProfile?
   influencerProfile InfluencerProfile?
@@ -167,6 +190,8 @@ model User {
   /// Une fiche PAR salon frequente : la fiche cliente est propre au salon.
   customer          Customer[]
   employeeAccounts  SalonEmployee[]
+  superadminActions SuperadminAuditLog[] @relation("ActeurSuperadmin")
+  superadminCibles  SuperadminAuditLog[] @relation("CibleSuperadmin")
 }
 
 model Account {
@@ -958,6 +983,52 @@ model UploadLog {
 /// passait un jour a plusieurs instances.
 ///
 /// `key` porte la dimension limitee : `pin:<employeeId>`, `resolve:ip:<ip>`…
+/// Journal des actions sensibles du superadmin.
+///
+/// EN LECTURE SEULE. Aucune route ne l'expose en PATCH ni en DELETE, et le
+/// script CLI ne sait pas l'effacer : un journal qu'on peut nettoyer ne vaut
+/// rien le jour ou il faut comprendre ce qui s'est passe.
+///
+/// `motif` est OBLIGATOIRE (10 caracteres utiles minimum, voir
+/// superadmin-acces.ts) : c'est ce qui rend une ligne relisible six mois plus
+/// tard. « ok » ou « support » ne disent rien.
+///
+/// `ipHash` et NON l'IP en clair : le superadmin est identifie par
+/// `actorId`, l'IP ne sert qu'a reperer un acces depuis un endroit
+/// inattendu. La garder en clair serait une donnee personnelle de plus a
+/// proteger, pour aucun gain — et notre page /confidentialite annonce qu'on
+/// ne stocke pas d'IP en clair.
+model SuperadminAuditLog {
+  id               String   @id @default(cuid())
+  /// Qui a agi. Jamais nul : une action sans acteur n'est pas auditable.
+  actorId          String
+  actorEmail       String
+  /// Quoi — en clair plutot qu'un enum : le journal doit pouvoir enregistrer
+  /// une action nouvelle sans migration, et il est relu par des humains.
+  action           String
+  /// Sur quel salon, si l'action en cible un.
+  targetProviderId String?
+  /// Sur quel utilisateur, si l'action en cible un.
+  targetUserId     String?
+  motif            String
+  /// SHA-256 de l'adresse IP. Voir le commentaire du modele.
+  ipHash           String?
+  userAgent        String?
+  /// Details non structures (ancien/nouvel etat, duree accordee...).
+  metadata         Json?
+  createdAt        DateTime @default(now())
+
+  actor      User  @relation("ActeurSuperadmin", fields: [actorId], references: [id], onDelete: Cascade)
+  targetUser User? @relation("CibleSuperadmin", fields: [targetUserId], references: [id], onDelete: SetNull)
+
+  /// Les trois lectures du journal : par date (vue par defaut), par acteur,
+  /// et par salon cible (depuis la fiche de support).
+  @@index([createdAt])
+  @@index([actorId, createdAt])
+  @@index([targetProviderId, createdAt])
+  @@index([action, createdAt])
+}
+
 model RateLimitEntry {
   key         String   @id
   count       Int      @default(0)

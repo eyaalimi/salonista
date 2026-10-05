@@ -150,7 +150,26 @@ export const authOptions: NextAuthOptions = {
       }
       return true;
     },
-    async jwt({ token, user }) {
+    async jwt({ token, user, trigger, session: maj }) {
+      /*
+       * VALIDATION TOTP D'UN SUPERADMIN.
+       *
+       * La route /api/superadmin/totp/verify appelle `update({ totpValideeA })`
+       * cote client apres avoir verifie le code ; c'est le seul moyen d'ecrire
+       * dans un JWT deja emis. La route a DEJA valide le code, le secret et le
+       * rejeu en base avant d'arriver ici.
+       *
+       * Ce chemin ne peut pas servir a s'octroyer un acces : il ne fait que
+       * datar une validation. `verifierAccesSuperadmin` exige en plus le role
+       * SUPERADMIN et un `totpConfirmedAt` en base, qu'aucune route n'ecrit.
+       */
+      if (trigger === "update" && maj && typeof maj === "object") {
+        const horodatage = (maj as { totpValideeA?: unknown }).totpValideeA;
+        if (typeof horodatage === "number") {
+          token.totpValideeA = horodatage;
+        }
+      }
+
       if (user) {
         token.role = (user as { role: string }).role;
         token.id = user.id;
@@ -179,6 +198,9 @@ export const authOptions: NextAuthOptions = {
         (session.user as { id: string; role: string }).role = token.role as string;
       }
       session.employee = token.employee ?? null;
+      // Recopie la fraicheur TOTP du jeton vers la session, pour que les
+      // server components la lisent sans relire le jeton eux-memes.
+      session.totpValideeA = token.totpValideeA ?? null;
       return session;
     },
   },
