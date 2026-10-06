@@ -16,7 +16,21 @@ type Tx = Prisma.TransactionClient;
  * Caller is responsible for verifying that REWARDS is active for the salon.
  */
 export async function getOrCreateWallet(
-  client: Tx | typeof prisma,
+  /*
+   * `Prisma.TransactionClient` SEUL, et non `Tx | typeof prisma`.
+   *
+   * L'union forcait TypeScript a comparer deux clients Prisma distincts
+   * (`DefaultArgs` contre `InternalArgs`), ce qui faisait exploser la
+   * profondeur de recursion : « Excessive stack depth comparing types ».
+   * L'erreur FAISAIT ECHOUER `npm run build` — elle n'etait pas qu'un
+   * avertissement de l'editeur.
+   *
+   * L'union n'apportait rien : l'unique appelant (rewards/earn.ts) passe
+   * toujours un client de transaction, ce qui est d'ailleurs la bonne
+   * pratique ici — creer un portefeuille hors transaction laisserait une
+   * ligne orpheline si la vente echouait ensuite.
+   */
+  client: Tx,
   programId: string,
   providerId: string,
   customerId: string,

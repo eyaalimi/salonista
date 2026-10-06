@@ -143,9 +143,36 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
     nextTaxRate = tauxTvaApplicable(regime?.vatRegistered ?? false, body.taxRate);
   }
 
+  /*
+   * La categorie, si elle est fournie. On VERIFIE qu'elle appartient au MEME
+   * salon : sans ce controle, un salon pourrait ranger son service dans la
+   * categorie d'un concurrent en devinant un identifiant.
+   *
+   * `null` explicite = « retirer de sa categorie », une action legitime.
+   */
+  let nextCategoryId: string | null | undefined;
+  if (body.categoryId !== undefined) {
+    if (body.categoryId === null || body.categoryId === "") {
+      nextCategoryId = null;
+    } else {
+      const categorie = await prisma.serviceCategory.findFirst({
+        where: { id: String(body.categoryId), providerId: offer.providerId },
+        select: { id: true },
+      });
+      if (!categorie) {
+        return NextResponse.json(
+          { error: "Catégorie introuvable" },
+          { status: 400 },
+        );
+      }
+      nextCategoryId = categorie.id;
+    }
+  }
+
   const updated = await prisma.offer.update({
     where: { id },
     data: {
+      ...(nextCategoryId !== undefined ? { categoryId: nextCategoryId } : {}),
       title: body.title ?? offer.title,
       description: body.description ?? offer.description,
       originalPrice: body.originalPrice ?? offer.originalPrice,

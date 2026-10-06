@@ -7,6 +7,7 @@ import {
   LayoutGrid,
   Calendar,
   Scissors,
+  FolderTree,
   Users,
   Package,
   Receipt,
@@ -67,6 +68,7 @@ export function Rail({
   // Groupe 2 — CATALOGUE : ce que le salon vend.
   const groupCatalogue: RailItem[] = [
     { href: "/pos/services", label: "Services", shortcut: "S", icon: <Scissors size={20} />, perm: "products.manage" },
+    { href: "/pos/categories", label: "Catégories", shortcut: "G", icon: <FolderTree size={20} />, perm: "products.manage" },
     { href: "/pos/products", label: "Produits", shortcut: "P", icon: <Package size={20} />, perm: "inventory.view", module: "POS" },
   ];
 

@@ -5,10 +5,22 @@ import { usePosStore, type SearchResult } from "@/lib/pos-store";
 import { formatDT } from "@/lib/money";
 import { usePOSShortcut } from "@/lib/use-pos-shortcuts";
 
-export function Results({ defaultEmployeeId }: { defaultEmployeeId: string }) {
+/** Une categorie, telle que la rend le catalogue. */
+export type CategorieOnglet = { id: string; nom: string };
+
+export function Results({
+  defaultEmployeeId,
+  categories = [],
+}: {
+  defaultEmployeeId: string;
+  /** Les categories du salon. Vide = le salon n'en a pas cree. */
+  categories?: CategorieOnglet[];
+}) {
   const results = usePosStore((s) => s.results);
   const filterTab = usePosStore((s) => s.filterTab);
   const setFilterTab = usePosStore((s) => s.setFilterTab);
+  const categorieTab = usePosStore((s) => s.categorieTab);
+  const setCategorieTab = usePosStore((s) => s.setCategorieTab);
   const sortBy = usePosStore((s) => s.sortBy);
   const cycleSortMode = usePosStore((s) => s.cycleSortMode);
   const selectedIndex = usePosStore((s) => s.selectedIndex);
@@ -17,7 +29,7 @@ export function Results({ defaultEmployeeId }: { defaultEmployeeId: string }) {
   const addResultToCart = usePosStore((s) => s.addResultToCart);
 
   // Filter + sort the visible list.
-  const visible = applyFilterAndSort(results, filterTab, sortBy);
+  const visible = applyFilterAndSort(results, filterTab, sortBy, categorieTab);
 
   const rowsRef = useRef<HTMLDivElement | null>(null);
 
@@ -82,6 +94,43 @@ export function Results({ defaultEmployeeId }: { defaultEmployeeId: string }) {
           Tri: {SORT_LABELS[sortBy]} <kbd>⇧S</kbd>
         </button>
       </div>
+
+      {/*
+        Les categories du salon. N'apparait QUE s'il en a cree : un salon qui
+        n'en veut pas ne doit pas voir une barre vide occuper son ecran.
+
+        Elle defile horizontalement plutot que de passer a la ligne : la
+        grille de services doit garder sa hauteur, c'est elle qu'on regarde.
+      */}
+      {categories.length > 0 && (
+        <div className="flex gap-1 overflow-x-auto border-b border-pos-border bg-pos-bg px-4 py-2 text-xs no-scrollbar">
+          <button
+            type="button"
+            onClick={() => setCategorieTab(null)}
+            className={`shrink-0 rounded-md px-3 py-1 ${
+              categorieTab === null
+                ? "bg-pos-ink text-pos-bg"
+                : "text-pos-ink-2 hover:bg-pos-border/60"
+            }`}
+          >
+            Toutes
+          </button>
+          {categories.map((c) => (
+            <button
+              key={c.id}
+              type="button"
+              onClick={() => setCategorieTab(categorieTab === c.id ? null : c.id)}
+              className={`shrink-0 rounded-md px-3 py-1 ${
+                categorieTab === c.id
+                  ? "bg-pos-ink text-pos-bg"
+                  : "text-pos-ink-2 hover:bg-pos-border/60"
+              }`}
+            >
+              {c.nom}
+            </button>
+          ))}
+        </div>
+      )}
 
       <div ref={rowsRef} className="flex-1 overflow-y-auto p-3">
         {visible.length === 0 ? (
@@ -214,8 +263,18 @@ function applyFilterAndSort(
   results: SearchResult[],
   filter: "ALL" | "SERVICE" | "PRODUCT",
   sort: "relevance" | "price_asc" | "price_desc" | "name_asc",
+  categorieId: string | null = null,
 ): SearchResult[] {
   let out = filter === "ALL" ? results : results.filter((r) => r.kind === filter);
+
+  /*
+   * Le filtre par categorie ne porte QUE sur les services : les produits
+   * n'en ont pas, et les faire disparaitre quand on clique sur « Cheveux »
+   * surprendrait une caissiere qui cherche un shampoing.
+   */
+  if (categorieId !== null) {
+    out = out.filter((r) => r.kind !== "SERVICE" || r.categorieId === categorieId);
+  }
   if (sort === "price_asc") out = [...out].sort((a, b) => Number(a.salePrice) - Number(b.salePrice));
   else if (sort === "price_desc") out = [...out].sort((a, b) => Number(b.salePrice) - Number(a.salePrice));
   else if (sort === "name_asc") out = [...out].sort((a, b) => a.name.localeCompare(b.name, "fr"));
