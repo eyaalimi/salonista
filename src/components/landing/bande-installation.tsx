@@ -21,8 +21,38 @@ type Textes = {
   texte: string;
   bouton: string;
   plusTard: string;
-  ios: string;
+  iosEtape1: string;
+  iosEtape1Fin: string;
+  iosEtape2: string;
 };
+
+/**
+ * L'icone « Partager » d'iOS, dessinee plutot que decrite.
+ *
+ * Sur iPhone, ce dessin EST l'instruction : « appuie sur Partager » ne veut
+ * rien dire pour qui ne reconnait pas le symbole, alors que tout le monde le
+ * retrouve des qu'il le voit.
+ */
+function IconePartage() {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      width="18"
+      height="18"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+      className="inst-ios-icone"
+    >
+      <path d="M12 3v13" />
+      <path d="M8 7l4-4 4 4" />
+      <path d="M5 12v7a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-7" />
+    </svg>
+  );
+}
 
 /**
  * Invitation a installer l'application, en bas de la landing.
@@ -129,7 +159,27 @@ export function BandeInstallation({ t }: { t: Textes }) {
       <div className="inst-in">
         <div className="inst-txt">
           <strong>{t.titre}</strong>
-          <span>{affichage.mode === "instructions-ios" ? t.ios : t.texte}</span>
+
+          {affichage.mode === "instructions-ios" ? (
+            /*
+             * Sur iOS, ce bloc remplace le bouton : Safari interdit a un site
+             * de declencher l'installation. Deux etapes numerotees, avec le
+             * symbole de partage dessine — c'est ce qu'on cherche du regard
+             * en bas de l'ecran.
+             */
+            <ol className="inst-ios">
+              <li>
+                <span className="inst-ios-no">1</span>
+                {t.iosEtape1} <IconePartage /> {t.iosEtape1Fin}
+              </li>
+              <li>
+                <span className="inst-ios-no">2</span>
+                {t.iosEtape2}
+              </li>
+            </ol>
+          ) : (
+            <span>{t.texte}</span>
+          )}
         </div>
 
         <div className="inst-act">

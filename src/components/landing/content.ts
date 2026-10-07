@@ -160,7 +160,12 @@ export const CONTENU = {
     instBouton: "Installer",
     instPlusTard: "Plus tard",
     // iOS ne propose aucune installation automatique : on decrit le geste.
-    instIos: "Appuie sur Partager, puis « Sur l'écran d'accueil ».",
+    // Deux etapes NUMEROTEES plutot qu'une phrase : sur iOS il n'y a pas de
+    // bouton possible (Safari n'emet jamais `beforeinstallprompt`), donc ce
+    // texte EST la fonctionnalite. Il doit se suivre du doigt.
+    instIosEtape1: "Appuie sur",
+    instIosEtape1Fin: "en bas de l'écran",
+    instIosEtape2: "Choisis « Sur l'écran d'accueil »",
   },
   ar: {
   nav1: "الخدمات",
@@ -283,7 +288,9 @@ export const CONTENU = {
     instTexte: "الكاسة متاعك في ضغطة، كيف أبليكاسيون.",
     instBouton: "نزّل",
     instPlusTard: "بعد",
-    instIos: "اضغط على زر المشاركة، من بعد « أضف إلى الشاشة الرئيسية ».",
+    instIosEtape1: "اضغط على",
+    instIosEtape1Fin: "في أسفل الشاشة",
+    instIosEtape2: "اختار « أضف إلى الشاشة الرئيسية »",
   },
 } as const;
 
