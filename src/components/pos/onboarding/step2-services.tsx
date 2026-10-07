@@ -138,86 +138,129 @@ export function Step2Services({
 
   return (
     <div className="space-y-4">
-      <p className="text-xs text-brand-ink-soft">
-        Cochez ce que vous proposez · 📸 image facultative
-      </p>
+      {/*
+        La consigne et le decompte, cote a cote. Voir « 6 services
+        selectionnes » evoluer en cochant rassure plus qu'un bouton qui
+        s'active en silence tout en bas de l'ecran.
+      */}
+      <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
+        <p className="text-sm text-brand-ink">
+          Coche ce que tu proposes.{" "}
+          <span className="text-brand-ink-soft">La photo est facultative.</span>
+        </p>
+        <p className="pos-mono text-sm font-semibold text-pos-accent">
+          {selectedCount} sélectionné{selectedCount > 1 ? "s" : ""}
+        </p>
+      </div>
 
+      {/*
+        DEUX LIGNES, et non une seule.
+        -------------------------------------------------------------------
+        Tout tenait auparavant sur une rangee horizontale : case, photo, nom,
+        duree, prix, unites. Les champs de duree et de prix ont une largeur
+        FIXE ; le nom, lui, etait `flex-1 min-w-0`. Sur un telephone, il se
+        laissait donc ecraser jusqu'a zero et le salon ne voyait plus QUE des
+        chiffres — impossible de savoir ce qu'il cochait.
+
+        Le nom occupe desormais sa propre ligne, en pleine largeur. Duree et
+        prix passent dessous, ou ils ont la place de respirer.
+      */}
       <div className="space-y-2">
         {lines.map((l, i) => (
           <div
             key={i}
-            className={`flex items-center gap-2 p-2 rounded-lg border transition ${
+            className={`rounded-xl border p-3 transition ${
               l.selected
-                ? "border-pos-accent/30 bg-pos-accent/5"
+                ? "border-pos-accent/40 bg-pos-accent/5"
                 : "border-brand-line bg-white opacity-60"
             }`}
           >
-            <input
-              type="checkbox"
-              checked={l.selected}
-              onChange={(e) => update(i, { selected: e.target.checked })}
-              className="w-4 h-4 accent-pos-accent shrink-0"
-            />
+            {/* Ligne 1 : ce qu'on coche, et ce que ca s'appelle. */}
+            <div className="flex items-center gap-3">
+              <input
+                type="checkbox"
+                checked={l.selected}
+                onChange={(e) => update(i, { selected: e.target.checked })}
+                // 20px et non 16 : une case se vise au pouce sur un
+                // telephone, c'est le geste principal de cet ecran.
+                className="h-5 w-5 shrink-0 accent-pos-accent"
+                aria-label={l.title || "Service"}
+              />
 
-            {/* Photo thumbnail / upload button */}
-            <PhotoCell
-              photoUrl={l.photoUrl}
-              uploading={uploadingFor === i}
-              disabled={!l.selected}
-              onUpload={(file) => uploadPhoto(i, file)}
-              onClear={() => update(i, { photoUrl: null })}
-            />
+              <PhotoCell
+                photoUrl={l.photoUrl}
+                uploading={uploadingFor === i}
+                disabled={!l.selected}
+                onUpload={(file) => uploadPhoto(i, file)}
+                onClear={() => update(i, { photoUrl: null })}
+              />
 
-            <input
-              type="text"
-              value={l.title}
-              onChange={(e) => update(i, { title: e.target.value })}
-              placeholder={l.custom ? "Nom…" : ""}
-              disabled={!l.selected}
-              className="flex-1 min-w-0 bg-transparent text-sm font-medium text-brand-ink focus:outline-none disabled:opacity-60"
-            />
-            <input
-              type="number"
-              value={l.durationMinutes}
-              onChange={(e) =>
-                update(i, { durationMinutes: Number(e.target.value) || 0 })
-              }
-              disabled={!l.selected}
-              min={5}
-              max={300}
-              step={5}
-              className="w-14 text-xs text-center bg-white border border-brand-line rounded px-1 py-1 pos-mono disabled:opacity-60"
-            />
-            <span className="text-[10px] text-brand-ink-soft -ml-1">min</span>
-            <input
-              type="text"
-              inputMode="decimal"
-              value={l.price}
-              onChange={(e) => update(i, { price: e.target.value })}
-              disabled={!l.selected}
-              className="w-20 text-xs text-right bg-white border border-brand-line rounded px-2 py-1 pos-mono disabled:opacity-60"
-            />
-            <span className="text-[10px] text-brand-ink-soft -ml-1">TND</span>
-            {l.custom && (
-              <button
-                type="button"
-                onClick={() => remove(i)}
-                className="text-brand-ink-soft hover:text-pos-danger shrink-0"
-                aria-label="Supprimer"
-              >
-                <Trash2 size={14} />
-              </button>
-            )}
+              <input
+                type="text"
+                value={l.title}
+                onChange={(e) => update(i, { title: e.target.value })}
+                placeholder={l.custom ? "Nom du service…" : ""}
+                disabled={!l.selected}
+                // `text-base` : en dessous de 16px, Safari iOS ZOOME sur le
+                // champ au premier appui et deforme toute la page.
+                className="min-w-0 flex-1 bg-transparent text-base font-semibold text-brand-ink focus:outline-none disabled:opacity-60"
+              />
+
+              {l.custom && (
+                <button
+                  type="button"
+                  onClick={() => remove(i)}
+                  className="shrink-0 p-1 text-brand-ink-soft hover:text-pos-danger"
+                  aria-label={`Supprimer ${l.title || "ce service"}`}
+                >
+                  <Trash2 size={16} />
+                </button>
+              )}
+            </div>
+
+            {/* Ligne 2 : les chiffres, alignes sous le nom. */}
+            <div className="mt-2.5 flex items-center gap-2 pl-8">
+              <label className="flex items-center gap-1.5">
+                <span className="sr-only">Durée en minutes</span>
+                <input
+                  type="number"
+                  value={l.durationMinutes}
+                  onChange={(e) =>
+                    update(i, { durationMinutes: Number(e.target.value) || 0 })
+                  }
+                  disabled={!l.selected}
+                  min={5}
+                  max={300}
+                  step={5}
+                  className="pos-mono w-16 rounded-lg border border-brand-line bg-white px-2 py-1.5 text-center text-base disabled:opacity-60"
+                />
+                <span className="text-xs text-brand-ink-soft">min</span>
+              </label>
+
+              <label className="flex flex-1 items-center justify-end gap-1.5">
+                <span className="sr-only">Prix en dinars</span>
+                <input
+                  type="text"
+                  inputMode="decimal"
+                  value={l.price}
+                  onChange={(e) => update(i, { price: e.target.value })}
+                  disabled={!l.selected}
+                  className="pos-mono w-24 rounded-lg border border-brand-line bg-white px-2 py-1.5 text-right text-base disabled:opacity-60"
+                />
+                <span className="text-xs text-brand-ink-soft">TND</span>
+              </label>
+            </div>
           </div>
         ))}
       </div>
 
+      {/* Cible de 44px, et borde : un lien textuel de 14px se rate au pouce. */}
       <button
         type="button"
         onClick={addCustom}
-        className="inline-flex items-center gap-1.5 text-sm text-pos-accent hover:text-pos-accent/80 font-medium"
+        className="inline-flex min-h-[44px] w-full items-center justify-center gap-2 rounded-xl border border-dashed border-pos-accent/50 px-4 text-sm font-semibold text-pos-accent hover:bg-pos-accent/5 sm:w-auto"
       >
-        <Plus size={14} /> Ajouter un service
+        <Plus size={16} /> Ajouter un service
       </button>
 
       {error && (
@@ -226,11 +269,16 @@ export function Step2Services({
         </div>
       )}
 
-      <div className="flex items-center justify-between pt-4 border-t border-brand-line">
+      {/*
+        Sur telephone, le bouton principal passe en PLEINE LARGEUR et au-dessus
+        du retour : c'est l'action qu'on cherche, elle doit tomber sous le
+        pouce. Sur grand ecran, la disposition d'origine reprend sa place.
+      */}
+      <div className="flex flex-col-reverse gap-3 border-t border-brand-line pt-4 sm:flex-row sm:items-center sm:justify-between">
         <button
           type="button"
           onClick={onBack}
-          className="text-sm text-brand-ink-soft hover:text-brand-ink"
+          className="py-2 text-sm text-brand-ink-soft hover:text-brand-ink"
         >
           ← Retour
         </button>
@@ -238,9 +286,13 @@ export function Step2Services({
           type="button"
           onClick={save}
           disabled={busy || selectedCount === 0}
-          className="px-8 py-3 rounded-xl bg-pos-accent text-white font-semibold hover:bg-pos-accent/90 disabled:opacity-50"
+          className="w-full rounded-xl bg-pos-accent px-8 py-3.5 text-base font-semibold text-white hover:bg-pos-accent/90 disabled:opacity-50 sm:w-auto"
         >
-          {busy ? "Sauvegarde…" : `Continuer (${selectedCount}) →`}
+          {busy
+            ? "Enregistrement…"
+            : selectedCount === 0
+              ? "Coche au moins un service"
+              : `Continuer avec ${selectedCount} service${selectedCount > 1 ? "s" : ""} →`}
         </button>
       </div>
     </div>
