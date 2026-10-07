@@ -746,12 +746,40 @@ body:not(.js) .sticky-cta{transform:none;}
 }
 .inst-plus-tard:hover{color:var(--ivoire);}
 
+/* Les deux etapes iOS. Elles REMPLACENT le bouton (Safari interdit a un site
+   de declencher l'installation), donc elles doivent se suivre du doigt. */
+.inst-ios{
+  display:flex;flex-direction:column;gap:7px;
+  margin:8px 0 0;padding:0;list-style:none;
+}
+.inst-ios li{
+  display:flex;align-items:center;flex-wrap:wrap;gap:7px;
+  font-size:.9rem;line-height:1.35;color:rgba(255,246,241,.92);
+}
+/* Pastille numerotee : rose vif sur prune, le meme accent que le bouton
+   d'installation ailleurs. Le prune s'y pose a 5,59:1. */
+.inst-ios-no{
+  display:inline-flex;align-items:center;justify-content:center;
+  width:21px;height:21px;border-radius:50%;flex-shrink:0;
+  background:var(--rose-vif);color:var(--espresso);
+  font-size:.74rem;font-weight:800;
+}
+/* L'icone de partage, dessinee dans le fil du texte. */
+.inst-ios-icone{
+  display:inline-block;vertical-align:-3px;
+  color:var(--rose-vif);flex-shrink:0;
+}
+
 @media(max-width:479px){
   /* Sur un petit ecran, le bouton prend toute la largeur sous le texte :
      cote a cote, les deux seraient trop etroits pour etre vises. */
   .inst-in{flex-direction:column;align-items:stretch;}
   .inst-act{justify-content:space-between;}
   .inst-btn{flex:1;}
+  /* Sur iOS il n'y a PAS de bouton d'installation : « Plus tard » resterait
+     seul et passerait pour l'action principale. On le reduit a un lien
+     discret, aligne a droite. */
+  .inst-act:not(:has(.inst-btn)){justify-content:flex-end;}
 }
 
 /* ---------------- revelations ---------------- */

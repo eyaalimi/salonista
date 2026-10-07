@@ -627,7 +627,9 @@ export default function LandingClient() {
           texte: t.instTexte,
           bouton: t.instBouton,
           plusTard: t.instPlusTard,
-          ios: t.instIos,
+          iosEtape1: t.instIosEtape1,
+          iosEtape1Fin: t.instIosEtape1Fin,
+          iosEtape2: t.instIosEtape2,
         }}
       />
     </div>
