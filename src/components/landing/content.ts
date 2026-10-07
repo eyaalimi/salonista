@@ -166,6 +166,9 @@ export const CONTENU = {
     instIosEtape1: "Appuie sur",
     instIosEtape1Fin: "en bas de l'écran",
     instIosEtape2: "Choisis « Sur l'écran d'accueil »",
+    // Le recours quand la bande a ete fermee : sans lui, plus aucun moyen
+    // d'installer avant 14 jours.
+    instLienPied: "Installer l'application",
   },
   ar: {
   nav1: "الخدمات",
@@ -291,6 +294,7 @@ export const CONTENU = {
     instIosEtape1: "اضغط على",
     instIosEtape1Fin: "في أسفل الشاشة",
     instIosEtape2: "اختار « أضف إلى الشاشة الرئيسية »",
+    instLienPied: "نزّل الأبليكاسيون",
   },
 } as const;
 

@@ -550,7 +550,12 @@ restent en base, seules les **routes publiques** changent.
   « appuie sur Partager » ne veut rien dire pour qui ne reconnaît pas le
   symbole. Sur iOS, « Plus tard » est réduit à un lien discret : seul, il
   passerait pour l'action principale. Elle ne s'affiche ni si l'app est déjà installée,
-  ni pendant les 14 jours qui suivent un « Plus tard ».
+  ni pendant les 14 jours qui suivent un « Plus tard » — mais un lien
+  **« Installer l'application » reste en permanence dans le pied de page**,
+  posé par un portail React dans `.foot-liens`. Sans lui, un visiteur qui
+  avait fermé la bande n'avait plus AUCUN moyen d'installer pendant deux
+  semaines. Ce lien ignore délibérément le report ; seule une application déjà
+  installée le fait disparaître.
   Elle est en `z-index:96`, **au-dessus de `.sticky-cta`** (95) qui occupe
   déjà le bas de l'écran sur mobile ; une règle CSS remonte cette dernière de
   88px tant que la bande est là, sinon les deux se superposeraient.

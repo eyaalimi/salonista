@@ -630,6 +630,7 @@ export default function LandingClient() {
           iosEtape1: t.instIosEtape1,
           iosEtape1Fin: t.instIosEtape1Fin,
           iosEtape2: t.instIosEtape2,
+          lienPied: t.instLienPied,
         }}
       />
     </div>

@@ -4,6 +4,7 @@ import {
   finDuReport,
   lireReport,
   detecterIos,
+  montrerLienPied,
   REPORT_JOURS,
   DELAI_AVANT_AFFICHAGE_MS,
   type EtatInstallation,
@@ -144,5 +145,38 @@ describe("delai avant affichage", () => {
     // Une invitation qui arrive avant la premiere phrase se fait fermer par
     // reflexe, pas par choix.
     expect(DELAI_AVANT_AFFICHAGE_MS).toBe(3000);
+  });
+});
+
+describe("montrerLienPied — le recours apres fermeture", () => {
+  /*
+   * LE POINT QUI MANQUAIT. Une fois la bande fermee, plus rien ne permettait
+   * d'installer : le lien du pied de page est le seul recours, il ne doit
+   * donc PAS suivre le report.
+   */
+  it("reste visible meme quand la bande est reportee", () => {
+    expect(montrerLienPied(etat({ reportJusqua: T + 999_999 }))).toBe(true);
+  });
+
+  it("s'affiche quand le navigateur sait installer", () => {
+    expect(montrerLienPied(etat())).toBe(true);
+  });
+
+  it("s'affiche sur iOS, ou aucun bouton n'est possible", () => {
+    expect(montrerLienPied(etat({ invitationDisponible: false, estIos: true }))).toBe(true);
+  });
+
+  it("disparait quand l'application est deja installee", () => {
+    expect(montrerLienPied(etat({ dejaInstallee: true }))).toBe(false);
+    // Meme sur iOS, meme avec une invitation disponible.
+    expect(
+      montrerLienPied(etat({ dejaInstallee: true, estIos: true })),
+    ).toBe(false);
+  });
+
+  it("ne s'affiche pas sur un navigateur incapable d'installer", () => {
+    expect(
+      montrerLienPied(etat({ invitationDisponible: false, estIos: false })),
+    ).toBe(false);
   });
 });
