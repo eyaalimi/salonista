@@ -279,7 +279,12 @@ export function PosShellClient({ employee }: { employee: EmployeeProp }) {
       <AttacheRdvDepuisUrl defaultEmployeeId={employee.id} />
 
       <section className="overflow-hidden bg-pos-bg flex flex-col min-h-0 flex-1 md:flex-initial">
-        <Results defaultEmployeeId={employee.id} />
+        <Results
+          defaultEmployeeId={employee.id}
+          // `?? []` : un catalogue mis en cache avant cette fonctionnalite
+          // n'a pas de categories, et la grille doit s'afficher quand meme.
+          categories={catalog?.categories ?? []}
+        />
       </section>
 
       {/* Desktop: cart inline on the right. Mobile: cart hidden, opens as bottom-sheet. */}

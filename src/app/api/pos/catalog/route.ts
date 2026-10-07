@@ -1,6 +1,7 @@
 import { prisma } from "@/lib/prisma";
 import { hasModule, requireModule } from "@/lib/modules";
 import { requireEmployee, toResponse } from "@/lib/employee-session";
+import { trierCategories } from "@/lib/categorie-service";
 import { getOrCreateProgram } from "@/lib/rewards/program";
 
 /**
@@ -31,7 +32,7 @@ export async function GET() {
 
   const providerId = employee.providerId;
 
-  const [offers, products, customers, employees, provider, openDrawer] = await Promise.all([
+  const [offers, products, customers, employees, provider, openDrawer, categories] = await Promise.all([
     prisma.offer.findMany({
       where: { providerId, active: true },
       orderBy: { title: "asc" },
@@ -44,6 +45,10 @@ export async function GET() {
         taxRate: true,
         photos: true,
         category: true,
+        // La categorie choisie par le salon : elle pilote les onglets de la
+        // grille, et voyage avec le catalogue pour rester disponible hors
+        // connexion.
+        categoryId: true,
       },
     }),
     prisma.product.findMany({
@@ -103,6 +108,13 @@ export async function GET() {
       where: { providerId, status: "OPEN" },
       select: { id: true },
     }),
+    // Les categories de services, pour les onglets de la grille. Elles
+    // voyagent avec le catalogue : la caisse les garde donc hors connexion,
+    // comme les services eux-memes.
+    prisma.serviceCategory.findMany({
+      where: { providerId },
+      select: { id: true, nom: true, position: true },
+    }),
   ]);
 
   // Attach wallet summary for own-scope customers when REWARDS is active.
@@ -158,6 +170,8 @@ export async function GET() {
     products,
     customers: customersWithWallets,
     employees,
+    // Deja triees pour l'affichage : le client n'a pas a reproduire la regle.
+    categories: trierCategories(categories),
     cashDrawer: { openSessionId: openDrawer?.id ?? null },
   });
 }

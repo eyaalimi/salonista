@@ -302,6 +302,7 @@ model ProviderProfile {
   campaign              Campaign?              @relation(fields: [campaignId], references: [id], onDelete: SetNull)
   campaignEvents        CampaignEvent[]
   supportNotes          SupportNote[]
+  serviceCategories     ServiceCategory[]
   offers                Offer[]
   collaborationRequests CollaborationRequest[]
   employees             SalonEmployee[]
@@ -333,9 +334,41 @@ model InfluencerProfile {
   collaborationRequests CollaborationRequest[]
 }
 
+/// Une categorie de services, PROPRE A UN SALON.
+///
+/// Un salon de coiffure range ses services en « Cheveux / Barbe / Couleur »,
+/// un institut en « Visage / Corps / Epilation » : une liste commune ne
+/// conviendrait a personne. Chaque salon cree donc les siennes.
+///
+/// A NE PAS CONFONDRE avec l'enum `Category` (COIFFURE, ESTHETIQUE…) porte
+/// par `Offer.category` : celui-la classe un SALON pour la place de marche,
+/// pas ses services entre eux. Les deux coexistent sans se gener.
+model ServiceCategory {
+  id         String   @id @default(cuid())
+  providerId String
+  nom        String
+  /// Ordre des onglets dans la caisse. Le salon met ses plus vendus devant.
+  position   Int      @default(0)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  provider ProviderProfile @relation(fields: [providerId], references: [id], onDelete: Cascade)
+  offers   Offer[]
+
+  /// Un meme salon ne peut pas avoir deux fois « Cheveux ». La comparaison
+  /// insensible a la casse et aux accents se fait en amont, dans
+  /// src/lib/categorie-service.ts — Postgres ne compare ici que les octets.
+  @@unique([providerId, nom])
+  @@index([providerId, position])
+}
+
 model Offer {
   id                     String   @id @default(cuid())
   providerId             String
+  /// Categorie choisie par le salon, pour ranger la grille de la caisse.
+  /// NULLABLE a dessein : tous les services existants sont « non classes »
+  /// au moment ou cette colonne arrive, et ils doivent rester visibles.
+  categoryId             String?
   title                  String
   description            String?
   originalPrice          Decimal? @db.Decimal(10, 3)
@@ -349,6 +382,10 @@ model Offer {
   createdAt              DateTime @default(now())
 
   provider            ProviderProfile      @relation(fields: [providerId], references: [id], onDelete: Cascade)
+  /// SetNull et non Cascade : supprimer une categorie ne doit JAMAIS
+  /// supprimer les services qu'elle contient. Ils redeviennent « non
+  /// classes », et le salon les reclasse tranquillement.
+  categorie           ServiceCategory?     @relation(fields: [categoryId], references: [id], onDelete: SetNull)
   trackingLinks       TrackingLink[]
   bookingItems        BookingItem[]
   reviews             Review[]

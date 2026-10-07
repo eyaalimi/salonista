@@ -814,6 +814,41 @@ sept déclencheraient de fausses alertes à chaque congé. L'agrégation réutil
 `signesDeVieParSalon` — deux agrégats pour tous les salons d'un coup, pas une
 requête par salon.
 
+### 28. Catégories de services : propres au salon, et le non-classé reste visible
+
+`/pos/categories` laisse chaque salon créer ses familles — « Cheveux »,
+« Ongles », « Soins visage » — et y ranger ses services. Elles apparaissent en
+onglets au-dessus de la grille de la caisse.
+
+**À ne pas confondre avec l'enum `Category`** (COIFFURE, ESTHÉTIQUE…) porté
+par `Offer.category` : celui-là classe un **salon** pour la place de marché,
+pas ses services entre eux. Les deux coexistent sans se gêner.
+
+**Quatre règles à ne pas défaire :**
+
+- **`Offer.categoryId` est NULLABLE, et « non classé » est un état NORMAL** —
+  c'est celui de tous les services au moment de la migration. Ils restent
+  visibles dans l'onglet « Toutes » ; les masquer ferait disparaître un
+  catalogue entier.
+- **La clé étrangère est `SetNull`, jamais `Cascade`.** Supprimer une
+  catégorie ne doit pas supprimer les services qu'elle contient : ils
+  redeviennent non classés, et l'interface le dit avant de confirmer.
+- **Les doublons sont comparés sans casse ni accents**
+  ([categorie-service.ts](src/lib/categorie-service.ts)) : « Épilation » et
+  « epilation » sont une seule catégorie. L'index unique de Postgres ne
+  compare que les octets et les laisserait passer tous les deux.
+- **Le filtre par catégorie ne porte QUE sur les services.** Les produits
+  n'en ont pas, et les faire disparaître quand on clique sur « Cheveux »
+  surprendrait une caissière qui cherche un shampoing.
+
+`/api/offers/[id]` expose **`PUT`, pas `PATCH`** — et il vérifie que la
+catégorie appartient au **même salon** avant de l'affecter, sinon un salon
+pourrait ranger son service dans la catégorie d'un concurrent en devinant un
+identifiant.
+
+Les catégories voyagent avec `/api/pos/catalog` : la caisse les garde donc
+**hors connexion**, comme les services eux-mêmes.
+
 ---
 
 ## Repo layout
