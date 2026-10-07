@@ -2,13 +2,23 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { Plus, Trash2, ImagePlus } from "lucide-react";
-import { SERVICE_PRESETS, type ServicePreset } from "@/lib/onboarding-presets";
+import {
+  SALON_TYPES,
+  SERVICE_PRESETS,
+  type ServicePreset,
+} from "@/lib/onboarding-presets";
 import type { Provider } from "./types";
 
 type Line = {
   title: string;
   durationMinutes: number;
   price: string;
+  /**
+   * COIFFURE, ONGLERIE… Deduite du metier dont vient le preset : une
+   * « Coupe femme » vient de la liste COIFFURE, donc elle EST de la coiffure.
+   * Rien a saisir pour le salon.
+   */
+  category: string;
   photoUrl: string | null;
   selected: boolean;
   custom: boolean;
@@ -42,18 +52,20 @@ export function Step2Services({
   const [uploadingFor, setUploadingFor] = useState<number | null>(null);
 
   // Build the preset list by merging all chosen salon types.
-  const mergedPresets = useMemo<ServicePreset[]>(() => {
+  const mergedPresets = useMemo<Array<ServicePreset & { category: string }>>(() => {
     const fallback = provider.category ?? "AUTRE";
     const types = readSalonTypes(provider.id, fallback);
     const seen = new Set<string>();
-    const out: ServicePreset[] = [];
+    const out: Array<ServicePreset & { category: string }> = [];
     for (const t of types) {
       const list = SERVICE_PRESETS[t] ?? [];
       for (const p of list) {
         const key = p.title.toLowerCase().trim();
         if (seen.has(key)) continue;
         seen.add(key);
-        out.push(p);
+        // La CLE du dictionnaire est la categorie : pas besoin de la stocker
+        // sur chaque preset, elle est deja portee par la structure.
+        out.push({ ...p, category: t });
       }
     }
     return out;
@@ -65,6 +77,7 @@ export function Step2Services({
         title: p.title,
         durationMinutes: p.durationMinutes,
         price: p.price,
+        category: p.category,
         photoUrl: null,
         selected: true,
         custom: false,
@@ -82,6 +95,9 @@ export function Step2Services({
         title: "",
         durationMinutes: 30,
         price: "20.000",
+        // Le metier du salon : c'est le choix juste dans la grande majorite
+        // des cas, et il reste modifiable depuis l'ecran des services.
+        category: provider.category ?? "AUTRE",
         photoUrl: null,
         selected: true,
         custom: true,
@@ -107,6 +123,22 @@ export function Step2Services({
 
   const selectedCount = lines.filter((l) => l.selected && l.title.trim()).length;
 
+  /*
+   * Les lignes groupees par categorie, en conservant leur INDEX d'origine :
+   * `update` et `remove` travaillent sur la position dans `lines`, pas sur
+   * la position affichee. Les perdre casserait toutes les modifications.
+   *
+   * L'ordre suit SALON_TYPES plutot que l'ordre d'apparition : un salon qui a
+   * choisi « Coiffure » puis « Onglerie » doit retrouver ses groupes dans un
+   * ordre stable, meme apres avoir ajoute un service a la main.
+   */
+  const groupes = SALON_TYPES.map((t) => ({
+    ...t,
+    items: lines
+      .map((l, i) => ({ l, i }))
+      .filter(({ l }) => l.category === t.value),
+  })).filter((g) => g.items.length > 0);
+
   async function save() {
     setBusy(true);
     setError(null);
@@ -117,6 +149,7 @@ export function Step2Services({
           title: l.title.trim(),
           durationMinutes: l.durationMinutes,
           price: l.price,
+          category: l.category,
           photoUrl: l.photoUrl,
         }));
       const res = await fetch("/api/pos/onboarding", {
@@ -165,8 +198,24 @@ export function Step2Services({
         Le nom occupe desormais sa propre ligne, en pleine largeur. Duree et
         prix passent dessous, ou ils ont la place de respirer.
       */}
-      <div className="space-y-2">
-        {lines.map((l, i) => (
+      <div className="space-y-5">
+        {groupes.map((g) => (
+          <div key={g.value} className="space-y-2">
+            {/*
+              Le titre de groupe. Il n'apparait QUE s'il y a plus d'une
+              categorie : avec une seule, il ne ferait que repeter le metier
+              deja choisi a l'etape precedente.
+            */}
+            {groupes.length > 1 && (
+              <h3 className="flex items-center gap-2 px-1 text-sm font-semibold text-brand-ink">
+                <span aria-hidden="true">{g.emoji}</span>
+                {g.label}
+                <span className="text-xs font-normal text-brand-ink-soft">
+                  {g.items.filter(({ l }) => l.selected).length}/{g.items.length}
+                </span>
+              </h3>
+            )}
+            {g.items.map(({ l, i }) => (
           <div
             key={i}
             className={`rounded-xl border p-3 transition ${
@@ -250,6 +299,8 @@ export function Step2Services({
                 <span className="text-xs text-brand-ink-soft">TND</span>
               </label>
             </div>
+              </div>
+            ))}
           </div>
         ))}
       </div>
