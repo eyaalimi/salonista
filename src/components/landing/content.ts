@@ -154,6 +154,13 @@ export const CONTENU = {
     deja: "J'ai déjà un compte",
     conf: "Politique de confidentialité",
     cond: "Conditions d'utilisation",
+    // Bande d'installation de l'application.
+    instTitre: "Installe Salonista sur ton téléphone",
+    instTexte: "Ta caisse en un geste, comme une vraie application.",
+    instBouton: "Installer",
+    instPlusTard: "Plus tard",
+    // iOS ne propose aucune installation automatique : on decrit le geste.
+    instIos: "Appuie sur Partager, puis « Sur l'écran d'accueil ».",
   },
   ar: {
   nav1: "الخدمات",
@@ -272,6 +279,11 @@ export const CONTENU = {
     deja: "عندي كونط",
     conf: "سياسة الخصوصية",
     cond: "شروط الاستخدام",
+    instTitre: "نزّل سالونيستا على تليفونك",
+    instTexte: "الكاسة متاعك في ضغطة، كيف أبليكاسيون.",
+    instBouton: "نزّل",
+    instPlusTard: "بعد",
+    instIos: "اضغط على زر المشاركة، من بعد « أضف إلى الشاشة الرئيسية ».",
   },
 } as const;
 
