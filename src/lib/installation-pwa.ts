@@ -76,6 +76,22 @@ export function decider(
   return { montrer: false };
 }
 
+/**
+ * Un lien « Installer » doit-il figurer dans le pied de page ?
+ *
+ * Il s'affiche des que l'installation est POSSIBLE, meme si la bande est
+ * reportee — c'est tout l'interet : une fois la bande fermee, plus rien ne
+ * permettait d'installer. Seule une application DEJA installee le fait
+ * disparaitre.
+ *
+ * Volontairement independant du report : un lien discret en bas de page
+ * n'insiste pas, il reste simplement disponible.
+ */
+export function montrerLienPied(etat: EtatInstallation): boolean {
+  if (etat.dejaInstallee) return false;
+  return etat.invitationDisponible || etat.estIos;
+}
+
 /** Fin du report, a enregistrer quand le visiteur ferme la bande. */
 export function finDuReport(maintenant: number = Date.now()): number {
   return maintenant + REPORT_JOURS * 24 * 60 * 60 * 1000;

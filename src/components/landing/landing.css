@@ -674,6 +674,15 @@ footer{padding-block:38px 110px;}
   color:var(--bordeaux);
 }
 .foot a:hover{text-decoration:underline;}
+/* Le lien « Installer l'application », pose dans le pied par un portail. Il
+   reprend EXACTEMENT l'allure des liens voisins : c'en est un, le fait qu'il
+   soit techniquement un `<button>` ne doit pas se voir. */
+.foot-install{
+  display:inline-flex;align-items:center;min-height:44px;
+  border:0;background:none;padding:0;cursor:pointer;
+  color:var(--bordeaux);font:inherit;font-size:inherit;
+}
+.foot-install:hover{text-decoration:underline;}
 /* Les liens legaux et le lien de connexion, groupes a droite du nom. Ils
    passent a la ligne sur telephone plutot que de compresser le pied. */
 .foot-liens{display:flex;flex-wrap:wrap;gap:10px 22px;align-items:center;}

@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useSyncExternalStore } from "react";
+import { createPortal } from "react-dom";
 import {
   CLE_REPORT,
   DELAI_AVANT_AFFICHAGE_MS,
@@ -8,7 +9,9 @@ import {
   detecterIos,
   finDuReport,
   lireReport,
+  montrerLienPied,
   type Affichage,
+  type EtatInstallation,
 } from "@/lib/installation-pwa";
 
 type BeforeInstallPromptEvent = Event & {
@@ -24,6 +27,7 @@ type Textes = {
   iosEtape1: string;
   iosEtape1Fin: string;
   iosEtape2: string;
+  lienPied: string;
 };
 
 /**
@@ -55,6 +59,35 @@ function IconePartage() {
 }
 
 /**
+ * Place son contenu dans le pied de page de la landing.
+ *
+ * Le lien « Installer » appartient visuellement aux liens legaux, mais son
+ * etat vit dans la bande. Un portail reconcilie les deux : l'etat reste ici,
+ * le rendu part la-bas.
+ *
+ * `null` tant que la cible n'existe pas — au premier rendu serveur, le DOM
+ * n'est pas encore la.
+ */
+function PortailPied({ children }: { children: React.ReactNode }) {
+  /*
+   * `useSyncExternalStore` plutot qu'un `useState` pose dans un effet : ce
+   * dernier declenche un rendu en cascade, et React 19 le signale. Ici il n'y
+   * a d'ailleurs rien a « mettre a jour » — on LIT le DOM, qui est un systeme
+   * exterieur. C'est exactement ce que ce hook sait faire.
+   *
+   * L'instantane cote serveur est `null` : le DOM n'existe pas encore, et le
+   * portail ne rend donc rien avant l'hydratation.
+   */
+  const cible = useSyncExternalStore(
+    () => () => {},
+    () => document.querySelector(".foot-liens"),
+    () => null,
+  );
+  if (!cible) return null;
+  return createPortal(children, cible);
+}
+
+/**
  * Invitation a installer l'application, en bas de la landing.
  *
  * TOUTE LA DECISION vit dans `src/lib/installation-pwa.ts` (pur, 17 tests).
@@ -71,6 +104,12 @@ function IconePartage() {
 export function BandeInstallation({ t }: { t: Textes }) {
   const [evenement, setEvenement] = useState<BeforeInstallPromptEvent | null>(null);
   const [affichage, setAffichage] = useState<Affichage>({ montrer: false });
+  /*
+   * L'etat BRUT, conserve a part : la bande suit le report, le lien du pied
+   * de page NON. Garder les deux decisions separees evite de recalculer la
+   * seconde a partir de la premiere, ce qui les lierait a tort.
+   */
+  const [etat, setEtat] = useState<EtatInstallation | null>(null);
 
   useEffect(() => {
     /*
@@ -94,17 +133,17 @@ export function BandeInstallation({ t }: { t: Textes }) {
         // reporte ». Perdre un report est sans gravite ; planter ne l'est pas.
       }
 
-      setAffichage(
-        decider({
-          dejaInstallee: standalone,
-          invitationDisponible: invitation !== null,
-          estIos: detecterIos(
-            navigator.userAgent,
-            (navigator as unknown as { standalone?: boolean }).standalone,
-          ),
-          reportJusqua: report,
-        }),
-      );
+      const courant: EtatInstallation = {
+        dejaInstallee: standalone,
+        invitationDisponible: invitation !== null,
+        estIos: detecterIos(
+          navigator.userAgent,
+          (navigator as unknown as { standalone?: boolean }).standalone,
+        ),
+        reportJusqua: report,
+      };
+      setEtat(courant);
+      setAffichage(decider(courant));
     };
 
     const surInvitation = (e: Event) => {
@@ -152,7 +191,34 @@ export function BandeInstallation({ t }: { t: Textes }) {
     setAffichage({ montrer: false });
   }
 
-  if (!affichage.montrer) return null;
+  /** Rouvre la bande depuis le lien du pied de page, report ignore. */
+  function rouvrir() {
+    if (!etat) return;
+    // On EFFACE le report : sans cela, la bande se refermerait aussitot au
+    // prochain calcul.
+    try {
+      localStorage.removeItem(CLE_REPORT);
+    } catch {
+      // Stockage refuse : la bande s'ouvre quand meme pour cette visite.
+    }
+    setAffichage(decider({ ...etat, reportJusqua: null }));
+  }
+
+  /*
+   * Le lien du pied de page est rendu ICI MEME, en position fixe ? Non : il
+   * doit vivre DANS le `<footer>`, au milieu des liens legaux. On le sort
+   * donc du flux de la bande via un portail — c'est le seul moyen de le
+   * placer ailleurs dans l'arbre tout en partageant cet etat.
+   */
+  if (!affichage.montrer) {
+    return etat && montrerLienPied(etat) ? (
+      <PortailPied>
+        <button type="button" onClick={rouvrir} className="foot-install">
+          {t.lienPied}
+        </button>
+      </PortailPied>
+    ) : null;
+  }
 
   return (
     <div className="inst" role="region" aria-label={t.titre}>
