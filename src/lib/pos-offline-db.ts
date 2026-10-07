@@ -90,12 +90,6 @@ export type CachedCatalog = {
   products: CachedProduct[];
   customers: CachedCustomer[];
   employees: CachedEmployee[];
-  /**
-   * Les categories de services du salon, deja triees par le serveur.
-   * Optionnel : un catalogue mis en cache AVANT cette fonctionnalite n'en a
-   * pas, et la caisse doit continuer de fonctionner avec.
-   */
-  categories?: Array<{ id: string; nom: string; position: number }>;
   cashDrawer?: { openSessionId: string | null };
 };
 

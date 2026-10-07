@@ -13,12 +13,6 @@ export type ScoredCandidate = {
   name: string;
   description?: string | null;
   category?: string | null;
-  /**
-   * Categorie CHOISIE PAR LE SALON (onglets de la grille). `null` = non
-   * classe, etat NORMAL. A ne pas confondre avec `category` ci-dessus,
-   * heritee de la place de marche.
-   */
-  categorieId?: string | null;
   code: string;
   salePrice: string;
   taxRate: string;

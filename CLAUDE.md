@@ -814,40 +814,42 @@ sept déclencheraient de fausses alertes à chaque congé. L'agrégation réutil
 `signesDeVieParSalon` — deux agrégats pour tous les salons d'un coup, pas une
 requête par salon.
 
-### 28. Catégories de services : propres au salon, et le non-classé reste visible
+### 28. Catégories de services : le champ existait déjà
 
-`/pos/categories` laisse chaque salon créer ses familles — « Cheveux »,
-« Ongles », « Soins visage » — et y ranger ses services. Elles apparaissent en
-onglets au-dessus de la grille de la caisse.
+La grille de la caisse se filtre par catégorie — Coiffure, Esthétique,
+Onglerie, Massage, Parfumerie, Autre — au moyen de **`Offer.category`, qui
+existait déjà** et que les salons remplissaient depuis le début.
 
-**À ne pas confondre avec l'enum `Category`** (COIFFURE, ESTHÉTIQUE…) porté
-par `Offer.category` : celui-là classe un **salon** pour la place de marché,
-pas ses services entre eux. Les deux coexistent sans se gêner.
+**La leçon vaut plus que la fonctionnalité** : j'avais d'abord créé une table
+`ServiceCategory` et une page `/pos/categories` en parallèle, sans voir que le
+tiroir de modification d'un service ([service-edit-drawer.tsx](src/components/pos/service-edit-drawer.tsx))
+affichait déjà un sélecteur « Catégorie ». **Chercher le champ avant d'en
+créer un** — `grep "CATÉGORIE"` sur les composants aurait suffi.
 
-**Quatre règles à ne pas défaire :**
+Le champ est désormais aux **trois** endroits : le tiroir de modification, le
+formulaire d'ajout rapide de `/pos/services`, et les onglets de la grille.
+La liste des six libellés est dupliquée dans ces trois fichiers : les croiser
+par un import partagé coûterait plus que les six lignes ne valent.
 
-- **`Offer.categoryId` est NULLABLE, et « non classé » est un état NORMAL** —
-  c'est celui de tous les services au moment de la migration. Ils restent
-  visibles dans l'onglet « Toutes » ; les masquer ferait disparaître un
-  catalogue entier.
-- **La clé étrangère est `SetNull`, jamais `Cascade`.** Supprimer une
-  catégorie ne doit pas supprimer les services qu'elle contient : ils
-  redeviennent non classés, et l'interface le dit avant de confirmer.
-- **Les doublons sont comparés sans casse ni accents**
-  ([categorie-service.ts](src/lib/categorie-service.ts)) : « Épilation » et
-  « epilation » sont une seule catégorie. L'index unique de Postgres ne
-  compare que les octets et les laisserait passer tous les deux.
-- **Le filtre par catégorie ne porte QUE sur les services.** Les produits
-  n'en ont pas, et les faire disparaître quand on clique sur « Cheveux »
+**Trois règles :**
+
+- **Les onglets ne montrent que les catégories RÉELLEMENT présentes** dans le
+  catalogue : un salon de coiffure ne doit pas voir un onglet « Parfumerie »
+  vide.
+- **La barre n'apparaît qu'à partir de deux catégories.** Avec une seule,
+  « Toutes » et l'onglet unique montreraient la même chose, et la barre
+  volerait de la place à la grille.
+- **Le filtre ne porte QUE sur les services.** Les produits ont leur propre
+  classement, et les faire disparaître quand on clique sur « Coiffure »
   surprendrait une caissière qui cherche un shampoing.
 
-`/api/offers/[id]` expose **`PUT`, pas `PATCH`** — et il vérifie que la
-catégorie appartient au **même salon** avant de l'affecter, sinon un salon
-pourrait ranger son service dans la catégorie d'un concurrent en devinant un
-identifiant.
+Un ajout rapide prend **« Coiffure » par défaut** : la majorité des salons
+tunisiens sont des salons de coiffure, et un défaut juste la plupart du temps
+évite une sélection à chaque ligne.
 
-Les catégories voyagent avec `/api/pos/catalog` : la caisse les garde donc
-**hors connexion**, comme les services eux-mêmes.
+**La grille complète de la caisse est mise en cache 60 s** côté serveur
+(`FREQUENTLY_USED_CACHE`) : un service créé n'apparaît dans les onglets
+qu'après expiration. Ce n'est pas un bug.
 
 ---
 

@@ -13,15 +13,6 @@ export type SearchResult = {
   id: string;
   name: string;
   category: string | null;
-  /**
-   * Categorie CHOISIE PAR LE SALON, qui pilote les onglets de la grille.
-   * `null` = service non classe, ce qui est un etat NORMAL.
-   *
-   * A ne pas confondre avec `category` juste au-dessus, heritee de la place
-   * de marche (COIFFURE, ESTHETIQUE…) et qui classe le SALON, pas ses
-   * services entre eux.
-   */
-  categorieId?: string | null;
   subtitle: string | null;
   code: string;
   salePrice: string;
@@ -71,11 +62,11 @@ type State = {
   resultsLoading: boolean;
   filterTab: FilterTab;
   /**
-   * Categorie de services selectionnee dans la grille. `null` = toutes.
+   * Categorie selectionnee dans la grille (« COIFFURE », « ONGLERIE »…),
+   * `null` = toutes.
    *
    * Separee de `filterTab` a dessein : un salon veut pouvoir regarder « les
-   * SERVICES de la categorie Cheveux », deux filtres qui se combinent. Les
-   * fondre en un seul onglet obligerait a choisir entre les deux.
+   * SERVICES de la categorie Coiffure », deux filtres qui se combinent.
    */
   categorieTab: string | null;
   sortBy: SortMode;

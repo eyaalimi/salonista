@@ -5,17 +5,20 @@ import { usePosStore, type SearchResult } from "@/lib/pos-store";
 import { formatDT } from "@/lib/money";
 import { usePOSShortcut } from "@/lib/use-pos-shortcuts";
 
-/** Une categorie, telle que la rend le catalogue. */
-export type CategorieOnglet = { id: string; nom: string };
+/**
+ * Les six categories, dans l'ordre d'affichage des onglets. Memes valeurs
+ * que le formulaire des services et le tiroir de modification.
+ */
+const CATEGORIES_ORDRE = [
+  { value: "COIFFURE", label: "Coiffure" },
+  { value: "ESTHETIQUE", label: "Esthétique" },
+  { value: "ONGLERIE", label: "Onglerie" },
+  { value: "MASSAGE", label: "Massage" },
+  { value: "PARFUMERIE", label: "Parfumerie" },
+  { value: "AUTRE", label: "Autre" },
+];
 
-export function Results({
-  defaultEmployeeId,
-  categories = [],
-}: {
-  defaultEmployeeId: string;
-  /** Les categories du salon. Vide = le salon n'en a pas cree. */
-  categories?: CategorieOnglet[];
-}) {
+export function Results({ defaultEmployeeId }: { defaultEmployeeId: string }) {
   const results = usePosStore((s) => s.results);
   const filterTab = usePosStore((s) => s.filterTab);
   const setFilterTab = usePosStore((s) => s.setFilterTab);
@@ -29,6 +32,15 @@ export function Results({
   const addResultToCart = usePosStore((s) => s.addResultToCart);
 
   // Filter + sort the visible list.
+  /*
+   * Les categories REELLEMENT presentes dans le catalogue, pas les six
+   * possibles : un salon de coiffure ne doit pas voir un onglet « Parfumerie »
+   * vide. La liste suit donc ce que le salon vend vraiment.
+   */
+  const categoriesPresentes = CATEGORIES_ORDRE.filter((c) =>
+    results.some((r) => r.kind === "SERVICE" && r.category === c.value),
+  );
+
   const visible = applyFilterAndSort(results, filterTab, sortBy, categorieTab);
 
   const rowsRef = useRef<HTMLDivElement | null>(null);
@@ -96,13 +108,15 @@ export function Results({
       </div>
 
       {/*
-        Les categories du salon. N'apparait QUE s'il en a cree : un salon qui
-        n'en veut pas ne doit pas voir une barre vide occuper son ecran.
+        Les categories du salon. N'apparait QUE s'il en a plus d'une : avec
+        une seule, l'onglet « Toutes » et l'onglet unique montreraient
+        exactement la meme chose, et la barre ne ferait que voler de la place
+        a la grille.
 
         Elle defile horizontalement plutot que de passer a la ligne : la
-        grille de services doit garder sa hauteur, c'est elle qu'on regarde.
+        grille doit garder sa hauteur, c'est elle qu'on regarde.
       */}
-      {categories.length > 0 && (
+      {categoriesPresentes.length > 1 && (
         <div className="flex gap-1 overflow-x-auto border-b border-pos-border bg-pos-bg px-4 py-2 text-xs no-scrollbar">
           <button
             type="button"
@@ -115,18 +129,22 @@ export function Results({
           >
             Toutes
           </button>
-          {categories.map((c) => (
+          {categoriesPresentes.map((c) => (
             <button
-              key={c.id}
+              key={c.value}
               type="button"
-              onClick={() => setCategorieTab(categorieTab === c.id ? null : c.id)}
+              // Recliquer sur l'onglet actif le desactive : c'est le geste
+              // naturel pour revenir a « Toutes » sans viser un autre bouton.
+              onClick={() =>
+                setCategorieTab(categorieTab === c.value ? null : c.value)
+              }
               className={`shrink-0 rounded-md px-3 py-1 ${
-                categorieTab === c.id
+                categorieTab === c.value
                   ? "bg-pos-ink text-pos-bg"
                   : "text-pos-ink-2 hover:bg-pos-border/60"
               }`}
             >
-              {c.nom}
+              {c.label}
             </button>
           ))}
         </div>
@@ -263,17 +281,17 @@ function applyFilterAndSort(
   results: SearchResult[],
   filter: "ALL" | "SERVICE" | "PRODUCT",
   sort: "relevance" | "price_asc" | "price_desc" | "name_asc",
-  categorieId: string | null = null,
+  categorie: string | null = null,
 ): SearchResult[] {
   let out = filter === "ALL" ? results : results.filter((r) => r.kind === filter);
 
   /*
    * Le filtre par categorie ne porte QUE sur les services : les produits
-   * n'en ont pas, et les faire disparaitre quand on clique sur « Cheveux »
-   * surprendrait une caissiere qui cherche un shampoing.
+   * n'en portent pas la meme, et les faire disparaitre quand on clique sur
+   * « Coiffure » surprendrait une caissiere qui cherche un shampoing.
    */
-  if (categorieId !== null) {
-    out = out.filter((r) => r.kind !== "SERVICE" || r.categorieId === categorieId);
+  if (categorie !== null) {
+    out = out.filter((r) => r.kind !== "SERVICE" || r.category === categorie);
   }
   if (sort === "price_asc") out = [...out].sort((a, b) => Number(a.salePrice) - Number(b.salePrice));
   else if (sort === "price_desc") out = [...out].sort((a, b) => Number(b.salePrice) - Number(a.salePrice));

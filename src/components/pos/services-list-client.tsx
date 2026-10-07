@@ -16,6 +16,24 @@ type Offer = {
   photos: string[];
 };
 
+/**
+ * Les memes six categories que le tiroir de modification
+ * (service-edit-drawer.tsx). Elles classent le service pour la vitrine en
+ * ligne ET pilotent les onglets de la grille de la caisse.
+ *
+ * Dupliquer la liste plutot que de l'importer : le tiroir est charge a la
+ * demande, et croiser les imports entre deux composants clients pour six
+ * libelles couterait plus qu'il ne rapporte.
+ */
+const CATEGORIES = [
+  { value: "COIFFURE", label: "Coiffure" },
+  { value: "ESTHETIQUE", label: "Esthétique" },
+  { value: "ONGLERIE", label: "Onglerie" },
+  { value: "MASSAGE", label: "Massage" },
+  { value: "PARFUMERIE", label: "Parfumerie" },
+  { value: "AUTRE", label: "Autre" },
+];
+
 const ALLOWED_DURATIONS = [15, 30, 45, 60, 75, 90, 105, 120, 150, 180, 240];
 
 /**
@@ -110,6 +128,12 @@ export function ServicesListClient({ initialOffers }: { initialOffers: Offer[] }
   const [qaTitle, setQaTitle] = useState("");
   const [qaPrice, setQaPrice] = useState("");
   const [qaDuration, setQaDuration] = useState(30);
+  /*
+   * « Coiffure » par defaut plutot qu'« Autre » : la majorite des salons
+   * tunisiens sont des salons de coiffure, et un defaut juste la plupart du
+   * temps evite une selection a chaque ajout. Le salon change en un clic.
+   */
+  const [qaCategory, setQaCategory] = useState("COIFFURE");
   const [qaTaxOn, setQaTaxOn] = useState(true);
   const [qaTaxRate, setQaTaxRate] = useState(19);
 
@@ -141,6 +165,7 @@ export function ServicesListClient({ initialOffers }: { initialOffers: Offer[] }
           title: qaTitle.trim(),
           discountPrice: qaPrice,
           durationMinutes: qaDuration,
+          category: qaCategory,
           taxRate: qaTaxOn ? qaTaxRate : 0,
           // publishedToMarketplace est volontairement omis : le serveur le
           // met a true par defaut. Le service part donc sur le feed, mais
@@ -164,7 +189,7 @@ export function ServicesListClient({ initialOffers }: { initialOffers: Offer[] }
     } finally {
       setBusy(false);
     }
-  }, [qaTitle, qaPrice, qaDuration, qaTaxOn, qaTaxRate, busy]);
+  }, [qaTitle, qaPrice, qaDuration, qaCategory, qaTaxOn, qaTaxRate, busy]);
 
   async function toggleTax(o: Offer) {
     const isOn = Number(o.taxRate) > 0;
@@ -231,7 +256,7 @@ export function ServicesListClient({ initialOffers }: { initialOffers: Offer[] }
       <div className="mb-4 md:mb-2 p-3 rounded border-2 border-pos-border-strong bg-pos-surface md:grid md:grid-cols-12 md:gap-2 flex flex-col gap-2">
         <input
           ref={newNameRef}
-          className="md:col-span-4 px-2 py-2 md:py-1 rounded border border-pos-border bg-white text-sm w-full"
+          className="md:col-span-3 px-2 py-2 md:py-1 rounded border border-pos-border bg-white text-sm w-full"
           placeholder="Nom du service"
           value={qaTitle}
           onChange={(e) => setQaTitle(e.target.value)}
@@ -270,6 +295,18 @@ export function ServicesListClient({ initialOffers }: { initialOffers: Offer[] }
               </option>
             ))}
           </select>
+          <select
+            className="md:col-span-2 px-2 py-2 md:py-1 rounded border border-pos-border bg-white text-sm w-full"
+            value={qaCategory}
+            onChange={(e) => setQaCategory(e.target.value)}
+            aria-label="Catégorie"
+          >
+            {CATEGORIES.map((c) => (
+              <option key={c.value} value={c.value}>
+                {c.label}
+              </option>
+            ))}
+          </select>
           <label className="md:col-span-2 flex items-center gap-2 px-2 py-2 md:py-1 rounded border border-pos-border bg-white col-span-2">
             <input
               type="checkbox"
@@ -293,7 +330,7 @@ export function ServicesListClient({ initialOffers }: { initialOffers: Offer[] }
             </span>
           </label>
           <button
-            className="md:col-span-2 col-span-2 px-3 py-2 md:py-1 rounded bg-pos-ink text-pos-bg disabled:opacity-50 text-sm font-medium"
+            className="md:col-span-1 col-span-2 px-3 py-2 md:py-1 rounded bg-pos-ink text-pos-bg disabled:opacity-50 text-sm font-medium"
             disabled={busy || !qaTitle.trim() || !qaPrice}
             onClick={saveNew}
           >
