@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { CONTENU, type Langue } from "./content";
+import { BandeInstallation } from "@/components/landing/bande-installation";
 
 const IMG = "/images/lp/";
 const CLE_LANGUE = "salonista-lang";
@@ -617,6 +618,18 @@ export default function LandingClient() {
           <span className="arrowc">→</span>
         </a>
       </div>
+
+      {/* Placee APRES la barre collante : le CSS la remonte quand la bande
+          apparait, pour qu'aucune des deux ne masque l'autre. */}
+      <BandeInstallation
+        t={{
+          titre: t.instTitre,
+          texte: t.instTexte,
+          bouton: t.instBouton,
+          plusTard: t.instPlusTard,
+          ios: t.instIos,
+        }}
+      />
     </div>
   );
 }

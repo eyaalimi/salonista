@@ -538,6 +538,18 @@ restent en base, seules les **routes publiques** changent.
   italique et le point en rose (`#FF5C8A` sur fond sombre, `#C42A5A` une fois
   la barre devenue ivoire). Le passer en Bricolage donnerait deux logos
   différents selon la page.
+- **La bande d'installation** (`.inst`, [bande-installation.tsx](src/components/landing/bande-installation.tsx))
+  invite à installer la PWA. La décision vit dans
+  [installation-pwa.ts](src/lib/installation-pwa.ts) (pur, 17 tests) — Vitest
+  tourne sans DOM, c'est le seul moyen de la vérifier vraiment.
+  **Deux modes** : un vrai bouton quand le navigateur émet
+  `beforeinstallprompt`, et des **instructions écrites sur iOS** — Safari
+  n'émet jamais cet événement, et sans ce second mode la moitié des visiteurs
+  tunisiens ne verrait rien. Elle ne s'affiche ni si l'app est déjà installée,
+  ni pendant les 14 jours qui suivent un « Plus tard ».
+  Elle est en `z-index:96`, **au-dessus de `.sticky-cta`** (95) qui occupe
+  déjà le bas de l'écran sur mobile ; une règle CSS remonte cette dernière de
+  88px tant que la bande est là, sinon les deux se superposeraient.
 - **Noto Kufi Arabic** arrive par `<link>` dans [src/app/layout.tsx](src/app/layout.tsx) :
   Bricolage n'a pas de glyphes arabes. Une **seule** règle `:is(…)` bascule
   tout ce qui est en police d'affichage — y ajouter chaque nouveau sélecteur

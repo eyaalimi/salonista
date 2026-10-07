@@ -693,6 +693,67 @@ body:not(.js) .sticky-cta{transform:none;}
 .sticky-cta .btn{width:100%;}
 @media(min-width:760px){.sticky-cta{display:none;}}
 
+/* ---------------- bande d'installation ---------------- */
+/*
+  Fond PRUNE et non blanc : la bande doit se detacher du reste de la page,
+  qui est creme du haut en bas. Sur fond prune, le creme mesure 15,40:1 et le
+  bouton rose porte du prune a 5,59:1 — les deux tres au-dessus du seuil.
+
+  Elle se place AU-DESSUS de la barre collante `.sticky-cta` (z-index 95),
+  qui occupe deja le bas de l'ecran sur mobile. Sans ce decalage, les deux se
+  superposeraient et aucune ne serait lisible.
+*/
+.inst{
+  position:fixed;left:0;right:0;bottom:0;z-index:96;
+  background:var(--espresso);color:var(--ivoire);
+  border-top:1px solid rgba(255,246,241,.14);
+  padding:14px var(--gut) calc(14px + env(safe-area-inset-bottom));
+  animation:inst-monte .4s var(--ease);
+}
+@keyframes inst-monte{from{transform:translateY(100%);}to{transform:none;}}
+@media(prefers-reduced-motion:reduce){.inst{animation:none;}}
+
+/* Quand la bande est la, la barre collante remonte pour ne pas disparaitre
+   dessous. 760px est le point ou `.sticky-cta` cesse d'exister. */
+@media(max-width:759px){
+  .inst ~ .sticky-cta,
+  .sticky-cta:has(~ .inst){bottom:88px;}
+}
+
+.inst-in{
+  display:flex;flex-wrap:wrap;align-items:center;gap:12px 20px;
+  justify-content:space-between;max-width:var(--max);margin-inline:auto;
+}
+.inst-txt{display:flex;flex-direction:column;gap:2px;min-width:0;flex:1;}
+.inst-txt strong{font-size:.98rem;font-weight:700;line-height:1.3;}
+/* 78 % d'ivoire : 9,79:1 sur le prune, largement lisible tout en restant
+   secondaire par rapport au titre. */
+.inst-txt span{font-size:.85rem;color:rgba(255,246,241,.78);line-height:1.4;}
+
+.inst-act{display:flex;align-items:center;gap:8px;flex-shrink:0;}
+.inst-btn{
+  /* 44px de haut : c'est un bouton qu'on vise au pouce. */
+  min-height:44px;padding:0 22px;border-radius:999px;border:0;
+  background:var(--rose-vif);color:var(--espresso);
+  font-weight:700;font-size:.95rem;cursor:pointer;
+  transition:transform .2s var(--ease);
+}
+.inst-btn:hover{transform:translateY(-1px);}
+.inst-btn:active{transform:none;}
+.inst-plus-tard{
+  min-height:44px;padding:0 12px;border:0;background:none;cursor:pointer;
+  color:rgba(255,246,241,.72);font-size:.85rem;
+}
+.inst-plus-tard:hover{color:var(--ivoire);}
+
+@media(max-width:479px){
+  /* Sur un petit ecran, le bouton prend toute la largeur sous le texte :
+     cote a cote, les deux seraient trop etroits pour etre vises. */
+  .inst-in{flex-direction:column;align-items:stretch;}
+  .inst-act{justify-content:space-between;}
+  .inst-btn{flex:1;}
+}
+
 /* ---------------- revelations ---------------- */
 body.js .rv{opacity:0;transform:translateY(28px);}
 body.js .rv.in{opacity:1;transform:none;transition:opacity 1s var(--ease),transform 1.1s var(--ease);}
