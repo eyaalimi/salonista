@@ -16,6 +16,7 @@
 import { NextRequest } from "next/server";
 import { hash } from "bcryptjs";
 import { prisma } from "@/lib/prisma";
+import { tauxTvaApplicable, TVA_TAUX_DEFAUT } from "@/lib/tva-salon";
 import { requireEmployee, toResponse } from "@/lib/employee-session";
 import { mergePermissions } from "@/lib/permissions";
 
@@ -34,6 +35,8 @@ type Step2Service = {
   durationMinutes: number;
   price: string;
   taxRate?: string;
+  /** COIFFURE, ONGLERIE… Deduite du metier auquel appartient le preset. */
+  category?: string;
   photoUrl?: string | null;
 };
 
@@ -118,6 +121,22 @@ export async function PATCH(req: NextRequest) {
 
   // --- Step 2: services (Offer rows) ---------------------------------------
   if (body.step2?.services) {
+    /*
+     * LE REGIME TVA DU SALON, pas 19 % en dur.
+     *
+     * L'assistant posait `taxRate: "19.00"` sur chaque service cree. Or la
+     * majorite des salons tunisiens ne sont PAS assujettis : ils devaient
+     * repasser chaque ligne a 0 % a la main, et un oubli affichait sur le
+     * ticket une TVA qu'ils ne collectent pas. La regle existait deja dans
+     * tva-salon.ts — l'assistant etait le seul chemin de creation a ne pas
+     * la suivre.
+     */
+    const salon = await prisma.providerProfile.findUnique({
+      where: { id: providerId },
+      select: { vatRegistered: true, category: true },
+    });
+    const assujetti = salon?.vatRegistered ?? false;
+
     for (const svc of body.step2.services) {
       const price = svc.price;
       const dur = svc.durationMinutes;
@@ -134,9 +153,18 @@ export async function PATCH(req: NextRequest) {
         durationMinutes: dur,
         discountPrice: price,
         originalPrice: price,
-        taxRate: svc.taxRate ?? "19.00",
+        taxRate: String(tauxTvaApplicable(assujetti, Number(svc.taxRate ?? TVA_TAUX_DEFAUT))),
         providerId,
-        category: "AUTRE" as const,
+        /*
+         * La categorie du service, et non « AUTRE » pour tout le monde.
+         *
+         * Les services pre-remplis viennent d'une liste par metier : une
+         * « Coupe femme » est de la COIFFURE, une « Pose gel » de l'ONGLERIE.
+         * Les ranger tous dans « Autre » obligeait le salon a reclasser son
+         * catalogue entier a la main avant que les onglets de la caisse
+         * servent a quelque chose.
+         */
+        category: (svc.category ?? salon?.category ?? "AUTRE") as never,
         description: "",
         publishedToMarketplace: false,
         photos: svc.photoUrl ? [svc.photoUrl] : [],
