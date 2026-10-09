@@ -128,29 +128,32 @@ export function PosTopbar({
       <div className="flex items-center gap-2 md:gap-3 shrink-0 min-w-0">
         {/*
           Sur un telephone etroit (~375px), le ticker + le montant du tiroir
-          a eux seuls depassaient deja la largeur disponible : la bulle de
-          compte (deconnexion) se retrouvait poussee hors de l'ecran, sans
-          aucun moyen d'y acceder — ni scroll horizontal, ni redimensionnement.
-          Une caissiere n'avait alors PLUS AUCUN moyen de se deconnecter
-          depuis son telephone.
+          a eux seuls depassaient la largeur disponible : la bulle de compte
+          (deconnexion) se retrouvait poussee hors de l'ecran, sans aucun
+          moyen d'y acceder. Une caissiere n'avait alors plus aucun moyen de
+          se deconnecter depuis son telephone.
 
-          Le ticker de prochain rendez-vous est le plus variable en largeur
-          (il porte un nom de cliente) et le moins essentiel des deux : il
-          disparait en dessous de 768px. Le montant du tiroir reste visible
-          partout — une caissiere doit pouvoir le verifier d'un coup d'oeil —
-          mais la bulle de compte, elle, ne doit JAMAIS pouvoir disparaitre :
-          c'est le seul acces a la deconnexion.
+          CORRECTIF : plutot que de masquer le ticker, cette zone DEFILE
+          horizontalement (`overflow-x-auto`) — rien ne disparait, on glisse
+          le doigt pour l'atteindre. `no-scrollbar` masque juste la barre de
+          defilement visuelle, le geste de glissement reste actif.
+
+          La bulle de compte, elle, est VOLONTAIREMENT HORS de cette zone qui
+          defile : si elle y etait, il faudrait glisser jusqu'au bout pour
+          l'atteindre sur un ecran tres etroit — exactement le meme probleme
+          sous une autre forme. Elle reste fixe, toujours au meme endroit,
+          toujours cliquable sans glisser.
         */}
-        <div className="hidden md:block">
+        <div className="flex items-center gap-2 md:gap-3 overflow-x-auto no-scrollbar min-w-0">
           <NextBookingTicker />
+          <OnlineStatusBadge />
+          {/* Installee en standalone, la PWA n'a pas de barre d'adresse : sans
+              ce bouton, une tablette restait bloquee sur l'ancienne version
+              apres un deploiement. */}
+          <RefreshButton />
+          <span className="pos-mono text-xs text-pos-ink-4 hidden md:inline shrink-0">{now}</span>
+          {hasPos && employee.permissions["pos.cash_drawer"] && <CashDrawerIndicator canOpen={true} employeeName={employee.displayName} />}
         </div>
-        <OnlineStatusBadge />
-        {/* Installee en standalone, la PWA n'a pas de barre d'adresse : sans
-            ce bouton, une tablette restait bloquee sur l'ancienne version
-            apres un deploiement. */}
-        <RefreshButton />
-        <span className="pos-mono text-xs text-pos-ink-4 hidden md:inline">{now}</span>
-        {hasPos && employee.permissions["pos.cash_drawer"] && <CashDrawerIndicator canOpen={true} employeeName={employee.displayName} />}
 
         <div className="relative shrink-0" ref={menuRef}>
           <button

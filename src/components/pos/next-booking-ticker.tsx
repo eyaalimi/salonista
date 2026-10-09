@@ -72,7 +72,7 @@ export function NextBookingTicker() {
     // Empty state is desktop-only — no need to burn scarce mobile topbar
     // real-estate on "Aucun RDV".
     return (
-      <div className="hidden md:flex items-center gap-2 text-[11px] text-pos-ink-4">
+      <div className="hidden md:flex items-center gap-2 text-[11px] text-pos-ink-4 shrink-0">
         <Calendar size={12} />
         <span>Aucun RDV aujourd&apos;hui</span>
       </div>
@@ -102,7 +102,7 @@ export function NextBookingTicker() {
     <>
       {/* Desktop: full ticker with name + countdown. */}
       <div
-        className={`hidden md:flex px-2.5 py-1 ${pillClass}`}
+        className={`hidden md:flex px-2.5 py-1 shrink-0 ${pillClass}`}
         suppressHydrationWarning
         title={title}
       >
@@ -121,7 +121,7 @@ export function NextBookingTicker() {
       {/* Mobile: compact pill (icon + time + short countdown + optional +N).
           Fits between the search box and the online-status dot. */}
       <div
-        className={`md:hidden px-2 py-0.5 ${pillClass}`}
+        className={`md:hidden px-2 py-0.5 shrink-0 ${pillClass}`}
         suppressHydrationWarning
         title={title}
       >

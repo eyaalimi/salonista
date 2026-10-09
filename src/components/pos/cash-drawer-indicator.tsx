@@ -50,7 +50,7 @@ export function CashDrawerIndicator({ canOpen, employeeName }: { canOpen: boolea
         type="button"
         onClick={() => (isOpen ? setOpen(true) : canOpen ? setOpeningModal(true) : null)}
         disabled={!canOpen && !isOpen}
-        className="inline-flex items-center gap-2 text-xs hover:text-white/100"
+        className="inline-flex items-center gap-2 text-xs hover:text-white/100 shrink-0"
         title={
           isOpen && session
             ? `Caisse ouverte par ${session.employee?.displayName ?? "—"} · Fond ${formatDT(session.openingFloat ?? "0.000")}`

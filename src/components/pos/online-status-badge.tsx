@@ -7,7 +7,7 @@ export function OnlineStatusBadge() {
 
   if (online && pendingCount === 0) {
     return (
-      <span className="inline-flex items-center gap-2 text-xs" title="En ligne">
+      <span className="inline-flex items-center gap-2 text-xs shrink-0" title="En ligne">
         <span className="h-2 w-2 rounded-full bg-pos-accent" />
         <span className="hidden md:inline">En ligne</span>
       </span>
@@ -16,7 +16,7 @@ export function OnlineStatusBadge() {
   if (online && pendingCount > 0) {
     return (
       <span
-        className="inline-flex items-center gap-2 text-xs"
+        className="inline-flex items-center gap-2 text-xs shrink-0"
         title={syncing ? `Synchronisation… ${pendingCount}` : `En ligne — ${pendingCount} en attente`}
       >
         <span className="h-2 w-2 rounded-full bg-pos-accent animate-pulse" />
@@ -29,7 +29,7 @@ export function OnlineStatusBadge() {
   }
   return (
     <span
-      className="inline-flex items-center gap-2 text-xs"
+      className="inline-flex items-center gap-2 text-xs shrink-0"
       title={`Hors ligne — ${pendingCount} vente${pendingCount > 1 ? "s" : ""} en attente`}
     >
       <span className="h-2 w-2 rounded-full bg-pos-warn" />

@@ -107,7 +107,7 @@ export function RefreshButton({
       disabled={busy}
       // 44px de cible tactile : c'est un bouton de comptoir, utilise au
       // pouce sur une tablette.
-      className="inline-flex h-11 min-w-11 items-center justify-center gap-2 rounded-lg px-2.5 text-xs font-medium hover:bg-pos-ink-2 disabled:opacity-60"
+      className="inline-flex h-11 min-w-11 shrink-0 items-center justify-center gap-2 rounded-lg px-2.5 text-xs font-medium hover:bg-pos-ink-2 disabled:opacity-60"
       title="Actualiser l'application"
       aria-label="Actualiser l'application"
     >
