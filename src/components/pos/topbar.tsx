@@ -125,8 +125,25 @@ export function PosTopbar({
         {hasPos && <UniversalSearch />}
       </div>
 
-      <div className="flex items-center gap-3 shrink-0">
-        <NextBookingTicker />
+      <div className="flex items-center gap-2 md:gap-3 shrink-0 min-w-0">
+        {/*
+          Sur un telephone etroit (~375px), le ticker + le montant du tiroir
+          a eux seuls depassaient deja la largeur disponible : la bulle de
+          compte (deconnexion) se retrouvait poussee hors de l'ecran, sans
+          aucun moyen d'y acceder — ni scroll horizontal, ni redimensionnement.
+          Une caissiere n'avait alors PLUS AUCUN moyen de se deconnecter
+          depuis son telephone.
+
+          Le ticker de prochain rendez-vous est le plus variable en largeur
+          (il porte un nom de cliente) et le moins essentiel des deux : il
+          disparait en dessous de 768px. Le montant du tiroir reste visible
+          partout — une caissiere doit pouvoir le verifier d'un coup d'oeil —
+          mais la bulle de compte, elle, ne doit JAMAIS pouvoir disparaitre :
+          c'est le seul acces a la deconnexion.
+        */}
+        <div className="hidden md:block">
+          <NextBookingTicker />
+        </div>
         <OnlineStatusBadge />
         {/* Installee en standalone, la PWA n'a pas de barre d'adresse : sans
             ce bouton, une tablette restait bloquee sur l'ancienne version
@@ -135,7 +152,7 @@ export function PosTopbar({
         <span className="pos-mono text-xs text-pos-ink-4 hidden md:inline">{now}</span>
         {hasPos && employee.permissions["pos.cash_drawer"] && <CashDrawerIndicator canOpen={true} employeeName={employee.displayName} />}
 
-        <div className="relative" ref={menuRef}>
+        <div className="relative shrink-0" ref={menuRef}>
           <button
             type="button"
             onClick={() => setMenuOpen((v) => !v)}
