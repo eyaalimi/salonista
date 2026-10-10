@@ -872,6 +872,48 @@ tunisiens sont des salons de coiffure, et un défaut juste la plupart du temps
 (`FREQUENTLY_USED_CACHE`) : un service créé n'apparaît dans les onglets
 qu'après expiration. Ce n'est pas un bug.
 
+### 21. L'API Conversions de Meta est liée à `/confidentialite`
+
+Un **seul** évènement part chez Meta : la création d'un compte salon
+(`CompleteRegistration`), envoyée **côté serveur** depuis
+[src/app/api/pos/signup/route.ts](src/app/api/pos/signup/route.ts). Il n'y a
+**aucun pixel ni cookie publicitaire** dans les pages — c'est précisément ce
+qui permet à la politique de confidentialité de rester vraie.
+
+Deux fichiers, séparés exprès :
+
+- [src/lib/meta-conversions.ts](src/lib/meta-conversions.ts) — décisions pures
+  (normaliser, hacher, omettre), **aucun réseau**, donc 20 tests sans mock
+  HTTP.
+- [src/lib/meta-conversions-envoi.ts](src/lib/meta-conversions-envoi.ts) — le
+  `fetch`, et rien d'autre.
+
+**Ce qu'il ne faut pas défaire :**
+
+- **Inerte sans `META_PIXEL_ID` + `META_CONVERSIONS_TOKEN`.** Rien ne sort en
+  local ni avant le lancement des publicités.
+- **L'e-mail et le téléphone sont hachés en SHA-256**, après mise en
+  minuscules et retrait des espaces. Sans cette normalisation, le hachage ne
+  correspond à rien chez Meta et l'attribution échoue **en silence** : aucune
+  erreur, juste une conversion jamais comptée. Un test verrouille la valeur de
+  référence.
+- **`event_time` en SECONDES**, pas en millisecondes (sinon l'évènement est
+  daté de l'an 56000 et rejeté).
+- **`event_id` = identifiant du salon**, pour que Meta déduplique si un pixel
+  navigateur était ajouté un jour.
+- **Pas de `await` dans la route.** La réponse porte le PIN du propriétaire,
+  affiché une seule fois ; elle ne doit pas attendre les serveurs de Facebook.
+  Toute erreur est avalée à l'intérieur, comme `enregistrerEvenement`.
+
+**La règle qui compte** : cette intégration et
+[src/app/confidentialite/page.tsx](src/app/confidentialite/page.tsx) doivent
+rester synchronisées. La page décrit noir sur blanc *un seul* évènement, *aucune
+donnée de cliente*, *aucune donnée de caisse*. Ajouter un évènement (une vente,
+une connexion) rend cette page **fausse** — et une politique fausse est pire
+que pas de politique, c'est exactement le risque de restriction publicitaire
+que cette page sert à écarter. Mettez la page à jour **avant** la mise en
+production, pas après.
+
 ---
 
 ## Repo layout
@@ -967,6 +1009,21 @@ SMTP_PASS=<16-char Gmail App Password>
 SMTP_FROM=Salonista <noreply@salonista.tn>
 REQUIRE_EMAIL_VERIFICATION=true
 ```
+
+**Optionnelles — mesure des publicites Meta.** Sans elles, l'API Conversions
+reste **inerte** : aucun appel ne sort. C'est l'etat attendu en local.
+
+```
+META_PIXEL_ID=<identifiant du jeu de donnees, Gestionnaire d'evenements>
+META_CONVERSIONS_TOKEN=<jeton d'acces du jeu de donnees — SECRET>
+META_TEST_EVENT_CODE=<optionnel, le temps de verifier l'installation>
+```
+
+Le jeton vaut un acces en ecriture a votre compte publicitaire : il ne va que
+dans le `.env` du serveur, **jamais** dans le depot ni dans une variable
+`NEXT_PUBLIC_*`. `META_TEST_EVENT_CODE` fait apparaitre l'evenement en direct
+dans le Gestionnaire **sans** qu'il compte dans les statistiques — a retirer
+une fois la verification faite, sinon les vraies inscriptions ne comptent plus.
 
 ### Deploy pipeline
 
