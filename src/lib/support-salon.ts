@@ -195,12 +195,30 @@ export function vueLectureActive(
   return expiration > maintenant;
 }
 
+/*
+ * PLUS UTILISEES PAR L'ESPACE SUPERADMIN (octobre 2026).
+ *
+ * Elles masquaient les coordonnees dans la recherche et la fiche. Mais cet
+ * espace sert aussi a RAPPELER les salons : un numero tronque en « ••• 3456 »
+ * est inutilisable pour appeler, et recopier a la main ce qu'on vient de lire
+ * n'ajoute aucune securite — la donnee est deja a l'ecran.
+ *
+ * Ce qui protege reellement l'acces est ailleurs : role SUPERADMIN disjoint
+ * d'ADMIN, TOTP de moins de 30 minutes, et journalisation de chaque
+ * consultation de fiche.
+ *
+ * CONSERVEES parce qu'elles restent justes : si un jour un profil de support
+ * moins privilegie voit ces ecrans (un commercial, par exemple), c'est ici
+ * qu'il faudra revenir. Ne pas confondre avec la fonction homonyme de
+ * `/api/salon-pin/resolve`, qui elle est INDISPENSABLE : elle repond a un
+ * appelant ANONYME et ne doit jamais livrer une adresse complete.
+ */
+
 /**
  * Masque une adresse e-mail pour l'affichage.
  *
- * La fiche de support montre assez pour reconnaitre la boite au telephone
- * (« c'est bien un gmail qui commence par a ? »), jamais assez pour la
- * reconstituer.
+ * Montre assez pour reconnaitre la boite au telephone (« c'est bien un gmail
+ * qui commence par a ? »), jamais assez pour la reconstituer.
  */
 export function masquerEmail(email: string | null | undefined): string {
   if (!email) return "—";

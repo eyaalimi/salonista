@@ -2,8 +2,17 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { exigerSuperadmin, journaliser } from "@/lib/superadmin-session";
 import { ficheSalon } from "@/lib/support-donnees";
-import { ACTIONS, masquerTelephone } from "@/lib/support-salon";
+import { ACTIONS } from "@/lib/support-salon";
 import { LIBELLE_STATUT } from "@/lib/campagne-tableau";
+import {
+  afficher,
+  completionProfil,
+  estRenseigne,
+  formaterTelephone,
+  lienTelephone,
+  NON_RENSEIGNE,
+} from "@/lib/profil-salon-complet";
+import { Copiable } from "../copiable";
 import { ActionsClient, NoteClient } from "./actions-client";
 
 export default async function FicheSalonPage({
@@ -36,6 +45,21 @@ export default async function FicheSalonPage({
     targetUserId: s.gerant?.id ?? null,
   }).catch(() => {});
 
+  /*
+   * L'inscription ne collecte QUE le nom du salon, le telephone et l'e-mail.
+   * Tout le reste se remplit ensuite, depuis le profil — ou pas. Afficher le
+   * taux donne une raison concrete de rappeler : « il te manque l'adresse et
+   * le matricule fiscal » est un motif d'appel, « — » n'en est pas un.
+   */
+  const completion = completionProfil({
+    city: s.city,
+    governorate: s.governorate,
+    address: s.address,
+    phone: s.phone,
+    matriculeFiscal: s.matriculeFiscal,
+    nomGerant: s.gerant?.nom,
+  });
+
   return (
     <div className="flex flex-col gap-8">
       <div>
@@ -58,6 +82,10 @@ export default async function FicheSalonPage({
           {s.gerant?.mustChangePassword && (
             <Badge tone="rose">Doit changer son mot de passe</Badge>
           )}
+          {/* Un salon de demonstration n'est pas un client : le confondre
+              avec un vrai faussait la lecture du parc. */}
+          {s.demo && <Badge tone="neutre">Salon de démonstration</Badge>}
+          {s.verified && <Badge tone="menthe">Vérifié</Badge>}
         </div>
       </div>
 
@@ -75,24 +103,73 @@ export default async function FicheSalonPage({
         </div>
       )}
 
+      {/* Un profil complet n'a rien a signaler : la banniere ne s'affiche que
+          s'il manque quelque chose. */}
+      {completion.manquants.length > 0 && (
+        <div className="rounded-[var(--radius-card)] border border-hairline bg-creme px-5 py-4">
+          <p className="font-semibold text-prune">
+            Profil complété à {completion.pourcentage} % ({completion.remplis}/
+            {completion.total})
+          </p>
+          <p className="mt-1 text-sm text-prune-soft">
+            Manquant : {completion.manquants.join(", ")}.
+          </p>
+          <p className="mt-2 text-xs text-prune-soft">
+            L&apos;inscription ne demande que le nom du salon, le téléphone et
+            l&apos;e-mail — le reste se remplit depuis le profil. Un champ vide
+            est normal au début, et c&apos;est une raison d&apos;appeler.
+          </p>
+        </div>
+      )}
+
       <section className="grid gap-4 sm:grid-cols-2">
         <Bloc titre="Le salon">
-          <Ligne label="Ville">{s.city ?? "—"}</Ligne>
-          <Ligne label="Gouvernorat">{s.governorate ?? "—"}</Ligne>
-          <Ligne label="Téléphone">{masquerTelephone(s.phone)}</Ligne>
-          <Ligne label="Matricule fiscal">{s.matriculeFiscal ?? "—"}</Ligne>
+          <Ligne label="Téléphone">
+            <Copiable
+              valeur={formaterTelephone(s.phone)}
+              lien={lienTelephone(s.phone)}
+              absent={!lienTelephone(s.phone)}
+            />
+          </Ligne>
+          <Ligne label="Adresse">
+            <Copiable valeur={afficher(s.address)} absent={!estRenseigne(s.address)} />
+          </Ligne>
+          <Ligne label="Ville">
+            <Copiable valeur={afficher(s.city)} absent={!estRenseigne(s.city)} />
+          </Ligne>
+          <Ligne label="Gouvernorat">
+            <Copiable valeur={afficher(s.governorate)} absent={!estRenseigne(s.governorate)} />
+          </Ligne>
+          <Ligne label="Matricule fiscal">
+            <Copiable
+              valeur={afficher(s.matriculeFiscal)}
+              absent={!estRenseigne(s.matriculeFiscal)}
+            />
+          </Ligne>
+          {/* L'assujettissement change la facturation : il doit se voir. */}
+          <Ligne label="Assujetti à la TVA">{s.vatRegistered ? "Oui" : "Non"}</Ligne>
+          <Ligne label="Catégorie">{s.category}</Ligne>
           <Ligne label="Inscrit le">{s.createdAt.toLocaleDateString("fr-FR")}</Ligne>
-          <Ligne label="Origine">{s.campagne ?? s.utmSource ?? "—"}</Ligne>
         </Bloc>
 
         <Bloc titre="Le gérant">
           {s.gerant ? (
             <>
-              <Ligne label="Nom">{s.gerant.nom ?? "—"}</Ligne>
-              {/* L'e-mail est affiche EN ENTIER ici, contrairement a la
-                  recherche : c'est a cette adresse que part le lien de
-                  reinitialisation, il faut pouvoir la confirmer au telephone. */}
-              <Ligne label="E-mail">{s.gerant.email}</Ligne>
+              <Ligne label="Nom">
+                <Copiable valeur={afficher(s.gerant.nom)} absent={!estRenseigne(s.gerant.nom)} />
+              </Ligne>
+              {/* C'est a cette adresse que part le lien de reinitialisation :
+                  il faut pouvoir la confirmer au telephone, et la copier. */}
+              <Ligne label="E-mail">
+                <Copiable valeur={s.gerant.email} lien={`mailto:${s.gerant.email}`} />
+              </Ligne>
+              <Ligne label="Téléphone du compte">
+                <Copiable
+                  valeur={formaterTelephone(s.gerant.phone)}
+                  lien={lienTelephone(s.gerant.phone)}
+                  absent={!lienTelephone(s.gerant.phone)}
+                />
+              </Ligne>
               <Ligne label="E-mail vérifié">{s.gerant.emailVerifie ? "Oui" : "Non"}</Ligne>
               <Ligne label="Dernière connexion">
                 {s.gerant.derniereConnexion
@@ -113,6 +190,20 @@ export default async function FicheSalonPage({
           <Ligne label="Équipe">{String(s.employes.length)} compte(s)</Ligne>
         </Bloc>
 
+        {/* L'ORIGINE, en entier. `utmSource` seul ne disait pas de quelle
+            annonce ni de quel support venait le salon. */}
+        <Bloc titre="Origine">
+          <Ligne label="Campagne">
+            {afficher(s.campagne)}
+          </Ligne>
+          <Ligne label="Source (utm_source)">{afficher(s.utmSource)}</Ligne>
+          <Ligne label="Support (utm_medium)">{afficher(s.utmMedium)}</Ligne>
+          <Ligne label="Nom de campagne (utm_campaign)">{afficher(s.utmCampaign)}</Ligne>
+          <Ligne label="Premier contact">
+            {s.firstSeenAt ? s.firstSeenAt.toLocaleString("fr-FR") : NON_RENSEIGNE}
+          </Ligne>
+        </Bloc>
+
         <Bloc titre="Appareils et équipe">
           {s.employes.length === 0 ? (
             <p className="text-sm text-prune-soft">Aucun employé.</p>
@@ -131,6 +222,13 @@ export default async function FicheSalonPage({
                     {verrouille && (
                       <span className="font-semibold text-rose-fonce"> — verrouillé</span>
                     )}
+                    {/* Deja chargee, mais jamais affichee jusqu'ici : c'est
+                        ce qui distingue un compte utilise d'un compte dormant. */}
+                    <div className="text-xs text-prune-soft">
+                      {e.derniereConnexion
+                        ? `Dernière connexion : ${e.derniereConnexion.toLocaleString("fr-FR")}`
+                        : "Jamais connecté"}
+                    </div>
                   </li>
                 );
               })}
@@ -138,6 +236,17 @@ export default async function FicheSalonPage({
           )}
         </Bloc>
       </section>
+
+      {estRenseigne(s.description) && (
+        <section className="rounded-[var(--radius-card)] border border-hairline bg-white px-5 py-4">
+          <h2 className="text-xs font-semibold uppercase tracking-[0.12em] text-prune-soft">
+            Description du salon
+          </h2>
+          {/* `whitespace-pre-line` : le salon a saisi des retours a la ligne,
+              les ecraser rendrait le texte illisible. */}
+          <p className="mt-2 whitespace-pre-line text-sm text-prune">{s.description}</p>
+        </section>
+      )}
 
       <ActionsClient salonId={s.id} suspendu={s.suspendedAt !== null} />
 
@@ -161,9 +270,11 @@ export default async function FicheSalonPage({
       </section>
 
       <p className="text-xs text-prune-soft">
-        Un mot de passe ou un PIN existant ne peut jamais être affiché : ils
-        sont chiffrés, donc illisibles — y compris pour nous. Chaque action de
-        cette page est enregistrée dans le{" "}
+        Les coordonnées sont affichées en entier pour pouvoir rappeler le
+        salon. En revanche, un mot de passe ou un PIN existant ne peut jamais
+        être affiché : ils sont chiffrés, donc illisibles — y compris pour
+        nous. La consultation de cette fiche et chaque action qui s&apos;y
+        trouve sont enregistrées dans le{" "}
         <Link href="/superadmin/journal" className="underline">
           journal d&apos;audit
         </Link>

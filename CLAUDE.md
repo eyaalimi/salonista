@@ -872,7 +872,7 @@ tunisiens sont des salons de coiffure, et un défaut juste la plupart du temps
 (`FREQUENTLY_USED_CACHE`) : un service créé n'apparaît dans les onglets
 qu'après expiration. Ce n'est pas un bug.
 
-### 21. L'API Conversions de Meta est liée à `/confidentialite`
+### 29. L'API Conversions de Meta est liée à `/confidentialite`
 
 Un **seul** évènement part chez Meta : la création d'un compte salon
 (`CompleteRegistration`), envoyée **côté serveur** depuis
@@ -913,6 +913,66 @@ une connexion) rend cette page **fausse** — et une politique fausse est pire
 que pas de politique, c'est exactement le risque de restriction publicitaire
 que cette page sert à écarter. Mettez la page à jour **avant** la mise en
 production, pas après.
+
+### 30. L'espace superadmin affiche les coordonnées en entier
+
+La recherche et la fiche masquaient le téléphone (`••• 3456`) et l'e-mail
+(`s***@gmail.com`). **Ce masquage a été retiré** (octobre 2026) : cet espace
+sert aussi à **rappeler** les salons, et un numéro tronqué est inutilisable
+pour appeler. Recopier à la main ce qu'on vient de lire n'ajoutait aucune
+sécurité — la donnée était déjà à l'écran.
+
+Ce qui protège l'accès est ailleurs, et n'a pas bougé : rôle SUPERADMIN
+disjoint d'ADMIN, TOTP de moins de 30 min, et **journalisation de chaque
+consultation de fiche**. `masquerEmail`/`masquerTelephone` sont conservées
+dans [support-salon.ts](src/lib/support-salon.ts) au cas où un profil moins
+privilégié verrait ces écrans un jour. **Ne pas confondre avec la fonction
+homonyme de `/api/salon-pin/resolve`** : celle-là répond à un appelant
+**anonyme** et doit absolument rester.
+
+**Trois causes derrière « tout est coupé ou inconnu », et une seule était un
+bug d'affichage :**
+
+| Cause | Exemple | Correctif |
+|---|---|---|
+| Masquage volontaire | `••• 3456` | retiré |
+| Champ jamais affiché | `address`, `vatRegistered`, `demo`, UTM complets | ajouté |
+| Donnée réellement absente | ville, matricule, nom du gérant | « Non renseigné » + taux |
+
+**L'inscription ne collecte que le nom du salon, le téléphone et l'e-mail.**
+Ville, gouvernorat, adresse, matricule fiscal et nom du gérant restent donc
+vides jusqu'à ce que le salon complète son profil. **Un champ vide est la
+norme au départ, pas une anomalie** — d'où « Non renseigné » plutôt qu'un
+tiret muet, et un **taux de complétion** qui nomme ce qui manque : c'est un
+motif d'appel concret, ce qu'un « — » n'était pas.
+
+Les décisions vivent dans
+[profil-salon-complet.ts](src/lib/profil-salon-complet.ts) (pur, 20 tests).
+
+**Le piège, trouvé en simulant trois états réels de salon :**
+`completionProfil` et `formaterTelephone` **se contredisaient à l'écran** —
+la fiche affichait « 123 » en face de « Téléphone » pendant que la bannière
+annonçait le téléphone comme manquant. Les deux appliquent maintenant la même
+règle (8 chiffres minimum, `walk-in-…` refusé), et **un test de cohérence
+compare leurs verdicts** sur une série de numéros. Si vous ajoutez une règle
+à l'une, l'autre doit suivre — le test échouera sinon.
+
+`CHAMPS_PROFIL` est volontairement **restreint** à ce qui sert au support et à
+la facturation. Y ajouter `description`, `logo` ou les photos ferait afficher
+« 50 % » à un salon parfaitement exploitable, et l'indicateur perdrait son
+sens.
+
+Le bouton **copier** ([copiable.tsx](src/app/superadmin/salons/copiable.tsx))
+existe parce qu'on consulte ces fiches **en appelant un salon, depuis un
+téléphone**, où sélectionner du texte au doigt est pénible. Il copie la valeur
+brute (numéro sans espaces), pas le texte formaté. `navigator.clipboard`
+échoue hors HTTPS : l'échec est **muet**, la valeur restant sélectionnable à
+la main.
+
+**La liste de résultats est une liste de cartes, pas un rang d'une ligne** :
+les coordonnées complètes ne tenaient pas sur une ligne de téléphone. Les
+liens `tel:`/`mailto:` et le bouton copier sont **hors** du `<Link>` vers la
+fiche — imbriqués dedans, ils auraient été inatteignables.
 
 ---
 
