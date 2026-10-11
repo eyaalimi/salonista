@@ -872,6 +872,108 @@ tunisiens sont des salons de coiffure, et un défaut juste la plupart du temps
 (`FREQUENTLY_USED_CACHE`) : un service créé n'apparaît dans les onglets
 qu'après expiration. Ce n'est pas un bug.
 
+### 29. L'API Conversions de Meta est liée à `/confidentialite`
+
+Un **seul** évènement part chez Meta : la création d'un compte salon
+(`CompleteRegistration`), envoyée **côté serveur** depuis
+[src/app/api/pos/signup/route.ts](src/app/api/pos/signup/route.ts). Il n'y a
+**aucun pixel ni cookie publicitaire** dans les pages — c'est précisément ce
+qui permet à la politique de confidentialité de rester vraie.
+
+Deux fichiers, séparés exprès :
+
+- [src/lib/meta-conversions.ts](src/lib/meta-conversions.ts) — décisions pures
+  (normaliser, hacher, omettre), **aucun réseau**, donc 20 tests sans mock
+  HTTP.
+- [src/lib/meta-conversions-envoi.ts](src/lib/meta-conversions-envoi.ts) — le
+  `fetch`, et rien d'autre.
+
+**Ce qu'il ne faut pas défaire :**
+
+- **Inerte sans `META_PIXEL_ID` + `META_CONVERSIONS_TOKEN`.** Rien ne sort en
+  local ni avant le lancement des publicités.
+- **L'e-mail et le téléphone sont hachés en SHA-256**, après mise en
+  minuscules et retrait des espaces. Sans cette normalisation, le hachage ne
+  correspond à rien chez Meta et l'attribution échoue **en silence** : aucune
+  erreur, juste une conversion jamais comptée. Un test verrouille la valeur de
+  référence.
+- **`event_time` en SECONDES**, pas en millisecondes (sinon l'évènement est
+  daté de l'an 56000 et rejeté).
+- **`event_id` = identifiant du salon**, pour que Meta déduplique si un pixel
+  navigateur était ajouté un jour.
+- **Pas de `await` dans la route.** La réponse porte le PIN du propriétaire,
+  affiché une seule fois ; elle ne doit pas attendre les serveurs de Facebook.
+  Toute erreur est avalée à l'intérieur, comme `enregistrerEvenement`.
+
+**La règle qui compte** : cette intégration et
+[src/app/confidentialite/page.tsx](src/app/confidentialite/page.tsx) doivent
+rester synchronisées. La page décrit noir sur blanc *un seul* évènement, *aucune
+donnée de cliente*, *aucune donnée de caisse*. Ajouter un évènement (une vente,
+une connexion) rend cette page **fausse** — et une politique fausse est pire
+que pas de politique, c'est exactement le risque de restriction publicitaire
+que cette page sert à écarter. Mettez la page à jour **avant** la mise en
+production, pas après.
+
+### 30. L'espace superadmin affiche les coordonnées en entier
+
+La recherche et la fiche masquaient le téléphone (`••• 3456`) et l'e-mail
+(`s***@gmail.com`). **Ce masquage a été retiré** (octobre 2026) : cet espace
+sert aussi à **rappeler** les salons, et un numéro tronqué est inutilisable
+pour appeler. Recopier à la main ce qu'on vient de lire n'ajoutait aucune
+sécurité — la donnée était déjà à l'écran.
+
+Ce qui protège l'accès est ailleurs, et n'a pas bougé : rôle SUPERADMIN
+disjoint d'ADMIN, TOTP de moins de 30 min, et **journalisation de chaque
+consultation de fiche**. `masquerEmail`/`masquerTelephone` sont conservées
+dans [support-salon.ts](src/lib/support-salon.ts) au cas où un profil moins
+privilégié verrait ces écrans un jour. **Ne pas confondre avec la fonction
+homonyme de `/api/salon-pin/resolve`** : celle-là répond à un appelant
+**anonyme** et doit absolument rester.
+
+**Trois causes derrière « tout est coupé ou inconnu », et une seule était un
+bug d'affichage :**
+
+| Cause | Exemple | Correctif |
+|---|---|---|
+| Masquage volontaire | `••• 3456` | retiré |
+| Champ jamais affiché | `address`, `vatRegistered`, `demo`, UTM complets | ajouté |
+| Donnée réellement absente | ville, matricule, nom du gérant | « Non renseigné » + taux |
+
+**L'inscription ne collecte que le nom du salon, le téléphone et l'e-mail.**
+Ville, gouvernorat, adresse, matricule fiscal et nom du gérant restent donc
+vides jusqu'à ce que le salon complète son profil. **Un champ vide est la
+norme au départ, pas une anomalie** — d'où « Non renseigné » plutôt qu'un
+tiret muet, et un **taux de complétion** qui nomme ce qui manque : c'est un
+motif d'appel concret, ce qu'un « — » n'était pas.
+
+Les décisions vivent dans
+[profil-salon-complet.ts](src/lib/profil-salon-complet.ts) (pur, 20 tests).
+
+**Le piège, trouvé en simulant trois états réels de salon :**
+`completionProfil` et `formaterTelephone` **se contredisaient à l'écran** —
+la fiche affichait « 123 » en face de « Téléphone » pendant que la bannière
+annonçait le téléphone comme manquant. Les deux appliquent maintenant la même
+règle (8 chiffres minimum, `walk-in-…` refusé), et **un test de cohérence
+compare leurs verdicts** sur une série de numéros. Si vous ajoutez une règle
+à l'une, l'autre doit suivre — le test échouera sinon.
+
+`CHAMPS_PROFIL` est volontairement **restreint** à ce qui sert au support et à
+la facturation. Y ajouter `description`, `logo` ou les photos ferait afficher
+« 50 % » à un salon parfaitement exploitable, et l'indicateur perdrait son
+sens.
+
+Le bouton **copier** ([copiable.tsx](src/app/superadmin/salons/copiable.tsx))
+existe parce qu'on consulte ces fiches **en appelant un salon, depuis un
+téléphone**, où sélectionner du texte au doigt est pénible. Il copie la valeur
+brute (numéro sans espaces), pas le texte formaté. `navigator.clipboard`
+échoue hors HTTPS : l'échec est **muet**, la valeur restant sélectionnable à
+la main.
+
+**La liste de résultats est une liste de cartes, pas un rang d'une ligne** :
+les coordonnées complètes ne tenaient pas sur une ligne de téléphone. Les
+liens `tel:`/`mailto:` et le bouton copier sont **hors** du `<Link>` vers la
+fiche — imbriqués dedans, ils auraient été inatteignables.
+
 ---
 
 ## Repo layout
@@ -967,6 +1069,21 @@ SMTP_PASS=<16-char Gmail App Password>
 SMTP_FROM=Salonista <noreply@salonista.tn>
 REQUIRE_EMAIL_VERIFICATION=true
 ```
+
+**Optionnelles — mesure des publicites Meta.** Sans elles, l'API Conversions
+reste **inerte** : aucun appel ne sort. C'est l'etat attendu en local.
+
+```
+META_PIXEL_ID=<identifiant du jeu de donnees, Gestionnaire d'evenements>
+META_CONVERSIONS_TOKEN=<jeton d'acces du jeu de donnees — SECRET>
+META_TEST_EVENT_CODE=<optionnel, le temps de verifier l'installation>
+```
+
+Le jeton vaut un acces en ecriture a votre compte publicitaire : il ne va que
+dans le `.env` du serveur, **jamais** dans le depot ni dans une variable
+`NEXT_PUBLIC_*`. `META_TEST_EVENT_CODE` fait apparaitre l'evenement en direct
+dans le Gestionnaire **sans** qu'il compte dans les statistiques — a retirer
+une fois la verification faite, sinon les vraies inscriptions ne comptent plus.
 
 ### Deploy pipeline
 

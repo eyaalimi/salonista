@@ -7,13 +7,21 @@
 import { prisma } from "./prisma";
 import { normaliserTerme, termeRecherchable } from "./support-salon";
 import { statutSalon, type StatutSalon } from "./campagne-tableau";
+import { lienTelephone } from "./profil-salon-complet";
 
-/** Un resultat de recherche, assez pour reconnaitre le salon au telephone. */
+/** Un resultat de recherche : les coordonnees COMPLETES, pour pouvoir rappeler. */
 export type ResultatRecherche = {
   id: string;
   salonName: string;
   city: string | null;
   phone: string | null;
+  /**
+   * Le numero sous forme composable (`+216…`), ou `null` s'il n'y a rien a
+   * composer. Calcule ICI et non dans le gabarit : la page est un server
+   * component, et la regle de formatage doit vivre au meme endroit que celle
+   * de la fiche.
+   */
+  lienTel: string | null;
   email: string | null;
   matriculeFiscal: string | null;
   suspendu: boolean;
@@ -67,6 +75,7 @@ export async function chercherSalons(terme: string): Promise<ResultatRecherche[]
     salonName: s.salonName,
     city: s.city,
     phone: s.phone,
+    lienTel: lienTelephone(s.phone),
     email: s.user?.email ?? null,
     matriculeFiscal: s.matriculeFiscal,
     suspendu: s.suspendedAt !== null,
@@ -80,8 +89,17 @@ export type FicheSalon = {
   salonName: string;
   city: string | null;
   governorate: string | null;
+  /** Rue et numero. Existait en base mais n'etait affiche NULLE PART. */
+  address: string | null;
   phone: string | null;
   matriculeFiscal: string | null;
+  /** Assujetti a la TVA : change la facturation, doit se voir. */
+  vatRegistered: boolean;
+  category: string;
+  description: string | null;
+  /** Salon de demonstration (captures marketing), pas un vrai client. */
+  demo: boolean;
+  verified: boolean;
   createdAt: Date;
   suspendedAt: Date | null;
   suspendedReason: string | null;
@@ -89,12 +107,18 @@ export type FicheSalon = {
     id: string;
     nom: string | null;
     email: string;
+    /** Le telephone du COMPTE, distinct de celui du salon. */
+    phone: string | null;
     emailVerifie: boolean;
     mustChangePassword: boolean;
     derniereConnexion: Date | null;
   } | null;
   campagne: string | null;
   utmSource: string | null;
+  utmMedium: string | null;
+  utmCampaign: string | null;
+  /** Premier contact connu, quand l'attribution a fonctionne. */
+  firstSeenAt: Date | null;
   employes: Array<{
     id: string;
     displayName: string;
@@ -118,18 +142,28 @@ export async function ficheSalon(id: string): Promise<FicheSalon | null> {
       salonName: true,
       city: true,
       governorate: true,
+      address: true,
       phone: true,
       matriculeFiscal: true,
+      vatRegistered: true,
+      category: true,
+      description: true,
+      demo: true,
+      verified: true,
       createdAt: true,
       suspendedAt: true,
       suspendedReason: true,
       utmSource: true,
+      utmMedium: true,
+      utmCampaign: true,
+      firstSeenAt: true,
       campaign: { select: { name: true } },
       user: {
         select: {
           id: true,
           name: true,
           email: true,
+          phone: true,
           emailVerified: true,
           mustChangePassword: true,
         },
@@ -176,8 +210,14 @@ export async function ficheSalon(id: string): Promise<FicheSalon | null> {
     salonName: s.salonName,
     city: s.city,
     governorate: s.governorate,
+    address: s.address,
     phone: s.phone,
     matriculeFiscal: s.matriculeFiscal,
+    vatRegistered: s.vatRegistered,
+    category: s.category,
+    description: s.description,
+    demo: s.demo,
+    verified: s.verified,
     createdAt: s.createdAt,
     suspendedAt: s.suspendedAt,
     suspendedReason: s.suspendedReason,
@@ -186,6 +226,7 @@ export async function ficheSalon(id: string): Promise<FicheSalon | null> {
           id: s.user.id,
           nom: s.user.name,
           email: s.user.email,
+          phone: s.user.phone,
           emailVerifie: s.user.emailVerified !== null,
           mustChangePassword: s.user.mustChangePassword,
           derniereConnexion: derniereConnexionEquipe,
@@ -193,6 +234,9 @@ export async function ficheSalon(id: string): Promise<FicheSalon | null> {
       : null,
     campagne: s.campaign?.name ?? null,
     utmSource: s.utmSource,
+    utmMedium: s.utmMedium,
+    utmCampaign: s.utmCampaign,
+    firstSeenAt: s.firstSeenAt,
     employes: s.employees.map((e) => ({
       id: e.id,
       displayName: e.displayName,

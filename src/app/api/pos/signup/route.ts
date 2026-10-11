@@ -29,6 +29,9 @@ import { decidePosSignup } from "@/lib/pos-signup-decision";
 import { exigerTelephoneSalon } from "@/lib/phone";
 import { contexteVisiteur, enregistrerEvenement } from "@/lib/campagne-suivi";
 import { estVide } from "@/lib/campagne-attribution";
+import { ipDe } from "@/lib/rate-limit";
+import { lireCookiesMeta } from "@/lib/meta-conversions";
+import { signalerInscriptionAMeta } from "@/lib/meta-conversions-envoi";
 
 /** Meme minimum que la reinitialisation de mot de passe, pour rester coherent. */
 const MIN_PASSWORD_LENGTH = 6;
@@ -200,6 +203,41 @@ export async function POST(req: NextRequest) {
       attribution,
     });
   }
+
+  /*
+   * Meta, pour l'attribution publicitaire. Meme principe que l'entonnoir
+   * ci-dessus : HORS transaction, jamais bloquant, jamais bruyant.
+   *
+   * Reste INERTE tant que META_PIXEL_ID et META_CONVERSIONS_TOKEN ne sont
+   * pas renseignes — donc rien ne part en local ni avant le lancement des
+   * publicites.
+   *
+   * L'e-mail et le telephone sont haches (SHA-256) dans
+   * `meta-conversions.ts` et ne quittent jamais le serveur en clair. C'est
+   * ce que decrit la politique de confidentialite : ne l'envoyez pas en
+   * clair ici, la page promet le contraire.
+   */
+  /*
+   * PAS de `await` : contrairement a l'entonnoir ci-dessus, qui ecrit dans
+   * notre propre base en quelques millisecondes, cet appel sort vers un tiers
+   * et peut prendre jusqu'a 3 secondes. Or la reponse qui suit porte le PIN du
+   * proprietaire, affiche UNE SEULE FOIS : faire patienter cet ecran derriere
+   * les serveurs de Facebook serait le mauvais compromis.
+   *
+   * `void` est explicite : la promesse est deliberement non attendue. La
+   * fonction n'echoue jamais (tout est capture a l'interieur), donc aucun
+   * rejet ne peut rester sans gestionnaire.
+   */
+  void signalerInscriptionAMeta({
+    providerId: result.provider.id,
+    donnees: {
+      email,
+      phone: verdictTelephone.phone,
+      ip: ipDe(req),
+      userAgent: req.headers.get("user-agent"),
+      ...lireCookiesMeta(req.headers.get("cookie")),
+    },
+  });
 
   return Response.json(
     {

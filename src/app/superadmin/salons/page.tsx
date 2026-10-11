@@ -1,7 +1,8 @@
 import Link from "next/link";
 import { exigerSuperadmin } from "@/lib/superadmin-session";
 import { chercherSalons } from "@/lib/support-donnees";
-import { masquerEmail, masquerTelephone } from "@/lib/support-salon";
+import { afficher, formaterTelephone, estRenseigne } from "@/lib/profil-salon-complet";
+import { Copiable } from "./copiable";
 
 export default async function RechercheSalonsPage({
   searchParams,
@@ -48,38 +49,91 @@ export default async function RechercheSalonsPage({
       )}
 
       {resultats.length > 0 && (
-        <div className="overflow-hidden rounded-[var(--radius-card)] border border-hairline bg-white">
-          {resultats.map((s) => (
-            <Link
-              key={s.id}
-              href={`/superadmin/salons/${s.id}`}
-              className="ds-focus flex flex-wrap items-center gap-x-4 gap-y-1 border-b border-hairline px-5 py-4 last:border-0 hover:bg-creme"
-            >
-              <span className="min-w-[180px] flex-1 font-semibold text-prune">
-                {s.salonName}
-                {s.suspendu && (
-                  <span className="ml-2 rounded-[var(--radius-pill)] bg-rose-soft px-2 py-0.5 text-xs font-semibold text-prune">
-                    Suspendu
+        <>
+          <p className="text-sm text-prune-soft">
+            {resultats.length} salon{resultats.length > 1 ? "s" : ""} trouvé
+            {resultats.length > 1 ? "s" : ""}
+            {resultats.length === 20 && " (20 premiers — affine la recherche)"}
+          </p>
+          {/*
+            Une LISTE DE CARTES, plus un rang d'une seule ligne : les
+            coordonnees completes ne tenaient pas sur une ligne de telephone,
+            et c'est justement la qu'on les consulte.
+
+            Le nom du salon reste le seul lien vers la fiche. Les coordonnees
+            portent leurs propres liens (`tel:`, `mailto:`) et un bouton
+            copier — imbriques dans un `<Link>`, ils auraient ete inatteignables.
+          */}
+          <ul className="flex flex-col gap-3">
+            {resultats.map((s) => (
+              <li
+                key={s.id}
+                className="rounded-[var(--radius-card)] border border-hairline bg-white px-5 py-4"
+              >
+                <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
+                  <Link
+                    href={`/superadmin/salons/${s.id}`}
+                    className="ds-focus font-semibold text-prune underline decoration-hairline hover:decoration-prune"
+                  >
+                    {s.salonName}
+                  </Link>
+                  {s.suspendu && (
+                    <span className="rounded-[var(--radius-pill)] bg-rose-soft px-2 py-0.5 text-xs font-semibold text-prune">
+                      Suspendu
+                    </span>
+                  )}
+                  <span className="text-xs text-prune-soft">
+                    inscrit le {s.createdAt.toLocaleDateString("fr-FR")}
                   </span>
-                )}
-              </span>
-              <span className="text-sm text-prune-soft">{s.city ?? "—"}</span>
-              <span className="text-sm text-prune-soft">{masquerTelephone(s.phone)}</span>
-              <span className="text-sm text-prune-soft">{masquerEmail(s.email)}</span>
-              <span className="text-xs text-prune-soft">
-                {s.createdAt.toLocaleDateString("fr-FR")}
-              </span>
-            </Link>
-          ))}
-        </div>
+                </div>
+
+                <dl className="mt-3 grid gap-x-6 gap-y-1.5 text-sm sm:grid-cols-2">
+                  <Champ label="Ville">
+                    <Copiable valeur={afficher(s.city)} absent={!estRenseigne(s.city)} />
+                  </Champ>
+                  <Champ label="Téléphone">
+                    <Copiable
+                      valeur={formaterTelephone(s.phone)}
+                      lien={s.lienTel}
+                      absent={!s.lienTel}
+                    />
+                  </Champ>
+                  <Champ label="E-mail">
+                    <Copiable
+                      valeur={afficher(s.email)}
+                      lien={s.email ? `mailto:${s.email}` : null}
+                      absent={!estRenseigne(s.email)}
+                    />
+                  </Champ>
+                  <Champ label="Matricule fiscal">
+                    <Copiable
+                      valeur={afficher(s.matriculeFiscal)}
+                      absent={!estRenseigne(s.matriculeFiscal)}
+                    />
+                  </Champ>
+                </dl>
+              </li>
+            ))}
+          </ul>
+        </>
       )}
 
       {!terme && (
         <p className="text-sm text-prune-soft">
-          Les coordonnées sont partiellement masquées : assez pour confirmer au
-          téléphone, pas assez pour les recopier.
+          Les coordonnées sont affichées en entier, avec un bouton pour les
+          copier. Chaque consultation de fiche est enregistrée dans le journal
+          d&apos;audit.
         </p>
       )}
+    </div>
+  );
+}
+
+function Champ({ label, children }: { label: string; children: React.ReactNode }) {
+  return (
+    <div className="flex flex-wrap items-baseline gap-x-2">
+      <dt className="text-prune-soft">{label}</dt>
+      <dd className="m-0">{children}</dd>
     </div>
   );
 }

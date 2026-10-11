@@ -17,13 +17,26 @@ export const metadata = {
  * differente), cette page doit changer avec elle — une politique fausse est
  * pire que pas de politique du tout.
  *
- * Verifie au 23/09/2026 : aucun pixel Meta, aucun Google Analytics, aucun
- * traceur publicitaire dans le code. Les seuls tiers charges cote navigateur
- * sont Google Fonts et le CDN Workbox (service worker).
+ * Verifie au 10/10/2026 : aucun pixel Meta ni Google Analytics CHARGE DANS
+ * LE NAVIGATEUR — les seuls tiers cote client restent Google Fonts et le CDN
+ * Workbox (service worker).
+ *
+ * EN REVANCHE, depuis le 10/10/2026, l'API Conversions de Meta recoit UN
+ * evenement, cote SERVEUR : la creation d'un compte salon
+ * (`src/lib/meta-conversions-envoi.ts`, appele depuis
+ * `/api/pos/signup`). L'e-mail et le telephone y partent HACHES en SHA-256,
+ * jamais en clair. C'est exactement ce que decrit la section « La mesure de
+ * nos publicites » ci-dessous.
+ *
+ * Si vous retirez cet envoi, retirez aussi cette section et la ligne Meta du
+ * tableau des sous-traitants. Si vous ajoutez un evenement (une vente, par
+ * exemple), cette page doit le dire AVANT la mise en production : la
+ * politique precedente promettait « aucune donnee issue de votre caisse », et
+ * c'est une promesse qu'on tient.
  */
 export default function ConfidentialitePage() {
   return (
-    <LegalPage titre="Politique de confidentialité" miseAJour="23 septembre 2026">
+    <LegalPage titre="Politique de confidentialité" miseAJour="10 octobre 2026">
       <p>
         Salonista est une caisse enregistreuse en ligne destinée aux salons de
         beauté en Tunisie. Cette page explique quelles données nous traitons,
@@ -108,9 +121,10 @@ export default function ConfidentialitePage() {
       </p>
       <ul>
         <li>
-          <strong>Aucun traceur publicitaire sur le site.</strong> Pas de pixel
-          Meta, pas de Google Analytics, aucun cookie de mesure d&apos;audience ou
-          de ciblage.
+          <strong>Aucun traceur publicitaire dans vos pages.</strong> Pas de
+          pixel Meta, pas de Google Analytics, aucun cookie de mesure
+          d&apos;audience ou de ciblage. Nous mesurons l&apos;efficacité de nos
+          publicités autrement — c&apos;est expliqué juste en dessous.
         </li>
         <li><strong>Nous ne vendons aucune donnée</strong>, à personne.</li>
         <li>
@@ -123,10 +137,43 @@ export default function ConfidentialitePage() {
           envoyer de la publicité, ni pour en envoyer à ses clientes.
         </li>
       </ul>
+      <h2>La mesure de nos publicités</h2>
       <p>
-        Si nous diffusons des publicités sur Facebook ou Instagram, elles sont
-        gérées depuis les outils de Meta et ne reposent sur <strong>aucune donnée
-        issue de votre caisse</strong>.
+        Nous diffusons des publicités sur Facebook et Instagram pour faire
+        connaître Salonista aux salons. Pour savoir lesquelles fonctionnent
+        vraiment, nous devons pouvoir relier une inscription à la publicité qui
+        l&apos;a amenée. Voici précisément comment, parce que cela mérite d&apos;être
+        dit en entier :
+      </p>
+      <ul>
+        <li>
+          <strong>Un seul évènement est transmis à Meta : la création d&apos;un
+          compte salon.</strong> Rien d&apos;autre. Ni les connexions, ni les
+          ventes, ni les rendez-vous, ni la moindre action dans la caisse.
+        </li>
+        <li>
+          <strong>L&apos;e-mail et le téléphone partent chiffrés</strong> (hachage
+          SHA-256), jamais en clair. Meta les compare à ses propres empreintes
+          pour reconnaître un compte existant ; il ne peut pas en retrouver
+          l&apos;adresse, et n&apos;apprend donc rien sur quelqu&apos;un
+          qu&apos;il ne connaissait pas déjà.
+        </li>
+        <li>
+          L&apos;envoi part de <strong>notre serveur</strong>, pas de votre
+          navigateur. C&apos;est pour cela qu&apos;il n&apos;y a aucun pixel ni
+          cookie publicitaire dans nos pages.
+        </li>
+        <li>
+          <strong>Cela ne concerne que l&apos;inscription du salon</strong> —
+          c&apos;est-à-dire vous, le ou la gérante. <strong>Aucune donnée de vos
+          clientes</strong> et <strong>aucune donnée issue de votre caisse</strong>
+          n&apos;est transmise à Meta, à aucun moment.
+        </li>
+      </ul>
+      <p>
+        Si vous préférez que votre inscription ne soit pas transmise, écrivez-nous
+        à <a href="mailto:contact@salonista.tn">contact@salonista.tn</a> : nous
+        demandons sa suppression auprès de Meta.
       </p>
 
       <h2>À qui nous confions des données</h2>
@@ -162,6 +209,14 @@ export default function ConfidentialitePage() {
           <tr>
             <td>Cloudflare</td>
             <td>Gestion du nom de domaine</td>
+            <td>États-Unis</td>
+          </tr>
+          <tr>
+            <td>Meta</td>
+            <td>
+              Mesure de nos publicités, à la seule création d&apos;un compte
+              salon : e-mail et téléphone <strong>hachés</strong>, adresse IP
+            </td>
             <td>États-Unis</td>
           </tr>
         </tbody>
