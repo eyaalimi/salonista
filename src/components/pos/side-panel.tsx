@@ -234,7 +234,7 @@ function CustomerBlock() {
           </div>
           {customer.wallet && (
             <div className="mt-3 bg-pos-ink text-pos-bg p-2 rounded text-xs">
-              <span className="text-pos-yellow">★</span> {customer.wallet.balance} pts
+              <span className="text-pos-yellow">★</span> {customer.wallet.balance} points
               <span className="text-pos-ink-4 ml-2">
                 ≈{" "}
                 {formatDT(

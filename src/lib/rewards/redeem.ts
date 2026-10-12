@@ -44,7 +44,7 @@ export function validateRedemption(args: {
   const { walletBalance, pointsToRedeem, saleTotal, program } = args;
 
   if (!program.active) {
-    throw new RedemptionError("PROGRAM_INACTIVE", "Programme de fidélité inactif");
+    throw new RedemptionError("PROGRAM_INACTIVE", "Fidélité désactivée");
   }
   if (!Number.isFinite(pointsToRedeem) || pointsToRedeem <= 0) {
     throw new RedemptionError("INVALID", "Nombre de points invalide");
@@ -52,13 +52,13 @@ export function validateRedemption(args: {
   if (pointsToRedeem < program.minPointsToRedeem) {
     throw new RedemptionError(
       "BELOW_MIN",
-      `Minimum ${program.minPointsToRedeem} points requis pour un échange`,
+      `Minimum ${program.minPointsToRedeem} points requis pour les utiliser`,
     );
   }
   if (pointsToRedeem > walletBalance) {
     throw new RedemptionError(
       "INSUFFICIENT_BALANCE",
-      `Solde insuffisant (disponible: ${walletBalance} pts)`,
+      `Points insuffisants (disponible : ${walletBalance} points)`,
     );
   }
 

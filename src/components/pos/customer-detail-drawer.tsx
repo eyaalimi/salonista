@@ -345,18 +345,18 @@ export function CustomerDetailDrawer({
                         ★ Points fidélité
                       </p>
                       <p className="text-2xl font-semibold text-pos-warn pos-mono mt-1">
-                        {data.loyalty.balance} pts
+                        {data.loyalty.balance} points
                       </p>
                     </div>
                     <div className="text-right text-xs text-pos-warn">
                       <p>
-                        Gagnés (vie) :{" "}
+                        Total gagné :{" "}
                         <span className="pos-mono font-semibold">
                           {data.loyalty.lifetimeEarned}
                         </span>
                       </p>
                       <p className="mt-1">
-                        Utilisés (vie) :{" "}
+                        Déjà utilisé :{" "}
                         <span className="pos-mono font-semibold">
                           {data.loyalty.lifetimeRedeemed}
                         </span>

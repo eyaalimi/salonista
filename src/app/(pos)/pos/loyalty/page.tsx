@@ -1,6 +1,6 @@
 import { getCurrentEmployee } from "@/lib/employee-session";
 import { redirect } from "next/navigation";
-import { LoyaltyClient } from "@/components/pos/loyalty-client";
+import { FideliteClient } from "@/components/pos/fidelite/fidelite-client";
 
 export const metadata = { title: "Fidélité — Salonista" };
 
@@ -9,7 +9,7 @@ export default async function LoyaltyPage() {
   if (!employee) redirect("/salon-pin");
   if (!employee.permissions["rewards.adjust"]) redirect("/pos/calendar");
   return (
-    <LoyaltyClient
+    <FideliteClient
       canEditSettings={!!employee.permissions["rewards.settings"]}
     />
   );

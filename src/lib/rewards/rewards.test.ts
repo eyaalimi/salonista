@@ -181,13 +181,28 @@ describe("cashback bridge", () => {
       pointsPerDinar: "3.000",
       dinarPerPoint: "0.010",
     });
-    expect(cashbackPctToProgram(0.5)).toEqual({
-      pointsPerDinar: "0.500",
+    expect(cashbackPctToProgram(10)).toEqual({
+      pointsPerDinar: "10.000",
       dinarPerPoint: "0.010",
     });
   });
 
   it("rejects negative cashback %", () => {
     expect(() => cashbackPctToProgram(-1)).toThrow();
+  });
+
+  // La reglette de la page Fidelite ne propose que 3–10 %. La borne doit
+  // tenir ici aussi : un `<input type="range">` se contourne avec un `curl`.
+  it("rejects a cashback % outside the 3–10 slider bounds", () => {
+    expect(() => cashbackPctToProgram(0.5)).toThrow(/entre 3 % et 10 %/);
+    expect(() => cashbackPctToProgram(1)).toThrow(/entre 3 % et 10 %/);
+    expect(() => cashbackPctToProgram(2.9)).toThrow(/entre 3 % et 10 %/);
+    expect(() => cashbackPctToProgram(11)).toThrow(/entre 3 % et 10 %/);
+    expect(() => cashbackPctToProgram(100)).toThrow(/entre 3 % et 10 %/);
+  });
+
+  it("rejects a non-finite cashback %", () => {
+    expect(() => cashbackPctToProgram(NaN)).toThrow(/invalide/);
+    expect(() => cashbackPctToProgram(Infinity)).toThrow();
   });
 });

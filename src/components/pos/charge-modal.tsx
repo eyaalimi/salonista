@@ -416,7 +416,7 @@ export function ChargeModal({
                   !online
                     ? "Indisponible hors ligne — utilisez les points lors de la prochaine connexion"
                     : wallet.balance < wallet.minPointsToRedeem
-                      ? `Minimum ${wallet.minPointsToRedeem} pts requis`
+                      ? `Minimum ${wallet.minPointsToRedeem} points requis`
                       : loyaltyAlreadyApplied
                         ? "Déjà appliqué"
                         : ""
@@ -425,7 +425,7 @@ export function ChargeModal({
               >
                 <p className="mb-1">★ Points fidélité</p>
                 <p className="text-sm">
-                  Solde: <span className="font-semibold">{wallet.balance} pts</span>
+                  Points: <span className="font-semibold">{wallet.balance} points</span>
                   <span className="text-prune/70"> (≈ {formatDT(fromMillimes(Math.round(wallet.balance * dpp * 1000)))})</span>
                 </p>
               </button>
@@ -455,7 +455,7 @@ export function ChargeModal({
               <div className="rounded-[var(--radius-card)] border-2 border-rose bg-creme p-4 mb-6">
                 <p className="mb-2 text-sm text-prune/70">Utiliser des points</p>
                 <p className="text-sm text-prune/70 mb-4">
-                  Solde disponible: {wallet.balance} pts (≈ {formatDT(fromMillimes(Math.round(wallet.balance * dpp * 1000)))})
+                  Points disponibles: {wallet.balance} points (≈ {formatDT(fromMillimes(Math.round(wallet.balance * dpp * 1000)))})
                 </p>
                 <div className="flex items-center gap-2 mb-3">
                   <button
@@ -488,13 +488,13 @@ export function ChargeModal({
                   >
                     +
                   </button>
-                  <span className="text-xs text-prune/70">pts</span>
+                  <span className="text-xs text-prune/70">points</span>
                 </div>
                 <p className="text-sm mb-1">
                   Valeur: <span className="font-semibold">{formatDT(loyaltyValue)}</span>
                 </p>
                 <p className="text-xs text-prune/70 mb-4">
-                  Maximum sur cette vente: {loyaltyMax} pts ({wallet.maxRedemptionPctPerSale}%)
+                  Maximum sur cette vente: {loyaltyMax} points ({wallet.maxRedemptionPctPerSale}%)
                 </p>
                 <div className="flex justify-end gap-2">
                   <button
