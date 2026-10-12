@@ -423,7 +423,7 @@ Routes added:
 
 Helpers (`src/lib/rewards/*`): `getOrCreateProgram`, `updateProgram`, `programToCashbackPct`, `cashbackPctToProgram`, `getOrCreateWallet`, `getWalletForPos`, `computeEarnedPoints`, `applySaleEarnings`, `validateRedemption`, `applySaleRedemption`, `clawbackOnRefund`, `adjustWallet`, `expireInactiveWallets`. 17 unit tests cover the pure functions (earn under each eligibility, loyalty-no-infinite-loop, redemption validation, cashback bridge).
 
-Subscription expiry: existing wallets and transactions are preserved when REWARDS lapses. The `<ModuleGate>` blocks `/prestataire/fidelite` and the POS loyalty tile, but customers can still read their wallet at `/cliente/fidelite/[walletId]`. Reactivation resumes earning seamlessly.
+Subscription expiry: **superseded by the Premium offer (October 2026)** — loyalty now follows `hasFeature(providerId, "FIDELITE")`, see « Offre gratuite et Premium » below. Wallets and transactions are still preserved while loyalty is paused, and customers can still read their wallet at `/cliente/fidelite/[walletId]`.
 
 ---
 
@@ -523,6 +523,115 @@ This is the door-to-door-deployment readiness pass. The POS is offered free to s
 ### Inline delete on expense list
 
 Currently omitted from `cash-drawer-detail-client.tsx` because that component doesn't yet receive `permissions` from its parent. The API still enforces `pos.refund` server-side. When the parent passes permissions, surface the delete button with `_removeExpense` (already implemented, prefixed with `_` to silence the linter).
+
+---
+
+## Offre gratuite et Premium (octobre 2026)
+
+**La caisse est gratuite pour toujours** : encaissement, tickets, agenda,
+fiches clientes, stock, statistiques, tiroir, dépenses et rapport Z. Rien de
+tout cela ne se verrouille. **Le Premium (39 DT/mois)** couvre trois
+fonctions : la fidélité, plus d'une employée, et les commissions. Le
+paiement se fait hors de l'application (virement, D17, espèces lors d'une
+visite) ; l'admin active le Premium à la main.
+
+### Les quatre états
+
+Calculés en un seul endroit, `calculerPlan()` dans
+[src/lib/plan.ts](src/lib/plan.ts) (pur, testé). Le chargeur serveur
+`getPlan()` est dans [src/lib/plan-serveur.ts](src/lib/plan-serveur.ts).
+
+| État | Quand | Fidélité | Employées actives hors gérante | Commissions |
+|---|---|---|---|---|
+| `AVANT_PREMIERE_VENTE` | aucune vente, aucune ligne `PREMIUM` | ✅ | illimitées | ✅ |
+| `ESSAI` | ligne `PREMIUM` en `TRIAL` non échue | ✅ | illimitées | ✅ |
+| `PREMIUM` | ligne `ACTIVE` non échue, ou sans échéance (démo) | ✅ | illimitées | ✅ |
+| `GRATUIT` | tout le reste (échue, `SUSPENDED`, `EXPIRED`) | ❌ en pause | 1 | ❌ |
+
+`hasFeature(providerId, "FIDELITE" | "EQUIPE" | "COMMISSIONS")` est vrai hors
+`GRATUIT`. **Compatibilité** : un ancien module `REWARDS` encore actif garde
+la fidélité, et elle seule. L'enum `REWARDS` n'est pas supprimé.
+
+### L'essai démarre à la première vente
+
+Pas à l'inscription : un salon qui passe une semaine à configurer ne doit pas
+perdre une semaine d'essai. [src/lib/pos-sale-create.ts](src/lib/pos-sale-create.ts)
+pose la ligne `PREMIUM` en `TRIAL` (+30 jours) après une vente réussie, **hors
+de la transaction** : une vente n'échoue jamais pour une raison commerciale.
+Une vente hors ligne utilise sa propre date ; une ligne existante n'est
+**jamais déplacée**.
+
+**Une ligne manquante part de maintenant**, jamais d'une vieille vente.
+Depuis le lancement, toute première vente pose sa ligne ; une ligne absente
+chez un salon qui a déjà vendu désigne donc un salon d'avant le lancement.
+Partir de sa première vente le ferait passer en gratuit à la première page
+ouverte après le déploiement. Un salon `demo` reçoit le Premium sans échéance.
+
+Rattrapage (inspecte par défaut, idempotent) :
+`npx tsx prisma/backfill-freemium.ts --apply`.
+
+### La limite d'équipe
+
+En `GRATUIT` : la gérante (`OWNER`, jamais comptée) + **1** employée active.
+
+- Création, réactivation, et passage d'une gérante à un autre rôle → **403
+  `PREMIUM_REQUIS`** au-delà de la limite. Nommer une employée `OWNER` est
+  refusé aussi : sinon la règle « la gérante ne compte pas » se contournait.
+- `appliquerLimiteEquipe()` ([src/lib/plan-equipe.ts](src/lib/plan-equipe.ts)),
+  appelée à la connexion PIN et à l'ouverture de la caisse, garde la dernière
+  connectée et met les autres en `active: false` + `suspendueParPlanAt`. **Rien
+  n'est supprimé.** La gérante confirme ou échange ensuite dans une fenêtre.
+- `suspendueParPlanAt` distingue une pause due au plan d'une désactivation
+  manuelle : seules les premières reviennent au Premium.
+- `requireEmployee` refuse désormais une session PIN dont l'employée n'est
+  plus active. Avant, le jeton n'était jamais relu : une employée désactivée
+  encaissait jusqu'à l'expiration de sa session (30 jours).
+
+### Les commissions
+
+En `GRATUIT`, ni lisibles ni modifiables : page `/pos/commissions`
+verrouillée, `/api/pos/commissions` en 403, taux masqués et refusés par l'API
+employées, montants omis de `analytics/by-employee`. **Le calcul continue** à
+chaque vente : le passage au Premium rend toute la période.
+
+### La fidélité en pause
+
+En `GRATUIT`, aucun point gagné ni utilisé — **vérifié dans
+`pos-sale-create.ts`**, pas seulement à l'écran. Avant ce chantier, gagner et
+dépenser des points ne dépendait d'aucun abonnement. Les soldes sont
+conservés, la cliente garde `/cliente/fidelite`. La tuile du paiement reste
+**grisée** (« Programme fidélité en pause ») grâce à `enPause: true` dans le
+résumé de portefeuille (`resumesPortefeuilles`, partagé par le catalogue et
+la recherche). `expireInactiveWallets()` ignore les salons en pause.
+
+### surPassageAuPremium
+
+[src/lib/plan-premium.ts](src/lib/plan-premium.ts). Appelée par **toutes** les
+routes qui peuvent rendre un salon Premium (action rapide 1/3/12 mois et
+routes génériques de `/admin/subscriptions`) :
+
+1. réactive les employées en pause du plan ;
+2. recule `lastActivityAt` des portefeuilles de la durée de la pause (début =
+   ancienne échéance, lue **avant** l'écriture), plafonné à maintenant.
+
+Idempotente : la pause déjà compensée est notée dans
+`pricingSnapshot.pauseCompenseeDepuis`.
+
+### Écrans
+
+- Bandeau de la caisse, **seulement pour `employees.manage`** : discret pendant
+  l'essai, chiffré à 7 jours de la fin, rappel masquable en gratuit.
+- `/pos/premium` : les trois fonctions, le prix, comment payer, WhatsApp.
+  Coordonnées lues dans `NEXT_PUBLIC_SALONISTA_WHATSAPP`,
+  `NEXT_PUBLIC_SALONISTA_RIB`, `NEXT_PUBLIC_SALONISTA_RIB_TITULAIRE`,
+  `NEXT_PUBLIC_SALONISTA_D17` — une valeur absente masque sa ligne, aucun
+  numéro n'est écrit dans le code. `NEXT_PUBLIC_*` est figé **au build**.
+- `/admin/subscriptions` : colonne Premium, première vente, fin d'essai,
+  filtres « Essai ≤ 7 jours », « Version gratuite », « Premium actif ».
+
+Migrations : `20261012100000_module_premium` (enum, seule dans sa migration),
+`20261012100100_employee_suspendue_par_plan`,
+`20261012100200_choix_equipe_confirme`.
 
 ---
 

@@ -974,6 +974,27 @@ les coordonnées complètes ne tenaient pas sur une ligne de téléphone. Les
 liens `tel:`/`mailto:` et le bouton copier sont **hors** du `<Link>` vers la
 fiche — imbriqués dedans, ils auraient été inatteignables.
 
+### 31. Offre gratuite + Premium : un seul calcul du plan
+
+La caisse est gratuite pour toujours ; **fidélité, équipe au-delà d'une
+employée et commissions** passent en Premium (39 DT/mois), après un essai de
+30 jours qui démarre **à la première vente**. Le détail (quatre états,
+limite d'équipe, pause de la fidélité) est dans la section « Offre gratuite
+et Premium » de [CONTEXT.md](CONTEXT.md).
+
+Quatre règles à ne pas défaire :
+
+- **Le plan se calcule en un seul endroit** : `calculerPlan` (pur, testé) et
+  `getPlan`/`hasFeature`. Aucune route ne relit `SalonSubscription` à la main.
+- **Chaque refus est serveur** : 403 `PREMIUM_REQUIS`, ou 422 pour un paiement
+  par points. L'interface grise ; l'API refuse.
+- **On met en pause, on ne détruit pas** : employées (`suspendueParPlanAt`),
+  portefeuilles et commissions restent en base. Le calcul des commissions
+  continue même en gratuit.
+- **Une ligne `PREMIUM` manquante part de maintenant**, jamais de la première
+  vente : un salon d'avant le lancement passerait sinon en gratuit au premier
+  chargement après le déploiement.
+
 ---
 
 ## Repo layout
@@ -1077,6 +1098,18 @@ reste **inerte** : aucun appel ne sort. C'est l'etat attendu en local.
 META_PIXEL_ID=<identifiant du jeu de donnees, Gestionnaire d'evenements>
 META_CONVERSIONS_TOKEN=<jeton d'acces du jeu de donnees — SECRET>
 META_TEST_EVENT_CODE=<optionnel, le temps de verifier l'installation>
+```
+
+**Coordonnees de paiement du Premium**, affichees sur `/pos/premium`. Une
+valeur absente masque sa ligne ; aucune n'est ecrite dans le code. Prefixe
+`NEXT_PUBLIC_` : la valeur est figee **au build**, donc a poser avant le
+deploiement.
+
+```
+NEXT_PUBLIC_SALONISTA_WHATSAPP=<numero au format international, ex. 216XXXXXXXX>
+NEXT_PUBLIC_SALONISTA_RIB=<RIB du compte qui recoit les virements>
+NEXT_PUBLIC_SALONISTA_RIB_TITULAIRE=<titulaire du compte>
+NEXT_PUBLIC_SALONISTA_D17=<numero D17>
 ```
 
 Le jeton vaut un acces en ecriture a votre compte publicitaire : il ne va que
