@@ -21,7 +21,8 @@ import { toMillimes, fromMillimes } from "@/lib/money";
 import { nextReceiptNumber } from "@/lib/receipt-number";
 import { findOpenSession } from "@/lib/cash-drawer";
 import { applySaleEarnings } from "@/lib/rewards/earn";
-import { creerEssaiSiAbsent } from "@/lib/plan-serveur";
+import { creerEssaiSiAbsent, hasFeature } from "@/lib/plan-serveur";
+import { MESSAGES_PREMIUM } from "@/lib/plan";
 import { applySaleRedemption, validateRedemption, RedemptionError } from "@/lib/rewards/redeem";
 import { sendLoyaltyEarnedEmail } from "@/lib/mail";
 import type { PaymentMethod, SaleStatus } from "@/generated/prisma/enums";
@@ -286,6 +287,17 @@ export async function createSaleFromPayload(args: {
   // Validate any loyalty redemption payments up-front so we fail fast with a
   // clear French error rather than rolling back the transaction.
   const loyaltyPayments = payload.payments.filter((p) => p.method === "LOYALTY_POINTS");
+
+  // Version gratuite : la fidelite est EN PAUSE. Aucun point gagne, aucun
+  // point utilise — verifie ici, cote serveur, car la tuile grisee de la
+  // caisse ne protege de rien contre un appel direct. Les soldes ne bougent
+  // pas et reprennent au retour en Premium. Avant ce controle, gagner et
+  // depenser des points ne dependait d'AUCUN abonnement.
+  const fideliteActive = await hasFeature(providerId, "FIDELITE");
+  if (loyaltyPayments.length > 0 && !fideliteActive) {
+    return { kind: "validation", error: MESSAGES_PREMIUM.fidelite };
+  }
+
   if (loyaltyPayments.length > 0) {
     if (!customerId) {
       return { kind: "validation", error: "Identifiez un client pour utiliser des points fidélité" };
@@ -612,7 +624,9 @@ export async function createSaleFromPayload(args: {
           await applySaleRedemption(tx, sale.id, p.walletId, p.pointsRedeemed);
           rewardsResult.redeemed += p.pointsRedeemed;
         }
-        const earnings = await applySaleEarnings(tx, sale.id);
+        const earnings = fideliteActive
+          ? await applySaleEarnings(tx, sale.id)
+          : { earned: 0, welcomeBonus: 0, birthdayBonus: 0 };
         rewardsResult = {
           ...rewardsResult,
           earned: earnings.earned,

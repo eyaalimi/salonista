@@ -1,7 +1,7 @@
 import { prisma } from "@/lib/prisma";
-import { hasModule, requireModule } from "@/lib/modules";
+import { requireModule } from "@/lib/modules";
 import { requireEmployee, toResponse } from "@/lib/employee-session";
-import { getOrCreateProgram } from "@/lib/rewards/program";
+import { resumesPortefeuilles } from "@/lib/rewards/wallet";
 
 /**
  * Single payload primer for the offline POS shell.
@@ -105,43 +105,17 @@ export async function GET() {
     }),
   ]);
 
-  // Attach wallet summary for own-scope customers when REWARDS is active.
-  let customersWithWallets: Array<
-    (typeof customers)[number] & {
-      wallet?: {
-        walletId: string;
-        balance: number;
-        minPointsToRedeem: number;
-        maxRedemptionPctPerSale: number;
-        dinarPerPoint: string;
-      };
-    }
-  > = customers;
-  if (await hasModule(providerId, "REWARDS")) {
-    const program = await getOrCreateProgram(providerId);
-    if (program.active && customers.length > 0) {
-      const wallets = await prisma.rewardWallet.findMany({
-        where: { providerId, customerId: { in: customers.map((c) => c.id) } },
-        select: { id: true, customerId: true, balance: true },
-      });
-      const byCustomer = new Map(wallets.map((w) => [w.customerId, w]));
-      customersWithWallets = customers.map((c) => {
-        const w = byCustomer.get(c.id);
-        return w
-          ? {
-              ...c,
-              wallet: {
-                walletId: w.id,
-                balance: w.balance,
-                minPointsToRedeem: program.minPointsToRedeem,
-                maxRedemptionPctPerSale: program.maxRedemptionPctPerSale,
-                dinarPerPoint: program.dinarPerPoint.toString(),
-              },
-            }
-          : c;
-      });
-    }
-  }
+  // Resume de portefeuille par cliente. Renvoye meme fidelite EN PAUSE
+  // (version gratuite), avec `enPause: true`, pour griser la tuile au lieu de
+  // la cacher.
+  const portefeuilles = await resumesPortefeuilles(
+    providerId,
+    customers.map((c) => c.id),
+  );
+  const customersWithWallets = customers.map((c) => {
+    const wallet = portefeuilles.get(c.id);
+    return wallet ? { ...c, wallet } : c;
+  });
 
   return Response.json({
     refreshedAt: new Date().toISOString(),

@@ -4,7 +4,7 @@
 
 import { prisma } from "@/lib/prisma";
 import type { Prisma, RewardWallet, RewardTransaction } from "@/generated/prisma/client";
-import { hasModule } from "@/lib/modules";
+import { hasFeature } from "@/lib/plan-serveur";
 import { getOrCreateProgram, programToCashbackPct } from "./program";
 
 type Tx = Prisma.TransactionClient;
@@ -70,6 +70,8 @@ export type PosWalletBundle = {
   maxRedemptionPctPerSale: number;
   dinarPerPoint: string;
   active: boolean;
+  /** Version gratuite : solde visible, ni gain ni utilisation possibles. */
+  enPause: boolean;
   recentTransactions: Pick<
     RewardTransaction,
     "id" | "delta" | "balanceAfter" | "reason" | "createdAt" | "note"
@@ -88,10 +90,13 @@ export async function getWalletForPos(
   providerId: string,
   customerId: string,
 ): Promise<PosWalletBundle | null> {
-  if (!(await hasModule(providerId, "REWARDS"))) return null;
+  const enPause = !(await hasFeature(providerId, "FIDELITE"));
 
-  const program = await getOrCreateProgram(providerId);
-  if (!program.active) return null;
+  // En pause, on ne cree rien : ni programme, ni portefeuille vide.
+  const program = enPause
+    ? await prisma.rewardProgram.findUnique({ where: { providerId } })
+    : await getOrCreateProgram(providerId);
+  if (!program?.active) return null;
 
   const wallet = await prisma.rewardWallet.findUnique({
     where: { providerId_customerId: { providerId, customerId } },
@@ -111,6 +116,8 @@ export async function getWalletForPos(
     },
   });
 
+  if (enPause && !(wallet && wallet.balance > 0)) return null;
+
   // walletId is empty when the customer has no wallet row yet. Callers must
   // gate redemption on `balance >= minPointsToRedeem` (which can't be true
   // with a 0 balance), and only treat walletId as a real id after that gate.
@@ -122,6 +129,62 @@ export async function getWalletForPos(
     maxRedemptionPctPerSale: program.maxRedemptionPctPerSale,
     dinarPerPoint: program.dinarPerPoint.toString(),
     active: program.active,
+    enPause,
     recentTransactions: wallet?.transactions ?? [],
   };
+}
+
+export type ResumePortefeuille = {
+  walletId: string;
+  balance: number;
+  minPointsToRedeem: number;
+  maxRedemptionPctPerSale: number;
+  dinarPerPoint: string;
+  /**
+   * Version gratuite : la tuile « Points fidelite » s'affiche GRISEE avec
+   * « Programme fidelite en pause ». Sans le resume, l'employee croirait a
+   * une panne devant une cliente qui reclame ses points.
+   */
+  enPause: boolean;
+};
+
+/**
+ * Resume de portefeuille par cliente, pour la tuile du paiement. Partage par
+ * /api/pos/catalog et /api/pos/customers/search, qui le dupliquaient.
+ *
+ * En pause, seuls les soldes POSITIFS sont renvoyes : un solde nul ou negatif
+ * n'a rien a dire a la cliente.
+ */
+export async function resumesPortefeuilles(
+  providerId: string,
+  customerIds: string[],
+): Promise<Map<string, ResumePortefeuille>> {
+  const resultat = new Map<string, ResumePortefeuille>();
+  if (customerIds.length === 0) return resultat;
+
+  const enPause = !(await hasFeature(providerId, "FIDELITE"));
+  const program = enPause
+    ? await prisma.rewardProgram.findUnique({ where: { providerId } })
+    : await getOrCreateProgram(providerId);
+  if (!program?.active) return resultat;
+
+  const wallets = await prisma.rewardWallet.findMany({
+    where: {
+      providerId,
+      customerId: { in: customerIds },
+      ...(enPause ? { balance: { gt: 0 } } : {}),
+    },
+    select: { id: true, customerId: true, balance: true },
+  });
+  for (const w of wallets) {
+    resultat.set(w.customerId, {
+      walletId: w.id,
+      balance: w.balance,
+      minPointsToRedeem: program.minPointsToRedeem,
+      maxRedemptionPctPerSale: program.maxRedemptionPctPerSale,
+      dinarPerPoint: program.dinarPerPoint.toString(),
+      enPause,
+    });
+  }
+  return resultat;
 }

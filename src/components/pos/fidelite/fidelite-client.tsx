@@ -26,6 +26,7 @@
  *    l'encaissement refusera.
  */
 
+import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 import {
   etatRecompense,
@@ -124,10 +125,20 @@ export function FideliteClient({ canEditSettings }: { canEditSettings: boolean }
     return (
       <div className="mx-auto h-full max-w-2xl overflow-y-auto p-6">
         <h1 className="mb-2 text-2xl font-semibold text-pos-ink">Fidélité</h1>
-        <p className="rounded-xl border border-pos-warn bg-pos-highlight p-4 text-sm text-pos-warn">
-          La Fidélité n&apos;est pas activée pour votre salon. Contactez
-          Salonista pour l&apos;activer.
-        </p>
+        <div className="rounded-xl border border-pos-warn bg-pos-highlight p-4 text-sm text-pos-ink">
+          <p className="font-semibold">Le programme fidélité est en pause.</p>
+          <p className="mt-1 text-pos-ink-2">
+            En version gratuite, vos clientes ne gagnent ni n&apos;utilisent de
+            points. Leurs soldes sont conservés et tout reprend dès le passage
+            au Premium.
+          </p>
+          <Link
+            href="/pos/premium"
+            className="mt-3 inline-block rounded-lg bg-pos-accent px-4 py-2 text-sm font-medium text-white hover:bg-pos-accent/90"
+          >
+            Passer au Premium
+          </Link>
+        </div>
       </div>
     );
   }

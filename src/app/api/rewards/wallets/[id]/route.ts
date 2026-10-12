@@ -1,7 +1,8 @@
 import { NextRequest } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireEmployee, toResponse } from "@/lib/employee-session";
-import { requireModule } from "@/lib/modules";
+import { hasFeature, reponsePremiumRequis } from "@/lib/plan-serveur";
+import { MESSAGES_PREMIUM } from "@/lib/plan";
 
 export async function GET(
   req: NextRequest,
@@ -15,10 +16,8 @@ export async function GET(
     if (r) return r;
     throw err;
   }
-  try {
-    await requireModule(employee.providerId, "REWARDS");
-  } catch {
-    return Response.json({ error: "Module Fidélité non activé" }, { status: 403 });
+  if (!(await hasFeature(employee.providerId, "FIDELITE"))) {
+    return reponsePremiumRequis(MESSAGES_PREMIUM.fidelite);
   }
 
   const { id } = await ctx.params;

@@ -1,6 +1,7 @@
 import { NextRequest } from "next/server";
 import { requireEmployee, requirePermission, toResponse } from "@/lib/employee-session";
-import { requireModule } from "@/lib/modules";
+import { hasFeature, reponsePremiumRequis } from "@/lib/plan-serveur";
+import { MESSAGES_PREMIUM } from "@/lib/plan";
 import {
   getOrCreateProgram,
   updateProgram,
@@ -19,10 +20,8 @@ export async function GET() {
     if (r) return r;
     throw err;
   }
-  try {
-    await requireModule(employee.providerId, "REWARDS");
-  } catch {
-    return Response.json({ error: "Module Fidélité non activé" }, { status: 403 });
+  if (!(await hasFeature(employee.providerId, "FIDELITE"))) {
+    return reponsePremiumRequis(MESSAGES_PREMIUM.fidelite);
   }
 
   const program = await getOrCreateProgram(employee.providerId);
@@ -67,10 +66,8 @@ export async function PUT(req: NextRequest) {
     if (r) return r;
     throw err;
   }
-  try {
-    await requireModule(employee.providerId, "REWARDS");
-  } catch {
-    return Response.json({ error: "Module Fidélité non activé" }, { status: 403 });
+  if (!(await hasFeature(employee.providerId, "FIDELITE"))) {
+    return reponsePremiumRequis(MESSAGES_PREMIUM.fidelite);
   }
 
   const body = (await req.json().catch(() => null)) as PutBody | null;
