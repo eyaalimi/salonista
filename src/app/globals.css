@@ -349,6 +349,73 @@ body {
 }
 .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
 
+/* Reglette de la page Fidelite (3–10 %).
+   On habille un `<input type="range">` NATIF plutot que de le reconstruire en
+   `div` : le natif apporte le clavier (fleches, Origine/Fin), le lecteur
+   d'ecran et le geste tactile, qu'une version maison aurait tous perdus.
+   Les pseudo-elements de piste et de pouce ne se regroupent PAS dans une
+   seule regle : un selecteur que le navigateur ne connait pas invalide toute
+   la declaration, d'ou la duplication WebKit / Firefox ci-dessous. */
+.fid-reglette {
+  -webkit-appearance: none;
+  appearance: none;
+  background: transparent;
+  cursor: pointer;
+  /* 44px de haut : la cible tactile recommandee, alors que la piste n'en
+     dessine que 6. */
+  height: 44px;
+}
+.fid-reglette:disabled { cursor: default; opacity: .55; }
+
+.fid-reglette::-webkit-slider-runnable-track {
+  height: 6px;
+  border-radius: 999px;
+  background: var(--color-pos-border);
+}
+.fid-reglette::-moz-range-track {
+  height: 6px;
+  border-radius: 999px;
+  background: var(--color-pos-border);
+}
+/* La portion parcourue, en vert — seul Firefox sait la dessiner nativement. */
+.fid-reglette::-moz-range-progress {
+  height: 6px;
+  border-radius: 999px;
+  background: var(--color-pos-accent);
+}
+
+.fid-reglette::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 28px;
+  height: 28px;
+  margin-top: -11px; /* centre le pouce sur une piste de 6px */
+  border-radius: 999px;
+  background: var(--color-pos-accent);
+  border: 3px solid #fff;
+  box-shadow: 0 1px 4px rgb(0 0 0 / .25);
+}
+.fid-reglette::-moz-range-thumb {
+  width: 28px;
+  height: 28px;
+  border-radius: 999px;
+  background: var(--color-pos-accent);
+  border: 3px solid #fff;
+  box-shadow: 0 1px 4px rgb(0 0 0 / .25);
+}
+
+/* Le focus doit rester visible : c'est le seul repere d'une gerante qui
+   regle la reglette au clavier. */
+.fid-reglette:focus-visible { outline: none; }
+.fid-reglette:focus-visible::-webkit-slider-thumb {
+  outline: 3px solid var(--color-pos-ink);
+  outline-offset: 2px;
+}
+.fid-reglette:focus-visible::-moz-range-thumb {
+  outline: 3px solid var(--color-pos-ink);
+  outline-offset: 2px;
+}
+
 /* Corps des pages legales (/confidentialite, /conditions). Ces pages sont du
    texte long ecrit directement en JSX : plutot qu'une classe sur chaque
    paragraphe, on habille les elements depuis leur conteneur. */

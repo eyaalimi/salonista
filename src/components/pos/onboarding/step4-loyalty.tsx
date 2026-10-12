@@ -1,7 +1,42 @@
 "use client";
 
-import { useMemo, useState } from "react";
-import { Gift } from "lucide-react";
+/**
+ * Etape 4 du demarrage : la recompense de fidelite.
+ *
+ * POURQUOI CETTE ETAPE A ETE REECRITE. Elle demandait trois ratios bruts
+ * — « 1 point tous les X DT », « 1 point vaut Y DT », « seuil de retrait » —
+ * et envoyait `dinarPerPoint: "0.100"` avec un `pointsPerDinar` inverse en
+ * `1/x`. Resultat : un salon sorti de l'assistant valait 0,1 × 0,1 = 1 % de
+ * recompense, en dehors des bornes 3–10 % de la page Fidelite, qui lui
+ * affichait aussitot un avertissement. L'assistant fabriquait le probleme
+ * que la page devait signaler.
+ *
+ * Elle pose maintenant la MEME question que la page, avec la MEME reglette et
+ * les memes ratios canoniques : un seul modele mental, et plus aucun salon
+ * cree hors bornes.
+ */
+
+import { useState } from "react";
+import {
+  RECOMPENSE_MAX_PCT,
+  RECOMPENSE_MIN_PCT,
+  RECOMPENSE_PAS_PCT,
+  apercuRecompense,
+  cagnotteEnDinars,
+  ratiosDepuisPct,
+} from "@/lib/rewards/fidelite-affichage";
+
+/** Le reglage propose par defaut : genereux sans entamer la marge. */
+const PCT_DEFAUT = 5;
+
+/**
+ * Minimum pour utiliser la cagnotte, en points. 100 points = 1 DT avec les
+ * ratios canoniques : une cliente peut donc utiliser sa cagnotte des 1 DT,
+ * ce qui evite qu'elle attende des mois avant de voir le programme servir.
+ */
+const MIN_POINTS_DEFAUT = 100;
+
+const MONTANT_APERCU = 100;
 
 export function Step4Loyalty({
   providerId: _providerId,
@@ -12,45 +47,35 @@ export function Step4Loyalty({
   onNext: () => void;
   onBack: () => void;
 }) {
-  const [enabled, setEnabled] = useState(true);
-  // dinarsPerPoint = "1 point tous les X DT dépensés"
-  const [dinarsPerPoint, setDinarsPerPoint] = useState(10);
-  // pointValue = "1 point = Y DT de réduction"
-  const [pointValue, setPointValue] = useState("0.100");
-  const [minPoints, setMinPoints] = useState(100);
+  const [active, setActive] = useState(true);
+  const [pct, setPct] = useState(PCT_DEFAUT);
   const [busy, setBusy] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [erreur, setErreur] = useState<string | null>(null);
 
-  // Live example: a 100 DT purchase
-  const examplePurchase = 100;
-  const pointsEarned = useMemo(
-    () => Math.floor(examplePurchase / Math.max(1, dinarsPerPoint)),
-    [dinarsPerPoint],
-  );
-  const dinarValueOfMin = useMemo(
-    () => (minPoints * Number(pointValue)).toFixed(3),
-    [minPoints, pointValue],
-  );
+  const apercu = apercuRecompense(pct, MONTANT_APERCU);
+  const { dinarPerPoint } = ratiosDepuisPct(pct);
+  const minEnDT = cagnotteEnDinars(MIN_POINTS_DEFAUT, dinarPerPoint).replace(".", ",");
 
-  async function save() {
+  async function enregistrer() {
     setBusy(true);
-    setError(null);
+    setErreur(null);
     try {
       const res = await fetch("/api/pos/onboarding", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           step4: {
-            enabled,
-            pointsPerDinar: dinarsPerPoint, // route inverts to per-DT rate
-            dinarPerPoint: pointValue,
-            minPointsToRedeem: minPoints,
+            enabled: active,
+            // Les ratios canoniques, les memes que `cashbackPctToProgram` :
+            // le pourcentage EST le nombre de points par dinar.
+            cashbackPct: pct,
+            minPointsToRedeem: MIN_POINTS_DEFAUT,
           },
         }),
       });
       if (!res.ok) {
         const data = await res.json().catch(() => ({}));
-        setError(data?.error ?? "Erreur lors de la sauvegarde");
+        setErreur(data?.error ?? "Erreur lors de la sauvegarde");
         return;
       }
       onNext();
@@ -61,133 +86,112 @@ export function Step4Loyalty({
 
   return (
     <div className="space-y-5">
-
-      {/* Enable / disable */}
-      <label className="flex items-start gap-3 p-3 rounded-lg border border-brand-line bg-brand-cream/30 cursor-pointer">
+      <label className="flex min-h-[44px] cursor-pointer items-start gap-3 rounded-lg border border-brand-line bg-brand-cream/30 p-3">
         <input
           type="checkbox"
-          checked={enabled}
-          onChange={(e) => setEnabled(e.target.checked)}
-          className="w-4 h-4 mt-0.5 accent-pos-accent shrink-0"
+          checked={active}
+          onChange={(e) => setActive(e.target.checked)}
+          className="mt-0.5 h-4 w-4 shrink-0 accent-pos-accent"
         />
-        <div className="flex-1 min-w-0">
-          <div className="text-sm font-medium text-brand-ink">
-            Activer le programme de fidélité
-          </div>
-          <div className="text-[11px] text-brand-ink-soft">
-            Vos clientes cumulent des points à chaque visite et les utilisent
-            en réduction.
-          </div>
-        </div>
+        <span className="min-w-0 flex-1">
+          <span className="block text-sm font-medium text-brand-ink">
+            Offrir une cagnotte à mes clientes
+          </span>
+          <span className="block text-[11px] text-brand-ink-soft">
+            Elles gagnent à chaque visite, et paient moins la fois suivante.
+          </span>
+        </span>
       </label>
 
-      {enabled && (
+      {active && (
         <>
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-            <div>
-              <Label>1 point tous les</Label>
-              <div className="flex items-center gap-2">
-                <input
-                  type="number"
-                  value={dinarsPerPoint}
-                  onChange={(e) =>
-                    setDinarsPerPoint(Math.max(1, Number(e.target.value) || 1))
-                  }
-                  min={1}
-                  max={1000}
-                  className="w-full px-3 py-2.5 border border-brand-line rounded-lg bg-white text-sm pos-mono text-right focus:border-pos-accent focus:outline-none"
-                />
-                <span className="text-xs text-brand-ink-soft shrink-0">TND</span>
-              </div>
-            </div>
+          <div className="rounded-2xl border border-brand-line bg-white p-5">
+            <label
+              htmlFor="onb-reglette"
+              className="block text-sm font-medium text-brand-ink"
+            >
+              Combien vous offrez sur chaque prestation&nbsp;?
+            </label>
 
-            <div>
-              <Label>1 point vaut</Label>
-              <div className="flex items-center gap-2">
-                <input
-                  type="text"
-                  inputMode="decimal"
-                  value={pointValue}
-                  onChange={(e) => setPointValue(e.target.value)}
-                  className="w-full px-3 py-2.5 border border-brand-line rounded-lg bg-white text-sm pos-mono text-right focus:border-pos-accent focus:outline-none"
-                />
-                <span className="text-xs text-brand-ink-soft shrink-0">TND</span>
-              </div>
-            </div>
+            <p className="mt-4 flex items-baseline gap-2">
+              <span className="text-4xl font-semibold text-brand-ink tabular-nums">
+                {pct} %
+              </span>
+              <span className="text-sm text-brand-ink-soft">du prix</span>
+            </p>
 
-            <div>
-              <Label>Seuil de retrait</Label>
-              <div className="flex items-center gap-2">
-                <input
-                  type="number"
-                  value={minPoints}
-                  onChange={(e) =>
-                    setMinPoints(Math.max(1, Number(e.target.value) || 1))
-                  }
-                  min={1}
-                  className="w-full px-3 py-2.5 border border-brand-line rounded-lg bg-white text-sm pos-mono text-right focus:border-pos-accent focus:outline-none"
-                />
-                <span className="text-xs text-brand-ink-soft shrink-0">pts</span>
-              </div>
+            <input
+              id="onb-reglette"
+              type="range"
+              min={RECOMPENSE_MIN_PCT}
+              max={RECOMPENSE_MAX_PCT}
+              step={RECOMPENSE_PAS_PCT}
+              value={pct}
+              onChange={(e) => setPct(Number(e.target.value))}
+              aria-valuetext={`${pct} pour cent du prix`}
+              className="fid-reglette mt-4 w-full"
+            />
+            <div className="mt-1 flex justify-between text-xs text-brand-ink-soft tabular-nums">
+              <span>{RECOMPENSE_MIN_PCT} %</span>
+              <span>{RECOMPENSE_MAX_PCT} %</span>
             </div>
           </div>
 
-          {/* Live example */}
-          <div className="rounded-2xl border-2 border-pos-accent/30 bg-gradient-to-br from-pos-accent/10 to-pos-accent/5 p-5">
-            <div className="flex items-start gap-3">
-              <div className="inline-flex items-center justify-center w-10 h-10 rounded-full bg-pos-accent/20 text-pos-accent shrink-0">
-                <Gift size={18} />
-              </div>
-              <div className="flex-1 min-w-0">
-                <div className="text-[10px] uppercase tracking-[0.18em] text-pos-accent font-semibold mb-1">
-                  Exemple en direct
-                </div>
-                <p className="text-sm text-brand-ink leading-relaxed">
-                  Pour une vente de{" "}
-                  <strong>{examplePurchase} TND</strong>, la cliente gagne{" "}
-                  <strong>{pointsEarned} points</strong>.
-                </p>
-                <p className="text-sm text-brand-ink-soft mt-1.5 leading-relaxed">
-                  Dès <strong>{minPoints} points</strong>, elle peut les utiliser
-                  pour <strong>{dinarValueOfMin} TND</strong> de réduction.
-                </p>
-              </div>
-            </div>
+          {/* L'apercu, calcule par les vraies formules de la caisse. */}
+          <div
+            aria-live="polite"
+            className="rounded-2xl bg-pos-ink p-5 text-white"
+          >
+            <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-white/60">
+              Ce que ça donne
+            </p>
+            <p className="mt-3 text-2xl font-semibold tabular-nums">
+              {MONTANT_APERCU} DT
+              <span className="mx-2 text-white/40" aria-hidden>
+                →
+              </span>
+              <span className="text-pos-accent-soft">
+                {apercu.valeurDT.replace(".", ",")} DT
+              </span>
+            </p>
+            <p className="mt-1.5 text-sm text-white/70">
+              de cagnotte pour votre cliente
+            </p>
+            <p className="mt-4 border-t border-white/15 pt-3 text-sm italic text-white/85">
+              «&nbsp;Prestation b {MONTANT_APERCU} DT, terba7{" "}
+              {apercu.valeurDT.replace(".", ",")} DT cagnotte.&nbsp;»
+            </p>
+            <p className="mt-3 text-xs text-white/50">
+              Elle pourra l&apos;utiliser dès {minEnDT} DT. Vous ajusterez tout
+              cela plus tard dans Fidélité.
+            </p>
           </div>
         </>
       )}
 
-      {error && (
-        <div className="text-sm text-pos-danger bg-pos-danger-soft border border-pos-danger rounded-lg px-3 py-2">
-          {error}
-        </div>
+      {erreur && (
+        <p className="rounded-lg border border-pos-danger bg-pos-danger-soft px-3 py-2 text-sm text-pos-danger">
+          {erreur}
+        </p>
       )}
 
-      <div className="flex items-center justify-between pt-4 border-t border-brand-line">
+      <div className="flex items-center justify-between border-t border-brand-line pt-4">
         <button
           type="button"
           onClick={onBack}
-          className="text-sm text-brand-ink-soft hover:text-brand-ink"
+          className="min-h-[44px] text-sm text-brand-ink-soft hover:text-brand-ink"
         >
           ← Retour
         </button>
         <button
           type="button"
-          onClick={save}
+          onClick={enregistrer}
           disabled={busy}
-          className="px-8 py-3 rounded-xl bg-pos-accent text-white font-semibold hover:bg-pos-accent/90 disabled:opacity-50"
+          className="min-h-[44px] rounded-xl bg-pos-accent px-8 font-semibold text-white hover:bg-pos-accent/90 disabled:opacity-50"
         >
           {busy ? "Sauvegarde…" : "Continuer →"}
         </button>
       </div>
     </div>
-  );
-}
-
-function Label({ children }: { children: React.ReactNode }) {
-  return (
-    <label className="block text-[10px] uppercase tracking-[0.18em] text-brand-ink-soft mb-1.5">
-      {children}
-    </label>
   );
 }

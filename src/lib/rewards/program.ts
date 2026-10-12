@@ -9,6 +9,7 @@
 import { prisma } from "@/lib/prisma";
 import type { RewardProgram } from "@/generated/prisma/client";
 import type { RewardEligibility } from "@/generated/prisma/enums";
+import { RECOMPENSE_MAX_PCT, RECOMPENSE_MIN_PCT } from "./fidelite-affichage";
 
 export type RewardProgramInput = {
   pointsPerDinar?: string | number;
@@ -124,13 +125,32 @@ export function programToCashbackPct(p: {
   return (ppd * dpp * 100).toFixed(3);
 }
 
-/** Convert a cashback % into the canonical (1 pt = 0.010 DT) ratios. */
+/**
+ * Convert a cashback % into the canonical (1 pt = 0.010 DT) ratios.
+ *
+ * BORNES 3–10 %. La reglette de la page Fidelite ne propose que cet
+ * intervalle, et la validation doit l'imposer ici aussi : une borne tenue
+ * seulement par un `<input type="range">` se contourne avec un `curl`.
+ *
+ * Les salons DEJA hors bornes ne sont pas migres — le defaut du schema
+ * (1 pt/DT × 0,010 = 1 %) en a cree, et leur reecrire leur reglage
+ * changerait ce que leurs clientes gagnent sans qu'elles l'aient demande.
+ * La page affiche leur vraie valeur et un avertissement ; la borne ne mord
+ * qu'au prochain enregistrement. Voir `etatRecompense` dans
+ * fidelite-affichage.ts.
+ */
 export function cashbackPctToProgram(pct: number): {
   pointsPerDinar: string;
   dinarPerPoint: string;
 } {
-  if (!Number.isFinite(pct) || pct < 0) {
+  if (!Number.isFinite(pct)) {
     throw new ProgramValidationError("cashbackPct", "Pourcentage invalide");
+  }
+  if (pct < RECOMPENSE_MIN_PCT || pct > RECOMPENSE_MAX_PCT) {
+    throw new ProgramValidationError(
+      "cashbackPct",
+      `La récompense doit être entre ${RECOMPENSE_MIN_PCT} % et ${RECOMPENSE_MAX_PCT} %`,
+    );
   }
   return {
     pointsPerDinar: pct.toFixed(3),

@@ -19,6 +19,10 @@ import { prisma } from "@/lib/prisma";
 import { tauxTvaApplicable, TVA_TAUX_DEFAUT } from "@/lib/tva-salon";
 import { requireEmployee, toResponse } from "@/lib/employee-session";
 import { mergePermissions } from "@/lib/permissions";
+import {
+  cashbackPctToProgram,
+  ProgramValidationError,
+} from "@/lib/rewards/program";
 
 type Step1 = {
   salonName?: string;
@@ -50,8 +54,12 @@ type Step3Product = {
 
 type Step4Loyalty = {
   enabled?: boolean;
-  pointsPerDinar?: number; // e.g. 1 point per X DT (we store inverse)
-  dinarPerPoint?: string; // 1 point = Y DT redeemable
+  /**
+   * Recompense en % du prix, 3–10. C'est la SEULE forme acceptee depuis que
+   * l'assistant pose la meme question que la page Fidelite ; les deux ratios
+   * en decoulent via `cashbackPctToProgram`.
+   */
+  cashbackPct?: number;
   minPointsToRedeem?: number;
 };
 
@@ -223,13 +231,24 @@ export async function PATCH(req: NextRequest) {
     }).rewardProgram.findUnique({
       where: { providerId },
     });
+    // Les ratios viennent du pourcentage, par le MEME chemin que la page
+    // Fidelite — bornes 3–10 % comprises. L'ancienne version acceptait deux
+    // ratios bruts et creait des salons a 1 %, hors des bornes que la page
+    // impose ensuite.
+    let ratios: { pointsPerDinar: string; dinarPerPoint: string };
+    try {
+      ratios = cashbackPctToProgram(program.cashbackPct ?? 5);
+    } catch (err) {
+      if (err instanceof ProgramValidationError) {
+        return Response.json({ error: err.message, field: err.field }, { status: 422 });
+      }
+      throw err;
+    }
+
     const data = {
       providerId,
       active: program.enabled ?? true,
-      pointsPerDinar: program.pointsPerDinar
-        ? (1 / program.pointsPerDinar).toFixed(3) // store as points per DT
-        : "1.000",
-      dinarPerPoint: program.dinarPerPoint ?? "0.100",
+      ...ratios,
       minPointsToRedeem: program.minPointsToRedeem ?? 100,
     };
     if (existing) {

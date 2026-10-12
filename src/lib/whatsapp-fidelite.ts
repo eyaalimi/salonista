@@ -16,9 +16,21 @@
  * Decisions pures, sans reseau, pour rester testables sans mock.
  */
 
-/** Gabarit utilise quand le salon n'en a pas defini. */
+/**
+ * Gabarit utilise quand le salon n'en a pas defini.
+ *
+ * EN DARIJA TOUNSIA, lettres latines. Les clientes des salons tunisiens
+ * lisent ce message sur WhatsApp, ou personne n'ecrit « Solde total ». La
+ * version francaise precedente se comprenait, mais sonnait comme un releve
+ * bancaire — pas comme un mot de sa coiffeuse.
+ *
+ * CE GABARIT NE REMPLACE JAMAIS UN MESSAGE EXISTANT : il ne sert que lorsque
+ * `whatsappMessage` est vide (voir `composerMessage` plus bas, et le
+ * formulaire de la page Fidelite, qui n'ecrit le defaut que sur un champ
+ * NULL). Un salon qui avait personnalise son texte le garde.
+ */
 export const MESSAGE_PAR_DEFAUT =
-  "Bonjour {name} 💖 Merci pour votre visite ! Vous avez gagné {earned} points. Solde total : {balance} points.";
+  "Aslema {name} ! Ya3tik essa7a 3al visite. Rbe7t {earned} points, w taw 3andek {balance} points fel compte mte3ek.";
 
 export type VariablesMessage = {
   /** Prenom de la cliente, ou vide si inconnu. */
