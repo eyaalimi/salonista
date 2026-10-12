@@ -4,6 +4,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { verifierAccesSuperadmin } from "@/lib/superadmin-acces";
+import { BoutonDeconnexion } from "./deconnexion";
 
 export const metadata = {
   title: "Superadmin — Salonista",
@@ -98,7 +99,12 @@ export default async function SuperadminLayout({
             >
               Journal
             </Link>
-            <span className="text-xs text-prune-soft">{compte?.email}</span>
+            {/* Le compte connecte, et de quoi en sortir. L'e-mail s'affichait
+                seul : on savait qui on etait, sans pouvoir partir. */}
+            <span className="flex items-center gap-2 border-l border-hairline pl-4">
+              <span className="text-xs text-prune-soft">{compte?.email}</span>
+              <BoutonDeconnexion />
+            </span>
           </nav>
         </div>
       </header>
