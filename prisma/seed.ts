@@ -5,9 +5,9 @@
 //   Cashier PIN (provider1 + provider2): 1234
 //   Offre Premium — un salon par etat (password123, PIN gerante 0000,
 //   PIN employees 1234), voir prisma/seed-freemium.ts :
-//     freemium.avant@example.com    avant la 1re vente
-//     freemium.essai@example.com    essai a J-3
-//     freemium.gratuit@example.com  gratuit, 3 employees encore actives
+//     freemium.nouveau@example.com  inscrit aujourd'hui, mois offert en cours
+//     freemium.essai@example.com    mois offert, J-3
+//     freemium.gratuit@example.com  mois ecoule, 3 employees encore actives
 //     freemium.premium@example.com  Premium jusqu'a dans 2 mois
 //   Admin: run `npx tsx scripts/create-admin.ts`
 

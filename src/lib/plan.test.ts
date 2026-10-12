@@ -16,97 +16,106 @@ import {
 } from "./plan";
 
 const JOUR = 24 * 60 * 60 * 1000;
-const VENTE = new Date("2026-10-01T10:00:00Z");
+const INSCRIPTION = new Date("2026-10-01T10:00:00Z");
+/** Ancien nom, garde pour les tests de l'equipe et du decalage plus bas. */
+const VENTE = INSCRIPTION;
 const plus = (d: Date, jours: number) => new Date(d.getTime() + jours * JOUR);
 
-describe("calculerPlan", () => {
-  it("aucune ligne et aucune vente : avant la premiere vente", () => {
-    expect(calculerPlan({ premium: null, premiereVenteAt: null, maintenant: VENTE })).toEqual({
-      etat: "AVANT_PREMIERE_VENTE",
-    });
+describe("calculerPlan — un mois offert a partir de l'inscription", () => {
+  it("salon qui vient de s'inscrire, sans ligne : essai de 30 jours", () => {
+    expect(
+      calculerPlan({ premium: null, inscriptionAt: INSCRIPTION, maintenant: INSCRIPTION }),
+    ).toEqual({ etat: "ESSAI", finEssai: plus(INSCRIPTION, 30), joursRestants: 30 });
+  });
+
+  it("le compteur tourne meme sans aucune vente", () => {
+    expect(
+      calculerPlan({ premium: null, inscriptionAt: INSCRIPTION, maintenant: plus(INSCRIPTION, 20) }),
+    ).toMatchObject({ etat: "ESSAI", joursRestants: 10 });
+  });
+
+  it("salon inscrit il y a plus d'un mois (avant le lancement) : gratuit, pas de nouveau mois", () => {
+    expect(
+      calculerPlan({ premium: null, inscriptionAt: INSCRIPTION, maintenant: plus(INSCRIPTION, 90) }),
+    ).toEqual({ etat: "GRATUIT", depuis: plus(INSCRIPTION, 30) });
   });
 
   it("ligne TRIAL non echue : essai, avec les jours restants", () => {
     const plan = calculerPlan({
-      premium: { status: "TRIAL", expiresAt: finEssaiDepuis(VENTE) },
-      premiereVenteAt: VENTE,
-      maintenant: plus(VENTE, 27),
+      premium: { status: "TRIAL", expiresAt: finEssaiDepuis(INSCRIPTION) },
+      inscriptionAt: INSCRIPTION,
+      maintenant: plus(INSCRIPTION, 27),
     });
-    expect(plan).toEqual({ etat: "ESSAI", finEssai: plus(VENTE, 30), joursRestants: 3 });
-  });
-
-  it("l'essai dure exactement 30 jours a partir de la vente", () => {
-    expect(finEssaiDepuis(VENTE)).toEqual(plus(VENTE, 30));
+    expect(plan).toEqual({ etat: "ESSAI", finEssai: plus(INSCRIPTION, 30), joursRestants: 3 });
   });
 
   it("une milliseconde avant l'echeance : encore en essai, 1 jour restant", () => {
-    const fin = finEssaiDepuis(VENTE);
-    const plan = calculerPlan({
-      premium: { status: "TRIAL", expiresAt: fin },
-      premiereVenteAt: VENTE,
-      maintenant: new Date(fin.getTime() - 1),
-    });
-    expect(plan).toMatchObject({ etat: "ESSAI", joursRestants: 1 });
+    const fin = finEssaiDepuis(INSCRIPTION);
+    expect(
+      calculerPlan({
+        premium: { status: "TRIAL", expiresAt: fin },
+        inscriptionAt: INSCRIPTION,
+        maintenant: new Date(fin.getTime() - 1),
+      }),
+    ).toMatchObject({ etat: "ESSAI", joursRestants: 1 });
   });
 
   it("a l'instant exact de l'echeance : version gratuite depuis l'echeance", () => {
-    const fin = finEssaiDepuis(VENTE);
+    const fin = finEssaiDepuis(INSCRIPTION);
     expect(
-      calculerPlan({ premium: { status: "TRIAL", expiresAt: fin }, premiereVenteAt: VENTE, maintenant: fin }),
+      calculerPlan({ premium: { status: "TRIAL", expiresAt: fin }, inscriptionAt: INSCRIPTION, maintenant: fin }),
     ).toEqual({ etat: "GRATUIT", depuis: fin });
   });
 
-  it("ACTIVE non echue : Premium jusqu'a l'echeance", () => {
-    const jusquAu = plus(VENTE, 60);
+  it("essai sans echeance (saisie manuelle) : 30 jours depuis l'inscription", () => {
     expect(
-      calculerPlan({ premium: { status: "ACTIVE", expiresAt: jusquAu }, premiereVenteAt: VENTE, maintenant: VENTE }),
+      calculerPlan({
+        premium: { status: "TRIAL", expiresAt: null },
+        inscriptionAt: INSCRIPTION,
+        maintenant: plus(INSCRIPTION, 31),
+      }),
+    ).toEqual({ etat: "GRATUIT", depuis: plus(INSCRIPTION, 30) });
+  });
+
+  it("ACTIVE non echue : Premium jusqu'a l'echeance", () => {
+    const jusquAu = plus(INSCRIPTION, 60);
+    expect(
+      calculerPlan({ premium: { status: "ACTIVE", expiresAt: jusquAu }, inscriptionAt: INSCRIPTION, maintenant: INSCRIPTION }),
     ).toEqual({ etat: "PREMIUM", jusquAu });
   });
 
   it("ACTIVE sans echeance : Premium illimite (demo)", () => {
     expect(
-      calculerPlan({ premium: { status: "ACTIVE", expiresAt: null }, premiereVenteAt: null, maintenant: VENTE }),
+      calculerPlan({ premium: { status: "ACTIVE", expiresAt: null }, inscriptionAt: INSCRIPTION, maintenant: plus(INSCRIPTION, 400) }),
     ).toEqual({ etat: "PREMIUM", jusquAu: null });
   });
 
   it("ACTIVE echue : version gratuite depuis l'echeance", () => {
-    const fin = plus(VENTE, 10);
+    const fin = plus(INSCRIPTION, 10);
     expect(
-      calculerPlan({ premium: { status: "ACTIVE", expiresAt: fin }, premiereVenteAt: VENTE, maintenant: plus(VENTE, 11) }),
+      calculerPlan({ premium: { status: "ACTIVE", expiresAt: fin }, inscriptionAt: INSCRIPTION, maintenant: plus(INSCRIPTION, 11) }),
     ).toEqual({ etat: "GRATUIT", depuis: fin });
   });
 
   it("SUSPENDED, meme avec une echeance future : version gratuite", () => {
-    const fin = plus(VENTE, 60);
+    const fin = plus(INSCRIPTION, 60);
     expect(
-      calculerPlan({ premium: { status: "SUSPENDED", expiresAt: fin }, premiereVenteAt: VENTE, maintenant: VENTE }),
+      calculerPlan({ premium: { status: "SUSPENDED", expiresAt: fin }, inscriptionAt: INSCRIPTION, maintenant: INSCRIPTION }),
     ).toEqual({ etat: "GRATUIT", depuis: fin });
   });
 
-  it("EXPIRED : version gratuite", () => {
+  it("EXPIRED (Premium retire) : version gratuite", () => {
     expect(
-      calculerPlan({ premium: { status: "EXPIRED", expiresAt: null }, premiereVenteAt: VENTE, maintenant: VENTE }),
+      calculerPlan({ premium: { status: "EXPIRED", expiresAt: null }, inscriptionAt: INSCRIPTION, maintenant: INSCRIPTION }),
     ).toEqual({ etat: "GRATUIT", depuis: null });
   });
 
-  it("essai echu puis Premium active : Premium", () => {
-    const maintenant = plus(VENTE, 45);
+  it("essai ecoule puis Premium paye : Premium", () => {
+    const maintenant = plus(INSCRIPTION, 45);
     const jusquAu = plus(maintenant, 30);
     expect(
-      calculerPlan({ premium: { status: "ACTIVE", expiresAt: jusquAu }, premiereVenteAt: VENTE, maintenant }),
+      calculerPlan({ premium: { status: "ACTIVE", expiresAt: jusquAu }, inscriptionAt: INSCRIPTION, maintenant }),
     ).toEqual({ etat: "PREMIUM", jusquAu });
-  });
-
-  it("vente sans ligne (course) : essai calcule depuis la vente", () => {
-    expect(
-      calculerPlan({ premium: null, premiereVenteAt: VENTE, maintenant: plus(VENTE, 2) }),
-    ).toEqual({ etat: "ESSAI", finEssai: plus(VENTE, 30), joursRestants: 28 });
-  });
-
-  it("vente sans ligne, mais plus de 30 jours apres : version gratuite", () => {
-    expect(
-      calculerPlan({ premium: null, premiereVenteAt: VENTE, maintenant: plus(VENTE, 31) }),
-    ).toEqual({ etat: "GRATUIT", depuis: plus(VENTE, 30) });
   });
 });
 
@@ -115,7 +124,6 @@ describe("fonctionDisponible", () => {
 
   it("tout est disponible hors version gratuite", () => {
     for (const plan of [
-      { etat: "AVANT_PREMIERE_VENTE" } as const,
       { etat: "ESSAI", finEssai: VENTE, joursRestants: 3 } as const,
       { etat: "PREMIUM", jusquAu: null } as const,
     ]) {

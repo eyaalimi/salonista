@@ -535,7 +535,7 @@ fonctions : la fidélité, plus d'une employée, et les commissions. Le
 paiement se fait hors de l'application (virement, D17, espèces lors d'une
 visite) ; l'admin active le Premium à la main.
 
-### Les quatre états
+### Les trois états
 
 Calculés en un seul endroit, `calculerPlan()` dans
 [src/lib/plan.ts](src/lib/plan.ts) (pur, testé). Le chargeur serveur
@@ -543,8 +543,7 @@ Calculés en un seul endroit, `calculerPlan()` dans
 
 | État | Quand | Fidélité | Employées actives hors gérante | Commissions |
 |---|---|---|---|---|
-| `AVANT_PREMIERE_VENTE` | aucune vente, aucune ligne `PREMIUM` | ✅ | illimitées | ✅ |
-| `ESSAI` | ligne `PREMIUM` en `TRIAL` non échue | ✅ | illimitées | ✅ |
+| `ESSAI` | le mois offert, compté depuis l'inscription | ✅ | illimitées | ✅ |
 | `PREMIUM` | ligne `ACTIVE` non échue, ou sans échéance (démo) | ✅ | illimitées | ✅ |
 | `GRATUIT` | tout le reste (échue, `SUSPENDED`, `EXPIRED`) | ❌ en pause | 1 | ❌ |
 
@@ -552,23 +551,27 @@ Calculés en un seul endroit, `calculerPlan()` dans
 `GRATUIT`. **Compatibilité** : un ancien module `REWARDS` encore actif garde
 la fidélité, et elle seule. L'enum `REWARDS` n'est pas supprimé.
 
-### L'essai démarre à la première vente
+### Un seul mois offert, compté depuis l'inscription
 
-Pas à l'inscription : un salon qui passe une semaine à configurer ne doit pas
-perdre une semaine d'essai. [src/lib/pos-sale-create.ts](src/lib/pos-sale-create.ts)
-pose la ligne `PREMIUM` en `TRIAL` (+30 jours) après une vente réussie, **hors
-de la transaction** : une vente n'échoue jamais pour une raison commerciale.
-Une vente hors ligne utilise sa propre date ; une ligne existante n'est
-**jamais déplacée**.
+Décision produit : **chaque salon profite d'un mois gratuit, puis paie** la
+fidélité, l'équipe et les commissions. Le mois part de l'**inscription**
+(`ProviderProfile.createdAt`), pas de la première vente — une première
+version faisait l'inverse, abandonnée.
 
-**Une ligne manquante part de maintenant**, jamais d'une vieille vente.
-Depuis le lancement, toute première vente pose sa ligne ; une ligne absente
-chez un salon qui a déjà vendu désigne donc un salon d'avant le lancement.
-Partir de sa première vente le ferait passer en gratuit à la première page
-ouverte après le déploiement. Un salon `demo` reçoit le Premium sans échéance.
+- `/api/pos/signup` pose la ligne `PREMIUM` en `TRIAL` (+30 jours) dans la
+  même transaction que le module `POS`.
+- Pour un salon qui n'a pas de ligne (inscrit avant le lancement, ou créé par
+  un autre chemin), `getPlan` la crée au premier chargement, **depuis la date
+  d'inscription**. Un salon inscrit il y a plus d'un mois reçoit donc une ligne
+  déjà échue : **il a eu son mois, il passe en gratuit dès le déploiement**,
+  employées en trop mises en pause comprises. Pas de second mois.
+- Un salon `demo` reçoit le Premium sans échéance.
+- Une ligne existante n'est jamais recréée ni déplacée : un seul mois par
+  salon. Pour en offrir un autre, l'admin passe par « Modifier ».
 
-Rattrapage (inspecte par défaut, idempotent) :
-`npx tsx prisma/backfill-freemium.ts --apply`.
+Rapport avant déploiement (inspecte par défaut, idempotent) :
+`npx tsx prisma/backfill-freemium.ts` — il liste les salons qui passeront en
+gratuit et le nombre d'employées mises en pause.
 
 ### La limite d'équipe
 

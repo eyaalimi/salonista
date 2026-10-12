@@ -977,8 +977,8 @@ fiche — imbriqués dedans, ils auraient été inatteignables.
 ### 31. Offre gratuite + Premium : un seul calcul du plan
 
 La caisse est gratuite pour toujours ; **fidélité, équipe au-delà d'une
-employée et commissions** passent en Premium (39 DT/mois), après un essai de
-30 jours qui démarre **à la première vente**. Le détail (quatre états,
+employée et commissions** passent en Premium (39 DT/mois), après **un seul
+mois offert, compté depuis l'inscription**. Le détail (trois états,
 limite d'équipe, pause de la fidélité) est dans la section « Offre gratuite
 et Premium » de [CONTEXT.md](CONTEXT.md).
 
@@ -991,9 +991,10 @@ Quatre règles à ne pas défaire :
 - **On met en pause, on ne détruit pas** : employées (`suspendueParPlanAt`),
   portefeuilles et commissions restent en base. Le calcul des commissions
   continue même en gratuit.
-- **Une ligne `PREMIUM` manquante part de maintenant**, jamais de la première
-  vente : un salon d'avant le lancement passerait sinon en gratuit au premier
-  chargement après le déploiement.
+- **Un seul mois par salon, depuis l'inscription** : une ligne `PREMIUM`
+  manquante est créée à partir de `ProviderProfile.createdAt`, jamais de
+  « maintenant ». Un salon inscrit avant le lancement a déjà eu son mois — lui
+  en redonner un a été explicitement refusé.
 
 ---
 

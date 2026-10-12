@@ -112,8 +112,7 @@ export default async function PosLayout({ children }: { children: React.ReactNod
 }
 
 /**
- * Quel bandeau Premium montrer a la gerante ? Aucun avant la premiere vente
- * (rien ne court encore) ni en Premium.
+ * Quel bandeau Premium montrer a la gerante ? Aucun en Premium.
  */
 async function bandeauPremium(providerId: string): Promise<BandeauPremiumProps | null> {
   const plan = await getPlan(providerId);
