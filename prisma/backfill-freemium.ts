@@ -5,17 +5,19 @@
  *   npx tsx prisma/backfill-freemium.ts            # inspecte, ne modifie RIEN
  *   npx tsx prisma/backfill-freemium.ts --apply    # applique
  *
- * Ce qu'il fait, salon par salon :
+ * Regle : UN mois offert par salon, compte depuis son INSCRIPTION.
  *
- * - salon de DEMONSTRATION → Premium actif sans echeance, pour que les
- *   demonstrations montrent tout ;
- * - salon REEL qui a deja vendu, sans ligne PREMIUM → essai de 30 jours a
- *   partir d'AUJOURD'HUI, et non de sa premiere vente : un salon qui vend
- *   depuis trois mois serait sinon passe en gratuit le jour du deploiement,
- *   sans avoir jamais vu l'essai ;
- * - salon sans vente → rien : son essai demarrera a sa premiere vente ;
- * - lignes REWARDS → listees seulement. Elles restent valables (voir
+ * - salon de DEMONSTRATION → Premium actif sans echeance (les demos
+ *   montrent tout) ;
+ * - tout autre salon sans ligne PREMIUM → essai de 30 jours depuis son
+ *   inscription. Un salon inscrit il y a plus d'un mois recoit une ligne
+ *   deja echue : il a eu son mois, il passe en version gratuite (fidelite en
+ *   pause, une seule employee, commissions verrouillees) jusqu'au paiement ;
+ * - lignes REWARDS → listees seulement. Elles gardent la fidelite (voir
  *   `fonctionDisponible`) ; les toucher demande une decision humaine.
+ *
+ * Meme regle que `getPlan`, qui cree la ligne au premier chargement : ce
+ * script sert surtout a LIRE le rapport avant le deploiement.
  *
  * Idempotent : un salon qui a deja une ligne PREMIUM n'est jamais modifie.
  */
@@ -26,7 +28,7 @@ config();
 
 import { PrismaClient } from "../src/generated/prisma/client";
 import { PrismaPg } from "@prisma/adapter-pg";
-import { finEssaiDepuis, DUREE_ESSAI_JOURS, PRIX_PREMIUM_DT } from "../src/lib/plan";
+import { finEssaiDepuis, joursRestants, DUREE_ESSAI_JOURS, PRIX_PREMIUM_DT } from "../src/lib/plan";
 
 const apply = process.argv.includes("--apply");
 
@@ -40,7 +42,7 @@ if (!process.env.DATABASE_URL) {
 
 const prisma = new PrismaClient({ adapter: new PrismaPg(process.env.DATABASE_URL) });
 
-const STATUTS_VENDUS = ["PAID", "PARTIALLY_REFUNDED", "REFUNDED"] as const;
+const date = (d: Date) => d.toISOString().slice(0, 10);
 
 async function main() {
   const maintenant = new Date();
@@ -49,15 +51,16 @@ async function main() {
       id: true,
       salonName: true,
       demo: true,
+      createdAt: true,
       subscriptions: { select: { module: true, status: true, expiresAt: true } },
-      _count: { select: { sales: { where: { status: { in: [...STATUTS_VENDUS] } } } } },
+      _count: { select: { employees: { where: { active: true, role: { not: "OWNER" } } } } },
     },
-    orderBy: { salonName: "asc" },
+    orderBy: { createdAt: "asc" },
   });
 
   const demos: string[] = [];
-  const essais: string[] = [];
-  const sansVente: string[] = [];
+  const enEssai: string[] = [];
+  const gratuits: string[] = [];
   const dejaFaits: string[] = [];
   const rewards: string[] = [];
 
@@ -66,7 +69,7 @@ async function main() {
     const r = s.subscriptions.find((x) => x.module === "REWARDS");
     if (r) {
       rewards.push(
-        `${nom} — ${r.status}${r.expiresAt ? `, échéance ${r.expiresAt.toISOString().slice(0, 10)}` : ", sans échéance"}`,
+        `${nom} — ${r.status}${r.expiresAt ? `, échéance ${date(r.expiresAt)}` : ", sans échéance"}`,
       );
     }
 
@@ -92,25 +95,30 @@ async function main() {
       continue;
     }
 
-    if (s._count.sales > 0) {
-      essais.push(`${nom} — ${s._count.sales} vente(s)`);
-      if (apply) {
-        await prisma.salonSubscription.create({
-          data: {
-            providerId: s.id,
-            module: "PREMIUM",
-            status: "TRIAL",
-            activatedAt: maintenant,
-            expiresAt: finEssaiDepuis(maintenant),
-            pricingSnapshot: { monthlyPriceDT: PRIX_PREMIUM_DT, freeTrialDays: DUREE_ESSAI_JOURS },
-            notes: "Essai offert au lancement du Premium (salon déjà actif)",
-          },
-        });
-      }
-      continue;
+    const fin = finEssaiDepuis(s.createdAt);
+    const restants = joursRestants(fin, maintenant);
+    if (restants > 0) {
+      enEssai.push(`${nom} — inscrit le ${date(s.createdAt)}, encore ${restants} jour(s)`);
+    } else {
+      const enPause = Math.max(0, s._count.employees - 1);
+      gratuits.push(
+        `${nom} — inscrit le ${date(s.createdAt)}` +
+          (enPause > 0 ? `, ${enPause} employée(s) seront mises en pause` : ""),
+      );
     }
-
-    sansVente.push(nom);
+    if (apply) {
+      await prisma.salonSubscription.create({
+        data: {
+          providerId: s.id,
+          module: "PREMIUM",
+          status: "TRIAL",
+          activatedAt: s.createdAt,
+          expiresAt: fin,
+          pricingSnapshot: { monthlyPriceDT: PRIX_PREMIUM_DT, freeTrialDays: DUREE_ESSAI_JOURS },
+          notes: "Mois offert à l'inscription",
+        },
+      });
+    }
   }
 
   const bloc = (titre: string, lignes: string[]) => {
@@ -120,13 +128,10 @@ async function main() {
 
   console.log(apply ? "MODE APPLICATION" : "MODE INSPECTION — rien n'est modifié (ajoute --apply)");
   bloc("Salons de démonstration → Premium sans échéance", demos);
-  bloc(
-    `Salons réels avec ventes → essai jusqu'au ${finEssaiDepuis(maintenant).toISOString().slice(0, 10)}`,
-    essais,
-  );
-  bloc("Salons sans vente → rien (essai à la première vente)", sansVente);
+  bloc("Mois offert encore en cours", enEssai);
+  bloc("Mois offert déjà écoulé → VERSION GRATUITE jusqu'au paiement", gratuits);
   bloc("Déjà une ligne PREMIUM → inchangés", dejaFaits);
-  bloc("Lignes REWARDS existantes (non modifiées)", rewards);
+  bloc("Lignes REWARDS existantes (gardent la fidélité, non modifiées)", rewards);
 }
 
 main()

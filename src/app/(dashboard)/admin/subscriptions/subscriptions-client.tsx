@@ -30,7 +30,6 @@ type Provider = {
 };
 
 type PlanJson =
-  | { etat: "AVANT_PREMIERE_VENTE" }
   | { etat: "ESSAI"; finEssai: string; joursRestants: number }
   | { etat: "PREMIUM"; jusquAu: string | null }
   | { etat: "GRATUIT"; depuis: string | null };
@@ -75,12 +74,6 @@ function dateFr(iso: string | null): string {
 
 function PlanPill({ plan }: { plan: PlanJson }) {
   switch (plan.etat) {
-    case "AVANT_PREMIERE_VENTE":
-      return (
-        <span className="inline-flex items-center rounded-full border border-hairline px-3 py-1 text-prune/60">
-          Avant 1re vente
-        </span>
-      );
     case "ESSAI":
       return (
         <span

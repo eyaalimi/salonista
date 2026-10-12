@@ -21,7 +21,7 @@ import { toMillimes, fromMillimes } from "@/lib/money";
 import { nextReceiptNumber } from "@/lib/receipt-number";
 import { findOpenSession } from "@/lib/cash-drawer";
 import { applySaleEarnings } from "@/lib/rewards/earn";
-import { creerLignePremiumManquante, hasFeature } from "@/lib/plan-serveur";
+import { hasFeature } from "@/lib/plan-serveur";
 import { MESSAGES_PREMIUM } from "@/lib/plan";
 import { applySaleRedemption, validateRedemption, RedemptionError } from "@/lib/rewards/redeem";
 import { sendLoyaltyEarnedEmail } from "@/lib/mail";
@@ -388,7 +388,6 @@ export async function createSaleFromPayload(args: {
             receiptNumber: existing.receiptNumber,
             duplicate: true,
             rewards: { earned: 0, redeemed: 0, welcomeBonus: 0, birthdayBonus: 0 },
-            closedAt: new Date(), // sans usage : un doublon ne cree pas d'essai
           };
         }
       }
@@ -653,29 +652,8 @@ export async function createSaleFromPayload(args: {
         });
       }
 
-      return {
-        saleId: sale.id,
-        receiptNumber,
-        duplicate: false,
-        rewards: rewardsResult,
-        closedAt: receiptDate,
-      };
+      return { saleId: sale.id, receiptNumber, duplicate: false, rewards: rewardsResult };
     });
-
-    // L'essai Premium demarre a la PREMIERE vente, pas a l'inscription : un
-    // salon qui passe une semaine a configurer ses services ne doit pas
-    // perdre une semaine d'essai. Hors de la transaction et dans un
-    // try/catch : une vente ne doit JAMAIS echouer pour une raison
-    // commerciale. La date est celle de la vente — une vente hors ligne
-    // synchronisee plus tard garde la sienne — et une ligne deja posee n'est
-    // jamais deplacee (contrainte unique providerId+module).
-    if (!result.duplicate) {
-      try {
-        await creerLignePremiumManquante(providerId, result.closedAt);
-      } catch (err) {
-        console.error("[premium-essai] creation impossible:", err);
-      }
-    }
 
     // Fire-and-forget loyalty notification email. We do this AFTER the
     // transaction so SMTP latency doesn't slow down the sale, and any

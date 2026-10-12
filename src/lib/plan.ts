@@ -5,19 +5,19 @@
  * Ce fichier est PUR — aucune base, aucun reseau — pour etre teste sans
  * mock. Le chargeur qui lit la base vit dans `plan-serveur.ts`.
  *
- * Les quatre etats d'un salon :
+ * Les trois etats d'un salon :
  *
- * | Etat                  | Quand                                      | Premium debloque |
- * |-----------------------|--------------------------------------------|------------------|
- * | AVANT_PREMIERE_VENTE  | aucune vente, aucune ligne PREMIUM         | oui              |
- * | ESSAI                 | ligne TRIAL non echue                      | oui              |
- * | PREMIUM               | ligne ACTIVE non echue, ou sans echeance   | oui              |
- * | GRATUIT               | tout le reste (echue, SUSPENDED, EXPIRED)  | non              |
+ * | Etat     | Quand                                                 | Premium debloque |
+ * |----------|-------------------------------------------------------|------------------|
+ * | ESSAI    | le mois offert, compte depuis l'INSCRIPTION           | oui              |
+ * | PREMIUM  | ligne ACTIVE non echue, ou sans echeance (demo)       | oui              |
+ * | GRATUIT  | tout le reste (essai ecoule, echue, SUSPENDED, ...)   | non              |
  *
- * POURQUOI L'ESSAI PART DE LA PREMIERE VENTE ET NON DE L'INSCRIPTION : un
- * salon passe souvent des jours a configurer ses services et son equipe avant
- * d'encaisser. Faire tourner le compteur pendant ce temps lui ferait payer un
- * mois qu'il n'a pas utilise.
+ * UN SEUL MOIS OFFERT PAR SALON, A PARTIR DE L'INSCRIPTION. Un salon inscrit
+ * avant le lancement du Premium a donc deja consomme son mois : sans
+ * paiement, il est en version gratuite des le deploiement. (Une premiere
+ * version faisait partir l'essai de la premiere vente ; abandonnee a la
+ * demande du produit.)
  */
 
 export const PRIX_PREMIUM_DT = 39;
@@ -36,7 +36,6 @@ export type LignePremium = {
 };
 
 export type Plan =
-  | { etat: "AVANT_PREMIERE_VENTE" }
   | { etat: "ESSAI"; finEssai: Date; joursRestants: number }
   /** `jusquAu` null = sans echeance (salons de demonstration). */
   | { etat: "PREMIUM"; jusquAu: Date | null }
@@ -69,25 +68,17 @@ function essai(fin: Date, maintenant: Date): Plan {
 
 export function calculerPlan(args: {
   premium: LignePremium | null;
-  premiereVenteAt: Date | null;
+  /** Creation du salon : le mois offert en part. */
+  inscriptionAt: Date;
   maintenant: Date;
 }): Plan {
-  const { premium, premiereVenteAt, maintenant } = args;
+  const { premium, inscriptionAt, maintenant } = args;
 
-  if (!premium) {
-    if (!premiereVenteAt) return { etat: "AVANT_PREMIERE_VENTE" };
-    // Cas de course : la vente est passee, la ligne pas encore creee (ou sa
-    // creation a echoue). On calcule l'essai depuis la vente ; le chargeur
-    // cree la ligne juste apres. Un essai deja fini compte comme fini.
-    return essai(finEssaiDepuis(premiereVenteAt), maintenant);
-  }
-
+  // Sans ligne (le chargeur la cree juste apres) ou essai sans echeance
+  // (saisie manuelle) : le mois offert court depuis l'inscription.
+  if (!premium) return essai(finEssaiDepuis(inscriptionAt), maintenant);
   if (premium.status === "TRIAL") {
-    // Un essai sans echeance n'est pose par aucun chemin du code ; s'il
-    // apparait (saisie manuelle), on lui donne la duree normale.
-    const fin =
-      premium.expiresAt ?? finEssaiDepuis(premiereVenteAt ?? maintenant);
-    return essai(fin, maintenant);
+    return essai(premium.expiresAt ?? finEssaiDepuis(inscriptionAt), maintenant);
   }
 
   if (premium.status === "ACTIVE" && !echue(premium.expiresAt, maintenant)) {
