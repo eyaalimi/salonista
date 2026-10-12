@@ -12,6 +12,8 @@ import { NextRequest } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requirePermission, toResponse } from "@/lib/employee-session";
 import { parseRange } from "@/lib/analytics-range";
+import { hasFeature, reponsePremiumRequis } from "@/lib/plan-serveur";
+import { MESSAGES_PREMIUM } from "@/lib/plan";
 
 type EmployeeRow = {
   employeeId: string;
@@ -35,6 +37,9 @@ export async function GET(req: NextRequest) {
   }
 
   const providerId = actor.providerId;
+  if (!(await hasFeature(providerId, "COMMISSIONS"))) {
+    return reponsePremiumRequis(MESSAGES_PREMIUM.commissions);
+  }
   const { from, to } = parseRange(req.nextUrl.searchParams);
 
   // Fetch every commissioned SaleItem in the window, grouped by employee.
@@ -169,6 +174,10 @@ export async function PUT(req: NextRequest) {
     const r = toResponse(err);
     if (r) return r;
     throw err;
+  }
+
+  if (!(await hasFeature(actor.providerId, "COMMISSIONS"))) {
+    return reponsePremiumRequis(MESSAGES_PREMIUM.commissions);
   }
 
   const body = (await req.json().catch(() => null)) as {

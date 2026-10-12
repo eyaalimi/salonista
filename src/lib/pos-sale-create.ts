@@ -197,6 +197,13 @@ export async function createSaleFromPayload(args: {
   // ------------------------------------------------------------------
   // Staff commissions — snapshot rate + amount per SERVICE SaleItem.
   //
+  // CALCULE MEME EN VERSION GRATUITE, volontairement. Les commissions y sont
+  // verrouillees a la LECTURE (page, API, export) mais pas au calcul : un
+  // salon qui passe au Premium retrouve ainsi les commissions de toute la
+  // periode passee en gratuit, au lieu d'un trou qu'on ne pourrait plus
+  // reconstituer. Seules les employees dont le taux etait deja pose sont
+  // concernees — en gratuit, plus personne ne peut en poser un.
+  //
   // Rule: only lines with kind=SERVICE + assignedEmployeeId, whose
   // employee has a non-null commissionRate > 0, get a commission.
   // Base is lineSubtotal converted to HT (subtotal is TTC after line

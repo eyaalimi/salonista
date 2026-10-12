@@ -143,9 +143,11 @@ export function EmployeesListClient({
                     )}
                   </td>
                   <td className="px-4 py-3 text-right pos-mono text-pos-ink-2">
-                    {e.commissionRate
-                      ? `${Number(e.commissionRate).toFixed(2)} %`
-                      : "—"}
+                    {!commissionsDisponibles
+                      ? <span className="text-[10px] font-sans text-pos-ink-3">Premium</span>
+                      : e.commissionRate
+                        ? `${Number(e.commissionRate).toFixed(2)} %`
+                        : "—"}
                   </td>
                   <td className="px-4 py-3">
                     {e.enPauseParPlan ? (
@@ -341,16 +343,20 @@ function EmployeeFormModal({
       if (isEdit) body.active = active;
       if (pin) body.pin = pin;
       // Send commissionRate: "" or "0" clears it, otherwise a valid number.
-      if (commissionRate.trim() === "") {
-        body.commissionRate = null;
-      } else {
-        const n = Number(commissionRate);
-        if (!Number.isFinite(n) || n < 0 || n > 100) {
-          setError("Le taux de commission doit être entre 0 et 100.");
-          setBusy(false);
-          return;
+      // Version gratuite : le taux n'est ni lu ni envoye — il reste en base,
+      // intact, pour le retour au Premium.
+      if (commissionsDisponibles) {
+        if (commissionRate.trim() === "") {
+          body.commissionRate = null;
+        } else {
+          const n = Number(commissionRate);
+          if (!Number.isFinite(n) || n < 0 || n > 100) {
+            setError("Le taux de commission doit être entre 0 et 100.");
+            setBusy(false);
+            return;
+          }
+          body.commissionRate = n;
         }
-        body.commissionRate = n;
       }
       const res = await fetch(url, {
         method,
@@ -486,7 +492,13 @@ function EmployeeFormModal({
             <label className="block">
               <span className="text-xs text-pos-ink-2">
                 Commission sur services{" "}
-                <span className="text-pos-ink-3">— % du HT (laisser vide = aucune)</span>
+                {commissionsDisponibles ? (
+                  <span className="text-pos-ink-3">— % du HT (laisser vide = aucune)</span>
+                ) : (
+                  <span className="ml-1 rounded-full bg-pos-highlight px-2 py-0.5 text-[10px] font-semibold text-pos-ink">
+                    Premium
+                  </span>
+                )}
               </span>
               <div className="mt-1 flex items-center gap-2">
                 <input
@@ -494,12 +506,18 @@ function EmployeeFormModal({
                   min={0}
                   max={100}
                   step={0.5}
-                  value={commissionRate}
+                  value={commissionsDisponibles ? commissionRate : ""}
                   onChange={(e) => setCommissionRate(e.target.value)}
-                  placeholder="Ex: 30"
-                  className="w-24 px-3 py-2 border border-pos-border rounded text-sm pos-mono text-right"
+                  placeholder={commissionsDisponibles ? "Ex: 30" : "—"}
+                  disabled={!commissionsDisponibles}
+                  className="w-24 px-3 py-2 border border-pos-border rounded text-sm pos-mono text-right disabled:bg-pos-bg disabled:text-pos-ink-3"
                 />
                 <span className="text-sm text-pos-ink-2">%</span>
+                {!commissionsDisponibles && (
+                  <a href="/pos/premium" className="text-xs font-medium text-pos-ink underline">
+                    Passer au Premium
+                  </a>
+                )}
               </div>
             </label>
           )}
