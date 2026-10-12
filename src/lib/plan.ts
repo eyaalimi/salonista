@@ -181,6 +181,43 @@ export function decalagePauseMs(debutPause: Date | null, maintenant: Date): numb
 }
 
 /* -------------------------------------------------------------------------- */
+/* Activation par l'administration                                            */
+/* -------------------------------------------------------------------------- */
+
+/**
+ * Ajoute N mois civils. Le 31 janvier + 1 mois donne le 28 (ou 29) fevrier,
+ * pas le 3 mars : un mois paye ne doit pas deborder sur le suivant.
+ */
+export function ajouterMois(d: Date, mois: number): Date {
+  const r = new Date(d.getTime());
+  const jour = r.getUTCDate();
+  r.setUTCDate(1);
+  r.setUTCMonth(r.getUTCMonth() + mois);
+  const dernierJour = new Date(Date.UTC(r.getUTCFullYear(), r.getUTCMonth() + 1, 0)).getUTCDate();
+  r.setUTCDate(Math.min(jour, dernierJour));
+  return r;
+}
+
+/**
+ * Nouvelle echeance apres un paiement de N mois : on prolonge l'echeance
+ * actuelle si elle est encore dans le futur (un salon qui paie en avance ne
+ * perd pas ses jours restants), sinon on part d'aujourd'hui.
+ */
+export function nouvelleEcheancePremium(
+  echeanceActuelle: Date | null,
+  maintenant: Date,
+  mois: number,
+): Date {
+  const depart =
+    echeanceActuelle && echeanceActuelle.getTime() > maintenant.getTime()
+      ? echeanceActuelle
+      : maintenant;
+  return ajouterMois(depart, mois);
+}
+
+export const DUREES_ACTIVATION_MOIS = [1, 3, 12] as const;
+
+/* -------------------------------------------------------------------------- */
 /* Bandeau de fin d'essai                                                     */
 /* -------------------------------------------------------------------------- */
 

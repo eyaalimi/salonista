@@ -1,7 +1,9 @@
 import { describe, expect, it } from "vitest";
 import {
+  ajouterMois,
   calculerPlan,
   compterDansLimite,
+  nouvelleEcheancePremium,
   dateCourteFr,
   joindreFr,
   decalagePauseMs,
@@ -242,5 +244,30 @@ describe("textes du bandeau", () => {
   it("date courte a l'heure de Tunis, meme tard le soir en UTC", () => {
     // 23h30 UTC le 14/11 = 00h30 le 15/11 a Tunis (UTC+1).
     expect(dateCourteFr(new Date("2026-11-14T23:30:00Z"))).toBe("15/11");
+  });
+});
+
+describe("activation par l'administration", () => {
+  it("un mois apres le 31 janvier : dernier jour de fevrier, pas le 3 mars", () => {
+    expect(ajouterMois(new Date("2027-01-31T10:00:00Z"), 1)).toEqual(new Date("2027-02-28T10:00:00Z"));
+    expect(ajouterMois(new Date("2028-01-31T10:00:00Z"), 1)).toEqual(new Date("2028-02-29T10:00:00Z"));
+  });
+
+  it("douze mois : meme jour l'annee suivante", () => {
+    expect(ajouterMois(new Date("2026-10-12T08:00:00Z"), 12)).toEqual(new Date("2027-10-12T08:00:00Z"));
+  });
+
+  it("echeance future : on prolonge a partir d'elle", () => {
+    const maintenant = new Date("2026-10-12T00:00:00Z");
+    const echeance = new Date("2026-10-20T00:00:00Z");
+    expect(nouvelleEcheancePremium(echeance, maintenant, 3)).toEqual(new Date("2027-01-20T00:00:00Z"));
+  });
+
+  it("echeance passee ou absente : on part d'aujourd'hui", () => {
+    const maintenant = new Date("2026-10-12T00:00:00Z");
+    expect(nouvelleEcheancePremium(new Date("2026-09-01T00:00:00Z"), maintenant, 1)).toEqual(
+      new Date("2026-11-12T00:00:00Z"),
+    );
+    expect(nouvelleEcheancePremium(null, maintenant, 1)).toEqual(new Date("2026-11-12T00:00:00Z"));
   });
 });
