@@ -214,12 +214,33 @@ export default async function CampagnesPage({
                   <Th>Origine</Th>
                   <Th>Statut</Th>
                   <Th>Dernière vente</Th>
+                  <Th />
                 </tr>
               </thead>
               <tbody>
                 {salons.map((s) => (
                   <tr key={s.id} className="border-b border-hairline last:border-0">
-                    <Td>{s.salonName}</Td>
+                    {/*
+                     * Le nom OUVRE la fiche, comme dans la liste « à rappeler ».
+                     * Ce tableau etait le seul endroit de l'espace superadmin
+                     * ou un salon actif s'affichait sans qu'on puisse
+                     * l'ouvrir : pour voir son activite, il fallait retenir
+                     * son nom et le rechercher dans /superadmin/salons.
+                     *
+                     * Le lien porte sur le nom ET sur une colonne « Ouvrir »
+                     * en fin de ligne : rendre le `<tr>` entier cliquable
+                     * aurait demande un `onClick` — donc un composant client
+                     * sur toute la page — et aurait casse le clic du milieu
+                     * et le « ouvrir dans un nouvel onglet ».
+                     */}
+                    <Td>
+                      <Link
+                        href={`/superadmin/salons/${s.id}`}
+                        className="ds-focus font-semibold text-prune hover:text-rose-fonce hover:underline"
+                      >
+                        {s.salonName}
+                      </Link>
+                    </Td>
                     <Td>{s.city ?? "—"}</Td>
                     <Td>{s.createdAt.toLocaleDateString("fr-FR")}</Td>
                     <Td>{s.campagne ?? s.utmSource ?? "—"}</Td>
@@ -242,6 +263,14 @@ export default async function CampagnesPage({
                         : s.joursDepuisDerniereVente === 0
                           ? "aujourd'hui"
                           : `il y a ${s.joursDepuisDerniereVente} j`}
+                    </Td>
+                    <Td>
+                      <Link
+                        href={`/superadmin/salons/${s.id}`}
+                        className="ds-focus font-semibold text-rose-fonce underline underline-offset-2"
+                      >
+                        Ouvrir
+                      </Link>
                     </Td>
                   </tr>
                 ))}
@@ -269,7 +298,9 @@ function Filtre({ href, actif, children }: { href: string; actif: boolean; child
   );
 }
 
-function Th({ children }: { children: React.ReactNode }) {
+// `children` est optionnel : la colonne du lien « Ouvrir » n'a pas d'en-tete
+// a afficher. Meme signature que le `Th` de la vue d'ensemble.
+function Th({ children }: { children?: React.ReactNode }) {
   return (
     <th className="whitespace-nowrap px-4 py-3 text-xs font-semibold uppercase tracking-[0.1em] text-prune-soft">
       {children}
