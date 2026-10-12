@@ -68,7 +68,12 @@ enum EmployeeRole {
 
 enum SubscriptionModule {
   POS
+  /// Ancien module fidelite, active a la main avant l'offre Premium.
+  /// Conserve : un salon qui l'a encore garde sa fidelite (voir plan.ts).
   REWARDS
+  /// Offre payante : fidelite, equipe au-dela d'une employee, commissions.
+  /// La ligne nait en TRIAL a la premiere vente (voir plan.ts).
+  PREMIUM
 }
 
 enum SubscriptionStatus {
@@ -581,6 +586,10 @@ model SalonEmployee {
   pinFailedAttempts Int          @default(0)
   /// Verrouillage temporaire apres trop d'echecs. NULL = ouvert.
   pinLockedUntil    DateTime?
+  /// Mise en pause par la limite de la version gratuite (gerante + 1).
+  /// Distinct d'une desactivation manuelle : seules les employees qui portent
+  /// cette date sont reactivees au retour en Premium. NULL = pas concernee.
+  suspendueParPlanAt DateTime?
   createdAt         DateTime     @default(now())
   updatedAt         DateTime     @updatedAt
 

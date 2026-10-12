@@ -4,6 +4,7 @@ import { hasModule } from "@/lib/modules";
 const MODULE_LABELS: Record<SubscriptionModule, string> = {
   POS: "Caisse",
   REWARDS: "Fidélité",
+  PREMIUM: "Premium",
 };
 
 type ModuleGateProps = {
