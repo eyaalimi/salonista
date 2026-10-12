@@ -13,8 +13,8 @@
  *   inscription. Un salon inscrit il y a plus d'un mois recoit une ligne
  *   deja echue : il a eu son mois, il passe en version gratuite (fidelite en
  *   pause, une seule employee, commissions verrouillees) jusqu'au paiement ;
- * - lignes REWARDS → listees seulement. Elles gardent la fidelite (voir
- *   `fonctionDisponible`) ; les toucher demande une decision humaine.
+ * - lignes REWARDS → listees seulement. Elles n'ouvrent PLUS la fidelite :
+ *   seul le Premium compte. Utile pour savoir quels salons prevenir.
  *
  * Meme regle que `getPlan`, qui cree la ligne au premier chargement : ce
  * script sert surtout a LIRE le rapport avant le deploiement.
@@ -131,7 +131,7 @@ async function main() {
   bloc("Mois offert encore en cours", enEssai);
   bloc("Mois offert déjà écoulé → VERSION GRATUITE jusqu'au paiement", gratuits);
   bloc("Déjà une ligne PREMIUM → inchangés", dejaFaits);
-  bloc("Lignes REWARDS existantes (gardent la fidélité, non modifiées)", rewards);
+  bloc("Ancien module REWARDS (n'ouvre plus la fidélité — salons à prévenir)", rewards);
 }
 
 main()

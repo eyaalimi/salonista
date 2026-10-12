@@ -548,8 +548,11 @@ Calculés en un seul endroit, `calculerPlan()` dans
 | `GRATUIT` | tout le reste (échue, `SUSPENDED`, `EXPIRED`) | ❌ en pause | 1 | ❌ |
 
 `hasFeature(providerId, "FIDELITE" | "EQUIPE" | "COMMISSIONS")` est vrai hors
-`GRATUIT`. **Compatibilité** : un ancien module `REWARDS` encore actif garde
-la fidélité, et elle seule. L'enum `REWARDS` n'est pas supprimé.
+`GRATUIT`. **L'ancien module `REWARDS` n'ouvre plus rien** : sans Premium, pas
+de fidélité, même pour un salon activé à la main autrefois (décision produit —
+une première version le gardait, et un salon gratuit voyait sa page Fidélité
+ouverte). L'enum `REWARDS` n'est pas supprimé. La page `/pos/loyalty` est
+fermée côté serveur en gratuit, comme `/pos/commissions`.
 
 ### Un seul mois offert, compté depuis l'inscription
 
