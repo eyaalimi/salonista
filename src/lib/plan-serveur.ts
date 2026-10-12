@@ -4,7 +4,6 @@
  */
 
 import { prisma } from "@/lib/prisma";
-import { hasModule } from "@/lib/modules";
 import {
   calculerPlan,
   finEssaiDepuis,
@@ -95,10 +94,7 @@ export async function getPlan(providerId: string, maintenant = new Date()): Prom
 }
 
 export async function hasFeature(providerId: string, fonction: Fonction): Promise<boolean> {
-  const plan = await getPlan(providerId);
-  if (plan.etat !== "GRATUIT") return true;
-  if (fonction !== "FIDELITE") return false;
-  return fonctionDisponible(plan, fonction, await hasModule(providerId, "REWARDS"));
+  return fonctionDisponible(await getPlan(providerId), fonction);
 }
 
 /** Les trois fonctions d'un coup, pour un layout ou un ecran qui les montre toutes. */
@@ -109,10 +105,9 @@ export async function fonctionsDuSalon(providerId: string): Promise<{
   commissions: boolean;
 }> {
   const plan = await getPlan(providerId);
-  const rewards = plan.etat === "GRATUIT" ? await hasModule(providerId, "REWARDS") : false;
   return {
     plan,
-    fidelite: fonctionDisponible(plan, "FIDELITE", rewards),
+    fidelite: fonctionDisponible(plan, "FIDELITE"),
     equipe: fonctionDisponible(plan, "EQUIPE"),
     commissions: fonctionDisponible(plan, "COMMISSIONS"),
   };

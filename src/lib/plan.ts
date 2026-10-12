@@ -89,20 +89,18 @@ export function calculerPlan(args: {
 }
 
 /**
- * Une fonction Premium est-elle disponible ?
+ * Une fonction Premium est-elle disponible ? Seul le plan decide.
  *
- * `rewardsHistorique` : un ancien module REWARDS encore actif. Des salons ont
- * ete actives a la main avant l'offre Premium ; leur retirer la fidelite du
- * jour au lendemain casserait ce qui leur a ete vendu.
+ * L'ancien module REWARDS n'ouvre PLUS la fidelite : une premiere version le
+ * gardait « pour ne rien casser », et un salon en version gratuite voyait sa
+ * page Fidelite ouverte. Decision produit : sans Premium, pas de fidelite.
  */
-export function fonctionDisponible(
-  plan: Plan,
-  fonction: Fonction,
-  rewardsHistorique = false,
-): boolean {
-  if (plan.etat !== "GRATUIT") return true;
-  return fonction === "FIDELITE" && rewardsHistorique;
+export function fonctionDisponible(plan: Plan, fonction: Fonction): boolean {
+  return plan.etat !== "GRATUIT" || !FONCTIONS_PREMIUM.includes(fonction);
 }
+
+/** Ce que la version gratuite ne donne pas. */
+const FONCTIONS_PREMIUM: readonly Fonction[] = ["FIDELITE", "EQUIPE", "COMMISSIONS"];
 
 /* -------------------------------------------------------------------------- */
 /* Equipe                                                                     */

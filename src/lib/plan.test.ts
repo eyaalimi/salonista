@@ -138,12 +138,6 @@ describe("fonctionDisponible", () => {
     expect(fonctionDisponible(gratuit, "EQUIPE")).toBe(false);
     expect(fonctionDisponible(gratuit, "COMMISSIONS")).toBe(false);
   });
-
-  it("un ancien module REWARDS garde la fidelite, et seulement elle", () => {
-    expect(fonctionDisponible(gratuit, "FIDELITE", true)).toBe(true);
-    expect(fonctionDisponible(gratuit, "EQUIPE", true)).toBe(false);
-    expect(fonctionDisponible(gratuit, "COMMISSIONS", true)).toBe(false);
-  });
 });
 
 function emp(id: string, role: string, opts: Partial<EmployeeEquipe> = {}): EmployeeEquipe {
