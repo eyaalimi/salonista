@@ -18,6 +18,7 @@ import { hash } from "bcryptjs";
 import { prisma } from "@/lib/prisma";
 import { tauxTvaApplicable, TVA_TAUX_DEFAUT } from "@/lib/tva-salon";
 import { requireEmployee, toResponse } from "@/lib/employee-session";
+import { refusAjoutEmployee } from "@/lib/plan-equipe";
 import { mergePermissions } from "@/lib/permissions";
 import {
   cashbackPctToProgram,
@@ -285,6 +286,12 @@ export async function PATCH(req: NextRequest) {
           data,
         });
       } else {
+        // Avant la premiere vente et pendant l'essai, aucune limite : un
+        // salon qui configure son equipe ne doit rien voir de bloque. Le
+        // controle ne mord qu'en version gratuite. (L'assistant ne cree
+        // jamais de gerante : son role est limite a MANAGER/CASHIER/STYLIST.)
+        const refus = await refusAjoutEmployee(providerId);
+        if (refus) return refus;
         await prisma.salonEmployee.create({ data });
       }
     }

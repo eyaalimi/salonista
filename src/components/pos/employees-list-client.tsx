@@ -2,6 +2,8 @@
 
 import { useEffect, useState } from "react";
 import { UserPlus, Pencil, Trash2, KeyRound, X } from "lucide-react";
+import { FenetrePremium } from "@/components/pos/premium/fenetre-premium";
+import { LIMITE_EMPLOYEES_GRATUIT } from "@/lib/plan";
 
 type Employee = {
   id: string;
@@ -15,7 +17,12 @@ type Employee = {
   commissionRate: string | null;
   lastLoginAt: string | null;
   createdAt: string;
+  /** En pause a cause de la version gratuite, pas desactivee a la main. */
+  enPauseParPlan: boolean;
 };
+
+const RAISON_EQUIPE =
+  "La version gratuite permet une seule employée en plus de la gérante.";
 
 const ROLE_LABELS: Record<Employee["role"], string> = {
   OWNER: "Propriétaire",
@@ -24,13 +31,24 @@ const ROLE_LABELS: Record<Employee["role"], string> = {
   STYLIST: "Styliste",
 };
 
-export function EmployeesListClient() {
+export function EmployeesListClient({
+  equipeDisponible,
+  commissionsDisponibles,
+}: {
+  /** Faux en version gratuite : gerante + 1 employee. */
+  equipeDisponible: boolean;
+  commissionsDisponibles: boolean;
+}) {
   const [rows, setRows] = useState<Employee[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [editing, setEditing] = useState<Employee | null>(null);
   const [creating, setCreating] = useState(false);
   const [pinTarget, setPinTarget] = useState<Employee | null>(null);
+  const [premiumOuverte, setPremiumOuverte] = useState(false);
+
+  const activesHorsGerante = rows.filter((e) => e.active && e.role !== "OWNER").length;
+  const limiteAtteinte = !equipeDisponible && activesHorsGerante >= LIMITE_EMPLOYEES_GRATUIT;
 
   async function refresh() {
     try {
@@ -63,7 +81,7 @@ export function EmployeesListClient() {
         </div>
         <button
           type="button"
-          onClick={() => setCreating(true)}
+          onClick={() => (limiteAtteinte ? setPremiumOuverte(true) : setCreating(true))}
           className="inline-flex items-center gap-2 px-3 md:px-4 py-2.5 bg-pos-accent text-white rounded-lg text-sm font-medium hover:bg-pos-accent/90 shrink-0"
         >
           <UserPlus size={16} />
@@ -130,15 +148,21 @@ export function EmployeesListClient() {
                       : "—"}
                   </td>
                   <td className="px-4 py-3">
-                    <span
-                      className={`inline-block px-2 py-0.5 rounded-full text-[10px] font-semibold ${
-                        e.active
-                          ? "bg-pos-accent-soft text-pos-accent"
-                          : "bg-pos-bg text-pos-ink-3"
-                      }`}
-                    >
-                      {e.active ? "Actif" : "Inactif"}
-                    </span>
+                    {e.enPauseParPlan ? (
+                      <span className="inline-block px-2 py-0.5 rounded-full text-[10px] font-semibold bg-pos-highlight text-pos-warn">
+                        En pause (version gratuite)
+                      </span>
+                    ) : (
+                      <span
+                        className={`inline-block px-2 py-0.5 rounded-full text-[10px] font-semibold ${
+                          e.active
+                            ? "bg-pos-accent-soft text-pos-accent"
+                            : "bg-pos-bg text-pos-ink-3"
+                        }`}
+                      >
+                        {e.active ? "Actif" : "Inactif"}
+                      </span>
+                    )}
                   </td>
                   <td className="px-4 py-3 text-right">
                     <div className="inline-flex gap-1">
@@ -186,8 +210,17 @@ export function EmployeesListClient() {
         </div>
       )}
 
+      {premiumOuverte && (
+        <FenetrePremium raison={RAISON_EQUIPE} onClose={() => setPremiumOuverte(false)} />
+      )}
+
       {creating && (
         <EmployeeFormModal
+          commissionsDisponibles={commissionsDisponibles}
+          onPremiumRequis={() => {
+            setCreating(false);
+            setPremiumOuverte(true);
+          }}
           onClose={() => setCreating(false)}
           onSaved={async () => {
             setCreating(false);
@@ -199,6 +232,11 @@ export function EmployeesListClient() {
       {editing && (
         <EmployeeFormModal
           employee={editing}
+          commissionsDisponibles={commissionsDisponibles}
+          onPremiumRequis={() => {
+            setEditing(null);
+            setPremiumOuverte(true);
+          }}
           onClose={() => setEditing(null)}
           onSaved={async () => {
             setEditing(null);
@@ -223,10 +261,15 @@ export function EmployeesListClient() {
 
 function EmployeeFormModal({
   employee,
+  commissionsDisponibles,
+  onPremiumRequis,
   onClose,
   onSaved,
 }: {
   employee?: Employee;
+  commissionsDisponibles: boolean;
+  /** La route a refuse faute de Premium : on presente le Premium a la place. */
+  onPremiumRequis: () => void;
   onClose: () => void;
   onSaved: () => void | Promise<void>;
 }) {
@@ -317,7 +360,11 @@ function EmployeeFormModal({
       if (res.ok) {
         await onSaved();
       } else {
-        const d = await res.json().catch(() => ({}));
+        const d = (await res.json().catch(() => ({}))) as { error?: string; code?: string };
+        if (d.code === "PREMIUM_REQUIS") {
+          onPremiumRequis();
+          return;
+        }
         setError(d?.error ?? "Erreur");
       }
     } finally {

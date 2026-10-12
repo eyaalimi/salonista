@@ -126,7 +126,7 @@ export type EmployeeEquipe = {
 };
 
 /** Employees actives qui comptent dans la limite : tout sauf la gerante. */
-export function compterDansLimite(employees: EmployeeEquipe[]): EmployeeEquipe[] {
+export function compterDansLimite<T extends EmployeeEquipe>(employees: T[]): T[] {
   return employees.filter((e) => e.active && e.role !== "OWNER");
 }
 
@@ -146,9 +146,9 @@ export function peutAjouterEmployee(equipeDisponible: boolean, activesHorsOwner:
  * indice de qui travaille encore au salon. A egalite (jamais connectees), la
  * plus recemment creee. La gerante choisit ensuite si ce n'est pas la bonne.
  */
-export function repartirEquipe(employees: EmployeeEquipe[]): {
-  garder: EmployeeEquipe[];
-  suspendre: EmployeeEquipe[];
+export function repartirEquipe<T extends EmployeeEquipe>(employees: T[]): {
+  garder: T[];
+  suspendre: T[];
 } {
   const comptees = compterDansLimite(employees);
   const triees = [...comptees].sort((a, b) => {

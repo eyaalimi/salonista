@@ -275,6 +275,10 @@ model ProviderProfile {
   vatRegistered         Boolean   @default(false)
   receiptFooter         String?
   onboardingDismissedAt DateTime?
+  /// La gerante a repondu a la fenetre « une seule employee garde son acces »
+  /// (version gratuite). Comparee a la derniere mise en pause : une nouvelle
+  /// pause, apres un autre cycle Premium, rouvre la question.
+  choixEquipeConfirmeAt DateTime?
   verified              Boolean   @default(false)
 
   /// --- Attribution marketing (phase 2) ---

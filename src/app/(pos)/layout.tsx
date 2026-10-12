@@ -3,7 +3,9 @@ import { IBM_Plex_Sans, IBM_Plex_Mono } from "next/font/google";
 import { SwRegister } from "@/components/sw-register";
 import { SuiviInstallation } from "@/components/suivi-installation";
 import { BandeauConsultation } from "@/components/pos/bandeau-consultation";
-import { getCurrentEmployee } from "@/lib/employee-session";
+import { employeeToujoursActive, getCurrentEmployee } from "@/lib/employee-session";
+import { appliquerLimiteEquipe, choixEquipeAConfirmer } from "@/lib/plan-equipe";
+import { FenetreChoixEquipe } from "@/components/pos/premium/fenetre-choix-equipe";
 import { getActiveModules } from "@/lib/modules";
 import { prisma } from "@/lib/prisma";
 import { OnlineStatusProvider } from "@/components/pos/online-status";
@@ -30,10 +32,21 @@ export default async function PosLayout({ children }: { children: React.ReactNod
   const employee = await getCurrentEmployee();
   if (!employee) redirect("/salon-pin");
 
+  // Ouverture de la caisse : en version gratuite, l'equipe est ramenee a la
+  // gerante + 1 employee (idempotent, sans effet sinon). Une employee mise en
+  // pause — maintenant ou plus tot — ne garde pas la main sur la caisse.
+  await appliquerLimiteEquipe(employee.providerId);
+  if (!(await employeeToujoursActive(employee.id))) redirect("/salon-pin?pause=1");
+
   // Les modules ne bloquent plus l'acces a la PWA : un salon sans le module
   // caisse garde son espace metier (RDV, clientes, services, profil). Le
   // blocage est porte page par page, par les seules pages de caisse.
   const activeModules = await getActiveModules(employee.providerId);
+
+  // La gerante confirme qui garde son acces apres la fin de l'essai.
+  const choixEquipe = employee.permissions["employees.manage"]
+    ? await choixEquipeAConfirmer(employee.providerId)
+    : null;
 
   const provider = await prisma.providerProfile.findUnique({
     where: { id: employee.providerId },
@@ -72,6 +85,7 @@ export default async function PosLayout({ children }: { children: React.ReactNod
         {/* Verrouille l'ecran apres 4 minutes sans activite. Ne deconnecte
             pas : le panier en cours est conserve. */}
         <IdleLock displayName={employee.displayName} />
+        {choixEquipe && <FenetreChoixEquipe choix={choixEquipe} />}
         {!provider?.matriculeFiscal && (
           <div className="hidden">
             {/* matricule banner moved to settings page in Design 2 */}

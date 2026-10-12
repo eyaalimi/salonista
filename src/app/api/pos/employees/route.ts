@@ -2,6 +2,7 @@ import { NextRequest } from "next/server";
 import bcrypt from "bcryptjs";
 import { prisma } from "@/lib/prisma";
 import { requirePermission, toResponse } from "@/lib/employee-session";
+import { refusAjoutEmployee, refusNouvelleGerante } from "@/lib/plan-equipe";
 
 type CreateBody = {
   displayName?: string;
@@ -57,6 +58,7 @@ export async function GET() {
       commissionRate: true,
       lastLoginAt: true,
       createdAt: true,
+      suspendueParPlanAt: true,
     },
   })) as Array<{
     id: string;
@@ -69,6 +71,7 @@ export async function GET() {
     commissionRate: unknown | null;
     lastLoginAt: Date | null;
     createdAt: Date;
+    suspendueParPlanAt: Date | null;
   }>;
 
   return Response.json({
@@ -86,6 +89,8 @@ export async function GET() {
           : String(e.commissionRate),
       lastLoginAt: e.lastLoginAt,
       createdAt: e.createdAt,
+      // En pause a cause de la version gratuite, et non desactivee a la main.
+      enPauseParPlan: e.suspendueParPlanAt !== null,
     })),
   });
 }
@@ -108,6 +113,14 @@ export async function POST(req: NextRequest) {
   if (!VALID_ROLES.has(role)) {
     return Response.json({ error: "Rôle invalide." }, { status: 400 });
   }
+  // Limite de la version gratuite : gerante + 1 employee. Verifiee ici et
+  // pas seulement dans l'interface — l'API reste appelable directement.
+  const refus =
+    role === "OWNER"
+      ? await refusNouvelleGerante(employee.providerId)
+      : await refusAjoutEmployee(employee.providerId);
+  if (refus) return refus;
+
   if (body.pin) {
     const err = validatePin(body.pin);
     if (err) return Response.json({ error: err }, { status: 400 });
