@@ -12,6 +12,7 @@ import {
   CODE_PREMIUM_REQUIS,
   DUREE_ESSAI_JOURS,
   PRIX_PREMIUM_DT,
+  type ChiffresFinEssai,
   type Fonction,
   type Plan,
 } from "@/lib/plan";
@@ -107,4 +108,35 @@ export async function fonctionsDuSalon(providerId: string): Promise<{
 /** Reponse 403 commune a toutes les routes reservees au Premium. */
 export function reponsePremiumRequis(message: string): Response {
   return Response.json({ code: CODE_PREMIUM_REQUIS, error: message }, { status: 403 });
+}
+
+/**
+ * Les vrais chiffres du salon pour le bandeau de fin d'essai : ce qu'il
+ * perdrait sans Premium. Trois agregats, aucune boucle.
+ */
+export async function chiffresFinEssai(providerId: string): Promise<ChiffresFinEssai> {
+  const [portefeuilles, employees, commissions] = await Promise.all([
+    prisma.rewardWallet.aggregate({
+      where: { providerId, balance: { gt: 0 } },
+      _count: { _all: true },
+      _sum: { balance: true },
+    }),
+    prisma.salonEmployee.count({
+      where: { providerId, active: true, role: { not: "OWNER" } },
+    }),
+    prisma.saleItem.aggregate({
+      where: {
+        commissionAmount: { not: null },
+        commissionPaid: false,
+        sale: { providerId, status: { in: [...STATUTS_VENDUS] } },
+      },
+      _sum: { commissionAmount: true },
+    }),
+  ]);
+  return {
+    clientesAvecPoints: portefeuilles._count._all,
+    totalPoints: portefeuilles._sum.balance ?? 0,
+    employeesHorsOwner: employees,
+    commissionsNonReglees: commissions._sum.commissionAmount?.toFixed(3) ?? "0.000",
+  };
 }

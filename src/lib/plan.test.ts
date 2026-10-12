@@ -2,6 +2,8 @@ import { describe, expect, it } from "vitest";
 import {
   calculerPlan,
   compterDansLimite,
+  dateCourteFr,
+  joindreFr,
   decalagePauseMs,
   finEssaiDepuis,
   fonctionDisponible,
@@ -226,5 +228,19 @@ describe("lignesPerteFinEssai", () => {
         commissionsNonReglees: "0.000",
       }),
     ).toEqual([]);
+  });
+});
+
+describe("textes du bandeau", () => {
+  it("joint une liste a la francaise", () => {
+    expect(joindreFr([])).toBe("");
+    expect(joindreFr(["a"])).toBe("a");
+    expect(joindreFr(["a", "b"])).toBe("a et b");
+    expect(joindreFr(["a", "b", "c"])).toBe("a, b et c");
+  });
+
+  it("date courte a l'heure de Tunis, meme tard le soir en UTC", () => {
+    // 23h30 UTC le 14/11 = 00h30 le 15/11 a Tunis (UTC+1).
+    expect(dateCourteFr(new Date("2026-11-14T23:30:00Z"))).toBe("15/11");
   });
 });

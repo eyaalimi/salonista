@@ -6,6 +6,15 @@ import { BandeauConsultation } from "@/components/pos/bandeau-consultation";
 import { employeeToujoursActive, getCurrentEmployee } from "@/lib/employee-session";
 import { appliquerLimiteEquipe, choixEquipeAConfirmer } from "@/lib/plan-equipe";
 import { FenetreChoixEquipe } from "@/components/pos/premium/fenetre-choix-equipe";
+import { BandeauPremium, type BandeauPremiumProps } from "@/components/pos/premium/bandeau-premium";
+import { chiffresFinEssai, getPlan } from "@/lib/plan-serveur";
+import {
+  ALERTE_FIN_ESSAI_JOURS,
+  dateCourteFr,
+  joindreFr,
+  lignesPerteFinEssai,
+  PRIX_PREMIUM_DT,
+} from "@/lib/plan";
 import { getActiveModules } from "@/lib/modules";
 import { prisma } from "@/lib/prisma";
 import { OnlineStatusProvider } from "@/components/pos/online-status";
@@ -44,9 +53,9 @@ export default async function PosLayout({ children }: { children: React.ReactNod
   const activeModules = await getActiveModules(employee.providerId);
 
   // La gerante confirme qui garde son acces apres la fin de l'essai.
-  const choixEquipe = employee.permissions["employees.manage"]
-    ? await choixEquipeAConfirmer(employee.providerId)
-    : null;
+  const gerante = !!employee.permissions["employees.manage"];
+  const choixEquipe = gerante ? await choixEquipeAConfirmer(employee.providerId) : null;
+  const bandeau = gerante ? await bandeauPremium(employee.providerId) : null;
 
   const provider = await prisma.providerProfile.findUnique({
     where: { id: employee.providerId },
@@ -60,6 +69,7 @@ export default async function PosLayout({ children }: { children: React.ReactNod
           {/* Rien si personne ne consulte. Informe seulement : la lecture
               seule est garantie dans requirePermission, cote serveur. */}
           <BandeauConsultation />
+          {bandeau && <BandeauPremium {...bandeau} />}
           <div className="h-12 shrink-0">
             <PosTopbar
               provider={provider ? { salonName: provider.salonName, city: provider.city } : null}
@@ -99,4 +109,24 @@ export default async function PosLayout({ children }: { children: React.ReactNod
       </OnlineStatusProvider>
     </div>
   );
+}
+
+/**
+ * Quel bandeau Premium montrer a la gerante ? Aucun avant la premiere vente
+ * (rien ne court encore) ni en Premium.
+ */
+async function bandeauPremium(providerId: string): Promise<BandeauPremiumProps | null> {
+  const plan = await getPlan(providerId);
+  if (plan.etat === "GRATUIT") return { variante: "gratuit" };
+  if (plan.etat !== "ESSAI") return null;
+  if (plan.joursRestants > ALERTE_FIN_ESSAI_JOURS) {
+    return { variante: "essai", joursRestants: plan.joursRestants };
+  }
+  const lignes = lignesPerteFinEssai(await chiffresFinEssai(providerId));
+  const debut = `Votre essai Premium se termine le ${dateCourteFr(plan.finEssai)}.`;
+  const pertes = lignes.length > 0 ? ` Sans Premium : ${joindreFr(lignes)}.` : "";
+  return {
+    variante: "fin-essai",
+    texte: `${debut}${pertes} Passer au Premium : ${PRIX_PREMIUM_DT} DT/mois.`,
+  };
 }

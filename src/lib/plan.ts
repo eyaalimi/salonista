@@ -223,6 +223,21 @@ export function lignesPerteFinEssai(c: ChiffresFinEssai): string[] {
   return lignes;
 }
 
+/** « a, b et c » — la liste a la francaise, sans virgule d'Oxford. */
+export function joindreFr(elements: string[]): string {
+  if (elements.length <= 1) return elements.join("");
+  return `${elements.slice(0, -1).join(", ")} et ${elements[elements.length - 1]}`;
+}
+
+/** 15/11, a l'heure de Tunis : la date que la gerante lit sur son calendrier. */
+export function dateCourteFr(d: Date): string {
+  return new Intl.DateTimeFormat("fr-FR", {
+    day: "2-digit",
+    month: "2-digit",
+    timeZone: "Africa/Tunis",
+  }).format(d);
+}
+
 /** Code d'erreur commun a toutes les routes qui refusent faute de Premium. */
 export const CODE_PREMIUM_REQUIS = "PREMIUM_REQUIS";
 
