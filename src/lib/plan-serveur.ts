@@ -62,6 +62,42 @@ export async function creerEssaiSiAbsent(
   }
 }
 
+/**
+ * Pose la ligne PREMIUM d'un salon qui n'en a pas encore :
+ * - salon de DEMONSTRATION → Premium actif sans echeance (les demos
+ *   montrent tout) ;
+ * - sinon → essai de 30 jours a partir de `debutEssai`.
+ *
+ * Idempotent (contrainte unique). Renvoie true si une ligne a ete creee.
+ */
+export async function creerLignePremiumManquante(
+  providerId: string,
+  debutEssai: Date,
+  notes?: string,
+): Promise<boolean> {
+  const salon = await prisma.providerProfile.findUnique({
+    where: { id: providerId },
+    select: { demo: true },
+  });
+  if (!salon?.demo) return creerEssaiSiAbsent(providerId, debutEssai, notes);
+  try {
+    await prisma.salonSubscription.create({
+      data: {
+        providerId,
+        module: "PREMIUM",
+        status: "ACTIVE",
+        expiresAt: null,
+        pricingSnapshot: { monthlyPriceDT: PRIX_PREMIUM_DT },
+        notes: "Salon de démonstration",
+      },
+    });
+    return true;
+  } catch (err) {
+    if ((err as { code?: string }).code === "P2002") return false;
+    throw err;
+  }
+}
+
 export async function lignePremium(providerId: string) {
   return prisma.salonSubscription.findUnique({
     where: { providerId_module: { providerId, module: "PREMIUM" } },
@@ -69,16 +105,45 @@ export async function lignePremium(providerId: string) {
   });
 }
 
-/** Le plan du salon, calcule en un seul endroit. Cree l'essai manquant. */
+/**
+ * Le plan du salon, calcule en un seul endroit. Cree la ligne manquante.
+ *
+ * POURQUOI L'ESSAI MANQUANT PART DE MAINTENANT, ET NON DE LA PREMIERE VENTE.
+ * Depuis le lancement, chaque premiere vente pose sa ligne (pos-sale-create),
+ * avant meme de repondre a la caisse. Une ligne absente alors que le salon a
+ * deja vendu designe donc un salon d'AVANT le lancement : partir de sa
+ * premiere vente — vieille de plusieurs mois — le ferait passer en gratuit a
+ * la premiere page ouverte apres le deploiement, employees mises en pause
+ * comprises, avant meme que le rattrapage ait pu tourner. Partir de
+ * maintenant lui donne le meme mois que `prisma/backfill-freemium.ts`.
+ */
 export async function getPlan(providerId: string, maintenant = new Date()): Promise<Plan> {
-  const [premium, premiereVenteAt] = await Promise.all([
+  const [ligne, premiereVenteAt] = await Promise.all([
     lignePremium(providerId),
     datePremiereVente(providerId),
   ]);
-  if (!premium && premiereVenteAt) {
-    await creerEssaiSiAbsent(providerId, premiereVenteAt);
+  let premium = ligne;
+  if (!premium) {
+    const creee = premiereVenteAt
+      ? await creerLignePremiumManquante(
+          providerId,
+          maintenant,
+          "Essai offert au lancement du Premium (salon déjà actif)",
+        )
+      : await creerLignePremiumManquanteSiDemo(providerId);
+    if (creee) premium = await lignePremium(providerId);
   }
   return calculerPlan({ premium, premiereVenteAt, maintenant });
+}
+
+/** Un salon de demonstration sans vente doit aussi tout montrer. */
+async function creerLignePremiumManquanteSiDemo(providerId: string): Promise<boolean> {
+  const salon = await prisma.providerProfile.findUnique({
+    where: { id: providerId },
+    select: { demo: true },
+  });
+  if (!salon?.demo) return false;
+  return creerLignePremiumManquante(providerId, new Date());
 }
 
 export async function hasFeature(providerId: string, fonction: Fonction): Promise<boolean> {

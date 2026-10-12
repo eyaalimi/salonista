@@ -4,6 +4,7 @@ import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import type { SubscriptionModule, SubscriptionStatus } from "@/generated/prisma/enums";
 import { calculerPlan } from "@/lib/plan";
+import { getPlan } from "@/lib/plan-serveur";
 import { apresEcriturePremium, etatAvantEcriturePremium } from "@/lib/plan-premium";
 
 async function requireAdmin() {
@@ -52,15 +53,22 @@ export async function GET() {
     premieresVentes.map((v) => [v.providerId, v._min.closedAt]),
   );
   const maintenant = new Date();
-  const providersAvecPlan = providers.map((p) => {
-    const premium = p.subscriptions.find((s) => s.module === "PREMIUM") ?? null;
-    const premiereVenteAt = premiereVenteParSalon.get(p.id) ?? null;
-    return {
-      ...p,
-      premiereVenteAt,
-      plan: calculerPlan({ premium, premiereVenteAt, maintenant }),
-    };
-  });
+  const providersAvecPlan = await Promise.all(
+    providers.map(async (p) => {
+      const premium = p.subscriptions.find((s) => s.module === "PREMIUM") ?? null;
+      const premiereVenteAt = premiereVenteParSalon.get(p.id) ?? null;
+      return {
+        ...p,
+        premiereVenteAt,
+        // Sans ligne PREMIUM, getPlan la pose (essai a partir de maintenant
+        // pour un salon d'avant le lancement) : l'admin ne doit pas voir
+        // « gratuit » un salon qui n'a jamais eu son essai.
+        plan: premium
+          ? calculerPlan({ premium, premiereVenteAt, maintenant })
+          : await getPlan(p.id, maintenant),
+      };
+    }),
+  );
 
   const adminIds = Array.from(
     new Set(

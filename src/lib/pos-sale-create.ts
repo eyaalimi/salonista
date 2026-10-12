@@ -21,7 +21,7 @@ import { toMillimes, fromMillimes } from "@/lib/money";
 import { nextReceiptNumber } from "@/lib/receipt-number";
 import { findOpenSession } from "@/lib/cash-drawer";
 import { applySaleEarnings } from "@/lib/rewards/earn";
-import { creerEssaiSiAbsent, hasFeature } from "@/lib/plan-serveur";
+import { creerLignePremiumManquante, hasFeature } from "@/lib/plan-serveur";
 import { MESSAGES_PREMIUM } from "@/lib/plan";
 import { applySaleRedemption, validateRedemption, RedemptionError } from "@/lib/rewards/redeem";
 import { sendLoyaltyEarnedEmail } from "@/lib/mail";
@@ -671,7 +671,7 @@ export async function createSaleFromPayload(args: {
     // jamais deplacee (contrainte unique providerId+module).
     if (!result.duplicate) {
       try {
-        await creerEssaiSiAbsent(providerId, result.closedAt);
+        await creerLignePremiumManquante(providerId, result.closedAt);
       } catch (err) {
         console.error("[premium-essai] creation impossible:", err);
       }
