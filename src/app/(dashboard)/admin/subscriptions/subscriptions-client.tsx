@@ -566,6 +566,86 @@ function PremiumCard({
   const [notePaiement, setNotePaiement] = useState("");
   const [busy, setBusy] = useState<number | null>(null);
   const [message, setMessage] = useState<string | null>(null);
+  const [edition, setEdition] = useState(false);
+  const [formStatut, setFormStatut] = useState<"ACTIVE" | "TRIAL">(
+    premium?.status === "TRIAL" ? "TRIAL" : "ACTIVE",
+  );
+  const [formEcheance, setFormEcheance] = useState(premium?.expiresAt?.slice(0, 10) ?? "");
+  const [formMotif, setFormMotif] = useState("");
+  const [enregistrement, setEnregistrement] = useState(false);
+
+  /**
+   * Ajoute une ligne a l'historique des notes au lieu de le remplacer : on
+   * doit pouvoir relire pourquoi une echeance a bouge.
+   */
+  function notesAvec(ligne: string): string {
+    const datee = `${new Date().toISOString().slice(0, 10)} : ${ligne}`;
+    return premium?.notes ? `${premium.notes}\n${datee}` : datee;
+  }
+
+  async function ecrire(body: Record<string, unknown>, succes: string): Promise<boolean> {
+    if (!premium) return false;
+    setEnregistrement(true);
+    setMessage(null);
+    try {
+      const res = await fetch(`/api/admin/subscriptions/${premium.id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+      });
+      const d = (await res.json().catch(() => ({}))) as { error?: string };
+      if (!res.ok) {
+        setMessage(d.error ?? "Enregistrement impossible.");
+        return false;
+      }
+      setMessage(succes);
+      await onChange();
+      return true;
+    } finally {
+      setEnregistrement(false);
+    }
+  }
+
+  async function enregistrerModification() {
+    // Fin de journee a Tunis : un Premium « jusqu'au 11/12 » couvre tout le
+    // 11/12, et non pas seulement jusqu'a minuit UTC de la veille.
+    const expiresAt = formEcheance ? `${formEcheance}T23:59:59+01:00` : null;
+    const libelle = formStatut === "TRIAL" ? "essai" : "Premium";
+    const ligne = `${libelle} modifié, échéance ${
+      formEcheance ? formEcheance.split("-").reverse().join("/") : "aucune"
+    }${formMotif.trim() ? ` — ${formMotif.trim()}` : ""}`;
+    const ok = await ecrire(
+      { status: formStatut, expiresAt, notes: notesAvec(ligne) },
+      "Modification enregistrée.",
+    );
+    if (ok) {
+      setEdition(false);
+      setFormMotif("");
+    }
+  }
+
+  async function retirerPremium() {
+    if (
+      !confirm(
+        `Retirer le Premium de ${provider.salonName} dès maintenant ? Le salon passe en version gratuite : fidélité en pause, une seule employée, commissions verrouillées. Aucune donnée n'est supprimée.`,
+      )
+    ) {
+      return;
+    }
+    // Ni suppression de la ligne ni echeance effacee : sans ligne, un salon
+    // qui a deja vendu recevrait un NOUVEL essai d'un mois au chargement
+    // suivant (getPlan). L'echeance posee a maintenant marque aussi le debut
+    // de la pause, que le retour en Premium rendra aux points de fidelite.
+    await ecrire(
+      {
+        status: "EXPIRED",
+        expiresAt: new Date().toISOString(),
+        notes: notesAvec(`Premium retiré${formMotif.trim() ? ` — ${formMotif.trim()}` : ""}`),
+      },
+      "Premium retiré : le salon est en version gratuite.",
+    );
+    setFormMotif("");
+  }
 
   async function activer(mois: number) {
     setBusy(mois);
@@ -636,6 +716,91 @@ function PremiumCard({
           </button>
         ))}
       </div>
+      {premium && (
+        <div className="mt-5 border-t border-hairline pt-4">
+          {!edition ? (
+            <div className="flex flex-wrap gap-2">
+              <button
+                type="button"
+                disabled={enregistrement}
+                onClick={() => {
+                  setFormStatut(premium.status === "TRIAL" ? "TRIAL" : "ACTIVE");
+                  setFormEcheance(premium.expiresAt?.slice(0, 10) ?? "");
+                  setEdition(true);
+                }}
+                className="rounded-lg border border-hairline bg-white px-4 py-2 text-sm text-prune hover:border-rose"
+              >
+                Modifier
+              </button>
+              {provider.plan.etat !== "GRATUIT" && (
+                <button
+                  type="button"
+                  disabled={enregistrement}
+                  onClick={() => void retirerPremium()}
+                  className="rounded-lg border border-rose/50 bg-white px-4 py-2 text-sm text-rose-fonce hover:bg-rose-soft disabled:opacity-50"
+                >
+                  Retirer le Premium
+                </button>
+              )}
+            </div>
+          ) : (
+            <div className="space-y-3 text-sm">
+              <p className="text-prune/60">
+                Pour corriger une activation en trop, ramenez l&apos;échéance à la bonne date.
+              </p>
+              <label className="block">
+                <span className="text-prune/60">Statut</span>
+                <select
+                  value={formStatut}
+                  onChange={(e) => setFormStatut(e.target.value as "ACTIVE" | "TRIAL")}
+                  className="mt-1 w-full rounded-lg border border-hairline bg-white px-3 py-2"
+                >
+                  <option value="ACTIVE">Premium actif</option>
+                  <option value="TRIAL">Essai</option>
+                </select>
+              </label>
+              <label className="block">
+                <span className="text-prune/60">Échéance (vide = sans échéance)</span>
+                <input
+                  type="date"
+                  value={formEcheance}
+                  onChange={(e) => setFormEcheance(e.target.value)}
+                  className="mt-1 w-full rounded-lg border border-hairline bg-white px-3 py-2"
+                />
+              </label>
+              <label className="block">
+                <span className="text-prune/60">Motif (noté dans l&apos;historique)</span>
+                <input
+                  type="text"
+                  value={formMotif}
+                  onChange={(e) => setFormMotif(e.target.value)}
+                  maxLength={200}
+                  placeholder="Ex. activation en double par erreur"
+                  className="mt-1 w-full rounded-lg border border-hairline bg-white px-3 py-2"
+                />
+              </label>
+              <div className="flex gap-2">
+                <button
+                  type="button"
+                  disabled={enregistrement}
+                  onClick={() => void enregistrerModification()}
+                  className="rounded-lg bg-prune px-4 py-2 text-white hover:bg-prune/90 disabled:opacity-50"
+                >
+                  {enregistrement ? "Enregistrement…" : "Enregistrer"}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setEdition(false)}
+                  className="rounded-lg border border-hairline bg-white px-4 py-2 text-prune/60"
+                >
+                  Annuler
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
       {message && <p className="mt-3 text-sm text-prune">{message}</p>}
     </section>
   );
