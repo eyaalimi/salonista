@@ -46,6 +46,8 @@ export type CachedCustomerWallet = {
   minPointsToRedeem: number;
   maxRedemptionPctPerSale: number;
   dinarPerPoint: string;
+  /** Version gratuite : fidelite en pause (voir resumesPortefeuilles). */
+  enPause?: boolean;
 };
 
 type CachedCustomer = {

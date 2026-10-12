@@ -2,6 +2,7 @@ import { NextRequest } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requirePermission, toResponse } from "@/lib/employee-session";
 import { parseRange } from "@/lib/analytics-range";
+import { hasFeature } from "@/lib/plan-serveur";
 
 const PAID_STATUSES = ["PAID", "PARTIALLY_REFUNDED", "REFUNDED"] as const;
 
@@ -136,6 +137,11 @@ export async function GET(req: NextRequest) {
     }
   }
 
+  // Les statistiques restent gratuites, les commissions non : en version
+  // gratuite, les montants de commission sont omis (null), pas mis a zero —
+  // zero serait une fausse information.
+  const commissionsVisibles = await hasFeature(employee.providerId, "COMMISSIONS");
+
   const rows = Array.from(agg.entries())
     .sort((a, b) => b[1].revenueM - a[1].revenueM)
     .map(([id, e]) => ({
@@ -145,8 +151,8 @@ export async function GET(req: NextRequest) {
       revenue: (e.revenueM / 1000).toFixed(3),
       tips: (e.tipsM / 1000).toFixed(3),
       itemsCount: e.itemsCount,
-      commissionPending: (e.commissionPendingM / 1000).toFixed(3),
-      commissionPaid: (e.commissionPaidM / 1000).toFixed(3),
+      commissionPending: commissionsVisibles ? (e.commissionPendingM / 1000).toFixed(3) : null,
+      commissionPaid: commissionsVisibles ? (e.commissionPaidM / 1000).toFixed(3) : null,
     }));
 
   return Response.json({ rows });

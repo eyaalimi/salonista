@@ -2,6 +2,9 @@ import { NextRequest } from "next/server";
 import bcrypt from "bcryptjs";
 import { prisma } from "@/lib/prisma";
 import { requirePermission, toResponse } from "@/lib/employee-session";
+import { refusAjoutEmployee, refusNouvelleGerante } from "@/lib/plan-equipe";
+import { hasFeature, reponsePremiumRequis } from "@/lib/plan-serveur";
+import { MESSAGES_PREMIUM } from "@/lib/plan";
 
 type CreateBody = {
   displayName?: string;
@@ -57,6 +60,7 @@ export async function GET() {
       commissionRate: true,
       lastLoginAt: true,
       createdAt: true,
+      suspendueParPlanAt: true,
     },
   })) as Array<{
     id: string;
@@ -69,7 +73,12 @@ export async function GET() {
     commissionRate: unknown | null;
     lastLoginAt: Date | null;
     createdAt: Date;
+    suspendueParPlanAt: Date | null;
   }>;
+
+  // En version gratuite, les taux de commission ne sont ni lisibles ni
+  // modifiables. Ils restent en base, intacts, pour le retour au Premium.
+  const commissionsVisibles = await hasFeature(employee.providerId, "COMMISSIONS");
 
   return Response.json({
     employees: employees.map((e) => ({
@@ -81,11 +90,13 @@ export async function GET() {
       active: e.active,
       hasPin: !!e.pinHash,
       commissionRate:
-        e.commissionRate === null || e.commissionRate === undefined
+        !commissionsVisibles || e.commissionRate === null || e.commissionRate === undefined
           ? null
           : String(e.commissionRate),
       lastLoginAt: e.lastLoginAt,
       createdAt: e.createdAt,
+      // En pause a cause de la version gratuite, et non desactivee a la main.
+      enPauseParPlan: e.suspendueParPlanAt !== null,
     })),
   });
 }
@@ -108,6 +119,14 @@ export async function POST(req: NextRequest) {
   if (!VALID_ROLES.has(role)) {
     return Response.json({ error: "Rôle invalide." }, { status: 400 });
   }
+  // Limite de la version gratuite : gerante + 1 employee. Verifiee ici et
+  // pas seulement dans l'interface — l'API reste appelable directement.
+  const refus =
+    role === "OWNER"
+      ? await refusNouvelleGerante(employee.providerId)
+      : await refusAjoutEmployee(employee.providerId);
+  if (refus) return refus;
+
   if (body.pin) {
     const err = validatePin(body.pin);
     if (err) return Response.json({ error: err }, { status: 400 });
@@ -122,6 +141,9 @@ export async function POST(req: NextRequest) {
       return Response.json({ error: parsed.error }, { status: 400 });
     }
     commissionRate = parsed.value;
+  }
+  if (commissionRate !== null && !(await hasFeature(employee.providerId, "COMMISSIONS"))) {
+    return reponsePremiumRequis(MESSAGES_PREMIUM.commissions);
   }
 
   const created = (await (prisma as never as {

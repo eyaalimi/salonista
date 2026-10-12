@@ -3,6 +3,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import type { SubscriptionStatus } from "@/generated/prisma/enums";
+import { apresEcriturePremium, etatAvantEcriturePremium } from "@/lib/plan-premium";
 
 async function requireAdmin() {
   const session = await getServerSession(authOptions);
@@ -45,7 +46,16 @@ export async function PUT(req: NextRequest, ctx: { params: Promise<{ id: string 
   }
   if (body.notes !== undefined) data.notes = body.notes;
 
+  const ligne = await prisma.salonSubscription.findUnique({
+    where: { id },
+    select: { providerId: true, module: true },
+  });
+  if (!ligne) return Response.json({ error: "Abonnement introuvable" }, { status: 404 });
+  const avant =
+    ligne.module === "PREMIUM" ? await etatAvantEcriturePremium(ligne.providerId) : null;
+
   const updated = await prisma.salonSubscription.update({ where: { id }, data });
+  if (avant) await apresEcriturePremium(ligne.providerId, avant);
   return Response.json(updated);
 }
 

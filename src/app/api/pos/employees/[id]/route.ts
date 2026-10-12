@@ -2,6 +2,9 @@ import { NextRequest } from "next/server";
 import bcrypt from "bcryptjs";
 import { prisma } from "@/lib/prisma";
 import { requirePermission, toResponse } from "@/lib/employee-session";
+import { refusAjoutEmployee, refusNouvelleGerante } from "@/lib/plan-equipe";
+import { hasFeature, reponsePremiumRequis } from "@/lib/plan-serveur";
+import { MESSAGES_PREMIUM } from "@/lib/plan";
 
 type UpdateBody = {
   displayName?: string;
@@ -29,12 +32,10 @@ export async function PUT(
   }
   const { id } = await ctx.params;
 
-  const existing = (await (prisma as never as {
-    salonEmployee: { findFirst: (args: unknown) => Promise<{ id: string; role: string } | null> };
-  }).salonEmployee.findFirst({
+  const existing = await prisma.salonEmployee.findFirst({
     where: { id, providerId: actor.providerId },
-    select: { id: true, role: true },
-  })) as { id: string; role: string } | null;
+    select: { id: true, role: true, active: true, commissionRate: true },
+  });
   if (!existing) {
     return Response.json({ error: "Employé introuvable." }, { status: 404 });
   }
@@ -43,6 +44,23 @@ export async function PUT(
   if (!body) {
     return Response.json({ error: "Corps requis." }, { status: 400 });
   }
+
+  // Limite de la version gratuite (gerante + 1). Trois facons de faire
+  // entrer quelqu'un dans le decompte : la reactiver, faire d'une gerante
+  // une employee, ou — pour contourner — nommer une employee gerante.
+  const roleApres = body.role ?? existing.role;
+  const activeApres = body.active ?? existing.active;
+  let refus: Response | null = null;
+  if (roleApres === "OWNER" && existing.role !== "OWNER") {
+    refus = await refusNouvelleGerante(actor.providerId);
+  } else if (
+    activeApres &&
+    roleApres !== "OWNER" &&
+    (!existing.active || existing.role === "OWNER")
+  ) {
+    refus = await refusAjoutEmployee(actor.providerId, id);
+  }
+  if (refus) return refus;
 
   if (body.role && !VALID_ROLES.has(body.role)) {
     return Response.json({ error: "Rôle invalide." }, { status: 400 });
@@ -74,7 +92,14 @@ export async function PUT(
   }
   if (body.phone !== undefined) data.phone = body.phone?.trim() || null;
   if (body.email !== undefined) data.email = body.email?.trim() || null;
-  if (body.active !== undefined) data.active = body.active;
+  if (body.active !== undefined) {
+    data.active = body.active;
+    // Une decision manuelle remplace la pause du plan, dans les deux sens :
+    // reactivee, elle n'est plus « en pause » ; desactivee a la main, elle ne
+    // doit pas revenir toute seule au retour en Premium. Seulement si l'etat
+    // CHANGE : renommer une employee en pause ne doit pas effacer la pause.
+    if (body.active !== existing.active) data.suspendueParPlanAt = null;
+  }
   if (body.pin !== undefined) {
     if (body.pin === null || body.pin === "") {
       data.pinHash = null;
@@ -103,6 +128,15 @@ export async function PUT(
         );
       }
       data.commissionRate = n.toFixed(2);
+    }
+    // Version gratuite : refuse toute MODIFICATION du taux. Renvoyer le taux
+    // inchange (formulaire enregistre tel quel) reste permis.
+    const avant = existing.commissionRate === null ? null : Number(existing.commissionRate).toFixed(2);
+    if (
+      data.commissionRate !== avant &&
+      !(await hasFeature(actor.providerId, "COMMISSIONS"))
+    ) {
+      return reponsePremiumRequis(MESSAGES_PREMIUM.commissions);
     }
   }
 

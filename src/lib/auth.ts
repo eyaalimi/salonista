@@ -2,6 +2,7 @@ import { NextAuthOptions } from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
 import GoogleProvider from "next-auth/providers/google";
 import { compare } from "bcryptjs";
+import { appliquerLimiteEquipe } from "@/lib/plan-equipe";
 import { prisma } from "./prisma";
 import { mergePermissions } from "./permissions";
 import { verifierPinEmploye } from "./verify-employee-pin";
@@ -102,6 +103,23 @@ export const authOptions: NextAuthOptions = {
         // Defensif : verifierPinEmploye a deja valide son existence.
         if (!employee) {
           throw new Error("PIN incorrect");
+        }
+
+        // Version gratuite : ramene l'equipe a la gerante + 1 employee AVANT
+        // d'ouvrir la session. Jamais bloquant pour la caisse : en cas
+        // d'erreur, la connexion se fait comme avant.
+        try {
+          await appliquerLimiteEquipe(employee.providerId);
+          const apres = await prisma.salonEmployee.findUnique({
+            where: { id: employee.id },
+            select: { active: true },
+          });
+          if (apres && !apres.active) {
+            throw new AccesEnPauseError();
+          }
+        } catch (err) {
+          if (err instanceof AccesEnPauseError) throw err;
+          console.error("[plan-equipe] limite non appliquee:", err);
         }
 
         await prisma.salonEmployee.update({
@@ -232,3 +250,17 @@ export const authOptions: NextAuthOptions = {
     },
   },
 };
+
+/**
+ * Employee mise en pause par la version gratuite. Le message le dit en clair :
+ * elle a saisi le bon PIN, et doit savoir a qui s'adresser plutot que de
+ * croire a une panne.
+ */
+class AccesEnPauseError extends Error {
+  constructor() {
+    super(
+      "Votre accès est en pause : le salon est passé en version gratuite. Demandez à la gérante.",
+    );
+    this.name = "AccesEnPauseError";
+  }
+}

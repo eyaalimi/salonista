@@ -3,6 +3,12 @@
 //   Provider 2 (POS only):              institut.yasmine@example.com / password123
 //   Provider 3 (no modules):            nails.mariem@example.com / password123
 //   Cashier PIN (provider1 + provider2): 1234
+//   Offre Premium — un salon par etat (password123, PIN gerante 0000,
+//   PIN employees 1234), voir prisma/seed-freemium.ts :
+//     freemium.avant@example.com    avant la 1re vente
+//     freemium.essai@example.com    essai a J-3
+//     freemium.gratuit@example.com  gratuit, 3 employees encore actives
+//     freemium.premium@example.com  Premium jusqu'a dans 2 mois
 //   Admin: run `npx tsx scripts/create-admin.ts`
 
 import { PrismaClient, Role, Category, BookingStatus, CommissionStatus } from "../src/generated/prisma/client";
@@ -10,6 +16,7 @@ import { PrismaPg } from "@prisma/adapter-pg";
 import { hash } from "bcryptjs";
 import { randomBytes, randomUUID } from "crypto";
 import "dotenv/config";
+import { seedFreemium } from "./seed-freemium";
 
 const adapter = new PrismaPg(process.env.DATABASE_URL!);
 const prisma = new PrismaClient({ adapter });
@@ -1227,6 +1234,8 @@ async function main() {
     });
   }
 
+  const lignesFreemium = await seedFreemium(prisma, passwordHash);
+
   console.log("✅ Seed complete!");
   console.log("   3 prestataires, 5 offres, 2 influenceuses, 3 clientes, 1 admin");
   console.log("   10 réservations avec commissions");
@@ -1234,6 +1243,7 @@ async function main() {
   console.log("   12 réservations futures + 3 sessions de caisse seedées");
   console.log("   Phase 4: programme fidélité provider1 (3% cashback) + 3 portefeuilles");
   console.log("   Tous les mots de passe: password123 · PIN cashier: 1234");
+  for (const l of lignesFreemium) console.log(`   ${l}`);
 }
 
 main()

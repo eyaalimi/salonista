@@ -21,6 +21,8 @@ import { toMillimes, fromMillimes } from "@/lib/money";
 import { nextReceiptNumber } from "@/lib/receipt-number";
 import { findOpenSession } from "@/lib/cash-drawer";
 import { applySaleEarnings } from "@/lib/rewards/earn";
+import { creerLignePremiumManquante, hasFeature } from "@/lib/plan-serveur";
+import { MESSAGES_PREMIUM } from "@/lib/plan";
 import { applySaleRedemption, validateRedemption, RedemptionError } from "@/lib/rewards/redeem";
 import { sendLoyaltyEarnedEmail } from "@/lib/mail";
 import type { PaymentMethod, SaleStatus } from "@/generated/prisma/enums";
@@ -196,6 +198,13 @@ export async function createSaleFromPayload(args: {
   // ------------------------------------------------------------------
   // Staff commissions — snapshot rate + amount per SERVICE SaleItem.
   //
+  // CALCULE MEME EN VERSION GRATUITE, volontairement. Les commissions y sont
+  // verrouillees a la LECTURE (page, API, export) mais pas au calcul : un
+  // salon qui passe au Premium retrouve ainsi les commissions de toute la
+  // periode passee en gratuit, au lieu d'un trou qu'on ne pourrait plus
+  // reconstituer. Seules les employees dont le taux etait deja pose sont
+  // concernees — en gratuit, plus personne ne peut en poser un.
+  //
   // Rule: only lines with kind=SERVICE + assignedEmployeeId, whose
   // employee has a non-null commissionRate > 0, get a commission.
   // Base is lineSubtotal converted to HT (subtotal is TTC after line
@@ -278,6 +287,17 @@ export async function createSaleFromPayload(args: {
   // Validate any loyalty redemption payments up-front so we fail fast with a
   // clear French error rather than rolling back the transaction.
   const loyaltyPayments = payload.payments.filter((p) => p.method === "LOYALTY_POINTS");
+
+  // Version gratuite : la fidelite est EN PAUSE. Aucun point gagne, aucun
+  // point utilise — verifie ici, cote serveur, car la tuile grisee de la
+  // caisse ne protege de rien contre un appel direct. Les soldes ne bougent
+  // pas et reprennent au retour en Premium. Avant ce controle, gagner et
+  // depenser des points ne dependait d'AUCUN abonnement.
+  const fideliteActive = await hasFeature(providerId, "FIDELITE");
+  if (loyaltyPayments.length > 0 && !fideliteActive) {
+    return { kind: "validation", error: MESSAGES_PREMIUM.fidelite };
+  }
+
   if (loyaltyPayments.length > 0) {
     if (!customerId) {
       return { kind: "validation", error: "Identifiez un client pour utiliser des points fidélité" };
@@ -368,6 +388,7 @@ export async function createSaleFromPayload(args: {
             receiptNumber: existing.receiptNumber,
             duplicate: true,
             rewards: { earned: 0, redeemed: 0, welcomeBonus: 0, birthdayBonus: 0 },
+            closedAt: new Date(), // sans usage : un doublon ne cree pas d'essai
           };
         }
       }
@@ -603,7 +624,9 @@ export async function createSaleFromPayload(args: {
           await applySaleRedemption(tx, sale.id, p.walletId, p.pointsRedeemed);
           rewardsResult.redeemed += p.pointsRedeemed;
         }
-        const earnings = await applySaleEarnings(tx, sale.id);
+        const earnings = fideliteActive
+          ? await applySaleEarnings(tx, sale.id)
+          : { earned: 0, welcomeBonus: 0, birthdayBonus: 0 };
         rewardsResult = {
           ...rewardsResult,
           earned: earnings.earned,
@@ -630,8 +653,29 @@ export async function createSaleFromPayload(args: {
         });
       }
 
-      return { saleId: sale.id, receiptNumber, duplicate: false, rewards: rewardsResult };
+      return {
+        saleId: sale.id,
+        receiptNumber,
+        duplicate: false,
+        rewards: rewardsResult,
+        closedAt: receiptDate,
+      };
     });
+
+    // L'essai Premium demarre a la PREMIERE vente, pas a l'inscription : un
+    // salon qui passe une semaine a configurer ses services ne doit pas
+    // perdre une semaine d'essai. Hors de la transaction et dans un
+    // try/catch : une vente ne doit JAMAIS echouer pour une raison
+    // commerciale. La date est celle de la vente — une vente hors ligne
+    // synchronisee plus tard garde la sienne — et une ligne deja posee n'est
+    // jamais deplacee (contrainte unique providerId+module).
+    if (!result.duplicate) {
+      try {
+        await creerLignePremiumManquante(providerId, result.closedAt);
+      } catch (err) {
+        console.error("[premium-essai] creation impossible:", err);
+      }
+    }
 
     // Fire-and-forget loyalty notification email. We do this AFTER the
     // transaction so SMTP latency doesn't slow down the sale, and any

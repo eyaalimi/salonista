@@ -92,10 +92,11 @@ export async function requireEmployee(): Promise<EmployeeSession> {
    * Le message EXPLIQUE la situation plutot qu'un « 403 » muet : la personne
    * au comptoir n'a pas decide de la suspension et doit savoir qui appeler.
    */
-  const provider = await prisma.providerProfile.findUnique({
-    where: { id: employee.providerId },
-    select: { suspendedAt: true },
+  const ligne = await prisma.salonEmployee.findUnique({
+    where: { id: employee.id },
+    select: { active: true, provider: { select: { suspendedAt: true } } },
   });
+  const provider = ligne?.provider;
   if (provider?.suspendedAt) {
     throw new HttpError(403, {
       error:
@@ -103,7 +104,32 @@ export async function requireEmployee(): Promise<EmployeeSession> {
     });
   }
 
+  /*
+   * EMPLOYEE DESACTIVEE OU EN PAUSE : sa session ne vaut plus rien.
+   *
+   * Le jeton PIN porte l'employee et n'est jamais relu en base : sans ce
+   * controle, une employee mise en pause par la version gratuite (ou
+   * desactivee a la main) continuait d'encaisser jusqu'a l'expiration de sa
+   * session, soit 30 jours. Meme requete que le salon, donc sans lecture de
+   * plus.
+   */
+  if (ligne && !ligne.active) {
+    throw new HttpError(401, { error: MESSAGE_ACCES_EN_PAUSE });
+  }
+
   return employee;
+}
+
+export const MESSAGE_ACCES_EN_PAUSE =
+  "Votre accès est en pause. Demandez à la gérante de vous réactiver.";
+
+/** L'employee de la session est-elle toujours active ? (pages serveur) */
+export async function employeeToujoursActive(employeeId: string): Promise<boolean> {
+  const ligne = await prisma.salonEmployee.findUnique({
+    where: { id: employeeId },
+    select: { active: true },
+  });
+  return ligne?.active ?? true;
 }
 
 export async function requirePermission(perm: Permission): Promise<EmployeeSession> {

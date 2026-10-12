@@ -34,6 +34,8 @@ export type WalletForCharge = {
   minPointsToRedeem: number;
   maxRedemptionPctPerSale: number;
   dinarPerPoint: string;
+  /** Version gratuite : solde affiche, tuile grisee, aucune utilisation. */
+  enPause?: boolean;
 };
 
 export function ChargeModal({
@@ -132,7 +134,11 @@ export function ChargeModal({
   const loyaltyMax = wallet ? Math.min(wallet.balance, maxByPctPts) : 0;
   const loyaltyAlreadyApplied = payments.some((p) => p.method === "LOYALTY_POINTS");
   const loyaltyTileEligible =
-    !!wallet && wallet.balance >= wallet.minPointsToRedeem && !loyaltyAlreadyApplied && online;
+    !!wallet &&
+    !wallet.enPause &&
+    wallet.balance >= wallet.minPointsToRedeem &&
+    !loyaltyAlreadyApplied &&
+    online;
 
   function addPayment(method: Method) {
     if (!online && method === "CARD") return;
@@ -407,7 +413,19 @@ export function ChargeModal({
               })}
             </div>
 
-            {wallet ? (
+            {wallet?.enPause ? (
+              // Version gratuite : la tuile reste, grisee, avec la raison.
+              // Cachee, l'employee croirait a une panne devant une cliente
+              // qui reclame ses points.
+              <div
+                aria-disabled="true"
+                className="w-full mb-6 rounded-[var(--radius-card)] border-2 border-dashed border-hairline bg-creme/40 py-4 px-4 text-left text-prune/70 cursor-not-allowed"
+              >
+                <p className="mb-1">★ Points fidélité · {wallet.balance} points</p>
+                <p className="text-sm font-semibold text-prune">Programme fidélité en pause</p>
+                <p className="text-xs">Les points de la cliente sont conservés.</p>
+              </div>
+            ) : wallet ? (
               <button
                 type="button"
                 disabled={!loyaltyTileEligible}

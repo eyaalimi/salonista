@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 
-type SubscriptionModule = "POS" | "REWARDS";
+type SubscriptionModule = "POS" | "REWARDS" | "PREMIUM";
 type SubscriptionStatus = "ACTIVE" | "TRIAL" | "SUSPENDED" | "EXPIRED";
 
 type Subscription = {
@@ -24,13 +24,33 @@ type Provider = {
   verified: boolean;
   user: { email: string; name: string | null };
   subscriptions: Subscription[];
+  premiereVenteAt: string | null;
+  /** Calcule par le serveur (calculerPlan) ; dates en ISO. */
+  plan: PlanJson;
 };
+
+type PlanJson =
+  | { etat: "AVANT_PREMIERE_VENTE" }
+  | { etat: "ESSAI"; finEssai: string; joursRestants: number }
+  | { etat: "PREMIUM"; jusquAu: string | null }
+  | { etat: "GRATUIT"; depuis: string | null };
 
 type Admin = { id: string; name: string | null; email: string };
 
-type Filter = "ALL" | "POS_ACTIVE" | "REWARDS_ACTIVE" | "EXPIRING_SOON";
+type Filter =
+  | "ALL"
+  | "ESSAI_FIN"
+  | "GRATUIT"
+  | "PREMIUM_ACTIF"
+  | "POS_ACTIVE"
+  | "REWARDS_ACTIVE"
+  | "EXPIRING_SOON";
+// Les trois premiers filtres sont les listes que l'equipe appelle.
 const FILTERS: { value: Filter; label: string }[] = [
   { value: "ALL", label: "Tous" },
+  { value: "ESSAI_FIN", label: "Essai se termine ≤ 7 jours" },
+  { value: "GRATUIT", label: "Version gratuite (essai terminé)" },
+  { value: "PREMIUM_ACTIF", label: "Premium actif" },
   { value: "POS_ACTIVE", label: "POS actif" },
   { value: "REWARDS_ACTIVE", label: "Rewards actif" },
   { value: "EXPIRING_SOON", label: "Expire bientôt (≤ 7 jours)" },
@@ -47,6 +67,43 @@ function expiringSoon(s: Subscription | undefined): boolean {
   if (!s?.expiresAt) return false;
   const ms = new Date(s.expiresAt).getTime() - Date.now();
   return ms > 0 && ms <= 7 * 24 * 60 * 60 * 1000;
+}
+
+function dateFr(iso: string | null): string {
+  return iso ? new Date(iso).toLocaleDateString("fr-FR") : "—";
+}
+
+function PlanPill({ plan }: { plan: PlanJson }) {
+  switch (plan.etat) {
+    case "AVANT_PREMIERE_VENTE":
+      return (
+        <span className="inline-flex items-center rounded-full border border-hairline px-3 py-1 text-prune/60">
+          Avant 1re vente
+        </span>
+      );
+    case "ESSAI":
+      return (
+        <span
+          className={`inline-flex items-center rounded-full border px-3 py-1 ${
+            plan.joursRestants <= 7 ? "border-rose/50 text-rose-fonce" : "border-prune/30 text-prune"
+          }`}
+        >
+          Essai · J-{plan.joursRestants}
+        </span>
+      );
+    case "PREMIUM":
+      return (
+        <span className="inline-flex items-center rounded-full border border-menthe-deep/40 px-3 py-1 text-menthe-deep">
+          Premium{plan.jusquAu ? ` · ${dateFr(plan.jusquAu)}` : " · sans échéance"}
+        </span>
+      );
+    case "GRATUIT":
+      return (
+        <span className="inline-flex items-center rounded-full border border-rose/40 px-3 py-1 text-rose-fonce">
+          Gratuit{plan.depuis ? ` depuis le ${dateFr(plan.depuis)}` : ""}
+        </span>
+      );
+  }
 }
 
 function StatusPill({ sub }: { sub?: Subscription }) {
@@ -121,6 +178,11 @@ export default function SubscriptionsClient() {
       }
       const pos = p.subscriptions.find((s) => s.module === "POS");
       const rewards = p.subscriptions.find((s) => s.module === "REWARDS");
+      if (filter === "ESSAI_FIN" && !(p.plan.etat === "ESSAI" && p.plan.joursRestants <= 7)) {
+        return false;
+      }
+      if (filter === "GRATUIT" && p.plan.etat !== "GRATUIT") return false;
+      if (filter === "PREMIUM_ACTIF" && p.plan.etat !== "PREMIUM") return false;
       if (filter === "POS_ACTIVE" && !isActive(pos)) return false;
       if (filter === "REWARDS_ACTIVE" && !isActive(rewards)) return false;
       if (filter === "EXPIRING_SOON" && !expiringSoon(pos) && !expiringSoon(rewards)) {
@@ -169,6 +231,8 @@ export default function SubscriptionsClient() {
               <tr>
                 <th className="px-4 py-3">Salon</th>
                 <th className="px-4 py-3">Ville</th>
+                <th className="px-4 py-3">Premium</th>
+                <th className="px-4 py-3">1re vente</th>
                 <th className="px-4 py-3">POS</th>
                 <th className="px-4 py-3">Rewards</th>
                 <th className="px-4 py-3">Actions</th>
@@ -185,6 +249,10 @@ export default function SubscriptionsClient() {
                       <div className="text-[10px] text-prune/60">{p.user.email}</div>
                     </td>
                     <td className="px-4 py-4 text-prune/60">{p.city ?? "—"}</td>
+                    <td className="px-4 py-4">
+                      <PlanPill plan={p.plan} />
+                    </td>
+                    <td className="px-4 py-4 text-prune/60">{dateFr(p.premiereVenteAt)}</td>
                     <td className="px-4 py-4">
                       <StatusPill sub={pos} />
                     </td>
@@ -205,7 +273,7 @@ export default function SubscriptionsClient() {
               })}
               {filtered.length === 0 && (
                 <tr>
-                  <td colSpan={5} className="px-4 py-12 text-center text-sm text-prune/60">
+                  <td colSpan={7} className="px-4 py-12 text-center text-sm text-prune/60">
                     Aucun salon ne correspond.
                   </td>
                 </tr>
@@ -269,6 +337,8 @@ function ManageDrawer({
         </button>
         <p className="mt-4 mb-2 text-sm text-prune/60">{provider.user.email}</p>
         <h2 className="ds-display text-2xl text-prune">{provider.salonName}</h2>
+
+        <PremiumCard provider={provider} onChange={onChange} />
 
         <ModuleCard
           module="POS"
@@ -477,6 +547,96 @@ function ModuleCard({
           {new Date(sub!.updatedAt).toLocaleDateString("fr-FR")}
         </p>
       )}
+    </section>
+  );
+}
+
+/**
+ * Le Premium d'un salon : etat, premiere vente, fin d'essai, et l'activation
+ * en deux clics apres un paiement recu hors de l'application.
+ */
+function PremiumCard({
+  provider,
+  onChange,
+}: {
+  provider: Provider;
+  onChange: () => Promise<void>;
+}) {
+  const premium = provider.subscriptions.find((s) => s.module === "PREMIUM");
+  const [notePaiement, setNotePaiement] = useState("");
+  const [busy, setBusy] = useState<number | null>(null);
+  const [message, setMessage] = useState<string | null>(null);
+
+  async function activer(mois: number) {
+    setBusy(mois);
+    setMessage(null);
+    try {
+      const res = await fetch("/api/admin/subscriptions/premium", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ providerId: provider.id, mois, notePaiement }),
+      });
+      const d = (await res.json().catch(() => ({}))) as { error?: string; jusquAu?: string };
+      if (!res.ok) {
+        setMessage(d.error ?? "Activation impossible.");
+        return;
+      }
+      setMessage(`Premium actif jusqu'au ${dateFr(d.jusquAu ?? null)}.`);
+      setNotePaiement("");
+      await onChange();
+    } finally {
+      setBusy(null);
+    }
+  }
+
+  const finEssai =
+    provider.plan.etat === "ESSAI"
+      ? provider.plan.finEssai
+      : premium?.status === "TRIAL"
+        ? premium.expiresAt
+        : null;
+
+  return (
+    <section className="mt-6 rounded-2xl border-2 border-prune/20 bg-white p-6">
+      <div className="flex items-center justify-between gap-3">
+        <p className="ds-display text-lg text-prune">Premium</p>
+        <PlanPill plan={provider.plan} />
+      </div>
+      <dl className="mt-4 grid grid-cols-2 gap-2 text-sm">
+        <dt className="text-prune/60">Première vente</dt>
+        <dd className="text-prune">{dateFr(provider.premiereVenteAt)}</dd>
+        <dt className="text-prune/60">Fin de l&apos;essai</dt>
+        <dd className="text-prune">{dateFr(finEssai)}</dd>
+      </dl>
+      {premium?.notes && (
+        <p className="mt-3 whitespace-pre-line text-xs italic text-prune/60">{premium.notes}</p>
+      )}
+
+      <label className="mt-4 block text-sm">
+        <span className="text-prune/60">Mode de paiement (noté dans l&apos;historique)</span>
+        <input
+          type="text"
+          value={notePaiement}
+          onChange={(e) => setNotePaiement(e.target.value)}
+          maxLength={200}
+          placeholder="Ex. virement reçu le 12/10, D17, espèces lors de la visite"
+          className="mt-1 w-full rounded-lg border border-hairline bg-white px-3 py-2 text-sm"
+        />
+      </label>
+      <div className="mt-3 flex flex-wrap gap-2">
+        {[1, 3, 12].map((mois) => (
+          <button
+            key={mois}
+            type="button"
+            disabled={busy !== null}
+            onClick={() => void activer(mois)}
+            className="rounded-lg bg-prune px-4 py-2 text-sm text-white hover:bg-prune/90 disabled:opacity-50"
+          >
+            {busy === mois ? "Activation…" : `Activer Premium : ${mois} mois`}
+          </button>
+        ))}
+      </div>
+      {message && <p className="mt-3 text-sm text-prune">{message}</p>}
     </section>
   );
 }

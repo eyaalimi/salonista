@@ -64,7 +64,13 @@ export default function SalonPinClient() {
   const [employee, setEmployee] = useState<Employee | null>(null);
   const [pin, setPin] = useState("");
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  // `?pause=1` : la caisse vient de renvoyer ici une employee mise en pause
+  // par la version gratuite. Elle doit savoir pourquoi, pas croire a une panne.
+  const [error, setError] = useState<string | null>(
+    searchParams.get("pause") === "1"
+      ? "Votre accès est en pause : le salon est passé en version gratuite. Demandez à la gérante."
+      : null,
+  );
   const [bootstrapping, setBootstrapping] = useState(true);
 
   useEffect(() => {
@@ -175,7 +181,9 @@ export default function SalonPinClient() {
           redirect: false,
         });
         if (result?.error) {
-          setError("PIN incorrect");
+          // Seul le refus « en pause » est montre tel quel : le PIN etait bon.
+          // Tout autre echec reste « PIN incorrect ».
+          setError(result.error.includes("en pause") ? result.error : "PIN incorrect");
           setPin("");
         } else if (result?.ok) {
           router.push(next);
