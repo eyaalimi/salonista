@@ -19,25 +19,38 @@ import {
 /** Statuts d'une vente qui a bel et bien ete encaissee a sa creation. */
 const STATUTS_VENDUS = ["PAID", "PARTIALLY_REFUNDED", "REFUNDED"] as const;
 
+export async function datePremiereVente(providerId: string): Promise<Date | null> {
+  const vente = await prisma.sale.findFirst({
+    where: { providerId, status: { in: [...STATUTS_VENDUS] } },
+    orderBy: { closedAt: "asc" },
+    select: { closedAt: true, createdAt: true },
+  });
+  if (!vente) return null;
+  return vente.closedAt ?? vente.createdAt;
+}
+
 /**
  * Pose la ligne PREMIUM d'un salon qui n'en a pas encore. Idempotent : la
  * contrainte unique (providerId, module) refuse le doublon, et une ligne
- * existante n'est JAMAIS deplacee.
+ * existante n'est JAMAIS deplacee — une vente hors ligne synchronisee plus
+ * tard ne repousse pas un essai deja commence.
  *
  * - salon de DEMONSTRATION → Premium actif sans echeance (les demos
  *   montrent tout) ;
- * - sinon → le mois offert, compte depuis l'INSCRIPTION. Pour un salon
- *   inscrit il y a plus d'un mois, la ligne nait deja echue : il a eu son
- *   mois, il est en version gratuite.
+ * - salon qui a vendu → le mois offert, compte depuis sa PREMIERE VENTE. Un
+ *   salon qui vend depuis plus d'un mois recoit une ligne deja echue : il a
+ *   eu son mois, il est en version gratuite ;
+ * - salon sans vente → rien : son mois n'a pas commence.
  *
  * Renvoie true si la ligne a ete creee par cet appel.
  */
 export async function creerLignePremiumManquante(providerId: string): Promise<boolean> {
-  const salon = await prisma.providerProfile.findUnique({
-    where: { id: providerId },
-    select: { demo: true, createdAt: true },
-  });
+  const [salon, premiereVente] = await Promise.all([
+    prisma.providerProfile.findUnique({ where: { id: providerId }, select: { demo: true } }),
+    datePremiereVente(providerId),
+  ]);
   if (!salon) return false;
+  if (!salon.demo && !premiereVente) return false;
   try {
     await prisma.salonSubscription.create({
       data: salon.demo
@@ -53,10 +66,10 @@ export async function creerLignePremiumManquante(providerId: string): Promise<bo
             providerId,
             module: "PREMIUM",
             status: "TRIAL",
-            activatedAt: salon.createdAt,
-            expiresAt: finEssaiDepuis(salon.createdAt),
+            activatedAt: premiereVente!,
+            expiresAt: finEssaiDepuis(premiereVente!),
             pricingSnapshot: { monthlyPriceDT: PRIX_PREMIUM_DT, freeTrialDays: DUREE_ESSAI_JOURS },
-            notes: "Mois offert à l'inscription",
+            notes: "Mois offert à la première vente",
           },
     });
     return true;
@@ -75,22 +88,19 @@ export async function lignePremium(providerId: string) {
 
 /**
  * Le plan du salon, calcule en un seul endroit. Cree la ligne manquante :
- * l'inscription la pose deja (`/api/pos/signup`), ce rattrapage couvre les
- * salons inscrits avant le lancement et ceux crees par d'autres chemins.
+ * la premiere vente la pose deja (`pos-sale-create.ts`), ce rattrapage couvre
+ * les salons qui vendaient avant le lancement et les salons de demonstration.
  */
 export async function getPlan(providerId: string, maintenant = new Date()): Promise<Plan> {
-  const [ligne, salon] = await Promise.all([
+  const [ligne, premiereVenteAt] = await Promise.all([
     lignePremium(providerId),
-    prisma.providerProfile.findUnique({
-      where: { id: providerId },
-      select: { createdAt: true },
-    }),
+    datePremiereVente(providerId),
   ]);
   let premium = ligne;
   if (!premium && (await creerLignePremiumManquante(providerId))) {
     premium = await lignePremium(providerId);
   }
-  return calculerPlan({ premium, inscriptionAt: salon?.createdAt ?? maintenant, maintenant });
+  return calculerPlan({ premium, premiereVenteAt, maintenant });
 }
 
 export async function hasFeature(providerId: string, fonction: Fonction): Promise<boolean> {

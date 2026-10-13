@@ -26,7 +26,6 @@ export async function GET() {
       salonName: true,
       city: true,
       verified: true,
-      createdAt: true,
       user: { select: { email: true, name: true } },
       subscriptions: {
         select: {
@@ -44,7 +43,7 @@ export async function GET() {
     },
   });
 
-  // Date de la premiere vente de chaque salon, affichee a titre d'information.
+  // Date de la premiere vente de chaque salon : le mois offert en part.
   const premieresVentes = await prisma.sale.groupBy({
     by: ["providerId"],
     where: { status: { in: ["PAID", "PARTIALLY_REFUNDED", "REFUNDED"] } },
@@ -61,10 +60,10 @@ export async function GET() {
       return {
         ...p,
         premiereVenteAt,
-        // Sans ligne PREMIUM, getPlan la pose (mois offert depuis
-        // l'inscription), pour que la liste et la caisse disent la meme chose.
+        // Sans ligne PREMIUM, getPlan la pose (mois offert depuis la premiere
+        // vente), pour que la liste et la caisse disent la meme chose.
         plan: premium
-          ? calculerPlan({ premium, inscriptionAt: p.createdAt, maintenant })
+          ? calculerPlan({ premium, premiereVenteAt, maintenant })
           : await getPlan(p.id, maintenant),
       };
     }),

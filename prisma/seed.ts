@@ -5,7 +5,7 @@
 //   Cashier PIN (provider1 + provider2): 1234
 //   Offre Premium — un salon par etat (password123, PIN gerante 0000,
 //   PIN employees 1234), voir prisma/seed-freemium.ts :
-//     freemium.nouveau@example.com  inscrit aujourd'hui, mois offert en cours
+//     freemium.nouveau@example.com  aucune vente, tout debloque
 //     freemium.essai@example.com    mois offert, J-3
 //     freemium.gratuit@example.com  mois ecoule, 3 employees encore actives
 //     freemium.premium@example.com  Premium jusqu'a dans 2 mois

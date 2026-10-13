@@ -286,7 +286,7 @@ export async function PATCH(req: NextRequest) {
           data,
         });
       } else {
-        // Pendant le mois offert, aucune limite : un
+        // Avant la premiere vente et pendant le mois offert, aucune limite : un
         // salon qui configure son equipe ne doit rien voir de bloque. Le
         // controle ne mord qu'en version gratuite. (L'assistant ne cree
         // jamais de gerante : son role est limite a MANAGER/CASHIER/STYLIST.)

@@ -535,7 +535,7 @@ fonctions : la fidélité, plus d'une employée, et les commissions. Le
 paiement se fait hors de l'application (virement, D17, espèces lors d'une
 visite) ; l'admin active le Premium à la main.
 
-### Les trois états
+### Les quatre états
 
 Calculés en un seul endroit, `calculerPlan()` dans
 [src/lib/plan.ts](src/lib/plan.ts) (pur, testé). Le chargeur serveur
@@ -543,7 +543,8 @@ Calculés en un seul endroit, `calculerPlan()` dans
 
 | État | Quand | Fidélité | Employées actives hors gérante | Commissions |
 |---|---|---|---|---|
-| `ESSAI` | le mois offert, compté depuis l'inscription | ✅ | illimitées | ✅ |
+| `AVANT_PREMIERE_VENTE` | aucune vente : le compteur ne tourne pas | ✅ | illimitées | ✅ |
+| `ESSAI` | le mois offert, compté depuis la première vente | ✅ | illimitées | ✅ |
 | `PREMIUM` | ligne `ACTIVE` non échue, ou sans échéance (démo) | ✅ | illimitées | ✅ |
 | `GRATUIT` | tout le reste (échue, `SUSPENDED`, `EXPIRED`) | ❌ en pause | 1 | ❌ |
 
@@ -554,20 +555,23 @@ une première version le gardait, et un salon gratuit voyait sa page Fidélité
 ouverte). L'enum `REWARDS` n'est pas supprimé. La page `/pos/loyalty` est
 fermée côté serveur en gratuit, comme `/pos/commissions`.
 
-### Un seul mois offert, compté depuis l'inscription
+### Un seul mois offert, compté depuis la première vente
 
 Décision produit : **chaque salon profite d'un mois gratuit, puis paie** la
-fidélité, l'équipe et les commissions. Le mois part de l'**inscription**
-(`ProviderProfile.createdAt`), pas de la première vente — une première
-version faisait l'inverse, abandonnée.
+fidélité, l'équipe et les commissions. Le mois part de la **première vente** :
+un salon qui passe une semaine à configurer ne perd pas une semaine d'essai.
+Avant cette vente, tout est débloqué et rien ne court. (Une version
+intermédiaire faisait partir le mois de l'inscription ; abandonnée.)
 
-- `/api/pos/signup` pose la ligne `PREMIUM` en `TRIAL` (+30 jours) dans la
-  même transaction que le module `POS`.
-- Pour un salon qui n'a pas de ligne (inscrit avant le lancement, ou créé par
-  un autre chemin), `getPlan` la crée au premier chargement, **depuis la date
-  d'inscription**. Un salon inscrit il y a plus d'un mois reçoit donc une ligne
-  déjà échue : **il a eu son mois, il passe en gratuit dès le déploiement**,
-  employées en trop mises en pause comprises. Pas de second mois.
+- [src/lib/pos-sale-create.ts](src/lib/pos-sale-create.ts) pose la ligne
+  `PREMIUM` en `TRIAL` après une vente réussie, **hors de la transaction** :
+  une vente n'échoue jamais pour une raison commerciale. La date retenue est
+  celle de la plus ancienne vente (une vente hors ligne synchronisée plus tard
+  garde la sienne).
+- Pour un salon qui vendait avant le lancement, `getPlan` crée la ligne au
+  premier chargement, **depuis sa première vente**. S'il vend depuis plus d'un
+  mois, la ligne naît échue : **il a eu son mois, il passe en gratuit dès le
+  déploiement**, employées en trop mises en pause comprises.
 - Un salon `demo` reçoit le Premium sans échéance.
 - Une ligne existante n'est jamais recréée ni déplacée : un seul mois par
   salon. Pour en offrir un autre, l'admin passe par « Modifier ».
