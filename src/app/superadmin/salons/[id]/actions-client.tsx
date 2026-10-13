@@ -23,9 +23,18 @@ type Action = {
 export function ActionsClient({
   salonId,
   suspendu,
+  /**
+   * Ne montrer que ces actions. Omis = toutes, comme sur la fiche de support.
+   *
+   * Le cockpit d'appels n'en affiche que trois : pendant un appel, « envoyer
+   * un lien » et « suspendre le salon » ne sont pas ce qu'on cherche, et les
+   * avoir sous la main augmente le risque de cliquer a cote.
+   */
+  seulement,
 }: {
   salonId: string;
   suspendu: boolean;
+  seulement?: readonly string[];
 }) {
   const router = useRouter();
   const [ouverte, setOuverte] = useState<Action | null>(null);
@@ -82,6 +91,11 @@ export function ActionsClient({
         },
   ];
 
+  // `seulement` filtre sans reordonner : l'ordre des actions est deliberé.
+  const actionsVisibles = seulement
+    ? actions.filter((a) => seulement.includes(a.cle))
+    : actions;
+
   async function executer() {
     if (!ouverte) return;
     setBusy(true);
@@ -132,7 +146,7 @@ export function ActionsClient({
       )}
 
       <div className="grid gap-2 sm:grid-cols-2">
-        {actions.map((a) => (
+        {actionsVisibles.map((a) => (
           <button
             key={a.cle}
             type="button"
