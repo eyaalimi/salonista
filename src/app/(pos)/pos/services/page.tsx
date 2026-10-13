@@ -3,6 +3,7 @@ import { getCurrentEmployee } from "@/lib/employee-session";
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { ServicesListClient } from "@/components/pos/services-list-client";
+import { SignalEcran } from "@/components/pos/signal-ecran";
 
 export const dynamic = "force-dynamic";
 export const metadata = { title: "Services — Salonista" };
@@ -29,6 +30,8 @@ export default async function ServicesPage() {
   // ServicesListClient lit ?edit= via useSearchParams : Next 16 exige une
   // frontiere Suspense, sinon le prerendu echoue au build.
   return (
+    <>
+    <SignalEcran ecran="services" />
     <Suspense
       fallback={
         <div className="h-full bg-pos-bg p-6 text-sm text-pos-ink-3" data-pos-theme>
@@ -38,5 +41,6 @@ export default async function ServicesPage() {
     >
       <ServicesListClient initialOffers={offers as never} />
     </Suspense>
+    </>
   );
 }

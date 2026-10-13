@@ -131,7 +131,16 @@ export type FicheSalon = {
   nbVentes: number;
   derniereVenteAt: Date | null;
   statut: StatutSalon;
-  notes: Array<{ id: string; contenu: string; authorEmail: string; createdAt: Date }>;
+  notes: Array<{
+    id: string;
+    contenu: string;
+    authorEmail: string;
+    createdAt: Date;
+    /** Resultat de l'appel, NUL pour les notes ecrites avant le cockpit. */
+    resultat: string | null;
+    rappelLe: Date | null;
+    blocageLeve: boolean;
+  }>;
 };
 
 export async function ficheSalon(id: string): Promise<FicheSalon | null> {
@@ -181,7 +190,17 @@ export async function ficheSalon(id: string): Promise<FicheSalon | null> {
         orderBy: { createdAt: "asc" },
       },
       supportNotes: {
-        select: { id: true, contenu: true, authorEmail: true, createdAt: true },
+        select: {
+          id: true,
+          contenu: true,
+          authorEmail: true,
+          createdAt: true,
+          // Le compte rendu d'appel. `resultat` est NUL sur les notes
+          // anterieures au cockpit : l'affichage doit le tolerer.
+          resultat: true,
+          rappelLe: true,
+          blocageLeve: true,
+        },
         orderBy: { createdAt: "desc" },
         take: 50,
       },

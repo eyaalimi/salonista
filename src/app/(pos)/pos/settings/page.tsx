@@ -3,6 +3,7 @@ import { getCurrentEmployee } from "@/lib/employee-session";
 import { prisma } from "@/lib/prisma";
 import { SettingsTabs } from "@/components/pos/settings/settings-tabs";
 import { isValidOpeningHours, type OpeningHours } from "@/lib/opening-hours";
+import { SignalEcran } from "@/components/pos/signal-ecran";
 
 export const dynamic = "force-dynamic";
 export const metadata = { title: "Profil du salon — Salonista" };
@@ -63,6 +64,7 @@ export default async function SettingsPage() {
 
   return (
     <div className="h-full overflow-y-auto bg-pos-bg p-4 md:p-6" data-pos-theme>
+      <SignalEcran ecran="reglages" />
       <div className="mx-auto max-w-2xl">
         <h1 className="text-lg font-semibold text-pos-ink md:text-xl">Profil du salon</h1>
         <p className="mt-1 text-sm text-pos-ink-3">

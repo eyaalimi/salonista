@@ -6,6 +6,7 @@ import type { ComputedTotals } from "@/lib/sale-totals";
 import type { CartLine } from "@/lib/pos-store";
 import type { ReceiptData } from "./receipt";
 import type { CachedCatalogProvider } from "@/lib/pos-offline-db";
+import { signalerEvenement } from "@/lib/signaler-evenement";
 
 type EmployeeLite = { id: string; displayName: string; role: string };
 type EmployeePerm = { id: string; displayName: string; role: string; permissions: Record<string, boolean> };
@@ -100,6 +101,22 @@ export function ChargeModal({
     return () => {
       vivant = false;
     };
+  }, []);
+
+  /*
+   * L'ecran de paiement vient de s'ouvrir.
+   *
+   * Un panier abandonne se DEDUIT ensuite de ce signal : paiement ouvert,
+   * aucune vente dans les 15 minutes (voir `compterPaniersAbandonnes`). On ne
+   * tente PAS de capter la fermeture de l'onglet — `beforeunload` ne part pas
+   * sur iOS ni quand une tablette se met en veille, et un abandon mesure une
+   * fois sur trois est pire qu'un abandon calcule.
+   *
+   * `[]` : une seule fois par ouverture du modal, qui est monte a l'ouverture
+   * et demonte a la fermeture.
+   */
+  useEffect(() => {
+    signalerEvenement({ type: "paiement_ouvert" });
   }, []);
 
   const [step, setStep] = useState<"payment" | "tips" | "receipt">("payment");

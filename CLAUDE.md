@@ -996,6 +996,89 @@ Quatre règles à ne pas défaire :
   « maintenant ». Un salon qui vendait déjà avant le lancement a eu son mois —
   lui en redonner un a été explicitement refusé.
 
+### 32. Le cockpit d'appels : observer sans jamais gêner
+
+`/superadmin/appels` est l'écran d'une session de téléphone : l'entonnoir en
+haut, la file à gauche, la fiche et le compte rendu à droite. Tout passe par
+l'URL (`?jours=&marche=&onglet=&salon=`) — un état client aurait tout perdu à
+chaque `router.refresh()` après un compte rendu.
+
+**`EvenementSalon` n'est PAS `CampaignEvent`, et ne doit jamais fusionner avec
+elle.** `CampaignEvent` compte des **visiteurs anonymes** pour décider où va le
+budget publicitaire ; y verser l'activité de salons déjà inscrits gonflerait
+l'entonnoir avec des gens qui ont déjà converti, et ferait couper une campagne
+qui fonctionne. Les deux répondent à deux questions distinctes : « d'où
+viennent les inscriptions » et « où **ce** salon bute ».
+
+**Trois règles que l'instrumentation ne doit jamais perdre :**
+
+- **Un évènement ne peut jamais faire échouer l'action qu'il décrit.** Erreurs
+  avalées, `void` sur tous les chemins critiques, aucune lecture préalable —
+  sauf la déduplication des visites d'écran, qui n'est jamais sur le chemin
+  d'une vente. Une connexion ou un encaissement ne tombe pas parce que la
+  table d'observation est indisponible.
+- **Jamais de mot de passe, de PIN ni d'e-mail saisi.** On enregistre **qu'un**
+  échec a eu lieu, jamais avec quoi. Un échec de connexion n'est gardé que si
+  le compte **existe et tient un salon** — sinon la table deviendrait un
+  inventaire des adresses tapées par des robots.
+- **Le navigateur ne déclare que le TYPE.** Le salon et l'employée viennent de
+  la session, jamais du corps de la requête : sinon n'importe qui fabriquerait
+  l'activité d'un autre salon. Même parti pris que `/api/suivi/evenement`.
+
+**L'abandon de panier se CALCULE, il ne se capte pas.** `beforeunload` ne part
+pas sur iOS ni quand une tablette se met en veille : un abandon mesuré une fois
+sur trois est pire qu'un abandon calculé, parce qu'on bâtirait une conversation
+téléphonique sur un chiffre faux. On déduit donc de ce qu'on sait de source
+sûre — écran de paiement ouvert, aucune vente dans les 15 minutes. Une
+ouverture **trop récente n'est jamais comptée**, sinon tout encaissement observé
+en direct serait signalé comme un abandon.
+
+**Les quatre décisions vivent dans [cockpit-appels.ts](src/lib/cockpit-appels.ts)
+(pur, 45 tests)**, et ce fichier **ne redéfinit rien** : « actif » vient de
+`estActif`, le seuil de `SEUIL_INACTIF_JOURS`, les étapes de `etapesDemarrage`,
+le profil de `completionProfil`. Les redire les ferait diverger, et deux écrans
+du superadmin donneraient deux réponses sur le même salon.
+
+- **Les horaires comptent dans « Profil prêt ».** `etapesDemarrage` rend trois
+  étapes (profil, service, horaires) pour deux marches : sans horaires aucun
+  créneau n'est généré, donc un profil sans horaires n'est pas prêt.
+- **Un salon est rangé à la PREMIÈRE marche qu'il n'a pas franchie**, jamais à
+  plusieurs : sinon la file serait pleine de doublons. Un test le verrouille.
+- **À égalité, la plus grosse perte est la marche la plus précoce** — la
+  débloquer libère aussi tout ce qui est en aval.
+- **L'ordre de la file est le produit** : alerte de sécurité d'abord (une
+  employée bloquée ne peut pas encaisser *maintenant*), puis les « jamais
+  encaissé » les plus **récents** (règle de la section 27), puis les plus
+  proches de la première vente. Les suspendus sont exclus — leur silence est
+  notre décision.
+- **Pas de score pour un suspendu** (`null`, pas `0`) : lui donner 10/100
+  laisserait croire à un client en perdition alors qu'on a coupé l'accès
+  nous-mêmes. Les 60 points des marches se comptent sur les **six**
+  franchissables, « Inscrits » exclue — sinon un salon qui n'a rien fait
+  obtiendrait déjà des points pour exister.
+
+**`questionsAPoser` vouvoie, parce que ces phrases sont DITES.** Au plus
+quatre, chacune avec son « parce que », et elles **nomment** ce qui manque :
+« il vous manque l'adresse et le matricule » est un motif d'appel, « votre
+profil est incomplet » n'en est pas un. Un test interdit le tutoiement.
+
+**Aucune requête par salon** : `donneesCockpit` agrège tous les salons en une
+poignée de `groupBy`, sur le modèle de `signesDeVieParSalon`, puis assemble en
+mémoire.
+
+**Les trois champs de `SupportNote` sont optionnels**, et le resteront : une
+note sans `resultat` n'est pas cassée, elle est antérieure au cockpit.
+« À rappeler » **sans date** est refusé — une promesse de rappel sans date ne
+ressort dans aucune liste. Une date **passée** l'est aussi : elle viendrait
+d'une faute de frappe sur l'année et mettrait le salon en tête des rappels pour
+toujours.
+
+**`/confidentialite` décrit ce suivi** (section 23) : l'omettre aurait rendu la
+page fausse. Si vous ajoutez un évènement, la page change avec.
+
+**Pas de purge** : décision reportée, assumée. À reprendre quand le volume le
+justifiera.
+
 ---
 
 ## Repo layout

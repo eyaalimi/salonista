@@ -322,6 +322,7 @@ model ProviderProfile {
   rewardWallets         RewardWallet[]
   featureInterests      FeatureInterest[]
   devicePairingCodes    DevicePairingCode[]
+  evenements            EvenementSalon[]
 }
 
 model InfluencerProfile {
@@ -1118,11 +1119,25 @@ model SupportNote {
   authorId    String
   authorEmail String
   contenu     String
+  /// Comment l'appel s'est termine : JOINT, PAS_DE_REPONSE, A_RAPPELER,
+  /// PAS_INTERESSE. NUL sur les notes ecrites avant le cockpit d'appels —
+  /// une note sans resultat n'est pas cassee, elle est anterieure. Texte et
+  /// non enum : les valeurs vivent dans `compte-rendu-appel.ts`.
+  resultat    String?
+  /// Quand rappeler ce salon. Alimente l'onglet « Rappels » du cockpit.
+  rappelLe    DateTime?
+  /// L'appel a leve ce qui bloquait le salon (PIN reinitialise, horaires
+  /// ajoutes ensemble...). Sert a mesurer ce que les appels debloquent
+  /// vraiment, pas seulement combien on en passe.
+  blocageLeve Boolean  @default(false)
   createdAt   DateTime @default(now())
 
   provider ProviderProfile @relation(fields: [providerId], references: [id], onDelete: Cascade)
 
   @@index([providerId, createdAt])
+  /// La liste des rappels du jour, tous salons confondus : une seule requete
+  /// plutot qu'un parcours des notes de chaque salon.
+  @@index([rappelLe])
 }
 
 model SuperadminAuditLog {
@@ -1187,4 +1202,41 @@ model DevicePairingCode {
 
   @@index([providerId, createdAt])
   @@index([expiresAt])
+}
+
+/// Activite technique d'un salon deja inscrit — ce qui sert au telephone.
+///
+/// NE PAS CONFONDRE AVEC `CampaignEvent`, et ne jamais fusionner les deux.
+/// `CampaignEvent` compte des VISITEURS ANONYMES pour decider ou va le
+/// budget publicitaire ; y verser l'activite de salons deja inscrits
+/// gonflerait l'entonnoir avec des gens qui ont deja converti, et ferait
+/// couper une campagne qui fonctionne.
+///
+/// CE QUI N'Y ENTRE JAMAIS : un mot de passe, un PIN, une adresse e-mail
+/// saisie. On enregistre QU'UN echec a eu lieu, jamais avec quoi. Une IP
+/// conservee l'est hachee en SHA-256, comme dans `SuperadminAuditLog`.
+///
+/// Aucune purge n'est encore prevue : a decider quand le volume le justifiera.
+model EvenementSalon {
+  id         String  @id @default(cuid())
+  providerId String
+  /// L'employee concernee, quand l'evenement en vise une (PIN, visite d'ecran).
+  employeeId String?
+  /// Le compte utilisateur concerne, pour les evenements de connexion.
+  userId     String?
+  /// Texte et non enum : ajouter un signal ne doit pas imposer une migration,
+  /// et ces valeurs sont relues par des humains. Les constantes vivent dans
+  /// `evenement-salon.ts`.
+  type       String
+  /// Details non structures (ecran visite, nombre de tentatives...).
+  metadata   Json?
+  createdAt  DateTime @default(now())
+
+  provider ProviderProfile @relation(fields: [providerId], references: [id], onDelete: Cascade)
+
+  /// Les deux lectures du cockpit : l'activite d'un salon (fiche de droite),
+  /// et le comptage d'un type sur une periode pour tous les salons (file
+  /// d'appels, agregee en une seule requete).
+  @@index([providerId, createdAt])
+  @@index([type, createdAt])
 }

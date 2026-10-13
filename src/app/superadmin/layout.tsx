@@ -82,6 +82,12 @@ export default async function SuperadminLayout({
               Vue d&apos;ensemble
             </Link>
             <Link
+              href="/superadmin/appels"
+              className="ds-focus text-prune-soft hover:text-prune"
+            >
+              Appels
+            </Link>
+            <Link
               href="/superadmin/campagnes"
               className="ds-focus text-prune-soft hover:text-prune"
             >

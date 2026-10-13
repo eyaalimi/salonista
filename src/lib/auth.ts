@@ -8,6 +8,11 @@ import { mergePermissions } from "./permissions";
 import { verifierPinEmploye } from "./verify-employee-pin";
 import { verifierLimite } from "./rate-limit";
 import { LIMITE_CONNEXION, messageLimite } from "./rate-limit-decision";
+import { EVENEMENTS } from "./evenement-salon";
+import {
+  enregistrerEvenementSalon,
+  salonDuCompte,
+} from "./evenement-salon-ecriture";
 import type { EmployeeSessionData } from "@/types/next-auth";
 
 export const authOptions: NextAuthOptions = {
@@ -59,10 +64,39 @@ export const authOptions: NextAuthOptions = {
 
         const isValid = await compare(credentials.password, user.passwordHash);
         if (!isValid) {
+          /*
+           * Un echec de mot de passe sur un compte de SALON est un motif
+           * d'appel : la gerante ne previendra pas, elle renoncera. Seule une
+           * limite par IP existait, et elle ne gardait rien.
+           *
+           * Uniquement pour un compte qui existe ET tient un salon : sinon on
+           * archiverait les adresses tapees au hasard par des robots, et cette
+           * table deviendrait un inventaire des comptes inexistants.
+           *
+           * Le mot de passe essaye n'est JAMAIS enregistre — seulement qu'un
+           * echec a eu lieu. Et `void` : la reponse n'attend pas l'ecriture.
+           */
+          void salonDuCompte(credentials.email).then((s) => {
+            if (!s) return;
+            return enregistrerEvenementSalon(EVENEMENTS.CONNEXION_MDP_INCORRECT, {
+              providerId: s.providerId,
+              userId: s.userId,
+            });
+          });
           throw new Error("Email ou mot de passe incorrect");
         }
 
         if (!user.emailVerified && process.env.REQUIRE_EMAIL_VERIFICATION !== "false") {
+          // Le mot de passe etait BON : c'est une gerante qui n'a pas trouve
+          // son e-mail de confirmation, pas une intrusion. Au telephone,
+          // « avez-vous recu l'e-mail ? » regle le cas en une minute.
+          void salonDuCompte(credentials.email).then((s) => {
+            if (!s) return;
+            return enregistrerEvenementSalon(
+              EVENEMENTS.CONNEXION_EMAIL_NON_VERIFIE,
+              { providerId: s.providerId, userId: s.userId },
+            );
+          });
           throw new Error("Veuillez vérifier votre email avant de vous connecter");
         }
 

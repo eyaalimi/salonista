@@ -26,6 +26,9 @@ import {
 import { COOKIE_JOURS, COOKIE_VISITEUR } from "@/lib/campagne-attribution";
 import { ipDe, verifierLimite } from "@/lib/rate-limit";
 import type { Limite } from "@/lib/rate-limit-decision";
+import { getCurrentEmployee } from "@/lib/employee-session";
+import { EVENEMENTS } from "@/lib/evenement-salon";
+import { enregistrerEvenementSalon } from "@/lib/evenement-salon-ecriture";
 
 /**
  * Seules ces etapes sont declarables par le navigateur.
@@ -75,6 +78,34 @@ export async function POST(req: NextRequest) {
       visitorId,
       attribution,
     });
+  }
+
+  /*
+   * L'INSTALLATION, RATTACHEE AU SALON QUAND C'EN EST UN.
+   *
+   * L'evenement `APP_INSTALLEE` ci-dessus reste ANONYME : il alimente
+   * l'entonnoir marketing, ou le visiteur n'est qu'un nombre tire au hasard.
+   * Mais au telephone, « avez-vous installe l'application ? » est une
+   * question a laquelle on devrait pouvoir repondre sans la poser — et ce
+   * chiffre anonyme ne le permettait pas.
+   *
+   * On ecrit donc, EN PLUS et dans l'autre table, un evenement rattache au
+   * salon lorsque la personne est connectee. L'anonymat du suivi marketing
+   * n'est pas entame : ce sont deux ecritures distinctes, dans deux tables
+   * qui repondent a deux questions differentes.
+   *
+   * `void` : la reponse ne doit pas attendre cette ecriture secondaire.
+   */
+  if (type === "APP_INSTALLEE") {
+    void getCurrentEmployee()
+      .then((employee) => {
+        if (!employee) return;
+        return enregistrerEvenementSalon(EVENEMENTS.APP_INSTALLEE, {
+          providerId: employee.providerId,
+          employeeId: employee.id,
+        });
+      })
+      .catch(() => {});
   }
 
   const reponse = new Response(null, { status: 204 });
