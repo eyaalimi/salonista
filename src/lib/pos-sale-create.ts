@@ -21,7 +21,7 @@ import { toMillimes, fromMillimes } from "@/lib/money";
 import { nextReceiptNumber } from "@/lib/receipt-number";
 import { findOpenSession } from "@/lib/cash-drawer";
 import { applySaleEarnings } from "@/lib/rewards/earn";
-import { hasFeature } from "@/lib/plan-serveur";
+import { creerLignePremiumManquante, hasFeature } from "@/lib/plan-serveur";
 import { MESSAGES_PREMIUM } from "@/lib/plan";
 import { applySaleRedemption, validateRedemption, RedemptionError } from "@/lib/rewards/redeem";
 import { sendLoyaltyEarnedEmail } from "@/lib/mail";
@@ -654,6 +654,21 @@ export async function createSaleFromPayload(args: {
 
       return { saleId: sale.id, receiptNumber, duplicate: false, rewards: rewardsResult };
     });
+
+    // Le mois offert du Premium demarre a la PREMIERE vente, pas a
+    // l'inscription : un salon qui passe une semaine a configurer ses services
+    // ne perd pas une semaine d'essai. Hors de la transaction et dans un
+    // try/catch : une vente ne doit JAMAIS echouer pour une raison
+    // commerciale. La date retenue est celle de la plus ancienne vente — une
+    // vente hors ligne synchronisee plus tard garde la sienne — et une ligne
+    // deja posee n'est jamais deplacee.
+    if (!result.duplicate) {
+      try {
+        await creerLignePremiumManquante(providerId);
+      } catch (err) {
+        console.error("[premium-essai] creation impossible:", err);
+      }
+    }
 
     // Fire-and-forget loyalty notification email. We do this AFTER the
     // transaction so SMTP latency doesn't slow down the sale, and any

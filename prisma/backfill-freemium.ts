@@ -5,14 +5,16 @@
  *   npx tsx prisma/backfill-freemium.ts            # inspecte, ne modifie RIEN
  *   npx tsx prisma/backfill-freemium.ts --apply    # applique
  *
- * Regle : UN mois offert par salon, compte depuis son INSCRIPTION.
+ * Regle : UN mois offert par salon, compte depuis sa PREMIERE VENTE.
  *
  * - salon de DEMONSTRATION → Premium actif sans echeance (les demos
  *   montrent tout) ;
- * - tout autre salon sans ligne PREMIUM → essai de 30 jours depuis son
- *   inscription. Un salon inscrit il y a plus d'un mois recoit une ligne
- *   deja echue : il a eu son mois, il passe en version gratuite (fidelite en
- *   pause, une seule employee, commissions verrouillees) jusqu'au paiement ;
+ * - salon qui a deja vendu, sans ligne PREMIUM → essai de 30 jours depuis
+ *   sa premiere vente. Un salon qui vend depuis plus d'un mois recoit une
+ *   ligne deja echue : il a eu son mois, il passe en version gratuite
+ *   (fidelite en pause, une seule employee, commissions verrouillees)
+ *   jusqu'au paiement ;
+ * - salon sans vente → rien : son mois demarrera a sa premiere vente ;
  * - lignes REWARDS → listees seulement. Elles n'ouvrent PLUS la fidelite :
  *   seul le Premium compte. Utile pour savoir quels salons prevenir.
  *
@@ -30,6 +32,8 @@ import { PrismaClient } from "../src/generated/prisma/client";
 import { PrismaPg } from "@prisma/adapter-pg";
 import { finEssaiDepuis, joursRestants, DUREE_ESSAI_JOURS, PRIX_PREMIUM_DT } from "../src/lib/plan";
 
+const STATUTS_VENDUS = ["PAID", "PARTIALLY_REFUNDED", "REFUNDED"] as const;
+
 const apply = process.argv.includes("--apply");
 
 if (!process.env.DATABASE_URL) {
@@ -46,6 +50,13 @@ const date = (d: Date) => d.toISOString().slice(0, 10);
 
 async function main() {
   const maintenant = new Date();
+  const premieresVentes = await prisma.sale.groupBy({
+    by: ["providerId"],
+    where: { status: { in: [...STATUTS_VENDUS] } },
+    _min: { closedAt: true },
+  });
+  const premiereVente = new Map(premieresVentes.map((v) => [v.providerId, v._min.closedAt]));
+
   const salons = await prisma.providerProfile.findMany({
     select: {
       id: true,
@@ -61,6 +72,7 @@ async function main() {
   const demos: string[] = [];
   const enEssai: string[] = [];
   const gratuits: string[] = [];
+  const sansVente: string[] = [];
   const dejaFaits: string[] = [];
   const rewards: string[] = [];
 
@@ -95,14 +107,19 @@ async function main() {
       continue;
     }
 
-    const fin = finEssaiDepuis(s.createdAt);
+    const vente = premiereVente.get(s.id) ?? null;
+    if (!vente) {
+      sansVente.push(nom);
+      continue;
+    }
+    const fin = finEssaiDepuis(vente);
     const restants = joursRestants(fin, maintenant);
     if (restants > 0) {
-      enEssai.push(`${nom} — inscrit le ${date(s.createdAt)}, encore ${restants} jour(s)`);
+      enEssai.push(`${nom} — 1re vente le ${date(vente)}, encore ${restants} jour(s)`);
     } else {
       const enPause = Math.max(0, s._count.employees - 1);
       gratuits.push(
-        `${nom} — inscrit le ${date(s.createdAt)}` +
+        `${nom} — 1re vente le ${date(vente)}` +
           (enPause > 0 ? `, ${enPause} employée(s) seront mises en pause` : ""),
       );
     }
@@ -112,10 +129,10 @@ async function main() {
           providerId: s.id,
           module: "PREMIUM",
           status: "TRIAL",
-          activatedAt: s.createdAt,
+          activatedAt: vente,
           expiresAt: fin,
           pricingSnapshot: { monthlyPriceDT: PRIX_PREMIUM_DT, freeTrialDays: DUREE_ESSAI_JOURS },
-          notes: "Mois offert à l'inscription",
+          notes: "Mois offert à la première vente",
         },
       });
     }
@@ -130,6 +147,7 @@ async function main() {
   bloc("Salons de démonstration → Premium sans échéance", demos);
   bloc("Mois offert encore en cours", enEssai);
   bloc("Mois offert déjà écoulé → VERSION GRATUITE jusqu'au paiement", gratuits);
+  bloc("Aucune vente → rien (le mois démarrera à la 1re vente)", sansVente);
   bloc("Déjà une ligne PREMIUM → inchangés", dejaFaits);
   bloc("Ancien module REWARDS (n'ouvre plus la fidélité — salons à prévenir)", rewards);
 }

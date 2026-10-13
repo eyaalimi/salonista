@@ -2,15 +2,15 @@
  * Quatre salons, un par etat de l'offre gratuite + Premium, pour tester a la
  * main chaque ecran. Appele en fin de `seed.ts`.
  *
- * Le mois offert court depuis l'INSCRIPTION : la date de creation de chaque
- * salon est donc posee en consequence.
+ * Le mois offert court depuis la PREMIERE VENTE : la date des ventes de
+ * chaque salon est donc posee en consequence.
  *
- * | Salon            | Inscrit il y a | Etat            | Ce qu'on y teste                                |
- * |------------------|----------------|-----------------|-------------------------------------------------|
- * | Salon Nouveau    | aujourd'hui    | essai, 30 jours | equipe + commissions configurables sans blocage |
- * | Salon Essai J-3  | 27 jours       | essai, 3 jours  | bandeau chiffre (gerante oui, caissiere non)    |
- * | Salon Gratuit    | 35 jours       | mois ecoule     | appliquerLimiteEquipe, choix, tuile en pause    |
- * | Salon Premium    | 90 jours       | Premium, 2 mois | tout debloque                                   |
+ * | Salon            | 1re vente il y a | Etat            | Ce qu'on y teste                                |
+ * |------------------|------------------|-----------------|-------------------------------------------------|
+ * | Salon Nouveau    | aucune vente     | avant 1re vente | equipe + commissions configurables sans blocage |
+ * | Salon Essai J-3  | 27 jours         | essai, 3 jours  | bandeau chiffre (gerante oui, caissiere non)    |
+ * | Salon Gratuit    | 35 jours         | mois ecoule     | appliquerLimiteEquipe, choix, tuile en pause    |
+ * | Salon Premium    | 60 jours         | Premium, 2 mois | tout debloque                                   |
  *
  * Identifiants : e-mail ci-dessous, mot de passe `password123`. PIN de la
  * gerante 0000, des employees 1234.
@@ -32,8 +32,8 @@ async function creerSalon(
     passwordHash: string;
     pinGerante: string;
     pinEmployee: string;
-    /** Le mois offert part de cette date. */
-    inscription: Date;
+    /** Premiere vente : le mois offert en part. null = aucune vente. */
+    premiereVente: Date | null;
   },
 ): Promise<Salon> {
   const user = await prisma.user.create({
@@ -52,7 +52,6 @@ async function creerSalon(
           phone: args.telephone,
           verified: true,
           onboardingDismissedAt: new Date(),
-          createdAt: args.inscription,
         },
       },
     },
@@ -63,18 +62,20 @@ async function creerSalon(
   await prisma.salonSubscription.create({
     data: { providerId, module: "POS", status: "ACTIVE" },
   });
-  // Le mois offert, pose a l'inscription comme le fait /api/pos/signup.
-  await prisma.salonSubscription.create({
-    data: {
-      providerId,
-      module: "PREMIUM",
-      status: "TRIAL",
-      activatedAt: args.inscription,
-      expiresAt: new Date(args.inscription.getTime() + 30 * JOUR),
-      pricingSnapshot: { monthlyPriceDT: 39, freeTrialDays: 30 },
-      notes: "Mois offert à l'inscription",
-    },
-  });
+  // Le mois offert, pose a la premiere vente comme le fait pos-sale-create.
+  if (args.premiereVente) {
+    await prisma.salonSubscription.create({
+      data: {
+        providerId,
+        module: "PREMIUM",
+        status: "TRIAL",
+        activatedAt: args.premiereVente,
+        expiresAt: new Date(args.premiereVente.getTime() + 30 * JOUR),
+        pricingSnapshot: { monthlyPriceDT: 39, freeTrialDays: 30 },
+        notes: "Mois offert à la première vente",
+      },
+    });
+  }
 
   const owner = await prisma.salonEmployee.create({
     data: { providerId, userId: user.id, displayName: "Gérante", role: "OWNER", pinHash: args.pinGerante },
@@ -177,49 +178,52 @@ export async function seedFreemium(prisma: PrismaClient, passwordHash: string): 
   const commun = { passwordHash, pinGerante, pinEmployee };
   const maintenant = Date.now();
 
-  // 1. Inscrit aujourd'hui : le mois offert commence, rien n'est bloque.
+  // 1. Aucune vente : tout est debloque, le compteur ne tourne pas.
   await creerSalon(prisma, {
     ...commun,
     email: "freemium.nouveau@example.com",
     nom: "Salon Nouveau",
     telephone: "+21650000001",
-    inscription: new Date(maintenant),
+    premiereVente: null,
   });
 
-  // 2. Inscrit il y a 27 jours : encore 3 jours, ventes, points, commissions
-  // non reglees — le bandeau chiffre s'affiche.
+  // 2. Premiere vente il y a 27 jours : encore 3 jours, ventes, points,
+  // commissions non reglees — le bandeau chiffre s'affiche.
+  const venteEssai = new Date(maintenant - 27 * JOUR);
   const essai = await creerSalon(prisma, {
     ...commun,
     email: "freemium.essai@example.com",
     nom: "Salon Essai J-3",
     telephone: "+21650000002",
-    inscription: new Date(maintenant - 27 * JOUR),
+    premiereVente: venteEssai,
   });
   const clientesEssai = await creerClientesFideles(prisma, essai.providerId, [450, 600, 400]);
-  await creerVentes(prisma, essai, clientesEssai, new Date(maintenant - 25 * JOUR));
+  await creerVentes(prisma, essai, clientesEssai, venteEssai);
 
-  // 3. Inscrit il y a 35 jours : mois ecoule, 3 employees ENCORE actives —
-  // la premiere ouverture de la caisse doit en mettre deux en pause.
+  // 3. Premiere vente il y a 35 jours : mois ecoule, 3 employees ENCORE
+  // actives — la premiere ouverture de la caisse doit en mettre deux en pause.
+  const venteGratuit = new Date(maintenant - 35 * JOUR);
   const gratuit = await creerSalon(prisma, {
     ...commun,
     email: "freemium.gratuit@example.com",
     nom: "Salon Gratuit",
     telephone: "+21650000003",
-    inscription: new Date(maintenant - 35 * JOUR),
+    premiereVente: venteGratuit,
   });
   const clientesGratuit = await creerClientesFideles(prisma, gratuit.providerId, [800, 250]);
-  await creerVentes(prisma, gratuit, clientesGratuit, new Date(maintenant - 33 * JOUR));
+  await creerVentes(prisma, gratuit, clientesGratuit, venteGratuit);
 
-  // 4. Inscrit il y a 90 jours, Premium paye jusqu'a dans 2 mois.
+  // 4. Premiere vente il y a 60 jours, Premium paye jusqu'a dans 2 mois.
+  const ventePremium = new Date(maintenant - 60 * JOUR);
   const premium = await creerSalon(prisma, {
     ...commun,
     email: "freemium.premium@example.com",
     nom: "Salon Premium",
     telephone: "+21650000004",
-    inscription: new Date(maintenant - 90 * JOUR),
+    premiereVente: ventePremium,
   });
   const clientesPremium = await creerClientesFideles(prisma, premium.providerId, [300]);
-  await creerVentes(prisma, premium, clientesPremium, new Date(maintenant - 60 * JOUR));
+  await creerVentes(prisma, premium, clientesPremium, ventePremium);
   await prisma.salonSubscription.update({
     where: { providerId_module: { providerId: premium.providerId, module: "PREMIUM" } },
     data: {
@@ -227,13 +231,13 @@ export async function seedFreemium(prisma: PrismaClient, passwordHash: string): 
       activatedAt: new Date(maintenant - 20 * JOUR),
       expiresAt: new Date(maintenant + 61 * JOUR),
       pricingSnapshot: { monthlyPriceDT: 39, months: 3 },
-      notes: "Mois offert à l'inscription\nSeed : Premium 3 mois — virement",
+      notes: "Mois offert à la première vente\nSeed : Premium 3 mois — virement",
     },
   });
 
   return [
     "Offre Premium (mot de passe password123 · PIN gérante 0000 · PIN employées 1234) :",
-    "   freemium.nouveau@example.com  — inscrit aujourd'hui, mois offert en cours",
+    "   freemium.nouveau@example.com  — aucune vente, tout débloqué",
     "   freemium.essai@example.com    — mois offert à J-3, bandeau chiffré",
     "   freemium.gratuit@example.com  — mois offert écoulé, 3 employées à ramener à 1",
     "   freemium.premium@example.com  — Premium jusqu'à dans 2 mois",

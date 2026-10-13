@@ -32,7 +32,6 @@ import { estVide } from "@/lib/campagne-attribution";
 import { ipDe } from "@/lib/rate-limit";
 import { lireCookiesMeta } from "@/lib/meta-conversions";
 import { signalerInscriptionAMeta } from "@/lib/meta-conversions-envoi";
-import { DUREE_ESSAI_JOURS, finEssaiDepuis, PRIX_PREMIUM_DT } from "@/lib/plan";
 
 /** Meme minimum que la reinitialisation de mot de passe, pour rester coherent. */
 const MIN_PASSWORD_LENGTH = 6;
@@ -181,21 +180,6 @@ export async function POST(req: NextRequest) {
         providerId: provider.id,
         module: "POS",
         status: "ACTIVE",
-      },
-    });
-
-    // Le mois offert du Premium (fidelite, equipe, commissions) court des
-    // l'inscription. Un seul par salon : la ligne n'est jamais recreee.
-    const inscription = new Date();
-    await tx.salonSubscription.create({
-      data: {
-        providerId: provider.id,
-        module: "PREMIUM",
-        status: "TRIAL",
-        activatedAt: inscription,
-        expiresAt: finEssaiDepuis(inscription),
-        pricingSnapshot: { monthlyPriceDT: PRIX_PREMIUM_DT, freeTrialDays: DUREE_ESSAI_JOURS },
-        notes: "Mois offert à l'inscription",
       },
     });
 

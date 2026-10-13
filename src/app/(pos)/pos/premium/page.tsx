@@ -29,6 +29,8 @@ function coordonnees() {
 
 function etatActuel(plan: Plan): string {
   switch (plan.etat) {
+    case "AVANT_PREMIERE_VENTE":
+      return "Tout est débloqué. Votre mois d'essai gratuit démarrera à votre première vente.";
     case "ESSAI":
       return `Essai Premium en cours : encore ${plan.joursRestants} jour${plan.joursRestants > 1 ? "s" : ""}, jusqu'au ${dateCourteFr(plan.finEssai)}.`;
     case "PREMIUM":
