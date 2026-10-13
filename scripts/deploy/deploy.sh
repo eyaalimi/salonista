@@ -52,6 +52,25 @@ rm -rf src/generated/prisma
 npx prisma generate
 
 echo "[4/6] Build Next.js"
+# Vide le cache Turbopack AVANT de construire. Meme raison que le
+# `rm -rf src/generated/prisma` ci-dessus : un cache partiel survit au
+# deploiement et fait echouer le suivant.
+#
+# LE SYMPTOME EXACT, vu en production le 13/10/2026 : le build s'arrete sur
+# 16 erreurs « Can't resolve '@vercel/turbopack-next/internal/font/google/font' »
+# pour les faces de Playfair Display, alors que le MEME commit construit sans
+# erreur en local depuis un `.next` vide. Le cache accumule sur des dizaines
+# de deploiements finissait par ne plus resoudre les polices.
+#
+# C'est aussi la variante serveur du piege de la note 25 du CLAUDE.md : un
+# build avec `.next` existant passe, un build a froid revele l'erreur. Ici
+# c'etait l'inverse — le serveur etait le seul a NE PAS partir propre, et
+# donc le seul a echouer, pendant que la CI et le local passaient au vert.
+#
+# Le cout est de quelques dizaines de secondes de build en plus. Un
+# deploiement bloque en coute davantage.
+rm -rf .next
+
 # Lightsail's 1 GB RAM + 2 GB swap is enough for `next build`, but Node's
 # default old-space heap (~512 MB) caps the TypeScript checker before it
 # can grow into swap. Raise the limit so the build can use available memory.

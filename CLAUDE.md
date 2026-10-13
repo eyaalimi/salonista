@@ -1076,8 +1076,44 @@ toujours.
 **`/confidentialite` décrit ce suivi** (section 23) : l'omettre aurait rendu la
 page fausse. Si vous ajoutez un évènement, la page change avec.
 
-**Pas de purge** : décision reportée, assumée. À reprendre quand le volume le
-justifiera.
+**La purge est manuelle et inspecte par défaut** :
+`npx tsx scripts/purger-evenements.ts --apply` efface les évènements de plus
+de **90 jours** (`RETENTION_JOURS`). Quatre-vingt-dix et non trente : le
+cockpit interroge au plus 90 jours d'inscription, et un salon saisonnier doit
+pouvoir être comparé à sa propre période creuse. La suppression se fait **par
+lots de 1000** — un `deleteMany` global tiendrait un verrou long sur la table
+pendant que la production y écrit.
+
+**`SuperadminAuditLog` ne se purge PAS** : c'est le journal des interventions
+humaines, et il doit survivre à la fermeture du salon concerné (clé étrangère
+`SetNull`, jamais `Cascade`). Ne pas confondre les deux tables.
+
+### 33. `deploy.sh` vide `.next` — le serveur était le seul à ne pas partir propre
+
+Le 13/10/2026, un déploiement a échoué sur **16 erreurs** *« Can't resolve
+`@vercel/turbopack-next/internal/font/google/font` »* visant les faces de
+Playfair Display — alors que la **CI était verte**, et que le **même commit**
+(`510e39d`) construisait sans erreur en local avec `rm -rf .next`.
+
+La cause n'était pas le code : **`deploy.sh` ne vidait jamais `.next`**. Le
+serveur réutilisait un cache Turbopack accumulé sur des dizaines de
+déploiements, qui a fini par ne plus résoudre les polices.
+
+**C'est la variante serveur du piège de la note 25, retournée.** Là-bas, un
+build avec `.next` existant passe et le build à froid révèle l'erreur ; ici
+l'inverse : le serveur était le **seul** à ne pas partir d'un cache vide, donc
+le seul à échouer — pendant que la CI (toujours propre) et le local (testé à
+froid) restaient au vert. **Un build vert en CI ne dit rien d'un cache de
+production sale.**
+
+Le `rm -rf .next` ajouté avant `npm run build` répond à la même logique que le
+`rm -rf src/generated/prisma` déjà présent au-dessus : un artefact partiel qui
+survit au déploiement fait échouer le suivant. Coût, quelques dizaines de
+secondes ; un déploiement bloqué coûte davantage.
+
+**Le site n'était pas tombé pour autant** : le build échouant avant
+`pm2 reload`, la production a continué de servir l'ancienne version. C'est le
+comportement voulu — à ne pas défaire en déplaçant le `reload` avant le build.
 
 ---
 

@@ -189,6 +189,31 @@ export function aUneAlerteSecurite(c: CompteursSecurite): boolean {
   return c.pinIncorrects + c.mdpIncorrects >= SEUIL_ECHECS_ALERTE;
 }
 
+/**
+ * Combien de temps on garde un evenement, en jours.
+ *
+ * POURQUOI 90. Le cockpit ne regarde JAMAIS au-dela de 7 jours pour les
+ * signaux, et 90 jours pour la fenetre d'inscription la plus large. Au-dela,
+ * un evenement ne sert plus a aucun appel : il ne dit plus ce que fait le
+ * salon aujourd'hui, seulement ce qu'il faisait il y a un trimestre.
+ *
+ * Trois mois plutot qu'un : un salon saisonnier (mariages, ete) doit pouvoir
+ * etre compare a sa propre periode creuse. Un mois effacerait ce recul.
+ */
+export const RETENTION_JOURS = 90;
+
+/**
+ * La date avant laquelle les evenements peuvent etre supprimes.
+ *
+ * Isolee ici pour etre testable sans base : le script de purge n'a plus qu'a
+ * passer cette borne a un `deleteMany`.
+ */
+export function limitePurge(maintenant: Date = new Date()): Date {
+  const d = new Date(maintenant);
+  d.setDate(d.getDate() - RETENTION_JOURS);
+  return d;
+}
+
 /** Libelles lisibles, pour l'activite recente du cockpit. */
 export const LIBELLE_EVENEMENT: Record<string, string> = {
   [EVENEMENTS.CONNEXION_MDP_INCORRECT]: "Mot de passe incorrect",
