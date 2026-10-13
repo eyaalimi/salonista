@@ -1,14 +1,14 @@
 /**
  * Le cockpit d'appels — l'ecran de travail d'une session de telephone.
  *
- * Il repond a trois questions, dans cet ordre : ou perd-on les salons
- * (l'entonnoir, en haut), qui appeler maintenant (la file, a gauche), et que
- * lui dire (la fiche, a droite).
+ * Trois zones : l'entonnoir en haut (ou perd-on les salons), la file a gauche
+ * (qui appeler), la fiche a droite (quoi lui dire). TOUT passe par l'URL
+ * (`?jours=&marche=&onglet=&salon=`) : on peut envoyer un lien, revenir en
+ * arriere, et le rechargement apres un compte rendu garde la meme vue.
  *
- * TOUT EST EN GET. Periode, marche, onglet et salon selectionne vivent dans
- * l'URL : on peut envoyer un lien a quelqu'un, revenir en arriere, et le
- * rechargement apres un compte rendu garde exactement la meme vue. Un etat
- * client aurait tout perdu a chaque `router.refresh()`.
+ * LA FICHE EST COMPLETE, EXPRES. La version precedente renvoyait vers « voir
+ * la fiche complete » pour la moitie des informations — un lien qu'on ne suit
+ * pas avec une gerante au telephone. Le lien reste, en secondaire.
  *
  * `exigerSuperadmin()` ici ET dans chaque route : le middleware ne lit qu'un
  * jeton, sans acces a la base, donc il ne peut pas verifier la 2FA.
@@ -16,42 +16,51 @@
 
 import Link from "next/link";
 import { exigerSuperadmin, journaliser } from "@/lib/superadmin-session";
-import { ACTIONS, VERIFICATIONS_IDENTITE } from "@/lib/support-salon";
+import { ACTIONS } from "@/lib/support-salon";
 import { ficheSalon } from "@/lib/support-donnees";
+import { ficheAppel } from "@/lib/fiche-appel-donnees";
 import {
   donneesCockpit,
   filtrerFile,
-  FENETRE_SIGNAUX_JOURS,
   type Onglet,
-  type SalonCockpit,
 } from "@/lib/cockpit-appels-donnees";
 import {
-  LIBELLE_MARCHE,
   MARCHES,
-  joursDepuis,
+  libelleScore,
+  parcoursActivation,
   questionsAPoser,
   type Marche,
 } from "@/lib/cockpit-appels";
 import { LIBELLE_RESULTAT, estResultatAppel } from "@/lib/compte-rendu-appel";
-import {
-  completionProfil,
-  formaterTelephone,
-  lienTelephone,
-  afficher,
-} from "@/lib/profil-salon-complet";
+import { completionProfil, formaterTelephone, lienTelephone } from "@/lib/profil-salon-complet";
+import { accord, dateRelative, motAccorde } from "@/lib/format-fr";
 import { CompteRenduClient } from "./compte-rendu-client";
 import { ActionsClient } from "../salons/[id]/actions-client";
 import { Copiable } from "../salons/copiable";
+import { Entonnoir } from "./entonnoir";
+import { FileAppels } from "./file-appels";
+import {
+  Bloc,
+  BlocActivite,
+  BlocCaisse,
+  BlocChamps,
+  BlocParcours,
+  BlocQuestions,
+  BlocSecurite,
+} from "./fiche-blocs";
 
 export const metadata = { title: "Appels — Superadmin" };
 
 const PERIODES = [7, 30, 90] as const;
 
-const ONGLETS: Array<{ cle: Onglet; libelle: string }> = [
-  { cle: "a-appeler", libelle: "À appeler" },
-  { cle: "rappels", libelle: "Rappels" },
-  { cle: "faits", libelle: "Faits aujourd'hui" },
-];
+/** Les actions utiles PENDANT un appel. Les autres sont repliees. */
+const ACTIONS_APPEL = ["reinitialiser-pin", "debloquer", "fermer-sessions"] as const;
+const ACTIONS_AUTRES = [
+  "lien-reset",
+  "mot-de-passe-temporaire",
+  "suspendre",
+  "reactiver",
+] as const;
 
 function estMarche(v: string | undefined): v is Marche {
   return !!v && (MARCHES as readonly string[]).includes(v);
@@ -70,29 +79,30 @@ export default async function AppelsPage({
   const moi = await exigerSuperadmin();
   const params = await searchParams;
 
-  const jours = PERIODES.includes(Number(params.jours) as never)
-    ? Number(params.jours)
-    : 30;
+  const jours = PERIODES.includes(Number(params.jours) as never) ? Number(params.jours) : 30;
   const marche = estMarche(params.marche) ? params.marche : null;
-  const onglet: Onglet = ONGLETS.some((o) => o.cle === params.onglet)
+  const onglet: Onglet = (["a-appeler", "rappels", "faits"] as const).includes(
+    params.onglet as Onglet,
+  )
     ? (params.onglet as Onglet)
     : "a-appeler";
 
-  const { entonnoir, file, totalInscrits } = await donneesCockpit(jours);
+  const { entonnoir, file, totalInscrits, onglets } = await donneesCockpit(jours);
   const liste = filtrerFile(file, onglet, marche);
 
-  // Le salon affiche : celui demande s'il est dans la file, sinon le premier.
   const choisi = params.salon
     ? (liste.find((s) => s.id === params.salon) ??
       file.find((s) => s.id === params.salon) ??
       null)
     : (liste[0] ?? null);
 
-  const fiche = choisi ? await ficheSalon(choisi.id) : null;
+  const [fiche, detail] = choisi
+    ? await Promise.all([ficheSalon(choisi.id), ficheAppel(choisi.id)])
+    : [null, null];
 
   if (fiche) {
     // Consulter une fiche EST une action : elle expose le nom du gerant, son
-    // e-mail et l'activite du salon. Meme trace que la fiche de support.
+    // e-mail et l'activite du salon.
     await journaliser({
       acteur: moi,
       action: ACTIONS.FICHE_CONSULTEE,
@@ -102,25 +112,35 @@ export default async function AppelsPage({
     }).catch(() => {});
   }
 
-  const lien = (p: Record<string, string | number | null>) => {
+  const lien = (p: {
+    jours?: number;
+    marche?: string;
+    onglet?: string;
+    salon?: string | null;
+  }) => {
     const u = new URLSearchParams();
     u.set("jours", String(p.jours ?? jours));
-    if (p.marche ?? marche) u.set("marche", String(p.marche ?? marche));
-    if (p.onglet ?? onglet) u.set("onglet", String(p.onglet ?? onglet));
-    if (p.salon !== null && (p.salon ?? choisi?.id)) {
-      u.set("salon", String(p.salon ?? choisi?.id));
-    }
+    const m = p.marche !== undefined ? p.marche : (marche ?? "");
+    if (m) u.set("marche", m);
+    u.set("onglet", p.onglet ?? onglet);
+    const s = p.salon !== undefined ? p.salon : choisi?.id;
+    if (s) u.set("salon", s);
     return `/superadmin/appels?${u.toString()}`;
   };
 
+  const faits = onglets.faits;
+  const aFaire = onglets.aAppeler + faits;
+  const progression = aFaire === 0 ? 0 : Math.round((faits / aFaire) * 100);
+
   return (
-    <div className="flex flex-col gap-6">
-      <div className="flex flex-wrap items-start justify-between gap-4">
+    <div className="flex flex-col gap-5">
+      {/* Session d'appels */}
+      <div className="flex flex-wrap items-center justify-between gap-4">
         <div>
-          <h1 className="ds-display text-2xl text-prune">Appels</h1>
-          <p className="mt-1 text-sm text-prune-soft">
-            {totalInscrits} salon(s) inscrits sur {jours} jours · signaux des{" "}
-            {FENETRE_SIGNAUX_JOURS} derniers jours.
+          <h1 className="ds-display text-2xl text-prune">Session d&apos;appels</h1>
+          <p className="mt-0.5 text-sm text-prune-soft">
+            {faits} {motAccorde(faits, "fait")} sur {aFaire} ·{" "}
+            {accord(totalInscrits, "salon")} inscrits sur {jours} jours
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
@@ -140,71 +160,51 @@ export default async function AppelsPage({
         </div>
       </div>
 
-      {/* L'entonnoir — defile horizontalement sur telephone. */}
-      <section
-        aria-label="Entonnoir d'activation"
-        className="-mx-1 overflow-x-auto px-1 pb-1"
+      {/* Progression du jour */}
+      <div
+        aria-label={`Progression : ${faits} sur ${aFaire}`}
+        className="h-1.5 overflow-hidden rounded-[var(--radius-pill)] bg-hairline"
       >
-        <ol className="flex min-w-max gap-2">
-          {entonnoir.map((e) => {
-            const actif = marche === e.marche;
-            return (
-              <li key={e.marche} className="min-w-[8.5rem] flex-1">
-                <div
-                  className={`flex h-full flex-col gap-1 rounded-[var(--radius-card)] border bg-white p-4 ${
-                    e.plusGrossePerte ? "border-rose-fonce" : "border-hairline"
-                  }`}
-                >
-                  <span className="text-xs font-semibold uppercase tracking-[0.1em] text-prune-soft">
-                    {e.libelle}
-                  </span>
-                  <span className="ds-display text-2xl text-prune">{e.atteint}</span>
-                  <span className="text-xs text-prune-soft">{e.pourcentage} % des inscrits</span>
-                  {e.bloques > 0 ? (
-                    <Link
-                      href={lien({ marche: actif ? "" : e.marche, salon: null })}
-                      className={`ds-focus mt-1 flex min-h-[44px] items-center justify-center rounded-[var(--radius-pill)] border px-3 text-xs font-semibold ${
-                        actif
-                          ? "border-prune bg-prune text-creme"
-                          : "border-hairline text-rose-fonce hover:border-rose-fonce"
-                      }`}
-                    >
-                      {e.bloques} bloqué(s) ici
-                    </Link>
-                  ) : (
-                    <span className="mt-1 flex min-h-[44px] items-center justify-center text-xs text-prune-soft">
-                      —
-                    </span>
-                  )}
-                </div>
-              </li>
-            );
-          })}
-        </ol>
-      </section>
+        <div
+          className="h-full rounded-[var(--radius-pill)] bg-prune"
+          style={{ width: `${progression}%` }}
+        />
+      </div>
 
-      <div className="flex flex-col gap-6 lg:grid lg:grid-cols-[22rem_1fr] lg:items-start">
-        {/* La file d'appels */}
+      <Entonnoir
+        lignes={entonnoir}
+        marcheActive={marche}
+        lien={(m) => lien({ marche: m, salon: null })}
+      />
+
+      <div className="flex flex-col gap-5 lg:grid lg:grid-cols-[21rem_1fr] lg:items-start">
+        {/* La file */}
         <section aria-label="File d'appels" className="flex flex-col gap-3">
           <div className="flex flex-wrap gap-2">
-            {ONGLETS.map((o) => (
+            {(
+              [
+                ["a-appeler", "À appeler", onglets.aAppeler],
+                ["rappels", "Rappels", onglets.rappels],
+                ["faits", "Faits", onglets.faits],
+              ] as const
+            ).map(([cle, libelle, n]) => (
               <Link
-                key={o.cle}
-                href={lien({ onglet: o.cle, salon: null })}
+                key={cle}
+                href={lien({ onglet: cle, salon: null })}
                 className={`ds-focus flex min-h-[44px] items-center rounded-[var(--radius-pill)] border px-4 text-xs font-semibold ${
-                  onglet === o.cle
+                  onglet === cle
                     ? "border-prune bg-prune text-creme"
                     : "border-hairline bg-white text-prune-soft hover:text-prune"
                 }`}
               >
-                {o.libelle}
+                {libelle} · {n}
               </Link>
             ))}
           </div>
 
           {marche && (
             <p className="text-xs text-prune-soft">
-              Filtré sur « {LIBELLE_MARCHE[marche]} » ·{" "}
+              Filtré sur les salons bloqués ici ·{" "}
               <Link href={lien({ marche: "", salon: null })} className="underline">
                 tout voir
               </Link>
@@ -220,28 +220,280 @@ export default async function AppelsPage({
                   : "Personne à appeler : tous les salons avancent."}
             </p>
           ) : (
-            <ul className="flex flex-col gap-2">
-              {liste.map((s) => (
-                <li key={s.id}>
-                  <LigneFile
-                    salon={s}
-                    actif={choisi?.id === s.id}
-                    href={lien({ salon: s.id })}
-                  />
-                </li>
-              ))}
-            </ul>
+            <FileAppels
+              salons={liste}
+              choisi={choisi?.id ?? null}
+              lien={(id) => lien({ salon: id })}
+            />
           )}
+
+          <p className="text-[11px] leading-relaxed text-prune-soft">
+            Ordre : alertes de sécurité d&apos;abord, puis les inscriptions les
+            plus récentes, puis les plus proches de la 1re vente. Les salons
+            suspendus n&apos;y figurent pas.
+          </p>
         </section>
 
         {/* La fiche */}
         <section aria-label="Fiche du salon" className="flex flex-col gap-4">
-          {!choisi || !fiche ? (
+          {!choisi || !fiche || !detail ? (
             <p className="rounded-[var(--radius-card)] border border-hairline bg-white px-5 py-6 text-sm text-prune-soft">
               Choisissez un salon dans la liste pour préparer l&apos;appel.
             </p>
           ) : (
-            <Fiche salon={choisi} fiche={fiche} />
+            (() => {
+              const completion = completionProfil({
+                city: fiche.city,
+                governorate: fiche.governorate,
+                address: fiche.address,
+                phone: fiche.phone,
+                matriculeFiscal: fiche.matriculeFiscal,
+                nomGerant: fiche.gerant?.nom,
+              });
+
+              const horaires =
+                !!choisi.profil.openingHours &&
+                typeof choisi.profil.openingHours === "object" &&
+                Object.keys(choisi.profil.openingHours as Record<string, unknown>).length > 0;
+
+              const etapes = parcoursActivation({
+                ...choisi,
+                emailVerifieLe: detail.emailVerifieLe,
+                profilPretLe: null,
+                cataloguePretLe: detail.cataloguePretLe,
+                equipeAuDela: detail.equipeAuDela,
+                equipeLe: detail.equipeLe,
+                appInstallee: detail.appInstallee,
+                appInstalleeLe: detail.appInstalleeLe,
+                tiroirOuvertLe: detail.tiroirOuvertLe,
+              });
+
+              const questions = questionsAPoser({
+                emailVerifie: choisi.emailVerifie,
+                horairesRenseignes: horaires,
+                champsManquants: completion.manquants,
+                employeeVerrouillee: detail.employes.some((e) => e.verrouilleJusqua !== null),
+                paniersAbandonnes: choisi.paniersAbandonnes,
+                ventesRefuseesTiroir: choisi.ventesRefuseesTiroir,
+                tiroirJamaisCloture:
+                  detail.tiroirOuvertLe !== null && detail.rapportsZ === 0,
+                catalogueVide: detail.servicesTotal === 0,
+                servicesSansPhoto: detail.servicesSansPhoto,
+              });
+
+              const tel = lienTelephone(fiche.phone);
+
+              return (
+                <>
+                  {/* En-tete */}
+                  <div className="flex flex-col gap-3 rounded-[var(--radius-card)] border border-hairline bg-white p-5">
+                    <div className="flex flex-wrap items-start justify-between gap-3">
+                      <div className="min-w-0">
+                        <div className="flex flex-wrap items-center gap-1.5">
+                          {fiche.suspendedAt && (
+                            <Badge ton="alerte">Suspendu</Badge>
+                          )}
+                          <Badge ton={detail.ventesEncaissees > 0 ? "ok" : "neutre"}>
+                            {detail.ventesEncaissees > 0 ? "Caisse activée" : "Caisse inactive"}
+                          </Badge>
+                          {fiche.campagne && <Badge ton="neutre">{fiche.campagne}</Badge>}
+                          {!fiche.campagne && fiche.utmSource && (
+                            <Badge ton="neutre">{fiche.utmSource}</Badge>
+                          )}
+                        </div>
+                        <h2 className="ds-display mt-1.5 text-xl text-prune">
+                          {fiche.salonName}
+                        </h2>
+                      </div>
+
+                      <div className="flex flex-col items-end gap-2">
+                        {choisi.score !== null ? (
+                          <div className="text-right">
+                            <span className="ds-display text-2xl text-prune">
+                              {choisi.score}
+                              <span className="text-sm text-prune-soft">/100</span>
+                            </span>
+                            <p className="text-xs text-prune-soft">
+                              {libelleScore(choisi.score)}
+                            </p>
+                            <span
+                              aria-hidden
+                              className="mt-1 block h-1.5 w-28 overflow-hidden rounded-[var(--radius-pill)] bg-hairline"
+                            >
+                              <span
+                                className={`block h-full rounded-[var(--radius-pill)] ${
+                                  choisi.score >= 60 ? "bg-menthe-deep" : "bg-rose-fonce"
+                                }`}
+                                style={{ width: `${choisi.score}%` }}
+                              />
+                            </span>
+                          </div>
+                        ) : (
+                          <span className="text-xs text-prune-soft">Suspendu</span>
+                        )}
+                      </div>
+                    </div>
+
+                    <dl className="grid grid-cols-1 gap-x-6 gap-y-1.5 sm:grid-cols-2">
+                      <Champ label="Gérante">{fiche.gerant?.nom ?? "Non renseigné"}</Champ>
+                      <Champ label="Téléphone">
+                        {/* Une seule valeur : `Copiable` AFFICHE deja le
+                            numero. L'afficher en plus le faisait apparaitre
+                            deux fois, formate puis brut. */}
+                        {fiche.phone ? (
+                          <Copiable valeur={formaterTelephone(fiche.phone)} lien={tel ?? undefined} />
+                        ) : (
+                          "Non renseigné"
+                        )}
+                      </Champ>
+                      <Champ label="E-mail">
+                        {fiche.gerant?.email ? (
+                          <Copiable
+                            valeur={fiche.gerant.email}
+                            lien={`mailto:${fiche.gerant.email}`}
+                          />
+                        ) : (
+                          "Non renseigné"
+                        )}
+                      </Champ>
+                      <Champ label="Ville">{fiche.city ?? "Non renseignée"}</Champ>
+                      <Champ label="Inscrit">
+                        {fiche.createdAt.toLocaleDateString("fr-FR")} ·{" "}
+                        {dateRelative(fiche.createdAt)}
+                      </Champ>
+                      <Champ label="Équipe">
+                        {detail.employes.map((e) => e.nom).join(", ") || "Aucune"}
+                      </Champ>
+                      <Champ label="Dernier appel">
+                        {detail.dernierAppelLe
+                          ? `${dateRelative(detail.dernierAppelLe)}${
+                              detail.dernierAppelResultat &&
+                              estResultatAppel(detail.dernierAppelResultat)
+                                ? ` · ${LIBELLE_RESULTAT[detail.dernierAppelResultat]}`
+                                : ""
+                            }`
+                          : "Jamais appelé"}
+                      </Champ>
+                    </dl>
+
+                    <div className="flex flex-wrap items-center gap-2">
+                      {tel && (
+                        <a
+                          href={tel}
+                          className="ds-focus flex min-h-[44px] items-center rounded-[var(--radius-pill)] border border-prune px-5 text-sm font-semibold text-prune"
+                        >
+                          Appeler {fiche.gerant?.nom ?? fiche.salonName}
+                        </a>
+                      )}
+                      <Link
+                        href={`/superadmin/salons/${fiche.id}`}
+                        className="ds-focus flex min-h-[44px] items-center rounded-[var(--radius-pill)] border border-hairline bg-white px-4 text-sm text-prune-soft hover:text-prune"
+                      >
+                        Voir la fiche complète
+                      </Link>
+                    </div>
+                  </div>
+
+                  <BlocParcours etapes={etapes} />
+
+                  <div className="grid gap-4 xl:grid-cols-2">
+                    <BlocChamps
+                      champs={[
+                        { libelle: "Adresse", valeur: fiche.address },
+                        { libelle: "Ville", valeur: fiche.city },
+                        {
+                          libelle: "Photo du salon",
+                          valeur:
+                            choisi.profil.photos.length > 0
+                              ? `${accord(choisi.profil.photos.length, "photo")}`
+                              : null,
+                        },
+                        { libelle: "Nom de la gérante", valeur: fiche.gerant?.nom ?? null },
+                        { libelle: "Gouvernorat", valeur: fiche.governorate },
+                        { libelle: "Matricule fiscal", valeur: fiche.matriculeFiscal },
+                      ]}
+                      servicesTotal={detail.servicesTotal}
+                      servicesSansPhoto={detail.servicesSansPhoto}
+                    />
+                    <BlocCaisse
+                      fiche={detail}
+                      paniersAbandonnes={choisi.paniersAbandonnes}
+                      ventesRefusees={choisi.ventesRefuseesTiroir}
+                    />
+                  </div>
+
+                  <div className="grid gap-4 xl:grid-cols-2">
+                    <BlocSecurite
+                      fiche={detail}
+                      actions={
+                        <div className="flex flex-col gap-3 border-t border-hairline pt-3">
+                          <ActionsClient
+                            salonId={fiche.id}
+                            suspendu={fiche.suspendedAt !== null}
+                            seulement={
+                              detail.employes.some((e) => e.verrouilleJusqua)
+                                ? ACTIONS_APPEL
+                                : ACTIONS_APPEL.filter((a) => a !== "debloquer")
+                            }
+                          />
+                          {/* Les actions lourdes sont repliees : pendant un
+                              appel, « suspendre le salon » n'est pas ce qu'on
+                              cherche, et l'avoir sous la main augmente le
+                              risque de cliquer a cote. */}
+                          <details className="group">
+                            <summary className="ds-focus flex min-h-[44px] cursor-pointer items-center text-xs font-semibold text-prune-soft hover:text-prune">
+                              Plus d&apos;actions
+                            </summary>
+                            <div className="pt-2">
+                              <ActionsClient
+                                salonId={fiche.id}
+                                suspendu={fiche.suspendedAt !== null}
+                                seulement={ACTIONS_AUTRES}
+                              />
+                            </div>
+                          </details>
+                        </div>
+                      }
+                    />
+                    <BlocActivite fiche={detail} />
+                  </div>
+
+                  <div className="grid gap-4 xl:grid-cols-2">
+                    <BlocQuestions questions={questions} />
+                    <Bloc titre="Compte rendu de l'appel">
+                      <CompteRenduClient salonId={fiche.id} />
+                    </Bloc>
+                  </div>
+
+                  <Bloc titre="Appels précédents">
+                    {fiche.notes.length === 0 ? (
+                      <p className="text-sm text-prune-soft">Aucun appel enregistré.</p>
+                    ) : (
+                      <ul className="flex flex-col gap-3">
+                        {fiche.notes.map((n) => (
+                          <li
+                            key={n.id}
+                            className="flex flex-col gap-0.5 border-b border-hairline pb-2 last:border-0"
+                          >
+                            <span className="flex flex-wrap items-baseline gap-2">
+                              <span className="text-xs text-prune-soft">
+                                {n.createdAt.toLocaleDateString("fr-FR")} · {n.authorEmail}
+                              </span>
+                              {estResultatAppel(n.resultat) && (
+                                <span className="rounded-[var(--radius-pill)] bg-creme px-2 py-0.5 text-xs font-semibold text-prune">
+                                  {LIBELLE_RESULTAT[n.resultat]}
+                                </span>
+                              )}
+                            </span>
+                            <span className="text-sm text-prune">{n.contenu}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    )}
+                  </Bloc>
+                </>
+              );
+            })()
           )}
         </section>
       </div>
@@ -249,222 +501,33 @@ export default async function AppelsPage({
   );
 }
 
-function LigneFile({
-  salon,
-  actif,
-  href,
+function Badge({
+  ton,
+  children,
 }: {
-  salon: SalonCockpit;
-  actif: boolean;
-  href: string;
+  ton: "ok" | "neutre" | "alerte";
+  children: React.ReactNode;
 }) {
-  const alerte = salon.securite.verrouillages > 0;
+  const classes =
+    ton === "ok"
+      ? "bg-menthe text-prune"
+      : ton === "alerte"
+        ? "bg-rose-soft text-prune"
+        : "bg-creme text-prune-soft";
   return (
-    <Link
-      href={href}
-      className={`ds-focus flex flex-col gap-1 rounded-[var(--radius-card)] border bg-white p-4 ${
-        actif ? "border-prune" : "border-hairline hover:border-prune-soft"
-      }`}
+    <span
+      className={`rounded-[var(--radius-pill)] px-2 py-0.5 text-[11px] font-semibold ${classes}`}
     >
-      <span className="flex items-center justify-between gap-2">
-        <span className="truncate font-semibold text-prune">{salon.salonName}</span>
-        {salon.score !== null && (
-          <span className="shrink-0 text-xs text-prune-soft">{salon.score}/100</span>
-        )}
-      </span>
-      <span className="text-xs text-prune-soft">{salon.city ?? "Ville non renseignée"}</span>
-      <span className="flex flex-wrap items-center gap-1.5 pt-1">
-        {salon.marche && (
-          <span className="rounded-[var(--radius-pill)] bg-creme px-2 py-0.5 text-xs font-semibold text-prune">
-            {LIBELLE_MARCHE[salon.marche]}
-          </span>
-        )}
-        {alerte && (
-          <span className="rounded-[var(--radius-pill)] bg-rose-soft px-2 py-0.5 text-xs font-semibold text-prune">
-            Employée bloquée
-          </span>
-        )}
-        {salon.paniersAbandonnes > 0 && (
-          <span className="rounded-[var(--radius-pill)] bg-creme px-2 py-0.5 text-xs text-prune-soft">
-            {salon.paniersAbandonnes} panier(s) abandonné(s)
-          </span>
-        )}
-      </span>
-    </Link>
+      {children}
+    </span>
   );
 }
 
-function Fiche({
-  salon,
-  fiche,
-}: {
-  salon: SalonCockpit;
-  fiche: NonNullable<Awaited<ReturnType<typeof ficheSalon>>>;
-}) {
-  const completion = completionProfil({
-    city: fiche.city,
-    governorate: fiche.governorate,
-    address: fiche.address,
-    phone: fiche.phone,
-    matriculeFiscal: fiche.matriculeFiscal,
-    nomGerant: fiche.gerant?.nom,
-  });
-
-  const horaires =
-    !!salon.profil.openingHours &&
-    typeof salon.profil.openingHours === "object" &&
-    Object.keys(salon.profil.openingHours as Record<string, unknown>).length > 0;
-
-  const questions = questionsAPoser({
-    emailVerifie: salon.emailVerifie,
-    horairesRenseignes: horaires,
-    champsManquants: completion.manquants,
-    employeeVerrouillee: salon.securite.verrouillages > 0,
-    paniersAbandonnes: salon.paniersAbandonnes,
-    ventesRefuseesTiroir: salon.ventesRefuseesTiroir,
-    // Un tiroir ouvert mais aucune vente : le salon ne sait pas cloturer.
-    tiroirJamaisCloture: false,
-    catalogueVide: salon.nombreOffres === 0,
-    servicesSansPhoto: 0,
-  });
-
-  const tel = lienTelephone(fiche.phone);
-  const bloqueDepuis = joursDepuis(salon.inscritLe);
-
+function Champ({ label, children }: { label: string; children: React.ReactNode }) {
   return (
-    <>
-      {/* En-tete */}
-      <div className="flex flex-col gap-3 rounded-[var(--radius-card)] border border-hairline bg-white p-5">
-        <div className="flex flex-wrap items-start justify-between gap-3">
-          <div className="min-w-0">
-            <h2 className="ds-display text-xl text-prune">{fiche.salonName}</h2>
-            <p className="mt-0.5 text-sm text-prune-soft">
-              {afficher(fiche.city)} · inscrit il y a {bloqueDepuis} jour(s)
-            </p>
-          </div>
-          <div className="flex items-center gap-2">
-            {salon.score !== null ? (
-              <span className="rounded-[var(--radius-pill)] bg-creme px-3 py-1 text-sm font-semibold text-prune">
-                {salon.score}/100
-              </span>
-            ) : (
-              <span className="rounded-[var(--radius-pill)] bg-creme px-3 py-1 text-xs text-prune-soft">
-                Suspendu
-              </span>
-            )}
-            {tel && (
-              <a
-                href={tel}
-                className="ds-focus flex min-h-[44px] items-center rounded-[var(--radius-pill)] border border-prune px-4 text-sm font-semibold text-prune"
-              >
-                Appeler
-              </a>
-            )}
-          </div>
-        </div>
-
-        <dl className="grid grid-cols-1 gap-2 sm:grid-cols-2">
-          <Ligne label="Téléphone">
-            <span className="flex items-center gap-2">
-              {formaterTelephone(fiche.phone)}
-              {fiche.phone && <Copiable valeur={fiche.phone} />}
-            </span>
-          </Ligne>
-          <Ligne label="E-mail du gérant">
-            <span className="flex items-center gap-2">
-              {afficher(fiche.gerant?.email)}
-              {fiche.gerant?.email && <Copiable valeur={fiche.gerant.email} />}
-            </span>
-          </Ligne>
-        </dl>
-
-        {completion.manquants.length > 0 && (
-          <p className="text-xs text-prune-soft">
-            Profil complété à {completion.pourcentage} % — il manque{" "}
-            {completion.manquants.join(", ")}.
-          </p>
-        )}
-
-        <Link
-          href={`/superadmin/salons/${fiche.id}`}
-          className="ds-focus text-sm font-semibold text-rose-fonce underline underline-offset-2"
-        >
-          Voir la fiche complète
-        </Link>
-      </div>
-
-      {/* Les questions a poser */}
-      {questions.length > 0 && (
-        <div className="flex flex-col gap-3 rounded-[var(--radius-card)] border border-hairline bg-white p-5">
-          <h3 className="text-sm font-semibold text-prune">À demander pendant l&apos;appel</h3>
-          <ol className="flex flex-col gap-3">
-            {questions.map((q) => (
-              <li key={q.question} className="flex flex-col gap-0.5">
-                <span className="text-sm text-prune">« {q.question} »</span>
-                <span className="text-xs text-prune-soft">{q.parceQue}</span>
-              </li>
-            ))}
-          </ol>
-        </div>
-      )}
-
-      {/* Securite et actions */}
-      <div className="flex flex-col gap-3 rounded-[var(--radius-card)] border border-hairline bg-white p-5">
-        <h3 className="text-sm font-semibold text-prune">Connexions et sécurité</h3>
-        <dl className="grid grid-cols-2 gap-2">
-          <Ligne label="Mots de passe refusés">{salon.securite.mdpIncorrects}</Ligne>
-          <Ligne label="PIN refusés">{salon.securite.pinIncorrects}</Ligne>
-          <Ligne label="Verrouillages">{salon.securite.verrouillages}</Ligne>
-          <Ligne label="Ventes refusées (tiroir)">{salon.ventesRefuseesTiroir}</Ligne>
-        </dl>
-        <ul className="flex flex-col gap-1 border-t border-hairline pt-3">
-          {VERIFICATIONS_IDENTITE.map((v) => (
-            <li key={v} className="text-xs text-prune-soft">
-              {v}
-            </li>
-          ))}
-        </ul>
-        <ActionsClient salonId={fiche.id} suspendu={fiche.suspendedAt !== null} />
-      </div>
-
-      {/* Le compte rendu — la seule action rose de la page */}
-      <div className="flex flex-col gap-3 rounded-[var(--radius-card)] border border-hairline bg-white p-5">
-        <h3 className="text-sm font-semibold text-prune">Compte rendu de l&apos;appel</h3>
-        <CompteRenduClient salonId={fiche.id} />
-      </div>
-
-      {/* Les appels precedents */}
-      {fiche.notes.length > 0 && (
-        <div className="flex flex-col gap-3 rounded-[var(--radius-card)] border border-hairline bg-white p-5">
-          <h3 className="text-sm font-semibold text-prune">Appels précédents</h3>
-          <ul className="flex flex-col gap-3">
-            {fiche.notes.map((n) => (
-              <li key={n.id} className="flex flex-col gap-0.5 border-b border-hairline pb-2 last:border-0">
-                <span className="flex flex-wrap items-baseline gap-2">
-                  <span className="text-xs text-prune-soft">
-                    {n.createdAt.toLocaleDateString("fr-FR")} · {n.authorEmail}
-                  </span>
-                  {"resultat" in n && estResultatAppel(n.resultat) && (
-                    <span className="rounded-[var(--radius-pill)] bg-creme px-2 py-0.5 text-xs font-semibold text-prune">
-                      {LIBELLE_RESULTAT[n.resultat]}
-                    </span>
-                  )}
-                </span>
-                <span className="text-sm text-prune">{n.contenu}</span>
-              </li>
-            ))}
-          </ul>
-        </div>
-      )}
-    </>
-  );
-}
-
-function Ligne({ label, children }: { label: string; children: React.ReactNode }) {
-  return (
-    <div className="flex flex-col">
-      <dt className="text-xs text-prune-soft">{label}</dt>
-      <dd className="text-sm text-prune">{children}</dd>
+    <div className="flex items-baseline justify-between gap-3 border-b border-hairline py-1 last:border-0 sm:border-0">
+      <dt className="shrink-0 text-xs text-prune-soft">{label}</dt>
+      <dd className="truncate text-sm text-prune">{children}</dd>
     </div>
   );
 }

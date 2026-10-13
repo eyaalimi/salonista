@@ -23,6 +23,7 @@ import {
   fileDAppels,
   construireEntonnoir,
   marcheBloquante,
+  etiquetteProbleme,
   scoreSante,
   type LigneEntonnoir,
   type Marche,
@@ -36,6 +37,12 @@ export const FENETRE_SIGNAUX_JOURS = 7;
 
 export type SalonCockpit = SalonPourPriorite & {
   marche: Marche | null;
+  /**
+   * Le PROBLEME, en clair — « Pas d'horaires », « Caisse jamais ouverte ».
+   * Distinct de `marche` : celle-la nomme l'etape, celui-ci ce qui coince.
+   * Afficher la marche donnait « Profil pret » sur un salon bloque au profil.
+   */
+  probleme: string | null;
   score: number | null;
   /** Rappel pose par un appel precedent, s'il y en a un. */
   rappelLe: Date | null;
@@ -47,12 +54,16 @@ export type SalonCockpit = SalonPourPriorite & {
   ventesRefuseesTiroir: number;
 };
 
+/** Le nombre d'elements de chaque onglet, pour les afficher a cote du nom. */
+export type CompteursOnglets = { aAppeler: number; rappels: number; faits: number };
+
 export type DonneesCockpit = {
   entonnoir: LigneEntonnoir[];
   /** Tous les salons retenus pour les appels, deja tries. */
   file: SalonCockpit[];
   /** Total d'inscrits sur la periode, entonnoir compris. */
   totalInscrits: number;
+  onglets: CompteursOnglets;
 };
 
 /**
@@ -89,7 +100,12 @@ export async function donneesCockpit(
 
   const ids = salons.map((s) => s.id);
   if (ids.length === 0) {
-    return { entonnoir: construireEntonnoir([], maintenant), file: [], totalInscrits: 0 };
+    return {
+      entonnoir: construireEntonnoir([], maintenant),
+      file: [],
+      totalInscrits: 0,
+      onglets: { aAppeler: 0, rappels: 0, faits: 0 },
+    };
   }
 
   // 2 — tous les agregats, en parallele. Un `groupBy` par signal, jamais un
@@ -218,6 +234,7 @@ export async function donneesCockpit(
     return {
       ...base,
       marche: marcheBloquante(base, maintenant),
+      probleme: etiquetteProbleme(base, maintenant),
       score: scoreSante(base, maintenant),
       rappelLe: prochainRappel,
       appeleAujourdhui: mesNotes.some((n) => faitAujourdhui(n, maintenant)),
@@ -226,10 +243,20 @@ export async function donneesCockpit(
     };
   });
 
+  const file = fileDAppels(complets, maintenant);
+
   return {
     entonnoir: construireEntonnoir(complets, maintenant),
-    file: fileDAppels(complets, maintenant),
+    file,
     totalInscrits: complets.length,
+    // Les compteurs se calculent sur la file COMPLETE, sans le filtre de
+    // marche : « À appeler · 18 » doit rester 18 meme quand on inspecte une
+    // marche, sinon le chiffre changerait a chaque clic sur l'entonnoir.
+    onglets: {
+      aAppeler: filtrerFile(file, "a-appeler", null, maintenant).length,
+      rappels: filtrerFile(file, "rappels", null, maintenant).length,
+      faits: filtrerFile(file, "faits", null, maintenant).length,
+    },
   };
 }
 

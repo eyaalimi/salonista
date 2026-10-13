@@ -14,7 +14,7 @@
  * salon.
  */
 
-import { estActif, type SignesDeVie } from "./campagne-tableau";
+import { estActif, joursDInactivite, type SignesDeVie } from "./campagne-tableau";
 import { SEUIL_INACTIF_JOURS } from "./vue-ensemble";
 import { etapesDemarrage, type ProfilSalon } from "./onboarding-salon";
 import { aUneAlerteSecurite, type CompteursSecurite } from "./evenement-salon";
@@ -204,6 +204,63 @@ export function construireEntonnoir(
   return lignes;
 }
 
+/**
+ * L'etiquette affichee sur une ligne de la file.
+ *
+ * ELLE NOMME LE PROBLEME, JAMAIS LA MARCHE. La version precedente affichait
+ * `LIBELLE_MARCHE[marche]`, donc « Profil pret » sur un salon justement
+ * BLOQUE au profil : a l'ecran, une carte annoncait « Profil pret » juste
+ * au-dessus de « Ville non renseignee ». Le calcul etait juste, la phrase
+ * disait le contraire.
+ *
+ * `horaires` et `profil` partagent la meme marche (voir `profilEtCatalogue`)
+ * mais pas la meme conversation : « il vous manque la ville » et « vous
+ * n'avez pas d'horaires » sont deux appels differents. On les distingue donc
+ * ici, la ou l'entonnoir les regroupe.
+ */
+export function etiquetteProbleme(
+  s: SalonPourMarche,
+  maintenant: Date = new Date(),
+): string | null {
+  const b = marcheBloquante(s, maintenant);
+  if (b === null) return null;
+
+  switch (b) {
+    case "email_verifie":
+      return "E-mail non vérifié";
+    case "profil": {
+      const [, , horaires] = etapesDemarrage(s.profil, s.nombreOffres);
+      return horaires.faite ? "Profil incomplet" : "Pas d'horaires";
+    }
+    case "catalogue":
+      return "Pas de service";
+    case "tiroir":
+      return "Caisse jamais ouverte";
+    case "premiere_vente":
+      return "Tiroir ouvert, 0 vente";
+    case "actif": {
+      const jours = joursDInactivite(s, maintenant);
+      return jours === null ? "Décroché" : `Décroché · ${jours} j`;
+    }
+    default:
+      return null;
+  }
+}
+
+/**
+ * Comment lire un score, en mots.
+ *
+ * Un nombre sur 100 ne dit rien seul : 42/100 est-il inquietant ? Le libelle
+ * tranche, et c'est lui qu'on lit en parcourant la file.
+ */
+export function libelleScore(score: number | null): string {
+  if (score === null) return "Suspendu";
+  if (score >= 80) return "Installé";
+  if (score >= 60) return "En bonne voie";
+  if (score >= 40) return "À risque";
+  return "En difficulté";
+}
+
 /* ------------------------------------------------------------------ *
  *  LA PRIORITE D'APPEL
  * ------------------------------------------------------------------ */
@@ -289,6 +346,112 @@ export function fileDAppels<T extends SalonPourPriorite>(
       // page ne reclassent pas la liste sous les yeux de l'appelant.
       return a.id.localeCompare(b.id);
     });
+}
+
+/* ------------------------------------------------------------------ *
+ *  LE PARCOURS D'ACTIVATION (fiche de droite)
+ * ------------------------------------------------------------------ */
+
+/**
+ * Les HUIT etapes du parcours affiche sur la fiche.
+ *
+ * Une de plus que l'entonnoir, et c'est voulu. « Equipe » et « App
+ * installee » renseignent un appel — « vous travaillez seule ? », « vous
+ * l'avez sur votre telephone ? » — mais n'ont rien a faire dans l'entonnoir :
+ *
+ *  - un salon qui travaille SEUL n'a rien a corriger, le compter « perdu a
+ *    l'etape Equipe » le ferait remonter dans la file pour rien ;
+ *  - `appinstalled` n'existe pas sur Safari iOS (voir note 25) : l'etape est
+ *    donc FACULTATIVE, et une croix n'y signifie jamais un echec.
+ */
+export type EtapeParcours = {
+  cle: string;
+  libelle: string;
+  faite: boolean;
+  /** Quand elle a ete franchie, si on le sait. */
+  le: Date | null;
+  /** Une croix ici n'est pas un probleme — App installee. */
+  facultative: boolean;
+  /** Premiere etape non franchie : celle ou le salon est arrete. */
+  bloquante: boolean;
+};
+
+export type SalonPourParcours = SalonPourMarche & {
+  inscritLe: Date;
+  emailVerifieLe: Date | null;
+  profilPretLe: Date | null;
+  cataloguePretLe: Date | null;
+  equipeAuDela: boolean;
+  equipeLe: Date | null;
+  appInstallee: boolean;
+  appInstalleeLe: Date | null;
+  tiroirOuvertLe: Date | null;
+};
+
+/**
+ * Le parcours d'activation d'un salon.
+ *
+ * `bloquante` marque la premiere etape NON FACULTATIVE non franchie : c'est
+ * elle que la fiche surligne avec « bloque ici depuis N jours ». Les etapes
+ * facultatives ne peuvent jamais bloquer, sinon un iPhone suffirait a faire
+ * remonter un salon parfaitement installe.
+ */
+export function parcoursActivation(s: SalonPourParcours): EtapeParcours[] {
+  const { profilPret, cataloguePret } = profilEtCatalogue(s);
+
+  const brut: Array<Omit<EtapeParcours, "bloquante">> = [
+    { cle: "compte", libelle: "Compte créé", faite: true, le: s.inscritLe, facultative: false },
+    {
+      cle: "email",
+      libelle: "E-mail vérifié",
+      faite: s.emailVerifie,
+      le: s.emailVerifieLe,
+      facultative: false,
+    },
+    { cle: "profil", libelle: "Profil prêt", faite: profilPret, le: s.profilPretLe, facultative: false },
+    {
+      cle: "catalogue",
+      libelle: "Catalogue prêt",
+      faite: cataloguePret,
+      le: s.cataloguePretLe,
+      facultative: false,
+    },
+    {
+      cle: "equipe",
+      libelle: "Équipe",
+      faite: s.equipeAuDela,
+      le: s.equipeLe,
+      facultative: false,
+    },
+    {
+      cle: "app",
+      libelle: "App installée",
+      faite: s.appInstallee,
+      le: s.appInstalleeLe,
+      facultative: true,
+    },
+    {
+      cle: "tiroir",
+      libelle: "Tiroir ouvert",
+      faite: s.tiroirDejaOuvert,
+      le: s.tiroirOuvertLe,
+      facultative: false,
+    },
+    {
+      cle: "vente",
+      libelle: "1re vente",
+      faite: s.premiereVenteAt !== null,
+      le: s.premiereVenteAt,
+      facultative: false,
+    },
+  ];
+
+  let dejaBloque = false;
+  return brut.map((e) => {
+    const bloquante = !dejaBloque && !e.faite && !e.facultative;
+    if (bloquante) dejaBloque = true;
+    return { ...e, bloquante };
+  });
 }
 
 /* ------------------------------------------------------------------ *

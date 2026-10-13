@@ -9,6 +9,9 @@ import {
   RANG_ALERTE,
   RANG_JAMAIS_VENDU,
   RANG_AUTRE,
+  etiquetteProbleme,
+  parcoursActivation,
+  libelleScore,
   marcheBloquante,
   aFranchi,
   construireEntonnoir,
@@ -20,6 +23,7 @@ import {
   type SalonPourMarche,
   type SalonPourPriorite,
   type SignauxQuestions,
+  type SalonPourParcours,
 } from "./cockpit-appels";
 
 const T = new Date("2026-10-13T12:00:00.000Z");
@@ -509,5 +513,199 @@ describe("joursDepuis", () => {
   it("compte les jours ecoules", () => {
     expect(joursDepuis(jours(-3), T)).toBe(3);
     expect(joursDepuis(T, T)).toBe(0);
+  });
+});
+
+describe("etiquetteProbleme", () => {
+  // Le bug vu en production : la carte affichait « Profil prêt » sur un salon
+  // justement bloque au profil, juste au-dessus de « Ville non renseignée ».
+  // L'etiquette doit nommer le PROBLEME, jamais la marche.
+  it("ne reprend jamais le libelle d'une marche", () => {
+    const cas: SalonPourMarche[] = [
+      { ...salonComplet(), emailVerifie: false },
+      { ...salonComplet(), profil: { ...salonComplet().profil, city: null } },
+      { ...salonComplet(), nombreOffres: 0 },
+      { ...salonComplet(), tiroirDejaOuvert: false },
+      { ...salonComplet(), premiereVenteAt: null },
+    ];
+    const libelles = Object.values(LIBELLE_MARCHE);
+    for (const c of cas) {
+      const e = etiquetteProbleme(c, T);
+      expect(e).not.toBeNull();
+      expect(libelles).not.toContain(e!);
+    }
+  });
+
+  it("rend null quand rien ne bloque", () => {
+    expect(etiquetteProbleme(salonComplet(), T)).toBeNull();
+  });
+
+  it("nomme chaque blocage", () => {
+    expect(etiquetteProbleme({ ...salonComplet(), emailVerifie: false }, T)).toBe(
+      "E-mail non vérifié",
+    );
+    expect(etiquetteProbleme({ ...salonComplet(), nombreOffres: 0 }, T)).toBe(
+      "Pas de service",
+    );
+    expect(etiquetteProbleme({ ...salonComplet(), tiroirDejaOuvert: false }, T)).toBe(
+      "Caisse jamais ouverte",
+    );
+    expect(etiquetteProbleme({ ...salonComplet(), premiereVenteAt: null }, T)).toBe(
+      "Tiroir ouvert, 0 vente",
+    );
+  });
+
+  // Profil et horaires partagent une marche mais pas la meme conversation.
+  it("distingue un profil incomplet d'horaires absents", () => {
+    const sansVille = { ...salonComplet(), profil: { ...salonComplet().profil, city: null } };
+    const sansHoraires = {
+      ...salonComplet(),
+      profil: { ...salonComplet().profil, openingHours: {} },
+    };
+    expect(etiquetteProbleme(sansVille, T)).toBe("Profil incomplet");
+    expect(etiquetteProbleme(sansHoraires, T)).toBe("Pas d'horaires");
+  });
+
+  it("chiffre le decrochage", () => {
+    const decroche = {
+      ...salonComplet(),
+      derniereVenteAt: jours(-30),
+      derniereConnexionAt: jours(-30),
+    };
+    expect(etiquetteProbleme(decroche, T)).toMatch(/^Décroché · \d+ j$/);
+  });
+});
+
+describe("libelleScore", () => {
+  it("dit « Suspendu » quand il n'y a pas de score", () => {
+    expect(libelleScore(null)).toBe("Suspendu");
+  });
+
+  it("couvre toute l'echelle", () => {
+    expect(libelleScore(90)).toBe("Installé");
+    expect(libelleScore(70)).toBe("En bonne voie");
+    expect(libelleScore(42)).toBe("À risque");
+    expect(libelleScore(20)).toBe("En difficulté");
+  });
+
+  it("ne laisse aucun trou entre 0 et 100", () => {
+    for (let n = 0; n <= 100; n++) expect(libelleScore(n).length).toBeGreaterThan(0);
+  });
+});
+
+describe("entonnoir — l'invariant demande", () => {
+  // La somme des bloques, plus ceux qui ont tout franchi, doit redonner
+  // exactement le nombre d'inscrits : personne ne se perd, personne n'est
+  // compte deux fois.
+  it("somme des bloqués + salons sans blocage = inscrits", () => {
+    const salons: SalonPourMarche[] = [
+      salonComplet(),
+      salonComplet(),
+      { ...salonComplet(), emailVerifie: false },
+      { ...salonComplet(), nombreOffres: 0 },
+      { ...salonComplet(), tiroirDejaOuvert: false },
+      { ...salonComplet(), premiereVenteAt: null },
+      { ...salonComplet(), derniereVenteAt: jours(-40), derniereConnexionAt: jours(-40) },
+    ];
+    const lignes = construireEntonnoir(salons, T);
+    const bloques = lignes.reduce((n, l) => n + l.bloques, 0);
+    const sansBlocage = salons.filter((s) => marcheBloquante(s, T) === null).length;
+    expect(bloques + sansBlocage).toBe(salons.length);
+    // Et la derniere marche n'affiche que ceux qui ont TOUT franchi.
+    expect(lignes[lignes.length - 1].atteint).toBe(sansBlocage);
+  });
+
+  it("passés(k) = passés(k-1) − bloqués(k)", () => {
+    const lignes = construireEntonnoir(
+      [
+        salonComplet(),
+        { ...salonComplet(), emailVerifie: false },
+        { ...salonComplet(), nombreOffres: 0 },
+        { ...salonComplet(), premiereVenteAt: null },
+      ],
+      T,
+    );
+    for (let i = 1; i < lignes.length; i++) {
+      expect(lignes[i].atteint).toBe(lignes[i - 1].atteint - lignes[i].bloques);
+    }
+  });
+
+  it("la plus grosse perte est bien le maximum des bloqués", () => {
+    const lignes = construireEntonnoir(
+      [
+        { ...salonComplet(), nombreOffres: 0 },
+        { ...salonComplet(), nombreOffres: 0 },
+        { ...salonComplet(), nombreOffres: 0 },
+        { ...salonComplet(), emailVerifie: false },
+      ],
+      T,
+    );
+    const maxi = Math.max(...lignes.map((l) => l.bloques));
+    expect(lignes.find((l) => l.plusGrossePerte)!.bloques).toBe(maxi);
+  });
+});
+
+describe("parcoursActivation", () => {
+  function parcours(over: Partial<SalonPourParcours> = {}): SalonPourParcours {
+    return {
+      ...salonComplet(),
+      inscritLe: jours(-10),
+      emailVerifieLe: jours(-10),
+      profilPretLe: jours(-9),
+      cataloguePretLe: jours(-8),
+      equipeAuDela: true,
+      equipeLe: jours(-8),
+      appInstallee: true,
+      appInstalleeLe: jours(-7),
+      tiroirOuvertLe: jours(-6),
+      ...over,
+    };
+  }
+
+  it("rend les huit etapes dans l'ordre", () => {
+    const p = parcoursActivation(parcours());
+    expect(p.map((e) => e.cle)).toEqual([
+      "compte",
+      "email",
+      "profil",
+      "catalogue",
+      "equipe",
+      "app",
+      "tiroir",
+      "vente",
+    ]);
+  });
+
+  it("aucune etape bloquante quand tout est franchi", () => {
+    expect(parcoursActivation(parcours()).some((e) => e.bloquante)).toBe(false);
+  });
+
+  it("ne marque QU'UNE seule etape bloquante, la premiere", () => {
+    const p = parcoursActivation(
+      parcours({ emailVerifie: false, nombreOffres: 0, premiereVenteAt: null }),
+    );
+    const bloquantes = p.filter((e) => e.bloquante);
+    expect(bloquantes).toHaveLength(1);
+    expect(bloquantes[0].cle).toBe("email");
+  });
+
+  // Une croix sur « App installee » n'est pas un echec : `appinstalled`
+  // n'existe pas sur Safari iOS. Elle ne doit jamais bloquer.
+  it("une etape facultative ne bloque jamais", () => {
+    const p = parcoursActivation(parcours({ appInstallee: false }));
+    expect(p.find((e) => e.cle === "app")!.faite).toBe(false);
+    expect(p.find((e) => e.cle === "app")!.bloquante).toBe(false);
+    expect(p.some((e) => e.bloquante)).toBe(false);
+  });
+
+  it("le blocage saute par-dessus une etape facultative non faite", () => {
+    const p = parcoursActivation(parcours({ appInstallee: false, tiroirDejaOuvert: false }));
+    expect(p.find((e) => e.bloquante)!.cle).toBe("tiroir");
+  });
+
+  it("« Compte créé » est toujours faite et datee", () => {
+    const e = parcoursActivation(parcours())[0];
+    expect(e.faite).toBe(true);
+    expect(e.le).not.toBeNull();
   });
 });
