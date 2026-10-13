@@ -16,6 +16,8 @@
 
 import { prisma } from "@/lib/prisma";
 import { refusVenteSansTiroir } from "./caisse-ouverte";
+import { EVENEMENTS } from "./evenement-salon";
+import { enregistrerEvenementSalon } from "./evenement-salon-ecriture";
 import { computeTotals, type CartInput } from "@/lib/sale-totals";
 import { toMillimes, fromMillimes } from "@/lib/money";
 import { nextReceiptNumber } from "@/lib/receipt-number";
@@ -370,6 +372,22 @@ export async function createSaleFromPayload(args: {
     fromSync === true,
   );
   if (refusTiroir) {
+    /*
+     * Une vente refusee faute de tiroir est un signal d'appel de premier
+     * ordre : la caissiere a une cliente devant elle et un message qu'elle
+     * ne comprend pas forcement. Au telephone, « savez-vous ouvrir la
+     * caisse le matin ? » regle souvent le probleme d'un coup.
+     *
+     * Jamais pour une vente issue d'une SYNCHRONISATION : `refusTiroir` est
+     * deja nul dans ce cas (voir `refusVenteSansTiroir`), donc on n'arrive
+     * jamais ici pour une vente hors ligne rejouee.
+     *
+     * `void` : le refus part a la caissiere sans attendre l'ecriture.
+     */
+    void enregistrerEvenementSalon(EVENEMENTS.VENTE_REFUSEE_TIROIR_FERME, {
+      providerId,
+      employeeId,
+    });
     return { kind: "validation", error: refusTiroir.message };
   }
 

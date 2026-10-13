@@ -1,6 +1,7 @@
 import { getCurrentEmployee } from "@/lib/employee-session";
 import { redirect } from "next/navigation";
 import { PosShellClient } from "@/components/pos/pos-shell-client";
+import { SignalEcran } from "@/components/pos/signal-ecran";
 import { getActiveModules } from "@/lib/modules";
 import { posLandingPath } from "@/lib/pos-access";
 
@@ -20,6 +21,8 @@ export default async function PosPage() {
   // modifiables.
   if (!employee.permissions["pos.sell"]) redirect("/pos/calendar");
   return (
+    <>
+    <SignalEcran ecran="caisse" />
     <PosShellClient
       employee={{
         id: employee.id,
@@ -28,5 +31,6 @@ export default async function PosPage() {
         permissions: employee.permissions,
       }}
     />
+    </>
   );
 }

@@ -100,6 +100,38 @@ export default function ConfidentialitePage() {
         voit celle de l&apos;autre.
       </p>
 
+      <h3>L&apos;activité technique de votre compte salon</h3>
+      <p>
+        Pour vous accompagner au démarrage et vous aider par téléphone quand
+        quelque chose bloque, nous conservons l&apos;activité technique de votre
+        compte professionnel :
+      </p>
+      <ul>
+        <li>
+          Les connexions <strong>réussies et refusées</strong> à votre compte, et
+          les verrouillages de code PIN de votre équipe
+        </li>
+        <li>
+          L&apos;ouverture des écrans Services, Réglages et Caisse, au plus une
+          fois par personne et par demi-heure
+        </li>
+        <li>
+          Les encaissements refusés faute de tiroir-caisse ouvert, et
+          l&apos;ouverture de l&apos;écran de paiement
+        </li>
+        <li>L&apos;installation de l&apos;application sur votre appareil</li>
+      </ul>
+      <p>
+        <strong>
+          Ni votre mot de passe, ni vos codes PIN, ni aucune donnée de vos
+          clientes n&apos;y figurent.
+        </strong>{" "}
+        Nous enregistrons qu&apos;une tentative a échoué, jamais ce qui a été
+        saisi. Ces informations concernent votre compte professionnel, servent
+        uniquement à notre accompagnement, et ne sont ni revendues ni utilisées
+        pour de la publicité.
+      </p>
+
       <h3>Techniquement, en naviguant</h3>
       <ul>
         <li>

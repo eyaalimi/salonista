@@ -17,6 +17,11 @@ import {
 } from "@/lib/pin-lockout";
 import { verifierLimite } from "@/lib/rate-limit";
 import { LIMITE_PIN, messageLimite } from "@/lib/rate-limit-decision";
+import { EVENEMENTS } from "@/lib/evenement-salon";
+import {
+  enregistrerEvenementSalon,
+  salonDeLEmployee,
+} from "@/lib/evenement-salon-ecriture";
 
 /**
  * Message unique pour tout echec de PIN.
@@ -82,9 +87,31 @@ export async function verifierPinEmploye(
     return;
   }
 
+  const suite = apresEchec(employe, maintenant);
   await prisma.salonEmployee.update({
     where: { id: employe.id },
-    data: apresEchec(employe, maintenant),
+    data: suite,
   });
+
+  /*
+   * ON GARDE UNE TRACE DE L'ECHEC.
+   *
+   * `pinFailedAttempts` repart a zero au premier succes — et aussi au moment
+   * du verrouillage : il ne donne donc AUCUN historique. Une employee qui se
+   * fait verrouiller chaque matin et finit par entrer laisse un compteur a
+   * zero, alors que c'est exactement le salon qu'il faut rappeler.
+   *
+   * Le PIN essaye n'est jamais enregistre, seulement qu'un echec a eu lieu.
+   * `pinLockedUntil` non nul distingue le verrouillage du simple echec, sans
+   * redupliquer le seuil de `pin-lockout.ts`.
+   */
+  void salonDeLEmployee(employe.id).then((providerId) => {
+    if (!providerId) return;
+    return enregistrerEvenementSalon(
+      suite.pinLockedUntil ? EVENEMENTS.PIN_VERROUILLAGE : EVENEMENTS.PIN_INCORRECT,
+      { providerId, employeeId: employe.id },
+    );
+  });
+
   throw new Error(PIN_INCORRECT);
 }
