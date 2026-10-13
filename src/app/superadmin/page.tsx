@@ -127,10 +127,14 @@ export default async function SuperadminAccueil() {
                       </Td>
                       <Td>
                         <Link
-                          href={`/superadmin/salons/${s.id}`}
+                          /* Vers le COCKPIT, pas la fiche brute : c'est la
+                             qu'on trouve les questions a poser et le compte
+                             rendu. La fiche reste accessible depuis le
+                             cockpit, en un lien. */
+                          href={`/superadmin/appels?salon=${s.id}`}
                           className="ds-focus font-semibold text-rose-fonce underline underline-offset-2"
                         >
-                          Ouvrir
+                          Appeler
                         </Link>
                       </Td>
                     </tr>
