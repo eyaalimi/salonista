@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { MessageCircle, ShoppingCart, X, ArrowLeft, ArrowRight } from "lucide-react";
 import { useOnlineStatus } from "@/components/pos/online-status";
 import { ChargeModal } from "@/components/pos/charge-modal";
-import { ReceiptPrintFrame, type ReceiptData } from "@/components/pos/receipt";
+import { type ReceiptData } from "@/components/pos/receipt";
 import { Results } from "@/components/pos/results";
 import { Cart } from "@/components/pos/cart";
 import { SidePanel } from "@/components/pos/side-panel";
@@ -39,8 +39,6 @@ export function PosShellClient({ employee }: { employee: EmployeeProp }) {
   const { online } = useOnlineStatus();
   const router = useRouter();
   const [catalog, setCatalog] = useState<CachedCatalog | null>(null);
-  const [lastReceipt, setLastReceipt] = useState<ReceiptData | null>(null);
-  const [printNow, setPrintNow] = useState(false);
   const [sideOpen, setSideOpen] = useState(false);
   const [cartOpen, setCartOpen] = useState(false);
   // Tracks the previous customer id so we can auto-close the mobile side
@@ -157,21 +155,6 @@ export function PosShellClient({ employee }: { employee: EmployeeProp }) {
     };
   }, [employee.permissions]);
 
-  // Trigger window.print() after a receipt is staged + flagged.
-  // After printing, unmount the receipt so it never lingers in the UI.
-  useEffect(() => {
-    if (lastReceipt && printNow) {
-      const id = setTimeout(() => {
-        window.print();
-        setPrintNow(false);
-        // Drop the receipt from state after the print dialog opens, so the
-        // hidden frame is unmounted and not visible on screen anymore.
-        setTimeout(() => setLastReceipt(null), 500);
-      }, 200);
-      return () => clearTimeout(id);
-    }
-  }, [lastReceipt, printNow]);
-
   // Auto-dismiss the success toast (longer if there's a WhatsApp CTA).
   useEffect(() => {
     if (!successToast) return;
@@ -202,11 +185,7 @@ export function PosShellClient({ employee }: { employee: EmployeeProp }) {
     };
   }, []);
 
-  function handleCompleted(receipt: ReceiptData, shouldPrint: boolean) {
-    if (shouldPrint) {
-      setLastReceipt(receipt);
-      setPrintNow(true);
-    }
+  function handleCompleted(receipt: ReceiptData) {
     // Build an optional wa.me URL if the salon has configured a template AND
     // this sale earned points AND we have a customer phone snapshot.
     const totalEarned =
@@ -461,7 +440,6 @@ export function PosShellClient({ employee }: { employee: EmployeeProp }) {
         />
       )}
 
-      {lastReceipt && printNow && <ReceiptPrintFrame data={lastReceipt} />}
 
       {successToast && (
         <div

@@ -70,7 +70,7 @@ export function ChargeModal({
   bookingId?: string | null;
   wallet?: WalletForCharge | null;
   onClose: () => void;
-  onCompleted: (receipt: ReceiptData, shouldPrint: boolean) => void;
+  onCompleted: (receipt: ReceiptData) => void;
   queueOffline: (payload: import("@/lib/pos-sale-create").SalePayload & { clientTotal?: string }) => Promise<void>;
 }) {
   /**
@@ -107,7 +107,6 @@ export function ChargeModal({
   const [showLoyaltyExpansion, setShowLoyaltyExpansion] = useState(false);
   const [loyaltyPoints, setLoyaltyPoints] = useState(0);
   const [tipAllocs, setTipAllocs] = useState<Array<{ employeeId: string; amount: string }>>([]);
-  const [printOnSave, setPrintOnSave] = useState(true);
   const [emailReceipt, setEmailReceipt] = useState(!!customerEmail);
   const [emailOverride, setEmailOverride] = useState(customerEmail ?? "");
   const [submitting, setSubmitting] = useState(false);
@@ -304,7 +303,7 @@ export function ChargeModal({
         rewards: rewardsResp,
       };
 
-      onCompleted(receipt, printOnSave);
+      onCompleted(receipt);
     } finally {
       setSubmitting(false);
     }
@@ -608,15 +607,20 @@ export function ChargeModal({
 
         {step === "receipt" && (
           <>
+            {/*
+             * PAS DE CASE « IMPRIMER LE RECU ».
+             *
+             * Les salons n'ont pas d'imprimante thermique au comptoir :
+             * la case declenchait `window.print()`, donc la boite de dialogue
+             * d'impression du navigateur — a fermer a la main apres CHAQUE
+             * encaissement. Elle etait cochee par defaut, et c'etait le
+             * dernier geste avant « Confirmer ».
+             *
+             * L'impression n'est pas perdue pour autant : le bouton
+             * « Réimprimer » de la fiche de vente (sale-detail-client.tsx)
+             * la rouvre a la demande, pour le salon qui en a une.
+             */}
             <div className="space-y-3 mb-6">
-              <label className="flex items-center gap-2 text-sm">
-                <input
-                  type="checkbox"
-                  checked={printOnSave}
-                  onChange={(e) => setPrintOnSave(e.target.checked)}
-                />
-                Imprimer le reçu
-              </label>
               <label className="flex items-center gap-2 text-sm">
                 <input
                   type="checkbox"
