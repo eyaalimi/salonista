@@ -165,18 +165,30 @@ export function construireEntonnoir(
 
   // Atteint = inscrits moins tous ceux bloques AVANT cette marche.
   const lignes: LigneEntonnoir[] = [];
-  let perdusAvant = 0;
+  let perdus = 0;
   for (const marche of MARCHES) {
-    const atteint = total - perdusAvant;
+    const bloques = bloquesPar.get(marche) ?? 0;
+    /*
+     * « Atteint » = les salons qui ont FRANCHI cette marche, donc ceux qui y
+     * sont arrives MOINS ceux qui y restent coinces.
+     *
+     * LE BUG VU EN PRODUCTION : en comptant seulement les arrivants, la carte
+     * affichait « Profil prêt : 20 · 100 % » juste au-dessus de « 20 bloqués
+     * ici » — les deux nombres parlaient des memes salons et se
+     * contredisaient. Un salon bloque a une marche ne l'a pas franchie.
+     *
+     * On retire donc les bloques AVANT de publier la ligne, pas apres.
+     */
+    perdus += bloques;
+    const atteint = total - perdus;
     lignes.push({
       marche,
       libelle: LIBELLE_MARCHE[marche],
       atteint,
       pourcentage: total === 0 ? 0 : Math.round((atteint / total) * 100),
-      bloques: bloquesPar.get(marche) ?? 0,
+      bloques,
       plusGrossePerte: false,
     });
-    perdusAvant += bloquesPar.get(marche) ?? 0;
   }
 
   // La plus grosse perte : celle ou le plus de salons s'arretent. En cas

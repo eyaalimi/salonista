@@ -213,6 +213,48 @@ describe("construireEntonnoir", () => {
     expect(lignes.some((l) => l.plusGrossePerte)).toBe(false);
   });
 
+  /*
+   * LE BUG VU EN PRODUCTION (13/10/2026) : la carte affichait
+   * « Profil prêt : 20 · 100 % » ET « 20 bloqués ici » pour les memes salons.
+   * `atteint` comptait ceux qui ARRIVENT jusqu'a la marche, sans retirer ceux
+   * qui y restent coinces. Les deux nombres se contredisaient a l'ecran.
+   */
+  it("« atteint » compte ceux qui ont FRANCHI, pas ceux qui sont bloques la", () => {
+    const lignes = construireEntonnoir(
+      [
+        { ...salonComplet(), profil: { ...salonComplet().profil, openingHours: {} } },
+        { ...salonComplet(), profil: { ...salonComplet().profil, openingHours: {} } },
+      ],
+      T,
+    );
+    const profil = lignes.find((l) => l.marche === "profil")!;
+    expect(profil.bloques).toBe(2);
+    // Personne n'a franchi « Profil pret » : le compteur doit dire 0, pas 2.
+    expect(profil.atteint).toBe(0);
+    expect(profil.pourcentage).toBe(0);
+  });
+
+  it("une marche ne peut jamais afficher atteint ET bloques sur le meme salon", () => {
+    const lignes = construireEntonnoir(
+      [
+        salonComplet(),
+        { ...salonComplet(), nombreOffres: 0 },
+        { ...salonComplet(), emailVerifie: false },
+        { ...salonComplet(), premiereVenteAt: null },
+      ],
+      T,
+    );
+    // « Inscrits » est acquise par definition : tous les salons l'ont
+    // franchie, et personne n'y est bloque.
+    expect(lignes[0].atteint).toBe(4);
+    expect(lignes[0].bloques).toBe(0);
+
+    // Pour les suivantes : ce qui est arrive moins ce qui bloque ici.
+    for (let i = 1; i < lignes.length; i++) {
+      expect(lignes[i].atteint).toBe(lignes[i - 1].atteint - lignes[i].bloques);
+    }
+  });
+
   it("ne divise pas par zero sur une liste vide", () => {
     const lignes = construireEntonnoir([], T);
     expect(lignes).toHaveLength(MARCHES.length);
