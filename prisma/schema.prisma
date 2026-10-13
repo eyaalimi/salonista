@@ -1119,11 +1119,25 @@ model SupportNote {
   authorId    String
   authorEmail String
   contenu     String
+  /// Comment l'appel s'est termine : JOINT, PAS_DE_REPONSE, A_RAPPELER,
+  /// PAS_INTERESSE. NUL sur les notes ecrites avant le cockpit d'appels —
+  /// une note sans resultat n'est pas cassee, elle est anterieure. Texte et
+  /// non enum : les valeurs vivent dans `compte-rendu-appel.ts`.
+  resultat    String?
+  /// Quand rappeler ce salon. Alimente l'onglet « Rappels » du cockpit.
+  rappelLe    DateTime?
+  /// L'appel a leve ce qui bloquait le salon (PIN reinitialise, horaires
+  /// ajoutes ensemble...). Sert a mesurer ce que les appels debloquent
+  /// vraiment, pas seulement combien on en passe.
+  blocageLeve Boolean  @default(false)
   createdAt   DateTime @default(now())
 
   provider ProviderProfile @relation(fields: [providerId], references: [id], onDelete: Cascade)
 
   @@index([providerId, createdAt])
+  /// La liste des rappels du jour, tous salons confondus : une seule requete
+  /// plutot qu'un parcours des notes de chaque salon.
+  @@index([rappelLe])
 }
 
 model SuperadminAuditLog {

@@ -1,7 +1,7 @@
 /**
  * Notes internes de support — l'historique des appels.
  *
- * POST { contenu } — ajoute une note a la fiche d'un salon.
+ * POST { contenu, resultat?, rappelLe?, blocageLeve? }
  *
  * Pas de motif obligatoire ici, contrairement aux actions : la note EST son
  * propre motif. Exiger les deux ferait saisir deux fois la meme phrase, et
@@ -9,15 +9,19 @@
  *
  * Pas de suppression ni de modification : une note de support est une trace
  * d'appel, et un historique qu'on peut reecrire ne vaut rien.
+ *
+ * LES TROIS CHAMPS DU COMPTE RENDU SONT OPTIONNELS. Une note libre reste une
+ * note libre — c'est ce qui permet aux appels de la fiche actuelle de
+ * continuer a fonctionner sans rien changer, et aux notes ecrites avant ce
+ * lot de rester valides. La validation vit dans `compte-rendu-appel.ts`
+ * (pur, 29 tests).
  */
 
 import { NextRequest } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { exigerSuperadmin, reponseRefus } from "@/lib/superadmin-session";
-
-/** Assez pour un compte rendu d'appel, pas assez pour y coller un roman. */
-const CONTENU_MAX = 2000;
-const CONTENU_MIN = 3;
+import { exigerSuperadmin, journaliser, reponseRefus } from "@/lib/superadmin-session";
+import { ACTIONS } from "@/lib/support-salon";
+import { estErreur, validerCompteRendu } from "@/lib/compte-rendu-appel";
 
 export async function POST(
   req: NextRequest,
@@ -33,11 +37,11 @@ export async function POST(
   }
 
   const { id } = await params;
-  const corps = (await req.json().catch(() => null)) as { contenu?: string } | null;
-  const contenu = (corps?.contenu ?? "").trim().slice(0, CONTENU_MAX);
+  const corps = (await req.json().catch(() => null)) as Record<string, unknown> | null;
 
-  if (contenu.length < CONTENU_MIN) {
-    return Response.json({ error: "Note trop courte" }, { status: 400 });
+  const valide = validerCompteRendu(corps ?? {});
+  if (estErreur(valide)) {
+    return Response.json({ error: valide.erreur }, { status: 400 });
   }
 
   const salon = await prisma.providerProfile.findUnique({
@@ -48,6 +52,34 @@ export async function POST(
     return Response.json({ error: "Salon introuvable" }, { status: 404 });
   }
 
+  /*
+   * Le journal AVANT l'ecriture, comme pour toute action de support : si la
+   * journalisation echoue, l'action n'a pas lieu. Un compte rendu d'appel est
+   * une consultation doublee d'une ecriture sur un salon — il doit laisser la
+   * meme trace que le reste.
+   *
+   * Le motif reprend le resultat de l'appel plutot qu'une phrase generique :
+   * relu six mois plus tard, « Appel : Pas de reponse » dit quelque chose,
+   * « note ajoutee » non.
+   */
+  await journaliser({
+    acteur: moi,
+    action: ACTIONS.NOTE_AJOUTEE,
+    motif: valide.resultat
+      ? `Compte rendu d'appel : ${valide.resultat}`
+      : "Note de support ajoutée à la fiche",
+    targetProviderId: salon.id,
+    // `req` fait tracer l'IP (hachee en SHA-256) et l'agent, comme les autres
+    // actions de support. Sans lui, un compte rendu serait la seule ecriture
+    // du superadmin sans origine dans le journal.
+    req,
+    metadata: {
+      resultat: valide.resultat,
+      rappelLe: valide.rappelLe?.toISOString() ?? null,
+      blocageLeve: valide.blocageLeve,
+    },
+  });
+
   await prisma.supportNote.create({
     data: {
       providerId: salon.id,
@@ -55,7 +87,10 @@ export async function POST(
       // L'e-mail est FIGE en texte : si le compte superadmin disparait, la
       // note doit rester attribuable.
       authorEmail: moi.email,
-      contenu,
+      contenu: valide.contenu,
+      resultat: valide.resultat,
+      rappelLe: valide.rappelLe,
+      blocageLeve: valide.blocageLeve,
     },
   });
 
