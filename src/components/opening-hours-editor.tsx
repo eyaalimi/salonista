@@ -1,5 +1,6 @@
 "use client";
 
+import { ChoixHeure } from "@/components/choix-heure";
 import { DAY_KEYS, DAY_LABELS_FR, type DayKey, type OpeningHours, type TimeRange, emptyOpeningHours } from "@/lib/opening-hours";
 
 interface Props {
@@ -52,28 +53,26 @@ export function OpeningHoursEditor({ value, onChange }: Props) {
               hours[day].map((range, idx) => (
                 <div key={idx} className="flex items-center gap-2">
                   {/*
-                   * `lang="fr"` FORCE L'AFFICHAGE SUR 24 HEURES.
+                   * PAS de `<input type="time">`.
                    *
-                   * Un `<input type="time">` suit la langue du NAVIGATEUR, pas
-                   * celle de la page : sur un telephone regle en anglais, une
-                   * gerante tunisienne voyait « 09:00 AM » et devait saisir
-                   * ses horaires dans un format qu'elle n'emploie pas. La
-                   * valeur transmise est la meme dans les deux cas (« 09:00 »,
-                   * toujours sur 24 h) — seul l'affichage change.
+                   * Son format suit la LOCALE DU NAVIGATEUR, pas celle du
+                   * document : sur un Chrome regle en anglais, une gerante
+                   * tunisienne voyait « 06:00 PM ». `<html lang="fr">` est
+                   * pourtant deja declare a la racine — aucun attribut HTML
+                   * ne permet d'imposer le cycle horaire d'un champ natif.
+                   * Un `<select>` rend ce choix au code. Voir ChoixHeure.
                    */}
-                  <input
-                    type="time"
-                    lang="fr"
+                  <ChoixHeure
                     value={range.start}
-                    onChange={(e) => updateRange(day, idx, { start: e.target.value })}
+                    onChange={(v) => updateRange(day, idx, { start: v })}
+                    aria-label={`${DAY_LABELS_FR[day]} — heure d'ouverture`}
                     className="px-3 py-1.5 border border-brand-gold/20 bg-white text-brand-bordeaux text-sm focus:outline-none focus:border-brand-gold"
                   />
                   <span className="text-brand-bordeaux/40 text-xs">à</span>
-                  <input
-                    type="time"
-                    lang="fr"
+                  <ChoixHeure
                     value={range.end}
-                    onChange={(e) => updateRange(day, idx, { end: e.target.value })}
+                    onChange={(v) => updateRange(day, idx, { end: v })}
+                    aria-label={`${DAY_LABELS_FR[day]} — heure de fermeture`}
                     className="px-3 py-1.5 border border-brand-gold/20 bg-white text-brand-bordeaux text-sm focus:outline-none focus:border-brand-gold"
                   />
                   <button
