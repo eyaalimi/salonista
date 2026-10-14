@@ -33,7 +33,7 @@ import {
 } from "@/lib/cockpit-appels";
 import { LIBELLE_RESULTAT, estResultatAppel } from "@/lib/compte-rendu-appel";
 import { completionProfil, formaterTelephone, lienTelephone } from "@/lib/profil-salon-complet";
-import { accord, dateRelative, motAccorde } from "@/lib/format-fr";
+import { accord, dateCourte, dateRelative, motAccorde } from "@/lib/format-fr";
 import { CompteRenduClient } from "./compte-rendu-client";
 import { ActionsClient } from "../salons/[id]/actions-client";
 import { Copiable } from "../salons/copiable";
@@ -363,6 +363,19 @@ export default async function AppelsPage({
                       </Champ>
                       <Champ label="Équipe">
                         {detail.employes.map((e) => e.nom).join(", ") || "Aucune"}
+                      </Champ>
+                      <Champ label="Assistant">
+                        {detail.assistant === null
+                          ? "Jamais ouvert"
+                          : detail.assistant.termine
+                            ? `Terminé · ${dateCourte(detail.assistant.le)}`
+                            : `${
+                                detail.assistant.quitte ? "Quittée" : "Arrêtée"
+                              } à l'étape ${detail.assistant.derniereEtape ?? "?"}${
+                                detail.assistant.libelle
+                                  ? ` · ${detail.assistant.libelle}`
+                                  : ""
+                              } · le ${dateCourte(detail.assistant.le)}`}
                       </Champ>
                       <Champ label="Dernier appel">
                         {detail.dernierAppelLe

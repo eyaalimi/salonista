@@ -41,6 +41,37 @@ export const MARCHES = [
   "actif",
 ] as const;
 
+/**
+ * DEUX PARCOURS, PAS UN.
+ *
+ * Les criteres d'origine viennent de la place de marche : photo du salon,
+ * horaires, service avec photo. Ils n'ont AUCUN SENS pour un salon inscrit
+ * par /pos-start, qui veut une caisse :
+ *
+ *  - l'assistant ne demande ni photo ni horaires — on mesurait donc un
+ *    echec sur des champs qu'on ne lui a jamais demandes ;
+ *  - un service cree dans la caisse n'a pas de photo, et n'en a pas besoin :
+ *    il n'est pas publie. Exiger la photo rangeait tous les salons caisse
+ *    dans « Catalogue pas pret » alors que leur catalogue fonctionne.
+ *
+ * D'ou la deuxieme marche du parcours caisse : « Revenu apres l'inscription ».
+ * Elle remplace « E-mail verifie » et « Profil pret » par le seul signal qui
+ * compte a ce stade — la gerante est-elle revenue un AUTRE JOUR ? Quelqu'un
+ * qui s'inscrit, regarde et ne revient jamais n'a pas adopte la caisse,
+ * quels que soient les champs qu'il a remplis.
+ */
+export const LIBELLE_MARCHE_CAISSE: Partial<Record<Marche, string>> = {
+  email_verifie: "Revenu après l'inscription",
+  profil: "Revenu après l'inscription",
+  catalogue: "Au moins 1 service",
+};
+
+/** Le libelle d'une marche, selon que le salon a la caisse ou non. */
+export function libelleMarche(marche: Marche, aLaCaisse: boolean): string {
+  if (aLaCaisse) return LIBELLE_MARCHE_CAISSE[marche] ?? LIBELLE_MARCHE[marche];
+  return LIBELLE_MARCHE[marche];
+}
+
 export type Marche = (typeof MARCHES)[number];
 
 export const LIBELLE_MARCHE: Record<Marche, string> = {
@@ -67,6 +98,21 @@ export type SalonPourMarche = SignesDeVie & {
   tiroirDejaOuvert: boolean;
   /** Date de la premiere vente, `null` si le salon n'a jamais encaisse. */
   premiereVenteAt: Date | null;
+  /**
+   * Le salon a-t-il le module caisse ? Change les CRITERES des marches 2 a 4.
+   * Voir `LIBELLE_MARCHE_CAISSE`.
+   */
+  aLaCaisse: boolean;
+  /** Date d'inscription — sert a detecter un retour un autre jour. */
+  inscritLe: Date;
+  /**
+   * La gerante est-elle revenue un AUTRE JOUR que celui de l'inscription ?
+   *
+   * Calcule a la source (`revenuApresInscription`) plutot qu'ici : il faut
+   * comparer des JOURS CALENDAIRES, et la date d'inscription seule ne suffit
+   * pas — une connexion a 23h le jour meme n'est pas un retour.
+   */
+  revenuApres: boolean;
 };
 
 /**
@@ -99,11 +145,24 @@ export function marcheBloquante(
   s: SalonPourMarche,
   maintenant: Date = new Date(),
 ): Marche | null {
-  if (!s.emailVerifie) return "email_verifie";
+  if (s.aLaCaisse) {
+    /*
+     * PARCOURS CAISSE. « Revenu apres l'inscription » occupe les deux
+     * marches `email_verifie` et `profil` : on la signale sur la PREMIERE
+     * des deux, pour qu'un meme salon ne soit jamais compte bloque deux
+     * fois (l'entonnoir le verrouille par un test).
+     */
+    if (!s.revenuApres) return "email_verifie";
+    // Un service suffit — sans exiger de photo : un service de caisse n'est
+    // pas publie, la photo ne lui sert a rien.
+    if (s.nombreOffres === 0) return "catalogue";
+  } else {
+    if (!s.emailVerifie) return "email_verifie";
 
-  const { profilPret, cataloguePret } = profilEtCatalogue(s);
-  if (!profilPret) return "profil";
-  if (!cataloguePret) return "catalogue";
+    const { profilPret, cataloguePret } = profilEtCatalogue(s);
+    if (!profilPret) return "profil";
+    if (!cataloguePret) return "catalogue";
+  }
 
   if (!s.tiroirDejaOuvert) return "tiroir";
   if (s.premiereVenteAt === null) return "premiere_vente";
@@ -224,6 +283,28 @@ export function etiquetteProbleme(
 ): string | null {
   const b = marcheBloquante(s, maintenant);
   if (b === null) return null;
+
+  // Un salon caisse n'a pas les memes blocages : il n'a jamais eu a remplir
+  // d'horaires ni a publier de photo.
+  if (s.aLaCaisse) {
+    switch (b) {
+      case "email_verifie":
+      case "profil":
+        return "Jamais revenu";
+      case "catalogue":
+        return "Aucun service";
+      case "tiroir":
+        return "Caisse jamais ouverte";
+      case "premiere_vente":
+        return "Tiroir ouvert, 0 vente";
+      case "actif": {
+        const jours = joursDInactivite(s, maintenant);
+        return jours === null ? "Décroché" : `Décroché · ${jours} j`;
+      }
+      default:
+        return null;
+    }
+  }
 
   switch (b) {
     case "email_verifie":
@@ -622,3 +703,47 @@ export function joursDepuis(d: Date | null, maintenant: Date = new Date()): numb
 
 /** Le seuil d'inactivite, reexporte pour l'interface — jamais redefini. */
 export { SEUIL_INACTIF_JOURS };
+
+/* ------------------------------------------------------------------ *
+ *  L'ASSISTANT D'INSTALLATION
+ * ------------------------------------------------------------------ */
+
+/**
+ * La gerante est-elle revenue un AUTRE JOUR que celui de l'inscription ?
+ *
+ * Comparaison sur les JOURS CALENDAIRES, pas sur 24 h : quelqu'un qui
+ * s'inscrit a 18 h et revient le lendemain a 9 h EST revenu, meme si quinze
+ * heures seulement separent les deux. L'inverse — s'inscrire le matin et
+ * revenir le soir — ne compte pas : c'est la meme session de decouverte.
+ */
+export function revenuApresInscription(
+  inscritLe: Date,
+  derniereConnexionAt: Date | null,
+): boolean {
+  if (!derniereConnexionAt) return false;
+  const jour = (d: Date) => {
+    const c = new Date(d);
+    c.setHours(0, 0, 0, 0);
+    return c.getTime();
+  };
+  return jour(derniereConnexionAt) > jour(inscritLe);
+}
+
+/**
+ * Les cinq etapes de l'assistant /pos/bienvenue, dans l'ordre.
+ *
+ * Dupliquees depuis `wizard-client.tsx` plutot qu'importees : ce module est
+ * pur et ne doit rien tirer d'un composant client. Cinq libelles valent moins
+ * qu'un import croise entre une lib et du JSX.
+ */
+export const ETAPES_ASSISTANT = [
+  "Votre salon",
+  "Vos services",
+  "Vos produits",
+  "Fidélité",
+  "Équipe & PIN",
+] as const;
+
+export function libelleEtapeAssistant(numero: number): string | null {
+  return ETAPES_ASSISTANT[numero - 1] ?? null;
+}

@@ -42,6 +42,12 @@ export const EVENEMENTS = {
   ECRAN_VISITE: "ecran.visite",
   /** L'application a ete installee depuis le compte d'un salon connecte. */
   APP_INSTALLEE: "app.installee",
+  /** Une etape de l'assistant /pos/bienvenue s'est affichee. */
+  ONBOARDING_ETAPE_VUE: "onboarding.etape_vue",
+  /** L'assistant est alle jusqu'au bout. */
+  ONBOARDING_TERMINE: "onboarding.termine",
+  /** « Quitter sans terminer » — on sait OU la gerante s'est arretee. */
+  ONBOARDING_QUITTE: "onboarding.quitte",
 } as const;
 
 export type TypeEvenement = (typeof EVENEMENTS)[keyof typeof EVENEMENTS];
@@ -201,6 +207,12 @@ export const LIBELLE_EVENEMENT: Record<string, string> = {
   [EVENEMENTS.APP_INSTALLEE]: "Application installée",
 };
 
+export const LIBELLE_ONBOARDING: Record<string, string> = {
+  [EVENEMENTS.ONBOARDING_ETAPE_VUE]: "Assistant — étape vue",
+  [EVENEMENTS.ONBOARDING_TERMINE]: "Assistant terminé",
+  [EVENEMENTS.ONBOARDING_QUITTE]: "Assistant quitté",
+};
+
 export function libelleEvenement(type: string): string {
-  return LIBELLE_EVENEMENT[type] ?? type;
+  return LIBELLE_EVENEMENT[type] ?? LIBELLE_ONBOARDING[type] ?? type;
 }

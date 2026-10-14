@@ -12,6 +12,10 @@ import {
   etiquetteProbleme,
   parcoursActivation,
   libelleScore,
+  libelleMarche,
+  revenuApresInscription,
+  libelleEtapeAssistant,
+  ETAPES_ASSISTANT,
   marcheBloquante,
   aFranchi,
   construireEntonnoir,
@@ -44,6 +48,22 @@ function salonComplet(): SalonPourMarche {
     premiereVenteAt: jours(-20),
     derniereVenteAt: jours(-1),
     derniereConnexionAt: jours(-1),
+    // Par defaut : un salon de la place de marche, parcours d'origine.
+    aLaCaisse: false,
+    inscritLe: jours(-30),
+    revenuApres: true,
+  };
+}
+
+/** Un salon qui a la caisse — parcours /pos-start. */
+function salonCaisse(over: Partial<SalonPourMarche> = {}): SalonPourMarche {
+  return {
+    ...salonComplet(),
+    aLaCaisse: true,
+    // L'assistant ne demande NI photo NI horaires : un salon caisse en est
+    // normalement depourvu, et ce n'est pas un defaut.
+    profil: { address: null, city: null, photos: [], openingHours: {} },
+    ...over,
   };
 }
 
@@ -707,5 +727,111 @@ describe("parcoursActivation", () => {
     const e = parcoursActivation(parcours())[0];
     expect(e.faite).toBe(true);
     expect(e.le).not.toBeNull();
+  });
+});
+
+describe("parcours CAISSE — les criteres marketplace ne s'appliquent pas", () => {
+  /*
+   * Le defaut corrige : « Profil pret » et « Catalogue pret » reprenaient les
+   * criteres de la place de marche (photo du salon, horaires, service avec
+   * photo). L'assistant /pos/bienvenue ne demande NI photo NI horaires, et un
+   * service de caisse n'est pas publie. On mesurait donc un echec sur des
+   * champs jamais demandes, et TOUS les salons caisse tombaient dans
+   * « Profil pas pret ».
+   */
+  it("un salon caisse sans photo ni horaires n'est pas bloque pour autant", () => {
+    const s = salonCaisse();
+    expect(s.profil.photos).toHaveLength(0);
+    expect(marcheBloquante(s, T)).toBeNull();
+  });
+
+  it("le meme salon SANS la caisse serait bloque au profil", () => {
+    const s = { ...salonCaisse(), aLaCaisse: false };
+    expect(marcheBloquante(s, T)).toBe("profil");
+  });
+
+  it("un service suffit, sans exiger de photo", () => {
+    expect(marcheBloquante(salonCaisse({ nombreOffres: 1 }), T)).toBeNull();
+    expect(marcheBloquante(salonCaisse({ nombreOffres: 0 }), T)).toBe("catalogue");
+  });
+
+  it("l'e-mail non verifie ne bloque PAS un salon caisse", () => {
+    // Ce qui compte pour la caisse, c'est de revenir — pas de cliquer sur un
+    // lien d'e-mail.
+    expect(marcheBloquante(salonCaisse({ emailVerifie: false }), T)).toBeNull();
+  });
+
+  it("jamais revenu apres l'inscription = bloque des la 2e marche", () => {
+    expect(marcheBloquante(salonCaisse({ revenuApres: false }), T)).toBe("email_verifie");
+  });
+
+  it("le reste du parcours est commun aux deux", () => {
+    expect(marcheBloquante(salonCaisse({ tiroirDejaOuvert: false }), T)).toBe("tiroir");
+    expect(marcheBloquante(salonCaisse({ premiereVenteAt: null }), T)).toBe(
+      "premiere_vente",
+    );
+  });
+
+  it("les etiquettes parlent le langage de la caisse", () => {
+    expect(etiquetteProbleme(salonCaisse({ revenuApres: false }), T)).toBe("Jamais revenu");
+    expect(etiquetteProbleme(salonCaisse({ nombreOffres: 0 }), T)).toBe("Aucun service");
+    // Et jamais « Pas d'horaires » : on ne lui en a pas demande.
+    expect(etiquetteProbleme(salonCaisse({ revenuApres: false }), T)).not.toContain(
+      "horaires",
+    );
+  });
+
+  it("un salon caisse n'est jamais compte bloque deux fois", () => {
+    const lignes = construireEntonnoir(
+      [salonCaisse({ revenuApres: false }), salonCaisse({ revenuApres: false })],
+      T,
+    );
+    const total = lignes.reduce((n, l) => n + l.bloques, 0);
+    expect(total).toBe(2);
+  });
+
+  it("libelleMarche renomme les marches du parcours caisse", () => {
+    expect(libelleMarche("email_verifie", true)).toBe("Revenu après l'inscription");
+    expect(libelleMarche("catalogue", true)).toBe("Au moins 1 service");
+    expect(libelleMarche("email_verifie", false)).toBe("E-mail vérifié");
+    // Les marches communes ne changent pas de nom.
+    expect(libelleMarche("tiroir", true)).toBe(libelleMarche("tiroir", false));
+  });
+});
+
+describe("revenuApresInscription", () => {
+  it("rend faux sans connexion", () => {
+    expect(revenuApresInscription(jours(-5), null)).toBe(false);
+  });
+
+  // La regle qui compte : des JOURS calendaires, pas 24 h.
+  it("une connexion le jour MEME ne compte pas", () => {
+    const matin = new Date("2026-10-13T09:00:00");
+    const soir = new Date("2026-10-13T21:00:00");
+    expect(revenuApresInscription(matin, soir)).toBe(false);
+  });
+
+  it("une connexion le lendemain compte, meme 15 h apres", () => {
+    const hier18h = new Date("2026-10-12T18:00:00");
+    const ceMatin9h = new Date("2026-10-13T09:00:00");
+    expect(revenuApresInscription(hier18h, ceMatin9h)).toBe(true);
+  });
+
+  it("une connexion anterieure a l'inscription ne compte pas", () => {
+    expect(revenuApresInscription(jours(-1), jours(-5))).toBe(false);
+  });
+});
+
+describe("libelleEtapeAssistant", () => {
+  it("nomme les cinq etapes", () => {
+    expect(libelleEtapeAssistant(1)).toBe("Votre salon");
+    expect(libelleEtapeAssistant(5)).toBe("Équipe & PIN");
+    expect(ETAPES_ASSISTANT).toHaveLength(5);
+  });
+
+  it("rend null hors des bornes", () => {
+    expect(libelleEtapeAssistant(0)).toBeNull();
+    expect(libelleEtapeAssistant(6)).toBeNull();
+    expect(libelleEtapeAssistant(-1)).toBeNull();
   });
 });
