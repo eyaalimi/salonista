@@ -24,12 +24,15 @@ import {
   cashbackPctToProgram,
   ProgramValidationError,
 } from "@/lib/rewards/program";
+import { estCategorie, refusLocalisationInscription } from "@/lib/inscription-salon";
 
 type Step1 = {
   salonName?: string;
   phone?: string;
   address?: string;
+  /** La DELEGATION — meme convention que le profil, ou `city` la porte. */
   city?: string;
+  governorate?: string;
   category?: string;
   matriculeFiscal?: string;
   logoUrl?: string;
@@ -101,6 +104,30 @@ export async function PATCH(req: NextRequest) {
   if (body.step1) {
     const data: Record<string, unknown> = {};
     const s = body.step1;
+
+    /*
+     * LA LOCALISATION EST VERIFIEE ICI COMME DANS LE PROFIL.
+     *
+     * L'etape 1 ecrivait une ville en TEXTE LIBRE dans `city`, que le profil
+     * lit comme une DELEGATION : « Tunis » tape par une gerante devenait une
+     * delegation qui n'existe pas, sans gouvernorat. Elle ouvrait ensuite son
+     * profil sur des listes vides. Meme couple, meme verification
+     * (`refusLocalisationInscription` concorde avec `refusAdresseSalon`, un
+     * test le verrouille).
+     */
+    const refusLieu = refusLocalisationInscription(s.governorate, s.city);
+    if (refusLieu) {
+      return Response.json({ error: refusLieu.message, field: "city" }, { status: 422 });
+    }
+    // La categorie n'etait pas verifiee : une valeur hors de l'enum faisait
+    // planter l'ecriture en base avec une 500 incomprehensible.
+    if (s.category !== undefined && !estCategorie(s.category)) {
+      return Response.json(
+        { error: "Type de prestation inconnu", field: "category" },
+        { status: 422 },
+      );
+    }
+    data.governorate = s.governorate;
     if (typeof s.salonName === "string" && s.salonName.trim()) data.salonName = s.salonName.trim();
     if (typeof s.phone === "string") data.phone = s.phone.trim() || null;
     if (typeof s.address === "string") data.address = s.address.trim() || null;
