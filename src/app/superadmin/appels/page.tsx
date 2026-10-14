@@ -32,6 +32,7 @@ import {
   type Marche,
 } from "@/lib/cockpit-appels";
 import { LIBELLE_RESULTAT, estResultatAppel } from "@/lib/compte-rendu-appel";
+import { badgeCaisse, etatCaisse } from "@/lib/badge-caisse";
 import { completionProfil, formaterTelephone, lienTelephone } from "@/lib/profil-salon-complet";
 import { accord, dateCourte, dateRelative, motAccorde } from "@/lib/format-fr";
 import { CompteRenduClient } from "./compte-rendu-client";
@@ -293,9 +294,25 @@ export default async function AppelsPage({
                           {fiche.suspendedAt && (
                             <Badge ton="alerte">Suspendu</Badge>
                           )}
-                          <Badge ton={detail.ventesEncaissees > 0 ? "ok" : "neutre"}>
-                            {detail.ventesEncaissees > 0 ? "Caisse activée" : "Caisse inactive"}
-                          </Badge>
+                          {/*
+                           * Le badge dit si le MODULE est actif, pas si le
+                           * salon a deja vendu. L'ancienne version testait
+                           * `ventesEncaissees > 0` : un salon abonne, tiroir
+                           * ouvert, mais sans premiere vente s'affichait
+                           * « Caisse inactive » — faux, et ambigu de surcroit
+                           * (« pas abonnee » ou « pas utilisee » ?). L'usage
+                           * se lit ailleurs sur la fiche, ou il est detaille.
+                           */}
+                          {(() => {
+                            const b = badgeCaisse(
+                              etatCaisse({
+                                aLeModule: choisi.aLaCaisse,
+                                tiroirDejaOuvert: choisi.tiroirDejaOuvert,
+                                ventesEncaissees: detail.ventesEncaissees,
+                              }),
+                            );
+                            return <Badge ton={b.ton}>{b.libelle}</Badge>;
+                          })()}
                           {fiche.campagne && <Badge ton="neutre">{fiche.campagne}</Badge>}
                           {!fiche.campagne && fiche.utmSource && (
                             <Badge ton="neutre">{fiche.utmSource}</Badge>
