@@ -83,6 +83,77 @@ export async function chercherSalons(terme: string): Promise<ResultatRecherche[]
   }));
 }
 
+/** Combien de salons par page dans la liste complete. */
+export const SALONS_PAR_PAGE = 50;
+
+export type ListeSalons = {
+  salons: ResultatRecherche[];
+  /** Total en base, toutes pages confondues. */
+  total: number;
+  /** Nombre de suspendus dans ce total — affiche a part. */
+  suspendus: number;
+  page: number;
+  pages: number;
+};
+
+/**
+ * TOUS les salons, le plus recent d'abord.
+ *
+ * POURQUOI CETTE FONCTION EXISTE. La page Support n'affichait rien tant
+ * qu'on n'avait pas tape une recherche : impossible de voir ses salons sans
+ * savoir d'avance lequel chercher, ni meme de connaitre leur nombre. Au
+ * lancement, c'est pourtant la premiere chose qu'on veut regarder.
+ *
+ * LES SUSPENDUS SONT INCLUS. C'est la difference avec la file d'appels, qui
+ * les ecarte : la file sert a rappeler, et le silence d'un suspendu est notre
+ * decision. Ici on INVENTORIE — un salon qu'on a suspendu reste un salon, et
+ * le cacher donnerait un compte faux.
+ *
+ * Paginee : `chercherSalons` se contente de 20 resultats parce qu'on affine
+ * un terme, mais une liste complete doit pouvoir etre parcourue en entier.
+ */
+export async function listerSalons(page = 1): Promise<ListeSalons> {
+  const pageSure = Number.isFinite(page) && page >= 1 ? Math.floor(page) : 1;
+
+  const [total, suspendus, salons] = await Promise.all([
+    prisma.providerProfile.count(),
+    prisma.providerProfile.count({ where: { suspendedAt: { not: null } } }),
+    prisma.providerProfile.findMany({
+      select: {
+        id: true,
+        salonName: true,
+        city: true,
+        phone: true,
+        matriculeFiscal: true,
+        suspendedAt: true,
+        createdAt: true,
+        user: { select: { email: true } },
+      },
+      orderBy: { createdAt: "desc" },
+      skip: (pageSure - 1) * SALONS_PAR_PAGE,
+      take: SALONS_PAR_PAGE,
+    }),
+  ]);
+
+  return {
+    salons: salons.map((s) => ({
+      id: s.id,
+      salonName: s.salonName,
+      city: s.city,
+      phone: s.phone,
+      lienTel: lienTelephone(s.phone),
+      email: s.user?.email ?? null,
+      matriculeFiscal: s.matriculeFiscal,
+      suspendu: s.suspendedAt !== null,
+      createdAt: s.createdAt,
+    })),
+    total,
+    suspendus,
+    page: pageSure,
+    pages: Math.max(1, Math.ceil(total / SALONS_PAR_PAGE)),
+  };
+}
+
 /** La fiche complete d'un salon, pour le support. */
 export type FicheSalon = {
   id: string;
