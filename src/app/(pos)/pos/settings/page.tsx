@@ -1,3 +1,4 @@
+import { Suspense } from "react";
 import { redirect } from "next/navigation";
 import { getCurrentEmployee } from "@/lib/employee-session";
 import { prisma } from "@/lib/prisma";
@@ -71,6 +72,14 @@ export default async function SettingsPage() {
           Ces informations apparaissent sur vos tickets et sur votre page publique.
         </p>
 
+        {/* `<Suspense>` OBLIGATOIRE : `SettingsTabs` lit `useSearchParams()`
+            pour ouvrir le bon onglet depuis un lien (`?onglet=horaires`).
+            Sans cette limite, Next 16 refuse de prerendre la page. */}
+        <Suspense
+          fallback={
+            <p className="text-sm text-pos-ink-3">Chargement des réglages…</p>
+          }
+        >
         <SettingsTabs
           profile={{
             salonName: provider.salonName,
@@ -90,6 +99,7 @@ export default async function SettingsPage() {
           }}
           openingHours={hours}
         />
+        </Suspense>
       </div>
     </div>
   );

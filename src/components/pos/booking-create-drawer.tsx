@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { tryNormalizePhone } from "@/lib/phone";
 import { searchCachedCustomers, getCachedCatalog } from "@/lib/pos-offline-db";
+import { messageAbsence, type RaisonAbsence } from "@/lib/creneaux-absents";
 
 type Offer = {
   id: string;
@@ -71,6 +72,11 @@ export function BookingCreateDrawer({
   const [selectedSlot, setSelectedSlot] = useState<string | null>(null);
   const [loadingSlots, setLoadingSlots] = useState(false);
   const [slotError, setSlotError] = useState<string | null>(null);
+  /**
+   * Pourquoi la liste est vide — le serveur seul peut le dire : lui seul voit
+   * les horaires du salon.
+   */
+  const [raisonAbsence, setRaisonAbsence] = useState<RaisonAbsence | null>(null);
 
   useEffect(() => {
     (async () => {
@@ -140,8 +146,12 @@ export function BookingCreateDrawer({
           }
           return;
         }
-        const data = (await res.json()) as { slots: Slot[] };
+        const data = (await res.json()) as {
+          slots: Slot[];
+          raisonAbsence?: RaisonAbsence | null;
+        };
         if (cancelled) return;
+        setRaisonAbsence(data.raisonAbsence ?? null);
         setAvailableSlots(data.slots);
         // Preserve current selection if still valid, otherwise pick nothing.
         setSelectedSlot((prev) =>
@@ -364,10 +374,33 @@ export function BookingCreateDrawer({
                 ) : slotError ? (
                   <p className="text-xs text-pos-danger px-1">{slotError}</p>
                 ) : availableSlots.length === 0 ? (
-                  <p className="text-xs text-pos-warn bg-pos-highlight border border-pos-warn rounded px-2 py-2">
-                    Aucun créneau disponible ce jour pour cette combinaison de
-                    services. Choisissez un autre jour ou modifiez les services.
-                  </p>
+                  (() => {
+                    /*
+                     * DEUX CAUSES, DEUX MESSAGES.
+                     *
+                     * L'ancien texte disait « choisissez un autre jour » meme
+                     * quand le salon n'avait AUCUN horaire : la caissiere
+                     * essayait tout le calendrier pour rien, puisque aucun
+                     * creneau n'existe tant que les horaires sont vides.
+                     * C'est le cas de tous les salons inscrits par
+                     * /pos-start, ou l'assistant ne les demande pas.
+                     */
+                    const m = messageAbsence(raisonAbsence ?? "jour-complet");
+                    return (
+                      <div className="text-xs text-pos-warn bg-pos-highlight border border-pos-warn rounded px-3 py-3">
+                        <p className="font-semibold">{m.titre}</p>
+                        <p className="mt-1">{m.detail}</p>
+                        {m.lienHoraires && (
+                          <a
+                            href="/pos/settings?onglet=horaires"
+                            className="mt-3 inline-flex min-h-[44px] items-center rounded-lg bg-pos-accent px-4 font-semibold text-white"
+                          >
+                            Remplir mes horaires d&apos;ouverture →
+                          </a>
+                        )}
+                      </div>
+                    );
+                  })()
                 ) : (
                   <div className="grid grid-cols-4 gap-1.5">
                     {availableSlots.map((s) => {
