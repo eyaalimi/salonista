@@ -11,12 +11,20 @@
  *
  * Only slots with bookedCount < capacity are considered free.
  *
- * Returns: { slots: Array<{ startTime: string; endTime: string }> }
+ * Returns: { slots: Array<…>, raisonAbsence?: "horaires-absents" | "jour-complet" }
+ *
+ * POURQUOI LA REPONSE DIT AUSSI *POURQUOI* ELLE EST VIDE. Un salon inscrit
+ * par /pos-start n'a pas d'horaires — l'assistant ne les demande pas — et
+ * aucun creneau n'est donc genere, AUCUN JOUR. La caisse affichait
+ * « choisissez un autre jour », ce qui envoyait la caissiere essayer tout le
+ * calendrier pour rien. Seul le serveur sait distinguer « journee complete »
+ * de « horaires jamais remplis » : il le dit.
  */
 
 import { NextRequest } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireEmployee, toResponse } from "@/lib/employee-session";
+import { raisonAbsenceCreneaux } from "@/lib/creneaux-absents";
 
 export async function GET(req: NextRequest) {
   let employee;
@@ -41,6 +49,25 @@ export async function GET(req: NextRequest) {
   }
   if (!/^\d{4}-\d{2}-\d{2}$/.test(dateRaw)) {
     return Response.json({ error: "date invalide (YYYY-MM-DD)" }, { status: 400 });
+  }
+
+  /**
+   * Les horaires du salon, lus UNE fois et seulement si la liste est vide :
+   * inutile d'interroger la base quand des creneaux existent.
+   */
+  async function avecRaison(slots: Array<{ startTime: string; endTime: string }>) {
+    if (slots.length > 0) return Response.json({ slots });
+    const salon = await prisma.providerProfile.findUnique({
+      where: { id: employee!.providerId },
+      select: { openingHours: true },
+    });
+    return Response.json({
+      slots,
+      raisonAbsence: raisonAbsenceCreneaux({
+        nombreCreneaux: 0,
+        openingHours: salon?.openingHours ?? null,
+      }),
+    });
   }
 
   const offerIds = offerIdsRaw.split(",").map((s) => s.trim()).filter(Boolean);
@@ -83,7 +110,7 @@ export async function GET(req: NextRequest) {
         startTime: s.startTime.toISOString(),
         endTime: s.endTime.toISOString(),
       }));
-    return Response.json({ slots: out });
+    return avecRaison(out);
   }
 
   // Multi-offer chain: for each candidate first-slot start, verify every
@@ -130,5 +157,5 @@ export async function GET(req: NextRequest) {
     }
   }
 
-  return Response.json({ slots: out });
+  return avecRaison(out);
 }

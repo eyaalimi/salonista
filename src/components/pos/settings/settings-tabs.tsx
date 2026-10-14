@@ -1,6 +1,7 @@
 "use client";
 
 import { useRef, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import { SalonForm, type SalonProfile } from "@/components/pos/settings/salon-form";
 import { HoursForm } from "@/components/pos/settings/hours-form";
 import type { OpeningHours } from "@/lib/opening-hours";
@@ -19,7 +20,20 @@ export function SettingsTabs({
   profile: SalonProfile;
   openingHours: OpeningHours | null;
 }) {
-  const [tab, setTab] = useState<TabId>("salon");
+  /*
+   * L'onglet de depart se lit dans l'URL (`?onglet=horaires`).
+   *
+   * Sans cela, le lien « Remplir mes horaires » de la prise de rendez-vous
+   * ouvrait la page sur « Salon » : la gerante arrivait au bon endroit mais
+   * sur le mauvais onglet, et devait deviner le second clic. On ne lit la
+   * valeur qu'au PREMIER rendu — ensuite l'onglet suit les clics, et
+   * reecrire l'URL a chaque changement empilerait des entrees d'historique
+   * pour rien.
+   */
+  const parametres = useSearchParams();
+  const [tab, setTab] = useState<TabId>(() =>
+    parametres.get("onglet") === "horaires" ? "horaires" : "salon",
+  );
   const boutons = useRef<Record<string, HTMLButtonElement | null>>({});
 
   // Fleches gauche/droite avec bouclage, pattern APG a activation automatique.
