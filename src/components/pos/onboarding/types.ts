@@ -14,7 +14,9 @@ export type Provider = {
   salonName: string;
   phone: string | null;
   address: string | null;
+  /** La DELEGATION, comme dans le profil — la colonne garde son nom `city`. */
   city: string | null;
+  governorate: string | null;
   category?: string;
   matriculeFiscal: string | null;
   receiptFooter: string | null;

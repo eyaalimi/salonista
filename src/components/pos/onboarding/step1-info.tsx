@@ -3,6 +3,15 @@
 import { useRef, useState } from "react";
 import { Upload, X } from "lucide-react";
 import { SALON_TYPES } from "@/lib/onboarding-presets";
+import { delegationsDe, nomsGouvernorats } from "@/lib/tunisie-geo";
+import {
+  basculerType,
+  choisirPrincipale,
+  choixInitial,
+  refusLocalisationInscription,
+  typesOrdonnes,
+  type ChoixTypes,
+} from "@/lib/inscription-salon";
 import type { Provider } from "./types";
 
 export function Step1Info({
@@ -17,13 +26,30 @@ export function Step1Info({
   const [salonName, setSalonName] = useState(provider.salonName ?? "");
   const [phone, setPhone] = useState(provider.phone ?? "");
   const [address, setAddress] = useState(provider.address ?? "");
-  const [city, setCity] = useState(provider.city ?? "");
+  // `city` porte la DELEGATION, comme dans le profil. On ne reprend la valeur
+  // enregistree que si elle forme un couple valide : une ancienne « ville »
+  // tapee librement ne doit pas preselectionner une delegation fausse.
+  const [governorate, setGovernorate] = useState(provider.governorate ?? "");
+  const [city, setCity] = useState(
+    refusLocalisationInscription(provider.governorate, provider.city) === null
+      ? (provider.city ?? "")
+      : "",
+  );
   const [logoUrl, setLogoUrl] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
-  // Multi-selection: first entry is the primary Category enum.
-  const [types, setTypes] = useState<string[]>(
-    provider.category ? [provider.category] : [],
+  /*
+   * Plusieurs types possibles, UNE principale — celle que le profil affichera
+   * comme categorie. Avant, le premier type CLIQUE devenait la categorie sans
+   * que rien ne le dise a l'ecran. La categorie enregistree fait foi a la
+   * reouverture (voir `choixInitial`).
+   */
+  // Reprend la categorie ENREGISTREE, qui fait foi : si la gerante l'a
+  // changee dans son profil, l'assistant la reflete. Les types secondaires ne
+  // sont pas restaures a la reouverture — comme avant ce lot.
+  const [choix, setChoix] = useState<ChoixTypes>(() =>
+    choixInitial(provider.category, []),
   );
+  const types = choix.types;
   const [matriculeFiscal, setMatriculeFiscal] = useState(
     provider.matriculeFiscal ?? "",
   );
@@ -32,13 +58,16 @@ export function Step1Info({
   const [error, setError] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
+  const lieuValide = refusLocalisationInscription(governorate, city) === null;
+
   const canContinue =
-    salonName.trim().length >= 2 && phone.trim().length >= 6 && types.length > 0;
+    salonName.trim().length >= 2 &&
+    phone.trim().length >= 6 &&
+    types.length > 0 &&
+    lieuValide;
 
   function toggleType(value: string) {
-    setTypes((prev) =>
-      prev.includes(value) ? prev.filter((t) => t !== value) : [...prev, value],
-    );
+    setChoix((c) => basculerType(c, value));
   }
 
   async function handleLogoChange(e: React.ChangeEvent<HTMLInputElement>) {
@@ -67,9 +96,10 @@ export function Step1Info({
     try {
       // Persist the multi-type list locally so step 2 + 3 can merge presets.
       try {
+        // La principale EN TETE : l'etape 2 pre-remplit d'abord ses services.
         localStorage.setItem(
           `onboarding.salonTypes.${provider.id}`,
-          JSON.stringify(types),
+          JSON.stringify(typesOrdonnes(choix)),
         );
       } catch {}
       const res = await fetch("/api/pos/onboarding", {
@@ -80,8 +110,9 @@ export function Step1Info({
             salonName: salonName.trim(),
             phone: phone.trim(),
             address: address.trim(),
-            city: city.trim(),
-            category: types[0], // primary
+            city,
+            governorate,
+            category: choix.principale ?? undefined,
             matriculeFiscal: matriculeFiscal.trim() || undefined,
             logoUrl: logoUrl ?? undefined,
           },
@@ -96,8 +127,9 @@ export function Step1Info({
         salonName: salonName.trim(),
         phone: phone.trim() || null,
         address: address.trim() || null,
-        city: city.trim() || null,
-        category: types[0],
+        city: city || null,
+        governorate: governorate || null,
+        category: choix.principale ?? undefined,
         matriculeFiscal: matriculeFiscal.trim() || null,
       });
       onNext();
@@ -183,42 +215,121 @@ export function Step1Info({
                 >
                   {t.label}
                 </span>
+                {choix.principale === t.value && types.length > 1 && (
+                  <span className="text-[9px] font-semibold uppercase tracking-wide text-pos-accent">
+                    ★ Principale
+                  </span>
+                )}
               </button>
             );
           })}
         </div>
+
+        {/*
+          LA CATEGORIE PRINCIPALE, rendue visible.
+
+          Le profil n'a qu'UNE categorie. Avant, c'etait le premier type
+          clique, sans que rien ne le dise : une gerante qui cochait Onglerie
+          puis Coiffure decouvrait « Onglerie » dans son profil sans
+          comprendre pourquoi. N'apparait qu'a partir de deux types — avec un
+          seul, il n'y a rien a choisir.
+        */}
+        {types.length > 1 && (
+          <div className="mt-3">
+            <p className="text-[11px] text-brand-ink-soft">
+              Catégorie principale (affichée sur votre profil) :
+            </p>
+            <div className="mt-1.5 flex flex-wrap gap-1.5">
+              {typesOrdonnes(choix).map((v) => {
+                const t = SALON_TYPES.find((x) => x.value === v);
+                const actif = choix.principale === v;
+                return (
+                  <button
+                    key={v}
+                    type="button"
+                    aria-pressed={actif}
+                    onClick={() => setChoix((c) => choisirPrincipale(c, v))}
+                    className={`min-h-[36px] rounded-full border px-3 text-xs font-medium ${
+                      actif
+                        ? "border-pos-accent bg-pos-accent text-white"
+                        : "border-brand-line bg-white text-brand-ink-soft hover:border-pos-accent/50"
+                    }`}
+                  >
+                    {t?.emoji} {t?.label ?? v}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        )}
       </div>
 
+      <div>
+        <Label>Téléphone *</Label>
+        <input
+          type="tel"
+          value={phone}
+          onChange={(e) => setPhone(e.target.value)}
+          placeholder="22 345 678"
+          className={inputCls + " pos-mono"}
+        />
+      </div>
+
+      {/*
+        GOUVERNORAT -> DELEGATION, les memes listes que le profil.
+
+        Remplace le champ « Ville » en texte libre : la gerante tapait
+        « Tunis », que le profil lisait comme une delegation (ce n'en est pas
+        une), sans gouvernorat. Elle devait tout ressaisir dans son profil.
+      */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         <div>
-          <Label>Téléphone *</Label>
-          <input
-            type="tel"
-            value={phone}
-            onChange={(e) => setPhone(e.target.value)}
-            placeholder="22 345 678"
-            className={inputCls + " pos-mono"}
-          />
+          <Label>Gouvernorat *</Label>
+          <select
+            value={governorate}
+            onChange={(e) => {
+              // Changer de gouvernorat vide la delegation : la garder
+              // produirait un couple qui n'existe pas.
+              setGovernorate(e.target.value);
+              setCity("");
+            }}
+            className={inputCls}
+          >
+            <option value="">Sélectionner…</option>
+            {nomsGouvernorats().map((g) => (
+              <option key={g} value={g}>
+                {g}
+              </option>
+            ))}
+          </select>
         </div>
         <div>
-          <Label>Ville</Label>
-          <input
-            type="text"
+          <Label>Délégation *</Label>
+          <select
             value={city}
             onChange={(e) => setCity(e.target.value)}
-            placeholder="Tunis"
-            className={inputCls}
-          />
+            disabled={!governorate}
+            className={inputCls + " disabled:opacity-50"}
+          >
+            <option value="">
+              {governorate ? "Sélectionner…" : "Choisissez d'abord un gouvernorat"}
+            </option>
+            {delegationsDe(governorate).map((d) => (
+              <option key={d} value={d}>
+                {d}
+              </option>
+            ))}
+          </select>
         </div>
       </div>
 
       <div>
-        <Label>Adresse</Label>
+        <Label>Numéro et nom de rue (facultatif)</Label>
         <input
           type="text"
           value={address}
           onChange={(e) => setAddress(e.target.value)}
-          placeholder="Rue de la Liberté"
+          placeholder="12 rue de la Liberté"
           className={inputCls}
         />
       </div>
