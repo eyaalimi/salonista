@@ -51,8 +51,19 @@ export function OpeningHoursEditor({ value, onChange }: Props) {
             ) : (
               hours[day].map((range, idx) => (
                 <div key={idx} className="flex items-center gap-2">
+                  {/*
+                   * `lang="fr"` FORCE L'AFFICHAGE SUR 24 HEURES.
+                   *
+                   * Un `<input type="time">` suit la langue du NAVIGATEUR, pas
+                   * celle de la page : sur un telephone regle en anglais, une
+                   * gerante tunisienne voyait « 09:00 AM » et devait saisir
+                   * ses horaires dans un format qu'elle n'emploie pas. La
+                   * valeur transmise est la meme dans les deux cas (« 09:00 »,
+                   * toujours sur 24 h) — seul l'affichage change.
+                   */}
                   <input
                     type="time"
+                    lang="fr"
                     value={range.start}
                     onChange={(e) => updateRange(day, idx, { start: e.target.value })}
                     className="px-3 py-1.5 border border-brand-gold/20 bg-white text-brand-bordeaux text-sm focus:outline-none focus:border-brand-gold"
@@ -60,6 +71,7 @@ export function OpeningHoursEditor({ value, onChange }: Props) {
                   <span className="text-brand-bordeaux/40 text-xs">à</span>
                   <input
                     type="time"
+                    lang="fr"
                     value={range.end}
                     onChange={(e) => updateRange(day, idx, { end: e.target.value })}
                     className="px-3 py-1.5 border border-brand-gold/20 bg-white text-brand-bordeaux text-sm focus:outline-none focus:border-brand-gold"

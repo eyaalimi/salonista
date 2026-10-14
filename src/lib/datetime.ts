@@ -58,3 +58,23 @@ export function formatDateHeureComplete(date: Date | string): string {
     hourCycle: "h23",
   });
 }
+
+/**
+ * jeudi 20 août 2026 à 18:30 — l'entete d'une reservation.
+ *
+ * Existe parce que trois ecrans construisaient cette forme a la main, en
+ * `fr-TN` : le jour etait juste, l'heure sortait en « 06:30 PM ». Passer par
+ * ce module est le seul moyen de ne pas reintroduire l'anglais au prochain
+ * copier-coller.
+ */
+export function formatDateHeureLongue(date: Date | string): string {
+  return new Date(date).toLocaleString(LOCALE, {
+    weekday: "long",
+    day: "numeric",
+    month: "long",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+    hourCycle: "h23",
+  });
+}

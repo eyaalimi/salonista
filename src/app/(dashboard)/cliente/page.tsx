@@ -1,5 +1,7 @@
 "use client";
 
+import { formatDateHeureLongue } from "@/lib/datetime";
+
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
@@ -206,14 +208,7 @@ export default function ClienteReservations() {
                   </p>
                   {booking.items[0]?.slot && (
                     <p className="mt-2 text-base text-prune">
-                      {new Date(booking.items[0].slot.startTime).toLocaleDateString("fr-TN", {
-                        weekday: "long",
-                        day: "numeric",
-                        month: "long",
-                        year: "numeric",
-                        hour: "2-digit",
-                        minute: "2-digit",
-                      })}
+                      {formatDateHeureLongue(booking.items[0].slot.startTime)}
                     </p>
                   )}
                   {booking.notes && (
