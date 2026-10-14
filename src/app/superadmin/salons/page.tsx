@@ -1,25 +1,38 @@
 import Link from "next/link";
 import { exigerSuperadmin } from "@/lib/superadmin-session";
-import { chercherSalons } from "@/lib/support-donnees";
+import { chercherSalons, listerSalons, SALONS_PAR_PAGE } from "@/lib/support-donnees";
 import { afficher, formaterTelephone, estRenseigne } from "@/lib/profil-salon-complet";
+import { accord, motAccorde } from "@/lib/format-fr";
 import { Copiable } from "./copiable";
 
 export default async function RechercheSalonsPage({
   searchParams,
 }: {
-  searchParams: Promise<{ q?: string }>;
+  searchParams: Promise<{ q?: string; page?: string }>;
 }) {
   await exigerSuperadmin();
-  const { q } = await searchParams;
+  const { q, page } = await searchParams;
   const terme = q?.trim() ?? "";
-  const resultats = terme ? await chercherSalons(terme) : [];
+
+  /*
+   * SANS RECHERCHE, ON LISTE TOUT.
+   *
+   * La page n'affichait rien tant qu'on n'avait pas tape un terme : on ne
+   * pouvait pas voir ses salons sans savoir d'avance lequel chercher, ni
+   * meme connaitre leur nombre. La recherche FILTRE une liste, elle ne la
+   * remplace pas.
+   */
+  const numeroPage = Number(page) >= 1 ? Math.floor(Number(page)) : 1;
+  const liste = terme ? null : await listerSalons(numeroPage);
+  const resultats = terme ? await chercherSalons(terme) : (liste?.salons ?? []);
 
   return (
     <div className="flex flex-col gap-6">
       <div>
         <h1 className="ds-display text-2xl text-prune">Support</h1>
         <p className="mt-1 text-sm text-prune-soft">
-          Cherche un salon par nom, téléphone, e-mail ou matricule fiscal.
+          Tous les salons inscrits, suspendus compris. Cherche par nom,
+          téléphone, e-mail ou matricule fiscal.
         </p>
       </div>
 
@@ -39,6 +52,16 @@ export default async function RechercheSalonsPage({
         >
           Chercher
         </button>
+        {/* Sans ce lien, revenir a la liste complete demandait de vider le
+            champ A LA MAIN puis de resoumettre. */}
+        {terme && (
+          <Link
+            href="/superadmin/salons"
+            className="ds-focus flex min-h-[48px] items-center rounded-[var(--radius-pill)] border border-hairline bg-white px-5 text-sm font-semibold text-prune"
+          >
+            Voir tous
+          </Link>
+        )}
       </form>
 
       {terme && resultats.length === 0 && (
@@ -51,9 +74,23 @@ export default async function RechercheSalonsPage({
       {resultats.length > 0 && (
         <>
           <p className="text-sm text-prune-soft">
-            {resultats.length} salon{resultats.length > 1 ? "s" : ""} trouvé
-            {resultats.length > 1 ? "s" : ""}
-            {resultats.length === 20 && " (20 premiers — affine la recherche)"}
+            {liste ? (
+              <>
+                {accord(liste.total, "salon")} au total
+                {liste.suspendus > 0 && (
+                  <> · {accord(liste.suspendus, "suspendu")}</>
+                )}
+                {liste.pages > 1 && (
+                  <> · page {liste.page} sur {liste.pages}</>
+                )}
+              </>
+            ) : (
+              <>
+                {accord(resultats.length, "salon")}{" "}
+                {motAccorde(resultats.length, "trouvé")}
+                {resultats.length === 20 && " (20 premiers — affine la recherche)"}
+              </>
+            )}
           </p>
           {/*
             Une LISTE DE CARTES, plus un rang d'une seule ligne : les
@@ -115,16 +152,50 @@ export default async function RechercheSalonsPage({
               </li>
             ))}
           </ul>
+          {/*
+            PAGINATION. `chercherSalons` se contente de 20 resultats parce
+            qu'on affine un terme ; une liste complete, elle, doit pouvoir
+            etre parcourue en entier. Des liens, pas des boutons : la page
+            reste un server component et chaque page est partageable.
+          */}
+          {liste && liste.pages > 1 && (
+            <nav
+              aria-label="Pages de la liste"
+              className="flex flex-wrap items-center justify-between gap-3"
+            >
+              {liste.page > 1 ? (
+                <Link
+                  href={`/superadmin/salons?page=${liste.page - 1}`}
+                  className="ds-focus flex min-h-[44px] items-center rounded-[var(--radius-pill)] border border-hairline bg-white px-5 text-sm font-semibold text-prune"
+                >
+                  ← Précédents
+                </Link>
+              ) : (
+                <span />
+              )}
+              <span className="text-xs text-prune-soft">
+                {SALONS_PAR_PAGE} salons par page
+              </span>
+              {liste.page < liste.pages ? (
+                <Link
+                  href={`/superadmin/salons?page=${liste.page + 1}`}
+                  className="ds-focus flex min-h-[44px] items-center rounded-[var(--radius-pill)] border border-hairline bg-white px-5 text-sm font-semibold text-prune"
+                >
+                  Suivants →
+                </Link>
+              ) : (
+                <span />
+              )}
+            </nav>
+          )}
         </>
       )}
 
-      {!terme && (
-        <p className="text-sm text-prune-soft">
-          Les coordonnées sont affichées en entier, avec un bouton pour les
-          copier. Chaque consultation de fiche est enregistrée dans le journal
-          d&apos;audit.
-        </p>
-      )}
+      <p className="text-xs text-prune-soft">
+        Les coordonnées sont affichées en entier, avec un bouton pour les
+        copier. Chaque consultation de fiche est enregistrée dans le journal
+        d&apos;audit.
+      </p>
     </div>
   );
 }
