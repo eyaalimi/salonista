@@ -303,6 +303,10 @@ export function BookingCreateDrawer({
                 </label>
                 <input
                   type="datetime-local"
+                  // Comme les `type="time"` de l'editeur d'horaires : sans
+                  // `lang`, le champ suit la langue du navigateur et affiche
+                  // « 06:30 PM » sur un telephone regle en anglais.
+                  lang="fr"
                   value={startStr}
                   onChange={(e) => setStartStr(e.target.value)}
                   className="w-full rounded border border-hairline bg-white px-3 py-2 text-base text-prune placeholder:text-prune/50"

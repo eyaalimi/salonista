@@ -1,5 +1,7 @@
 "use client";
 
+import { formatDateHeureComplete } from "@/lib/datetime";
+
 import { Suspense, useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
@@ -138,13 +140,9 @@ function ReservationDetailPageInner() {
           <p className="mt-3 font-mono text-sm text-prune-soft">{data.qrToken}</p>
           {data.verified && data.verifiedAt && (
             <p className="mt-2 text-sm text-menthe-deep">
-              Vérifié le {new Date(data.verifiedAt).toLocaleDateString("fr-TN", {
-                day: "numeric",
-                month: "long",
-                year: "numeric",
-                hour: "2-digit",
-                minute: "2-digit",
-              })}
+              {/* `fr-TN` rendait « 06:30 PM » : la locale tunisienne est sur
+                  12 heures. Le helper impose `hourCycle: "h23"`. */}
+              Vérifié le {formatDateHeureComplete(data.verifiedAt)}
             </p>
           )}
         </div>
