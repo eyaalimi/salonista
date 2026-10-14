@@ -38,6 +38,13 @@ function signalCle(s: SalonCockpit, maintenant: Date): string | null {
   if (s.securite.mdpIncorrects > 0) {
     return `${accord(s.securite.mdpIncorrects, "échec")} de connexion`;
   }
+  // L'assistant abandonne dit CE QUI a decourage — c'est le signal le plus
+  // actionnable sur un salon qui vient de s'inscrire.
+  if (s.assistantEtape !== null) {
+    return `assistant arrêté à l'étape ${s.assistantEtape}${
+      s.assistantLibelle ? ` · ${s.assistantLibelle}` : ""
+    }`;
+  }
   // Rien d'alarmant : l'anciennete reste le signal utile sur un salon qui
   // vient de s'inscrire et n'a encore rien fait.
   return `inscrit ${dateRelative(s.inscritLe, maintenant)}`;

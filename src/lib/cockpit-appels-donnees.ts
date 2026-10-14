@@ -24,6 +24,7 @@ import {
   construireEntonnoir,
   marcheBloquante,
   etiquetteProbleme,
+  revenuApresInscription,
   scoreSante,
   type LigneEntonnoir,
   type Marche,
@@ -52,6 +53,13 @@ export type SalonCockpit = SalonPourPriorite & {
   paniersAbandonnes: number;
   /** Ventes refusees faute de tiroir, sur la fenetre. */
   ventesRefuseesTiroir: number;
+  /**
+   * L'etape la plus avancee atteinte dans l'assistant, si on la connait et
+   * qu'il n'est PAS termine. `null` sinon : un assistant fini n'est plus un
+   * signal d'appel.
+   */
+  assistantEtape: number | null;
+  assistantLibelle: string | null;
 };
 
 /** Le nombre d'elements de chaque onglet, pour les afficher a cote du nom. */
@@ -119,6 +127,8 @@ export async function donneesCockpit(
     ventesFenetre,
     verrous,
     notes,
+    abonnementsPos,
+    tracesAssistant,
   ] = await Promise.all([
     signesDeVieParSalon(),
     prisma.offer.groupBy({
@@ -159,6 +169,23 @@ export async function donneesCockpit(
       select: { providerId: true, resultat: true, rappelLe: true, createdAt: true },
       orderBy: { createdAt: "desc" },
     }),
+    // Le module caisse pour TOUS les salons d'un coup : c'est lui qui decide
+    // quel parcours d'activation s'applique.
+    prisma.salonSubscription.findMany({
+      where: { providerId: { in: ids }, module: "POS" },
+      select: { providerId: true, status: true, expiresAt: true },
+    }),
+    // L'assistant : HORS de la fenetre de 7 jours, une installation datant
+    // souvent du jour de l'inscription.
+    prisma.evenementSalon.findMany({
+      where: {
+        providerId: { in: ids },
+        type: {
+          in: [EVENEMENTS.ONBOARDING_ETAPE_VUE, EVENEMENTS.ONBOARDING_TERMINE],
+        },
+      },
+      select: { providerId: true, type: true, metadata: true },
+    }),
   ]);
 
   // 3 — repartition en memoire.
@@ -182,6 +209,37 @@ export async function donneesCockpit(
   const ventesParSalon = parSalon(ventesFenetre, (v) => v.providerId);
   const verrouilles = new Set(verrous.map((v) => v.providerId));
   const notesParSalon = parSalon(notes, (n) => n.providerId);
+
+  // Meme regle que `hasModule` : ACTIVE ou TRIAL, et non expire.
+  // L'etape la plus avancee par salon, et qui a termine.
+  const assistantTermine = new Set(
+    tracesAssistant
+      .filter((t) => t.type === EVENEMENTS.ONBOARDING_TERMINE)
+      .map((t) => t.providerId),
+  );
+  const etapeMax = new Map<string, { etape: number; libelle: string | null }>();
+  for (const t of tracesAssistant) {
+    if (t.type !== EVENEMENTS.ONBOARDING_ETAPE_VUE) continue;
+    const m = t.metadata as { etape?: unknown; libelle?: unknown } | null;
+    if (typeof m?.etape !== "number") continue;
+    const actuel = etapeMax.get(t.providerId);
+    if (!actuel || m.etape > actuel.etape) {
+      etapeMax.set(t.providerId, {
+        etape: m.etape,
+        libelle: typeof m.libelle === "string" ? m.libelle : null,
+      });
+    }
+  }
+
+  const avecCaisse = new Set(
+    abonnementsPos
+      .filter(
+        (a) =>
+          (a.status === "ACTIVE" || a.status === "TRIAL") &&
+          (!a.expiresAt || a.expiresAt.getTime() > maintenant.getTime()),
+      )
+      .map((a) => a.providerId),
+  );
 
   const complets: SalonCockpit[] = salons.map((s) => {
     const ev = evParSalon.get(s.id) ?? [];
@@ -229,6 +287,11 @@ export async function donneesCockpit(
       derniereVenteAt: signes.get(s.id)?.derniereVenteAt ?? null,
       derniereConnexionAt: signes.get(s.id)?.derniereConnexionAt ?? null,
       securite,
+      aLaCaisse: avecCaisse.has(s.id),
+      revenuApres: revenuApresInscription(
+        s.createdAt,
+        signes.get(s.id)?.derniereConnexionAt ?? null,
+      ),
     };
 
     return {
@@ -240,6 +303,14 @@ export async function donneesCockpit(
       appeleAujourdhui: mesNotes.some((n) => faitAujourdhui(n, maintenant)),
       paniersAbandonnes,
       ventesRefuseesTiroir: compte(EVENEMENTS.VENTE_REFUSEE_TIROIR_FERME),
+      // Un assistant TERMINE n'est plus un signal d'appel : on ne l'affiche
+      // que lorsqu'il s'est arrete en route.
+      assistantEtape: assistantTermine.has(s.id)
+        ? null
+        : (etapeMax.get(s.id)?.etape ?? null),
+      assistantLibelle: assistantTermine.has(s.id)
+        ? null
+        : (etapeMax.get(s.id)?.libelle ?? null),
     };
   });
 

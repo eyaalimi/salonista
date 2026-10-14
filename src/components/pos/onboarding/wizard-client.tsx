@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Step1Info } from "./step1-info";
 import { Step2Services } from "./step2-services";
@@ -8,6 +8,7 @@ import { Step3Products } from "./step3-products";
 import { Step4Loyalty } from "./step4-loyalty";
 import { Step5Team } from "./step5-team";
 import type { Provider } from "./types";
+import { signalerEvenement } from "@/lib/signaler-evenement";
 
 const STEPS = [
   "Votre salon",
@@ -28,11 +29,30 @@ export function WizardClient({
   const [provider, setProvider] = useState(initialProvider);
   const [step, setStep] = useState(0);
 
+  /*
+   * CHAQUE ETAPE AFFICHEE EST ENREGISTREE.
+   *
+   * C'est ce qui permet de repondre au telephone a « ou vous etes-vous
+   * arretee ? » sans la poser : la fiche du cockpit affiche « arretee a
+   * l'etape 2 · Services ». Sans cela, un abandon ne laissait AUCUNE trace —
+   * on savait seulement que l'assistant n'etait pas termine.
+   *
+   * `step + 1` : les etapes sont numerotees a partir de 1 pour l'humain,
+   * indexees a partir de 0 dans le code.
+   *
+   * Le signal n'attend pas et ne peut pas faire echouer l'assistant (voir
+   * `signalerEvenement`).
+   */
+  useEffect(() => {
+    signalerEvenement({ type: "onboarding_etape", etape: step + 1 });
+  }, [step]);
+
   function updateProvider(patch: Partial<Provider>) {
     setProvider((prev) => ({ ...prev, ...patch }));
   }
 
   async function finishWizard() {
+    signalerEvenement({ type: "onboarding_termine", etape: STEPS.length });
     try {
       await fetch("/api/pos/onboarding", {
         method: "PATCH",
@@ -64,6 +84,9 @@ export function WizardClient({
                     "Voulez-vous vraiment quitter ? Vous pourrez reprendre plus tard.",
                   )
                 ) {
+                  // L'etape d'abandon est le renseignement le plus utile de
+                  // tout l'assistant : elle dit ce qui a decourage.
+                  signalerEvenement({ type: "onboarding_quitte", etape: step + 1 });
                   router.replace("/pos");
                 }
               }}

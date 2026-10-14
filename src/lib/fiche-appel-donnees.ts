@@ -72,6 +72,18 @@ export type FicheAppel = {
   /** Dernier appel passe a ce salon. */
   dernierAppelLe: Date | null;
   dernierAppelResultat: string | null;
+
+  /**
+   * Ou la gerante s'est arretee dans l'assistant /pos/bienvenue.
+   * `null` si elle ne l'a jamais ouvert.
+   */
+  assistant: {
+    derniereEtape: number | null;
+    libelle: string | null;
+    le: Date | null;
+    termine: boolean;
+    quitte: boolean;
+  } | null;
 };
 
 export async function ficheAppel(
@@ -94,6 +106,7 @@ export async function ficheAppel(
     activiteTotal,
     appaires,
     derniereNote,
+    tracesAssistant,
   ] = await Promise.all([
     prisma.providerProfile.findUnique({
       where: { id: providerId },
@@ -157,6 +170,23 @@ export async function ficheAppel(
       where: { providerId, resultat: { not: null } },
       select: { createdAt: true, resultat: true },
       orderBy: { createdAt: "desc" },
+    }),
+    // L'assistant : toutes ses traces, sans fenetre de 7 jours — une
+    // installation date souvent de l'inscription, donc bien avant.
+    prisma.evenementSalon.findMany({
+      where: {
+        providerId,
+        type: {
+          in: [
+            EVENEMENTS.ONBOARDING_ETAPE_VUE,
+            EVENEMENTS.ONBOARDING_TERMINE,
+            EVENEMENTS.ONBOARDING_QUITTE,
+          ],
+        },
+      },
+      select: { type: true, createdAt: true, metadata: true },
+      orderBy: { createdAt: "desc" },
+      take: 50,
     }),
   ]);
 
@@ -242,5 +272,45 @@ export async function ficheAppel(
 
     dernierAppelLe: derniereNote?.createdAt ?? null,
     dernierAppelResultat: derniereNote?.resultat ?? null,
+    assistant: resumerAssistant(tracesAssistant),
+  };
+}
+
+type TraceAssistant = { type: string; createdAt: Date; metadata: unknown };
+
+/**
+ * Ou en est l'assistant, resume en une ligne affichable.
+ *
+ * L'ETAPE LA PLUS AVANCEE, pas la derniere vue : une gerante qui revient en
+ * arriere pour corriger son nom de salon n'est pas « bloquee a l'etape 1 ».
+ * Ce qu'on veut savoir, c'est jusqu'ou elle est allee.
+ */
+function resumerAssistant(traces: readonly TraceAssistant[]): FicheAppel["assistant"] {
+  if (traces.length === 0) return null;
+
+  const termine = traces.find((t) => t.type === EVENEMENTS.ONBOARDING_TERMINE);
+  const quitte = traces.find((t) => t.type === EVENEMENTS.ONBOARDING_QUITTE);
+
+  let derniereEtape: number | null = null;
+  let libelle: string | null = null;
+  let le: Date | null = null;
+
+  for (const t of traces) {
+    const m = t.metadata as { etape?: unknown; libelle?: unknown } | null;
+    const n = typeof m?.etape === "number" ? m.etape : null;
+    if (n === null) continue;
+    if (derniereEtape === null || n > derniereEtape) {
+      derniereEtape = n;
+      libelle = typeof m?.libelle === "string" ? m.libelle : null;
+      le = t.createdAt;
+    }
+  }
+
+  return {
+    derniereEtape,
+    libelle,
+    le: le ?? quitte?.createdAt ?? termine?.createdAt ?? null,
+    termine: !!termine,
+    quitte: !!quitte,
   };
 }
