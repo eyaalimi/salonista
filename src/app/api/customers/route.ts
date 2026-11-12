@@ -9,6 +9,8 @@ type CreateBody = {
   lastName?: string;
   email?: string;
   birthday?: string;
+  /** Accord pour les promos WhatsApp. Absent = oui (case cochee par defaut). */
+  promosAcceptees?: boolean;
 };
 
 export async function POST(req: NextRequest) {
@@ -65,6 +67,11 @@ export async function POST(req: NextRequest) {
       email: body.email ?? null,
       birthday: birthday ?? null,
       firstSalonId: providerId,
+      // La gerante pose la question a la cliente ; la case est cochee par
+      // defaut (decision des fondateurs du 12/11/2026).
+      ...(body.promosAcceptees === false
+        ? { promosAcceptees: false, promosRefuseesAt: new Date() }
+        : {}),
     },
   });
 

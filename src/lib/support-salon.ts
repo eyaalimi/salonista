@@ -102,6 +102,8 @@ export const ACTIONS = {
   NOTE_AJOUTEE: "support.note_ajoutee",
   VUE_LECTURE_SEULE: "support.vue_lecture_seule",
   FICHE_CONSULTEE: "support.fiche_consultee",
+  WHATSAPP_CONNEXION: "support.whatsapp_connexion",
+  WHATSAPP_TEST: "support.whatsapp_test",
 } as const;
 
 export type ActionSupport = (typeof ACTIONS)[keyof typeof ACTIONS];

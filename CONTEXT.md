@@ -645,6 +645,56 @@ Migrations : `20261012100000_module_premium` (enum, seule dans sa migration),
 
 ---
 
+## Crédits clientes (novembre 2026)
+
+Certaines clientes paient plus tard. À l'encaissement, la tuile **« Payer
+plus tard »** laisse la cliente régler une partie (ou rien) ; le reste
+devient un **crédit** sur la vente (`Sale.status = CREDIT`, `amountDue`,
+`dueDate` facultative).
+
+- **Qui** : propriétaire, gérante et caissière (`pos.credit`). Pas la
+  styliste. Une cliente rattachée est obligatoire, une connexion aussi (jamais
+  hors ligne), et ni points ni pourboire sur une vente à crédit.
+- **Page `/pos/credits`** : qui doit combien, depuis quand ; retard au-delà
+  de la date promise ou, sans date, de 15 jours. On y encaisse (la plus
+  ancienne vente est réglée d'abord), on envoie un rappel WhatsApp `wa.me`
+  en darija, et la propriétaire ou la gérante peut **effacer une dette**
+  (`pos.void`, motif obligatoire).
+- **Vendu ≠ encaissé.** Le chiffre d'affaires compte la vente à crédit en
+  entier ; le tiroir compte l'argent le jour où il est reçu.
+- **Fidélité** : les points arrivent au règlement complet, jamais avant.
+
+Détail technique : `CLAUDE.md` §34.
+
+## Promos WhatsApp (novembre 2026)
+
+La gérante écrit son offre, choisit ses clientes, appuie sur « Envoyer » :
+chacune la reçoit sur WhatsApp. Page `/pos/promos`, réservée à la
+propriétaire et à la gérante (`promos.send`), **hors Premium**.
+
+- **API officielle WhatsApp Cloud uniquement** (jamais de librairie qui
+  pilote WhatsApp Web : le numéro serait banni). Chaque salon a son compte
+  WhatsApp Business, son **numéro dédié** et son modèle de message approuvé
+  par Meta, connectés à la main par les fondateurs dans `/superadmin`
+  (pas-à-pas : `docs/whatsapp-cloud.md`).
+- **Meta facture chaque message marketing.** La caisse n'affiche qu'un coût
+  estimé (prix saisi par les fondateurs) ; la facture se règle hors de
+  l'application.
+- **Accord de la cliente** : case « Accepte les promos » cochée par défaut sur
+  sa fiche ; bouton « Ne plus recevoir » sous chaque message, réponse STOP,
+  et refus WhatsApp (erreur 131050) l'excluent automatiquement des envois
+  suivants, chez ce salon seulement.
+- **Envoi en tâche de fond** : rien ne part dans la requête de la caisse. Un
+  moteur, lancé chaque minute par le cron du serveur, envoie 60 messages par
+  passage et réessaie les erreurs temporaires (3 fois au plus).
+- **Sans compte Meta** : `PROMOS_SIMULATION=1` fait tout tourner en
+  simulation (développement, démonstrations), bandeau « Mode démo » à
+  l'écran.
+- `/confidentialite` décrit ce qui part chez Meta (téléphone, prénom, texte
+  de l'offre).
+
+Détail technique : `CLAUDE.md` §35.
+
 ## Contacts
 
 - **Owner / dev**: alimieyaa@gmail.com

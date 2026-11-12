@@ -8,6 +8,7 @@ type UpdateBody = {
   email?: string;
   birthday?: string | null;
   notes?: string;
+  promosAcceptees?: boolean;
 };
 
 export async function PUT(req: NextRequest, ctx: { params: Promise<{ id: string }> }) {
@@ -50,7 +51,7 @@ export async function PUT(req: NextRequest, ctx: { params: Promise<{ id: string 
 
   if (!isOwn) {
     const restricted =
-      "email" in body || "birthday" in body || "notes" in body;
+      "email" in body || "birthday" in body || "notes" in body || "promosAcceptees" in body;
     if (restricted) {
       return Response.json(
         {
@@ -68,6 +69,12 @@ export async function PUT(req: NextRequest, ctx: { params: Promise<{ id: string 
   if (isOwn) {
     if (body.email !== undefined) data.email = body.email;
     if (body.notes !== undefined) data.notes = body.notes;
+    // Le refus est date : il dit QUAND la cliente a demande a ne plus
+    // recevoir. Recocher la case efface la date.
+    if (typeof body.promosAcceptees === "boolean" && body.promosAcceptees !== customer.promosAcceptees) {
+      data.promosAcceptees = body.promosAcceptees;
+      data.promosRefuseesAt = body.promosAcceptees ? null : new Date();
+    }
     if (body.birthday !== undefined) {
       if (body.birthday === null || body.birthday === "") {
         data.birthday = null;

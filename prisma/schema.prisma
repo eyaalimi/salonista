@@ -328,6 +328,8 @@ model ProviderProfile {
   featureInterests      FeatureInterest[]
   devicePairingCodes    DevicePairingCode[]
   evenements            EvenementSalon[]
+  connexionWhatsapp     ConnexionWhatsapp?
+  campagnesPromo        CampagnePromo[]
 }
 
 model InfluencerProfile {
@@ -564,22 +566,28 @@ model CollaborationOffer {
 /// chacun une fiche pour la meme cliente inscrite sur la place de marche,
 /// les deux doivent pouvoir pointer vers son compte.
 model Customer {
-  id           String    @id @default(cuid())
-  phone        String
-  firstName    String?
-  lastName     String?
-  email        String?
-  birthday     DateTime?
-  notes        String?
-  userId       String?
-  firstSalonId String?
-  createdAt    DateTime  @default(now())
-  updatedAt    DateTime  @updatedAt
+  id               String    @id @default(cuid())
+  phone            String
+  firstName        String?
+  lastName         String?
+  email            String?
+  birthday         DateTime?
+  notes            String?
+  userId           String?
+  firstSalonId     String?
+  /// La cliente accepte de recevoir les promos du salon sur WhatsApp.
+  /// Passe a false si elle appuie sur « Ne plus recevoir », repond STOP, ou
+  /// si WhatsApp signale qu'elle a coupe les messages marketing (131050).
+  promosAcceptees  Boolean   @default(true)
+  promosRefuseesAt DateTime?
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
 
-  user          User?          @relation(fields: [userId], references: [id], onDelete: SetNull)
-  bookings      Booking[]
-  sales         Sale[]
-  rewardWallets RewardWallet[]
+  user               User?               @relation(fields: [userId], references: [id], onDelete: SetNull)
+  bookings           Booking[]
+  sales              Sale[]
+  rewardWallets      RewardWallet[]
+  destinatairesPromo DestinatairePromo[]
 
   @@unique([firstSalonId, phone])
   @@index([phone])
@@ -630,6 +638,7 @@ model SalonEmployee {
   expensesRecorded   CashDrawerExpense[] @relation("CashDrawerExpenseEmployee")
   versementsRecus    Payment[]           @relation("PaymentRecuPar")
   dettesEffacees     Sale[]              @relation("SaleDetteEffacee")
+  campagnesPromo     CampagnePromo[]
 
   @@index([providerId, active])
   @@index([userId])
@@ -1284,4 +1293,102 @@ model EvenementSalon {
   /// d'appels, agregee en une seule requete).
   @@index([providerId, createdAt])
   @@index([type, createdAt])
+}
+
+// ---------------------------------------------------------------------------
+// Promos WhatsApp (lot 2). Voir docs/whatsapp-cloud.md et CLAUDE.md §35.
+// ---------------------------------------------------------------------------
+
+enum CanalPromo {
+  WHATSAPP
+  SIMULATION
+}
+
+enum StatutConnexionWhatsapp {
+  /// Saisie en cours par les fondateurs : jamais utilisee pour envoyer.
+  BROUILLON
+  ACTIVE
+  SUSPENDUE
+}
+
+/// Connexion d'UN salon a l'API WhatsApp Cloud. Saisie par les fondateurs
+/// dans /superadmin. Le jeton n'est JAMAIS renvoye au navigateur ni journalise.
+model ConnexionWhatsapp {
+  id             String                  @id @default(cuid())
+  providerId     String                  @unique
+  statut         StatutConnexionWhatsapp @default(BROUILLON)
+  /// "+216 22 345 678", pour l'ecran.
+  numeroAffiche  String
+  phoneNumberId  String
+  wabaId         String
+  /// AES-256-GCM, voir src/lib/chiffrement.ts.
+  jetonChiffre   String
+  /// Modele approuve par Meta : « Aslema {{1}} ! 3andna promo jdida lik :
+  /// {{2}} » suivi de `texteFinModele`.
+  nomModele      String
+  langueModele   String                  @default("fr")
+  /// Texte fixe de fin du modele, recopie A L'IDENTIQUE du modele approuve.
+  /// Propre a chaque salon (chacun a son WABA). Sert a l'apercu.
+  texteFinModele String
+  /// Prix indicatif d'un message, pour afficher un cout estime. NULL = « cout
+  /// selon le tarif Meta ». La facturation Meta se regle hors application.
+  prixMessageDT  Decimal?                @db.Decimal(10, 3)
+  createdAt      DateTime                @default(now())
+  updatedAt      DateTime                @updatedAt
+
+  provider ProviderProfile @relation(fields: [providerId], references: [id], onDelete: Cascade)
+
+  @@index([phoneNumberId])
+}
+
+model CampagnePromo {
+  id              String     @id @default(cuid())
+  providerId      String
+  /// Qui a envoye.
+  employeeId      String
+  canal           CanalPromo
+  texteOffre      String
+  /// "TOUTES" | "RECENTES_90J" | "INACTIVES_60J" | "MANUELLE"
+  audience        String
+  /// null = maintenant.
+  programmeeLe    DateTime?
+  /// "PROGRAMMEE" | "EN_COURS" | "TERMINEE" | "ARRETEE"
+  statut          String
+  nbDestinataires Int
+  creeLe          DateTime   @default(now())
+  termineeLe      DateTime?
+
+  provider      ProviderProfile     @relation(fields: [providerId], references: [id], onDelete: Cascade)
+  employee      SalonEmployee       @relation(fields: [employeeId], references: [id])
+  destinataires DestinatairePromo[]
+
+  @@index([providerId, creeLe])
+  @@index([statut, programmeeLe])
+}
+
+model DestinatairePromo {
+  id               String    @id @default(cuid())
+  campagneId       String
+  customerId       String?
+  /// Normalise : chiffres seuls, indicatif compris (format `wa.me` / Meta).
+  telephone        String
+  prenom           String?
+  /// "EN_ATTENTE" | "RESERVE" | "ENVOYE" | "DELIVRE" | "LU" | "ECHEC" |
+  /// "NON_ENVOYE". RESERVE = pris par un passage du moteur ; un bail de plus
+  /// de 5 minutes (processus tue en plein envoi) repasse en EN_ATTENTE.
+  statut           String
+  reserveLe        DateTime?
+  /// wamid Meta.
+  messageIdExterne String?   @unique
+  erreur           String?
+  tentatives       Int       @default(0)
+  envoyeLe         DateTime?
+  majLe            DateTime  @updatedAt
+
+  campagne CampagnePromo @relation(fields: [campagneId], references: [id], onDelete: Cascade)
+  customer Customer?     @relation(fields: [customerId], references: [id], onDelete: SetNull)
+
+  @@unique([campagneId, telephone])
+  @@index([campagneId, statut])
+  @@index([statut, reserveLe])
 }

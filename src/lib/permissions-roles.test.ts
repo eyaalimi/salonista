@@ -29,3 +29,12 @@ describe("permission pos.credit (« Payer plus tard »)", () => {
     expect(estEcriture("pos.credit")).toBe(true);
   });
 });
+
+describe("permission promos.send", () => {
+  it("propriétaire et gérante seulement", () => {
+    expect(getRoleDefaults("OWNER")["promos.send"]).toBe(true);
+    expect(getRoleDefaults("MANAGER")["promos.send"]).toBe(true);
+    expect(getRoleDefaults("CASHIER")["promos.send"]).toBe(false);
+    expect(getRoleDefaults("STYLIST")["promos.send"]).toBe(false);
+  });
+});

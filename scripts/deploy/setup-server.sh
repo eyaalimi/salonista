@@ -168,6 +168,17 @@ sudo tee /etc/cron.d/salonista-backup >/dev/null <<'CRON'
 CRON
 sudo chmod 0644 /etc/cron.d/salonista-backup
 
+# --- Promos WhatsApp ---
+# Un passage du moteur d'envoi chaque minute. Idempotent : `tee` reecrit le
+# fichier a l'identique. Le script lit CRON_SECRET dans .env et ne fait rien
+# tant qu'il est absent.
+echo "[setup] installing promos cron entry"
+sudo tee /etc/cron.d/salonista-promos >/dev/null <<'CRON'
+# Salonista promos WhatsApp — moteur d'envoi, chaque minute
+* * * * * ubuntu cd /home/ubuntu/salonista && bash scripts/deploy/promos-tick.sh >> /home/ubuntu/promos-tick.log 2>&1
+CRON
+sudo chmod 0644 /etc/cron.d/salonista-promos
+
 # --------------------------------------------------------------------
 # Done
 # --------------------------------------------------------------------

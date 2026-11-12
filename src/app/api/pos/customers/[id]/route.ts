@@ -34,6 +34,8 @@ export async function GET(
       email: true,
       birthday: true,
       notes: true,
+      promosAcceptees: true,
+      promosRefuseesAt: true,
       createdAt: true,
     },
   })) as {
@@ -44,6 +46,8 @@ export async function GET(
     email: string | null;
     birthday: Date | null;
     notes: string | null;
+    promosAcceptees: boolean;
+    promosRefuseesAt: Date | null;
     createdAt: Date;
   } | null;
 
