@@ -1,27 +1,49 @@
 import type { Metadata, Viewport } from "next";
-import { Geist } from "next/font/google";
-import { Playfair_Display } from "next/font/google";
-import { Archivo } from "next/font/google";
+import localFont from "next/font/local";
 import { Providers } from "@/components/providers";
 import { BottomNav } from "@/components/bottom-nav";
 import { SwRegister } from "@/components/sw-register";
 import "./globals.css";
 
-const geistSans = Geist({
+/*
+ * POLICES HEBERGEES DANS LE DEPOT, PAS TELECHARGEES AU BUILD.
+ *
+ * `next/font/google` va chercher les polices chez Google A CHAQUE BUILD. Deux
+ * deploiements ont echoue sur cette seule etape — Playfair en octobre, Archivo
+ * en novembre 2026 — avec « Can't resolve
+ * '@vercel/turbopack-next/internal/font/google/font' », alors que le code
+ * etait sain et que la CI passait. Une panne intermittente : le build depend
+ * de la reponse de Google pendant quelques secondes.
+ *
+ * Les fichiers de `./fonts/` sont EXACTEMENT ceux que Google servait (sous-
+ * ensemble latin, celui que `subsets: ["latin"]` prechargeait) : le rendu ne
+ * change pas, seul le reseau disparait du build. Sources et licences dans
+ * `./fonts/LISEZMOI.md`.
+ *
+ * Trois polices sur quatre sont VARIABLES : un seul fichier couvre toute la
+ * plage de graisses, d'ou `weight` en intervalle.
+ */
+const geistSans = localFont({
+  src: "./fonts/geist.woff2",
+  weight: "100 900",
   variable: "--font-geist-sans",
-  subsets: ["latin"],
 });
 
-const playfair = Playfair_Display({
+const playfair = localFont({
+  src: "./fonts/playfair-display.woff2",
+  weight: "400 700",
   variable: "--font-playfair",
-  subsets: ["latin"],
-  weight: ["400", "500", "600", "700"],
+  // Police a empattements : la police de secours ajustee doit en etre une
+  // aussi. `next/font/google` faisait ce choix tout seul.
+  adjustFontFallback: "Times New Roman",
 });
 
-const archivo = Archivo({
+const archivo = localFont({
+  src: "./fonts/archivo.woff2",
+  weight: "400 800",
   variable: "--font-archivo",
-  subsets: ["latin"],
-  weight: ["400", "500", "600", "700", "800"],
+  // Google declarait la largeur normale de cette police variable a 2 axes.
+  declarations: [{ prop: "font-stretch", value: "100%" }],
 });
 
 export const metadata: Metadata = {
