@@ -15,6 +15,7 @@
  * possible.
  */
 
+import { debutRendezVous } from "@/lib/date-rendez-vous";
 import { useCallback, useEffect, useState } from "react";
 import {
   JOURS_ENTETE,
@@ -69,6 +70,7 @@ export function MiniCalendrier({
     type Raw = {
       status: string;
       items: Array<{ slot: { startTime: string } | null }>;
+      debutPrevu: string | null;
       createdAt: string;
     };
     const raw = (await res.json()) as Raw[];
@@ -76,7 +78,9 @@ export function MiniCalendrier({
     // enverrait le proprietaire vers un jour en realite libre.
     const dates = raw
       .filter((b) => b.status !== "CANCELLED")
-      .map((b) => b.items[0]?.slot?.startTime ?? b.createdAt);
+      // Meme regle que la liste du jour : une pastille sur le jour de
+      // creation d'un rendez-vous prevu ailleurs enverrait vers un jour vide.
+      .map((b) => debutRendezVous(b).toISOString());
     setOccupes(joursOccupes(dates));
   }, [annee, mois]);
 

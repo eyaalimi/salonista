@@ -13,6 +13,7 @@
  * salon travaille par journee.
  */
 
+import { debutRendezVous, finRendezVous } from "@/lib/date-rendez-vous";
 import { useCallback, useEffect, useState } from "react";
 import { bookingClientName } from "@/lib/booking-client-name";
 import { formatHeure } from "@/lib/datetime";
@@ -138,16 +139,18 @@ export function PosCalendar({
         client: { name: string | null; email: string } | null;
         assignedEmployeeId: string | null;
         sale: { id: string } | null;
+        debutPrevu: string | null;
+        finPrevue: string | null;
         createdAt: string;
       };
 
       const raw = (await res.json()) as Raw[];
       const out: CalendarBooking[] = raw.map((b) => {
-        const slot = b.items[0]?.slot;
-        const start = slot?.startTime ?? b.createdAt;
-        const end =
-          slot?.endTime ??
-          new Date(new Date(b.createdAt).getTime() + 30 * 60_000).toISOString();
+        // La regle commune : le creneau, sinon l'heure prevue d'un passage
+        // libre, et la date de creation SEULEMENT pour un ancien passage libre.
+        // Voir `src/lib/date-rendez-vous.ts`.
+        const start = debutRendezVous(b).toISOString();
+        const end = finRendezVous(b).toISOString();
         return {
           id: b.id,
           startTime: start,
