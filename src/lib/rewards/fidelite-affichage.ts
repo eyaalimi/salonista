@@ -20,15 +20,20 @@
 import { fromMillimes, toMillimes } from "@/lib/money";
 
 /**
- * Bornes de la reglette de recompense, en pourcentage du prix.
+ * Bornes de la recompense, en pourcentage du prix : de 1 a 100.
  *
- * POURQUOI 3 % AU MINIMUM. En dessous, la recompense ne se voit pas : a 1 %,
- * une prestation de 40 DT rapporte 0,400 DT — la cliente ne changera pas de
- * salon pour cela, et le programme coute au salon sans rien lui rapporter.
- * Au-dessus de 10 %, la marge d'un salon tunisien ne suit plus.
+ * LE TAUX EST LE CHOIX DU SALON. Les bornes 3–10 % d'origine etaient une
+ * recommandation imposee ; elles ont ete levees (novembre 2026) a la demande
+ * de la proprietaire. Un salon qui veut offrir 1 % comme un salon qui veut
+ * offrir 30 % le peut. Il ne reste que les bornes d'un pourcentage : moins de
+ * 1 % ne rapporte rien de visible, plus de 100 % rendrait davantage que le
+ * prix paye.
+ *
+ * La reglette garde un pas de 1 %. Sur 100 crans elle devient imprecise au
+ * doigt : un champ chiffre la complete (voir `lireSaisiePct`).
  */
-export const RECOMPENSE_MIN_PCT = 3;
-export const RECOMPENSE_MAX_PCT = 10;
+export const RECOMPENSE_MIN_PCT = 1;
+export const RECOMPENSE_MAX_PCT = 100;
 export const RECOMPENSE_PAS_PCT = 1;
 
 /** Le pourcentage affiche dans l'exemple pedagogique fixe de la page. */
@@ -46,13 +51,29 @@ export function pctDansLesBornes(pct: number): boolean {
  * reglette, arrondie au pas.
  *
  * Sert UNIQUEMENT a placer le curseur : la valeur reelle du salon reste
- * affichee a cote (voir `etatRecompense`). Un salon a 1 % voit le curseur sur
- * 3 % et un avertissement, pas une valeur reecrite en silence.
+ * affichee a cote (voir `etatRecompense`). Un salon a 0,5 % voit le curseur
+ * sur 1 % et un avertissement, pas une valeur reecrite en silence.
  */
 export function serrerDansLesBornes(pct: number): number {
   if (!Number.isFinite(pct)) return RECOMPENSE_MIN_PCT;
   const arrondi = Math.round(pct / RECOMPENSE_PAS_PCT) * RECOMPENSE_PAS_PCT;
   return Math.min(RECOMPENSE_MAX_PCT, Math.max(RECOMPENSE_MIN_PCT, arrondi));
+}
+
+/**
+ * Lit le champ de saisie exacte du pourcentage.
+ *
+ * Rend `null` pour une saisie vide ou illisible : un champ efface PENDANT la
+ * frappe ne doit pas etre pris pour « 1 % », sinon la reglette sauterait sous
+ * les doigts de la gerante. Une saisie hors bornes est ramenee a la borne la
+ * plus proche, et la virgule decimale française est acceptee.
+ */
+export function lireSaisiePct(texte: string): number | null {
+  const t = texte.trim().replace(",", ".");
+  if (!t) return null;
+  const n = Number(t);
+  if (!Number.isFinite(n)) return null;
+  return serrerDansLesBornes(n);
 }
 
 export type EtatRecompense = {

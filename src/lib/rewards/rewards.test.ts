@@ -191,14 +191,22 @@ describe("cashback bridge", () => {
     expect(() => cashbackPctToProgram(-1)).toThrow();
   });
 
-  // La reglette de la page Fidelite ne propose que 3–10 %. La borne doit
-  // tenir ici aussi : un `<input type="range">` se contourne avec un `curl`.
-  it("rejects a cashback % outside the 3–10 slider bounds", () => {
-    expect(() => cashbackPctToProgram(0.5)).toThrow(/entre 3 % et 10 %/);
-    expect(() => cashbackPctToProgram(1)).toThrow(/entre 3 % et 10 %/);
-    expect(() => cashbackPctToProgram(2.9)).toThrow(/entre 3 % et 10 %/);
-    expect(() => cashbackPctToProgram(11)).toThrow(/entre 3 % et 10 %/);
-    expect(() => cashbackPctToProgram(100)).toThrow(/entre 3 % et 10 %/);
+  // Le taux est le choix du salon, de 1 a 100 %. La borne tient AUSSI cote
+  // serveur : un `<input type="range">` se contourne avec un `curl`.
+  it("accepts any cashback % from 1 to 100", () => {
+    for (const pct of [1, 2.5, 15, 50, 100]) {
+      expect(() => cashbackPctToProgram(pct)).not.toThrow();
+    }
+    expect(cashbackPctToProgram(100)).toEqual({
+      pointsPerDinar: "100.000",
+      dinarPerPoint: "0.010",
+    });
+  });
+
+  it("rejects a cashback % below 1 or above 100", () => {
+    expect(() => cashbackPctToProgram(0)).toThrow(/entre 1 % et 100 %/);
+    expect(() => cashbackPctToProgram(0.5)).toThrow(/entre 1 % et 100 %/);
+    expect(() => cashbackPctToProgram(101)).toThrow(/entre 1 % et 100 %/);
   });
 
   it("rejects a non-finite cashback %", () => {

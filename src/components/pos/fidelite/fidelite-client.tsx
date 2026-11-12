@@ -16,7 +16,7 @@
  *    laissait croire a 600 DT. Les points restent indiques en petit, parce
  *    que la caisse et les tickets, eux, les affichent.
  *
- * 2. LA RECOMPENSE SE REGLE A LA REGLETTE (3–10 %), sur la page, sans
+ * 2. LA RECOMPENSE SE REGLE A LA REGLETTE (1–100 %), sur la page, sans
  *    modale : c'est le seul reglage qu'une gerante veut vraiment changer.
  *    Les trois autres regles passent dans une modale.
  *

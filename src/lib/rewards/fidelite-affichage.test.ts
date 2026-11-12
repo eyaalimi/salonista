@@ -6,6 +6,7 @@ import {
   pctDansLesBornes,
   serrerDansLesBornes,
   etatRecompense,
+  lireSaisiePct,
   pointsGagnes,
   pointsEnDinars,
   apercuRecompense,
@@ -25,11 +26,19 @@ describe("bornes de la reglette", () => {
     expect(pctDansLesBornes(RECOMPENSE_MAX_PCT)).toBe(true);
   });
 
-  it("refuse sous le minimum et au-dessus du maximum", () => {
-    expect(pctDansLesBornes(2.9)).toBe(false);
-    expect(pctDansLesBornes(1)).toBe(false);
-    expect(pctDansLesBornes(10.1)).toBe(false);
+  // Les bornes sont celles d'un pourcentage : 1 a 100. Le taux est le CHOIX
+  // du salon, plus une recommandation imposee.
+  it("accepte tout le pourcentage, de 1 a 100", () => {
+    expect(RECOMPENSE_MIN_PCT).toBe(1);
+    expect(RECOMPENSE_MAX_PCT).toBe(100);
+    for (const pct of [1, 3, 10, 15, 50, 100]) expect(pctDansLesBornes(pct)).toBe(true);
+  });
+
+  it("refuse sous 1 % et au-dessus de 100 %", () => {
     expect(pctDansLesBornes(0)).toBe(false);
+    expect(pctDansLesBornes(0.5)).toBe(false);
+    expect(pctDansLesBornes(100.1)).toBe(false);
+    expect(pctDansLesBornes(-5)).toBe(false);
   });
 
   it("refuse une valeur non finie", () => {
@@ -38,33 +47,36 @@ describe("bornes de la reglette", () => {
   });
 
   it("serre vers la borne la plus proche, au pas de 1", () => {
-    expect(serrerDansLesBornes(1)).toBe(3);
-    expect(serrerDansLesBornes(0)).toBe(3);
-    expect(serrerDansLesBornes(20)).toBe(10);
+    expect(serrerDansLesBornes(0)).toBe(1);
+    expect(serrerDansLesBornes(0.4)).toBe(1);
+    expect(serrerDansLesBornes(250)).toBe(100);
     expect(serrerDansLesBornes(5.4)).toBe(5);
     expect(serrerDansLesBornes(5.6)).toBe(6);
   });
 
   it("serre une valeur non finie sur le minimum", () => {
-    expect(serrerDansLesBornes(NaN)).toBe(3);
+    expect(serrerDansLesBornes(NaN)).toBe(1);
   });
 });
 
 describe("etatRecompense", () => {
-  // Les salons passes par l'assistant de demarrage valent 1 % : la page doit
-  // afficher la verite, pas un 3 % reecrit en silence.
-  it("signale un salon hors bornes sans masquer sa vraie valeur", () => {
+  // Le defaut du schema (1 %) et les salons crees par l'ancien assistant
+  // etaient signales « hors limites ». Ils sont desormais dans les bornes.
+  it("ne signale plus un salon a 1 %", () => {
     const etat = etatRecompense(1);
-    expect(etat.horsBornes).toBe(true);
-    expect(etat.reel).toBe(1);
-    expect(etat.curseur).toBe(3);
+    expect(etat.horsBornes).toBe(false);
+    expect(etat.curseur).toBe(1);
   });
 
-  it("ne signale rien quand la valeur est dans les bornes", () => {
-    const etat = etatRecompense(5);
-    expect(etat.horsBornes).toBe(false);
-    expect(etat.reel).toBe(5);
-    expect(etat.curseur).toBe(5);
+  it("accepte un taux eleve choisi par le salon", () => {
+    expect(etatRecompense(40)).toEqual({ curseur: 40, reel: 40, horsBornes: false });
+  });
+
+  it("signale encore une valeur impossible, sans la reecrire", () => {
+    const etat = etatRecompense(0.5);
+    expect(etat.horsBornes).toBe(true);
+    expect(etat.reel).toBe(0.5);
+    expect(etat.curseur).toBe(1);
   });
 });
 
@@ -290,5 +302,33 @@ describe("exempleDeuxVisites", () => {
 
   it("EXEMPLE_PCT reste dans les bornes de la reglette", () => {
     expect(pctDansLesBornes(EXEMPLE_PCT)).toBe(true);
+  });
+});
+
+describe("lireSaisiePct — le champ de saisie exacte", () => {
+  // Une reglette de 100 crans ne permet plus de viser 5 % plutot que 6 % au
+  // doigt : le champ chiffre la complete.
+  it("lit un entier dans les bornes", () => {
+    expect(lireSaisiePct("5")).toBe(5);
+    expect(lireSaisiePct("100")).toBe(100);
+    expect(lireSaisiePct(" 12 ")).toBe(12);
+  });
+
+  it("ramene une saisie hors bornes a la borne la plus proche", () => {
+    expect(lireSaisiePct("0")).toBe(1);
+    expect(lireSaisiePct("250")).toBe(100);
+    expect(lireSaisiePct("-3")).toBe(1);
+  });
+
+  it("arrondit au pas d'un point", () => {
+    expect(lireSaisiePct("7.6")).toBe(8);
+    expect(lireSaisiePct("7,4")).toBe(7);
+  });
+
+  // Un champ vide pendant la frappe ne doit pas etre pris pour « 1 % ».
+  it("rend null pour une saisie vide ou illisible", () => {
+    expect(lireSaisiePct("")).toBeNull();
+    expect(lireSaisiePct("   ")).toBeNull();
+    expect(lireSaisiePct("abc")).toBeNull();
   });
 });

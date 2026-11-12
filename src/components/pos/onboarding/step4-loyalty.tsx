@@ -7,7 +7,7 @@
  * — « 1 point tous les X DT », « 1 point vaut Y DT », « seuil de retrait » —
  * et envoyait `dinarPerPoint: "0.100"` avec un `pointsPerDinar` inverse en
  * `1/x`. Resultat : un salon sorti de l'assistant valait 0,1 × 0,1 = 1 % de
- * recompense, en dehors des bornes 3–10 % de la page Fidelite, qui lui
+ * recompense, en dehors des bornes de l'epoque (3–10 %) de la page Fidelite, qui lui
  * affichait aussitot un avertissement. L'assistant fabriquait le probleme
  * que la page devait signaler.
  *
@@ -22,6 +22,7 @@ import {
   RECOMPENSE_MIN_PCT,
   RECOMPENSE_PAS_PCT,
   apercuRecompense,
+  lireSaisiePct,
   cagnotteEnDinars,
   ratiosDepuisPct,
 } from "@/lib/rewards/fidelite-affichage";
@@ -49,6 +50,8 @@ export function Step4Loyalty({
 }) {
   const [active, setActive] = useState(true);
   const [pct, setPct] = useState(PCT_DEFAUT);
+  /** Texte du champ chiffre PENDANT l'edition ; `null` sinon. */
+  const [saisie, setSaisie] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [erreur, setErreur] = useState<string | null>(null);
 
@@ -119,6 +122,49 @@ export function Step4Loyalty({
               </span>
               <span className="text-sm text-brand-ink-soft">du prix</span>
             </p>
+
+            {/* Valeur exacte : sur 100 crans, la reglette seule est trop
+                imprecise au doigt. Meme principe que la page Fidelite. */}
+            <div className="mt-4 flex items-center gap-2">
+              <button
+                type="button"
+                aria-label="Retirer un pour cent"
+                disabled={pct <= RECOMPENSE_MIN_PCT}
+                onClick={() => setPct((p) => Math.max(RECOMPENSE_MIN_PCT, p - RECOMPENSE_PAS_PCT))}
+                className="min-h-[44px] min-w-[44px] rounded-xl border border-brand-line text-lg text-brand-ink disabled:opacity-40"
+              >
+                −
+              </button>
+              <label htmlFor="onb-nombre" className="sr-only">
+                Pourcentage exact, de {RECOMPENSE_MIN_PCT} à {RECOMPENSE_MAX_PCT}
+              </label>
+              <input
+                id="onb-nombre"
+                type="number"
+                inputMode="numeric"
+                min={RECOMPENSE_MIN_PCT}
+                max={RECOMPENSE_MAX_PCT}
+                step={RECOMPENSE_PAS_PCT}
+                value={saisie ?? String(pct)}
+                onChange={(e) => {
+                  setSaisie(e.target.value);
+                  const v = lireSaisiePct(e.target.value);
+                  if (v !== null) setPct(v);
+                }}
+                onBlur={() => setSaisie(null)}
+                className="min-h-[44px] w-20 rounded-xl border border-brand-line px-3 text-center text-base tabular-nums focus:border-pos-accent focus:outline-none"
+              />
+              <span className="text-sm text-brand-ink-soft">%</span>
+              <button
+                type="button"
+                aria-label="Ajouter un pour cent"
+                disabled={pct >= RECOMPENSE_MAX_PCT}
+                onClick={() => setPct((p) => Math.min(RECOMPENSE_MAX_PCT, p + RECOMPENSE_PAS_PCT))}
+                className="min-h-[44px] min-w-[44px] rounded-xl border border-brand-line text-lg text-brand-ink disabled:opacity-40"
+              >
+                +
+              </button>
+            </div>
 
             <input
               id="onb-reglette"
