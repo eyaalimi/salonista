@@ -6,6 +6,22 @@ on:
       - main
   workflow_dispatch:
 
+# UN SEUL DEPLOIEMENT A LA FOIS, LES SUIVANTS ATTENDENT.
+#
+# Le 12/11/2026, deux PR fusionnees a 40 secondes d'intervalle ont lance deux
+# deploiements simultanes sur le meme serveur (#252 et #253). Le second a
+# refait `git reset`, `npm install` et `prisma generate` PENDANT le build du
+# premier, et a echoue au bout de 31 secondes — sans aucun defaut dans le code.
+#
+# `cancel-in-progress: false` : on n'interrompt JAMAIS un deploiement en cours.
+# Le couper au milieu de `prisma migrate deploy` ou du build laisserait le
+# serveur dans un etat intermediaire ; le suivant attend son tour. Si plusieurs
+# s'accumulent, GitHub ne garde que le plus recent en attente — c'est lui qui
+# porte tout le code, rien n'est perdu.
+concurrency:
+  group: deploiement-production
+  cancel-in-progress: false
+
 jobs:
   deploy:
     runs-on: ubuntu-latest
