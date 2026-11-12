@@ -2,13 +2,21 @@
 
 import { useEffect, useState, useCallback } from "react";
 import { formatDT } from "@/lib/money";
-import { ExpenseModal } from "./expense-modal";
+import {
+  CATEGORIES_DEPENSE,
+  libelleCategorieDepense,
+  lireMontant,
+  refusDepense,
+  type CategorieDepense,
+} from "@/lib/depense-caisse";
 
 type Summary = {
   sessionId: string;
   openingFloat: string;
   cashSalesTotal: string;
   cashRefundsTotal: string;
+  /** Deja soustrait de `expectedCash` par le serveur (`computeSummary`). */
+  expensesTotal: string;
   expectedCash: string;
 };
 
@@ -20,13 +28,14 @@ type Session = {
   employee?: { displayName: string };
 } | null;
 
-export function CashDrawerIndicator({ canOpen, employeeName }: { canOpen: boolean; employeeName?: string }) {
+// `employeeName` reste dans le type pour les appelants, mais ne sert plus :
+// il n'alimentait que la fenetre de depense, desormais integree a la fermeture.
+export function CashDrawerIndicator({ canOpen }: { canOpen: boolean; employeeName?: string }) {
   const [session, setSession] = useState<Session>(null);
   const [summary, setSummary] = useState<Summary | null>(null);
   const [open, setOpen] = useState(false);
   const [openingModal, setOpeningModal] = useState(false);
   const [closingModal, setClosingModal] = useState(false);
-  const [expenseModalOpen, setExpenseModalOpen] = useState(false);
 
   const refresh = useCallback(async () => {
     const res = await fetch("/api/pos/cash-drawer/current", { cache: "no-store" });
@@ -109,22 +118,23 @@ export function CashDrawerIndicator({ canOpen, employeeName }: { canOpen: boolea
               <Row label="Fond initial" value={formatDT(summary.openingFloat)} />
               <Row label="Ventes cash" value={formatDT(summary.cashSalesTotal)} />
               <Row label="Remboursements cash" value={`-${formatDT(summary.cashRefundsTotal)}`} />
+              {/* Les depenses etaient deja soustraites de l'attendu, mais
+                  n'apparaissaient nulle part : l'attendu semblait faux. */}
+              <Row label="Dépenses" value={`-${formatDT(summary.expensesTotal)}`} />
               <Row
                 label="Attendu en caisse"
                 value={formatDT(summary.expectedCash)}
                 emphasis
               />
             </dl>
-            <button
-              type="button"
-              onClick={() => {
-                setOpen(false);
-                setExpenseModalOpen(true);
-              }}
-              className="ds-press ds-focus mb-3 min-h-[48px] w-full rounded-[var(--radius-pill)] border border-hairline bg-white text-base text-prune hover:border-rose"
-            >
-              + Dépense
-            </button>
+            {/*
+              UN SEUL BOUTON. « + Depense » et « Fermer la caisse » etaient
+              deux gestes separes, alors qu'en fin de journee ils se suivent :
+              on note ce qui est sorti du tiroir, PUIS on compte. La fermeture
+              contient desormais sa section Depenses, avant le comptage.
+              Une depense en cours de journee reste possible depuis la page
+              Caisse.
+            */}
             <button
               type="button"
               onClick={() => {
@@ -149,20 +159,13 @@ export function CashDrawerIndicator({ canOpen, employeeName }: { canOpen: boolea
         />
       )}
 
-      {expenseModalOpen && (
-        <ExpenseModal
-          employeeName={employeeName ?? "Employé"}
-          onClose={() => setExpenseModalOpen(false)}
-          onCreated={async () => {
-            await refresh();
-          }}
-        />
-      )}
-
       {closingModal && session && summary && (
         <CloseModal
           sessionId={session.id}
-          expectedCash={summary.expectedCash}
+          summary={summary}
+          // Une depense ajoutee pendant la fermeture fait baisser l'attendu :
+          // il faut le relire AVANT que la caissiere compte.
+          onRefresh={refresh}
           onClose={() => setClosingModal(false)}
           onClosed={async () => {
             setClosingModal(false);
@@ -287,24 +290,53 @@ function OpenModal({ onClose, onOpened }: { onClose: () => void; onOpened: () =>
   );
 }
 
+type Depense = {
+  id: string;
+  amount: string | number;
+  reason: string;
+  category: string;
+  createdAt: string;
+};
+
+/**
+ * La fermeture de caisse — dans l'ordre ou on la fait vraiment.
+ *
+ *   1. Les DEPENSES : ce qui est sorti du tiroir dans la journee.
+ *   2. L'ESPECE COMPTEE : ce qui s'y trouve maintenant.
+ *   3. FERMER.
+ *
+ * L'ordre n'est pas cosmetique. L'attendu en caisse soustrait les depenses :
+ * une depense oubliee puis notee APRES le comptage produisait un ecart faux,
+ * et la caissiere etait mise en cause pour de l'argent sorti legitimement.
+ * Les depenses passent donc AVANT le comptage, et l'attendu affiche est
+ * relu apres chaque ajout.
+ *
+ * Une depense ajoutee ici est ENREGISTREE tout de suite — meme si l'on
+ * annule ensuite la fermeture. Le texte le dit, pour qu'on ne la ressaisisse
+ * pas une seconde fois.
+ */
 function CloseModal({
   sessionId,
-  expectedCash,
+  summary,
+  onRefresh,
   onClose,
   onClosed,
 }: {
   sessionId: string;
-  expectedCash: string;
+  summary: Summary;
+  onRefresh: () => Promise<void>;
   onClose: () => void;
   onClosed: () => void;
 }) {
+  const expectedCash = summary.expectedCash;
+
   /**
    * Champ VIDE, et pas « 0.000 ».
    *
    * Pre-remplir a zero permettait de fermer la caisse sans rien compter : on
    * validait alors un ecart egal a tout l'attendu, en croyant avoir confirme
    * un comptage. Vide, le bouton reste desactive tant qu'aucun montant n'est
-   * saisi — compter est le seul geste de cet ecran.
+   * saisi — compter est le seul geste obligatoire de cet ecran.
    */
   const [closingCount, setClosingCount] = useState("");
   const [closingNotes, setClosingNotes] = useState("");
@@ -312,6 +344,71 @@ function CloseModal({
   const [error, setError] = useState<string | null>(null);
   const [variance, setVariance] = useState<string | null>(null);
 
+  // --- Depenses -------------------------------------------------------------
+  const [depenses, setDepenses] = useState<Depense[]>([]);
+  const [ajoutOuvert, setAjoutOuvert] = useState(false);
+  const [montant, setMontant] = useState("");
+  const [categorie, setCategorie] = useState<CategorieDepense>("FOURNISSEUR");
+  const [motif, setMotif] = useState("");
+  const [ajoutEnCours, setAjoutEnCours] = useState(false);
+  const [erreurDepense, setErreurDepense] = useState<string | null>(null);
+
+  const chargerDepenses = useCallback(async () => {
+    const res = await fetch("/api/pos/drawer/expenses", { cache: "no-store" });
+    if (!res.ok) return;
+    const data = (await res.json()) as { expenses?: Depense[] };
+    setDepenses(data.expenses ?? []);
+  }, []);
+
+  // Premier chargement : la mise a jour n'arrive que dans la promesse, jamais
+  // de facon synchrone dans l'effet (regle du compilateur React 19).
+  useEffect(() => {
+    let actif = true;
+    fetch("/api/pos/drawer/expenses", { cache: "no-store" })
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data: { expenses?: Depense[] } | null) => {
+        if (actif && data) setDepenses(data.expenses ?? []);
+      })
+      .catch(() => {});
+    return () => {
+      actif = false;
+    };
+  }, []);
+
+  async function ajouterDepense() {
+    const refus = refusDepense({ montant, motif });
+    if (refus) {
+      setErreurDepense(refus);
+      return;
+    }
+    setAjoutEnCours(true);
+    setErreurDepense(null);
+    try {
+      const res = await fetch("/api/pos/drawer/expenses", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          amount: lireMontant(montant),
+          category: categorie,
+          reason: motif.trim(),
+        }),
+      });
+      if (!res.ok) {
+        const d = await res.json().catch(() => ({}));
+        setErreurDepense(d?.error ?? "Enregistrement impossible");
+        return;
+      }
+      setMontant("");
+      setMotif("");
+      setAjoutOuvert(false);
+      // L'attendu baisse : on le relit AVANT que la caissiere compte.
+      await Promise.all([chargerDepenses(), onRefresh()]);
+    } finally {
+      setAjoutEnCours(false);
+    }
+  }
+
+  // --- Fermeture ------------------------------------------------------------
   async function submit() {
     setSubmitting(true);
     setError(null);
@@ -363,48 +460,179 @@ function CloseModal({
     );
   }
 
+  const champ =
+    "ds-focus min-h-[44px] w-full rounded-[var(--radius-pill)] border border-hairline bg-white px-4 text-base text-prune placeholder:text-prune/40";
+
   return (
-    <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4">
-      <div className="w-full max-w-sm rounded-[var(--radius-panel)] bg-creme p-6">
-        <h2 className="ds-display mb-1 text-xl text-prune">Fermer la caisse</h2>
-        <p className="mb-4 text-sm text-prune/70">
-          Attendu dans le tiroir : {expectedCash} TND
-        </p>
+    <div className="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto bg-black/50 p-4">
+      <div
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="fermeture-titre"
+        className="my-auto w-full max-w-md rounded-[var(--radius-panel)] bg-creme p-6"
+      >
+        <h2 id="fermeture-titre" className="ds-display mb-4 text-xl text-prune">
+          Fermer la caisse
+        </h2>
 
-        <label className="mb-3 block">
-          <span className="mb-1 block text-sm text-prune">
-            Espèces comptées (TND)
-          </span>
-          <input
-            type="number"
-            step="0.001"
-            min="0"
-            inputMode="decimal"
-            autoFocus
-            value={closingCount}
-            onChange={(e) => setClosingCount(e.target.value)}
-            placeholder="0.000"
-            className="ds-focus min-h-[48px] w-full rounded-[var(--radius-pill)] border border-hairline bg-white px-4 text-base text-prune placeholder:text-prune/40"
-          />
-        </label>
+        {/* 1 — DEPENSES */}
+        <section aria-labelledby="fermeture-depenses" className="mb-5">
+          <div className="mb-2 flex items-baseline justify-between gap-2">
+            <h3 id="fermeture-depenses" className="text-sm font-semibold text-prune">
+              1. Dépenses de la journée
+            </h3>
+            <span className="text-sm tabular-nums text-prune">
+              {formatDT(summary.expensesTotal)}
+            </span>
+          </div>
 
-        <label className="mb-4 block">
-          <span className="mb-1 block text-sm text-prune">
-            Notes — obligatoires si l&apos;écart atteint 5 TND
-          </span>
-          <textarea
-            value={closingNotes}
-            onChange={(e) => setClosingNotes(e.target.value)}
-            rows={2}
-            className="ds-focus w-full rounded-[var(--radius-card)] border border-hairline bg-white px-4 py-3 text-base text-prune placeholder:text-prune/40"
-          />
-        </label>
+          {depenses.length === 0 ? (
+            <p className="text-sm text-prune/70">Aucune dépense enregistrée.</p>
+          ) : (
+            <ul className="mb-2 divide-y divide-hairline rounded-[var(--radius-card)] border border-hairline bg-white">
+              {depenses.map((d) => (
+                <li key={d.id} className="flex items-baseline justify-between gap-3 px-4 py-2 text-sm">
+                  <span className="min-w-0 truncate text-prune">
+                    {d.reason}
+                    <span className="ml-1 text-xs text-prune/70">
+                      · {libelleCategorieDepense(d.category)}
+                    </span>
+                  </span>
+                  <span className="shrink-0 tabular-nums text-prune">
+                    -{formatDT(String(d.amount))}
+                  </span>
+                </li>
+              ))}
+            </ul>
+          )}
+
+          {ajoutOuvert ? (
+            <div className="mt-2 space-y-2 rounded-[var(--radius-card)] border border-hairline bg-white p-3">
+              <label className="block">
+                <span className="mb-1 block text-xs text-prune/70">Montant (TND)</span>
+                <input
+                  type="text"
+                  inputMode="decimal"
+                  autoFocus
+                  value={montant}
+                  onChange={(e) => setMontant(e.target.value)}
+                  placeholder="0,000"
+                  className={champ}
+                />
+              </label>
+              <div className="flex flex-wrap gap-1.5" role="group" aria-label="Catégorie">
+                {CATEGORIES_DEPENSE.map((c) => {
+                  const actif = categorie === c.value;
+                  return (
+                    <button
+                      key={c.value}
+                      type="button"
+                      aria-pressed={actif}
+                      onClick={() => setCategorie(c.value)}
+                      className={`min-h-[36px] rounded-[var(--radius-pill)] border px-3 text-xs ${
+                        actif
+                          ? "border-prune bg-prune text-creme"
+                          : "border-hairline bg-white text-prune/80 hover:border-prune"
+                      }`}
+                    >
+                      {c.label}
+                    </button>
+                  );
+                })}
+              </div>
+              <label className="block">
+                <span className="mb-1 block text-xs text-prune/70">Motif</span>
+                <input
+                  type="text"
+                  value={motif}
+                  onChange={(e) => setMotif(e.target.value)}
+                  placeholder="Ex : livraison de shampoings"
+                  className={champ}
+                />
+              </label>
+              {erreurDepense && (
+                <p role="alert" className="text-sm text-rose-fonce">
+                  {erreurDepense}
+                </p>
+              )}
+              <div className="flex justify-end gap-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setAjoutOuvert(false);
+                    setErreurDepense(null);
+                  }}
+                  className="ds-focus min-h-[44px] px-3 text-sm text-prune/70 hover:text-prune"
+                >
+                  Annuler
+                </button>
+                <button
+                  type="button"
+                  onClick={ajouterDepense}
+                  disabled={ajoutEnCours}
+                  className="ds-press ds-focus min-h-[44px] rounded-[var(--radius-pill)] border border-prune bg-white px-4 text-sm font-medium text-prune disabled:opacity-50"
+                >
+                  {ajoutEnCours ? "Ajout…" : "Ajouter la dépense"}
+                </button>
+              </div>
+            </div>
+          ) : (
+            <button
+              type="button"
+              onClick={() => setAjoutOuvert(true)}
+              className="ds-press ds-focus mt-1 min-h-[44px] w-full rounded-[var(--radius-pill)] border border-hairline bg-white text-sm text-prune hover:border-prune"
+            >
+              + Ajouter une dépense
+            </button>
+          )}
+          <p className="mt-1.5 text-[11px] text-prune/60">
+            Une dépense ajoutée est enregistrée tout de suite, même si vous
+            annulez la fermeture.
+          </p>
+        </section>
+
+        {/* 2 — ESPECES COMPTEES */}
+        <section aria-labelledby="fermeture-compte" className="mb-4 border-t border-hairline pt-4">
+          <h3 id="fermeture-compte" className="mb-2 text-sm font-semibold text-prune">
+            2. Espèces comptées
+          </h3>
+          <p className="mb-2 text-sm text-prune/70">
+            Attendu dans le tiroir :{" "}
+            <strong className="tabular-nums text-prune">{formatDT(expectedCash)}</strong>
+          </p>
+          <label className="mb-3 block">
+            <span className="sr-only">Espèces comptées (TND)</span>
+            <input
+              type="number"
+              step="0.001"
+              min="0"
+              inputMode="decimal"
+              value={closingCount}
+              onChange={(e) => setClosingCount(e.target.value)}
+              placeholder="Montant compté, en TND"
+              className={champ}
+            />
+          </label>
+          <label className="block">
+            <span className="mb-1 block text-sm text-prune">
+              Notes — obligatoires si l&apos;écart atteint 5 TND
+            </span>
+            <textarea
+              value={closingNotes}
+              onChange={(e) => setClosingNotes(e.target.value)}
+              rows={2}
+              className="ds-focus w-full rounded-[var(--radius-card)] border border-hairline bg-white px-4 py-3 text-base text-prune placeholder:text-prune/40"
+            />
+          </label>
+        </section>
 
         {error && (
           <p role="alert" className="mb-3 text-sm text-rose-fonce">
             {error}
           </p>
         )}
+
+        {/* 3 — FERMER */}
         <div className="flex justify-end gap-2">
           <button
             type="button"
@@ -419,7 +647,7 @@ function CloseModal({
             disabled={submitting || closingCount.trim() === ""}
             className="ds-press ds-focus min-h-[44px] rounded-[var(--radius-pill)] bg-rose px-6 text-sm font-medium text-prune disabled:opacity-50"
           >
-            {submitting ? "Fermeture…" : "Fermer"}
+            {submitting ? "Fermeture…" : "Fermer la caisse"}
           </button>
         </div>
       </div>

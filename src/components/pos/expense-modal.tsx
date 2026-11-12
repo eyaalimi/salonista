@@ -1,14 +1,10 @@
 "use client";
 import { useEffect, useState } from "react";
 import { X, Delete } from "lucide-react";
+import { CATEGORIES_DEPENSE } from "@/lib/depense-caisse";
 
-const CATEGORIES = [
-  { value: "FOURNISSEUR", label: "Fournisseur" },
-  { value: "LIVRAISON", label: "Livraison" },
-  { value: "AVANCE_SALAIRE", label: "Avance salaire" },
-  { value: "ENTRETIEN", label: "Entretien" },
-  { value: "AUTRE", label: "Autre" },
-] as const;
+// Partagees avec la section Depenses de la fermeture de caisse.
+const CATEGORIES = CATEGORIES_DEPENSE;
 
 type Category = typeof CATEGORIES[number]["value"];
 
