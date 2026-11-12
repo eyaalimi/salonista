@@ -1,5 +1,7 @@
 import { describe, it, expect } from "vitest";
 import {
+  RETENTION_JOURS,
+  limitePurge,
   EVENEMENTS,
   ECRANS_SUIVIS,
   FENETRE_VISITE_MINUTES,
@@ -178,5 +180,26 @@ describe("aUneAlerteSecurite", () => {
   it("TYPES_ALERTE ne contient que des types connus", () => {
     const connus = Object.values(EVENEMENTS) as string[];
     for (const t of TYPES_ALERTE) expect(connus).toContain(t);
+  });
+});
+
+describe("limitePurge", () => {
+  it("recule de la duree de retention", () => {
+    const limite = limitePurge(T0);
+    const ecartJours = Math.round((T0.getTime() - limite.getTime()) / 86_400_000);
+    expect(ecartJours).toBe(RETENTION_JOURS);
+  });
+
+  // La borne doit depasser la plus large fenetre que le cockpit interroge
+  // (90 jours d'inscription), sinon la purge effacerait des evenements que la
+  // page affiche encore.
+  it("couvre la plus large fenetre du cockpit", () => {
+    expect(RETENTION_JOURS).toBeGreaterThanOrEqual(90);
+  });
+
+  it("ne modifie pas la date qu'on lui passe", () => {
+    const avant = new Date(T0);
+    limitePurge(T0);
+    expect(T0.getTime()).toBe(avant.getTime());
   });
 });

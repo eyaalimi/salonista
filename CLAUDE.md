@@ -1076,8 +1076,16 @@ toujours.
 **`/confidentialite` décrit ce suivi** (section 23) : l'omettre aurait rendu la
 page fausse. Si vous ajoutez un évènement, la page change avec.
 
-**Pas de purge** : décision reportée, assumée. À reprendre quand le volume le
-justifiera.
+**La purge est manuelle et inspecte par défaut** :
+`npx tsx scripts/purger-evenements.ts --apply` efface les évènements de plus
+de **90 jours** (`RETENTION_JOURS`). Quatre-vingt-dix et non trente : le
+cockpit interroge au plus 90 jours d'inscription, et un salon saisonnier doit
+pouvoir être comparé à sa propre période creuse. Suppression **par lots de
+1000** — un `deleteMany` global tiendrait un verrou long pendant que la
+production écrit dans la table.
+
+**`SuperadminAuditLog` ne se purge PAS** : c'est le journal des interventions
+humaines, il doit survivre à la fermeture du salon concerné.
 
 ---
 
