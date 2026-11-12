@@ -14,6 +14,7 @@ import { requirePermission, toResponse } from "@/lib/employee-session";
 import { parseRange } from "@/lib/analytics-range";
 import { hasFeature, reponsePremiumRequis } from "@/lib/plan-serveur";
 import { MESSAGES_PREMIUM } from "@/lib/plan";
+import { STATUTS_VENTE_REALISEE } from "@/lib/statut-vente";
 
 type EmployeeRow = {
   employeeId: string;
@@ -61,7 +62,7 @@ export async function GET(req: NextRequest) {
       assignedEmployeeId: { not: null },
       sale: {
         providerId,
-        status: { in: ["PAID", "PARTIALLY_REFUNDED", "REFUNDED"] },
+        status: { in: [...STATUTS_VENTE_REALISEE] },
         closedAt: { gte: from, lte: to },
       },
     },
@@ -224,7 +225,7 @@ export async function PUT(req: NextRequest) {
       commissionPaid: false,
       sale: {
         providerId: actor.providerId,
-        status: { in: ["PAID", "PARTIALLY_REFUNDED", "REFUNDED"] },
+        status: { in: [...STATUTS_VENTE_REALISEE] },
         closedAt: { gte: from, lte: to },
       },
     },

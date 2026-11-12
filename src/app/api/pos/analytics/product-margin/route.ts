@@ -1,6 +1,7 @@
 import { NextRequest } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requirePermission, toResponse } from "@/lib/employee-session";
+import { STATUTS_VENTE_PAYEE_OU_CREDIT } from "@/lib/statut-vente";
 
 export async function GET(req: NextRequest) {
   let employee;
@@ -24,7 +25,7 @@ export async function GET(req: NextRequest) {
     where: {
       sale: {
         providerId: employee.providerId,
-        status: "PAID",
+        status: { in: [...STATUTS_VENTE_PAYEE_OU_CREDIT] },
         ...(from || to ? { closedAt: closedAtFilter } : {}),
       },
       kind: "PRODUCT",

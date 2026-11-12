@@ -36,6 +36,7 @@ type Summary = {
     newCustomers: number;
   };
   previous: { netRevenue: string; paidCount: number; newCustomers: number };
+  credits?: { enCours: string; dettesEffacees: string };
 };
 
 type Ligne = { name: string; quantity: number; revenue: string };
@@ -242,6 +243,22 @@ export function AnalyticsClient() {
                     ? `${services[0].quantity} fois sur cette période`
                     : "Aucun service vendu sur cette période"
                 }
+              />
+            </div>
+
+            {/* Credits : ce que les clientes doivent encore (a ce jour) et ce
+                qui a ete abandonne sur la periode. Le chiffre du haut compte
+                deja les ventes a credit en entier. */}
+            <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2">
+              <Carte
+                titre="Crédits en cours"
+                valeur={formatDT(summary?.credits?.enCours ?? "0")}
+                phrase="Ce que tes clientes te doivent encore, à ce jour"
+              />
+              <Carte
+                titre="Dettes effacées"
+                valeur={formatDT(summary?.credits?.dettesEffacees ?? "0")}
+                phrase="Abandonnées sur cette période"
               />
             </div>
 

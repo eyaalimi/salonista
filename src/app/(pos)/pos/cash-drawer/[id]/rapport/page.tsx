@@ -4,6 +4,8 @@ import { notFound, redirect } from "next/navigation";
 import { Decimal } from "@prisma/client/runtime/client";
 import { ZReportPrintFrame } from "@/components/pos/thermal/z-report-content";
 import { ModuleGate } from "@/components/module-gate";
+import { STATUTS_VENTE_PAYEE_OU_CREDIT } from "@/lib/statut-vente";
+import { fromMillimes, toMillimes } from "@/lib/money";
 
 export const dynamic = "force-dynamic";
 
@@ -37,7 +39,7 @@ export default async function ZReportPage({ params }: { params: Promise<{ id: st
 
   const [salesAgg, refundsAllAgg, refundsCashAgg, paymentsByMethod, taxGroups, expenses] = await Promise.all([
     prisma.sale.aggregate({
-      where: { providerId: session.providerId, status: "PAID", closedAt: windowFilter },
+      where: { providerId: session.providerId, status: { in: [...STATUTS_VENTE_PAYEE_OU_CREDIT] }, closedAt: windowFilter },
       _count: true,
       _sum: { total: true, discountAmount: true, tipTotal: true },
     }),
@@ -56,7 +58,7 @@ export default async function ZReportPage({ params }: { params: Promise<{ id: st
     }),
     prisma.saleItem.groupBy({
       by: ["taxRateSnapshot"],
-      where: { sale: { providerId: session.providerId, status: "PAID", closedAt: windowFilter } },
+      where: { sale: { providerId: session.providerId, status: { in: [...STATUTS_VENTE_PAYEE_OU_CREDIT] }, closedAt: windowFilter } },
       _sum: { lineSubtotal: true, lineTaxAmount: true },
     }),
     (prisma as never as {
@@ -69,8 +71,41 @@ export default async function ZReportPage({ params }: { params: Promise<{ id: st
     }),
   ]);
 
+  // Credits. Deux lignes distinctes, parce qu'elles ne parlent pas du meme
+  // argent :
+  //  - « laisse a credit » : sur les ventes de la fenetre, ce qui n'a PAS ete
+  //    paye le jour meme (le brut TTC le compte, la caisse ne l'a pas recu) ;
+  //  - « reglements de credit » : l'argent recu dans ce tiroir pour des
+  //    ventes plus anciennes. Il est deja dans les paiements ci-dessus — c'est
+  //    un « dont », pas un ajout.
+  const [ventesACredit, reglements] = await Promise.all([
+    prisma.sale.findMany({
+      where: {
+        providerId: session.providerId,
+        closedAt: windowFilter,
+        OR: [{ status: "CREDIT" }, { creditSettledAt: { not: null } }],
+      },
+      select: {
+        total: true,
+        payments: { where: { isCreditSettlement: false }, select: { amount: true } },
+      },
+    }),
+    prisma.payment.aggregate({
+      // Meme perimetre que « Paiements » (les paiements rattaches a CE
+      // tiroir) : sinon le « dont » pourrait depasser le total affiche.
+      where: { cashDrawerSessionId: id, isCreditSettlement: true },
+      _sum: { amount: true },
+    }),
+  ]);
+  const laisseACreditM = ventesACredit.reduce(
+    (s, v) => s + toMillimes(v.total) - v.payments.reduce((t, p) => t + toMillimes(p.amount), 0),
+    0,
+  );
+
   const data = {
     provider,
+    creditsAccordes: fromMillimes(laisseACreditM),
+    reglementsCredit: String(reglements._sum.amount ?? "0.000"),
     sessionNumber: session.id.slice(-4).toUpperCase(),
     openedAt: session.openedAt,
     closedAt: session.closedAt,

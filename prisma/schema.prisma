@@ -90,6 +90,11 @@ enum SaleStatus {
   PARTIALLY_REFUNDED
   REFUNDED
   VOIDED
+  /// Vente encaissee EN PARTIE : `amountDue` > 0. Repasse a PAID quand le
+  /// reste est regle. Ne se cree QUE cote serveur, via `payLater`. Une dette
+  /// effacee laisse la vente en CREDIT avec `amountDue` = 0 : la prestation a
+  /// bien ete vendue, seul l'argent manque.
+  CREDIT
 }
 
 enum SaleItemKind {
@@ -583,32 +588,32 @@ model Customer {
 }
 
 model SalonEmployee {
-  id                String       @id @default(cuid())
-  providerId        String
-  userId            String?
-  displayName       String
-  phone             String?
-  email             String?
-  pinHash           String?
-  role              EmployeeRole @default(CASHIER)
-  permissions       Json?
+  id                 String       @id @default(cuid())
+  providerId         String
+  userId             String?
+  displayName        String
+  phone              String?
+  email              String?
+  pinHash            String?
+  role               EmployeeRole @default(CASHIER)
+  permissions        Json?
   // Flat commission percentage on service SaleItems attributed to this
   // employee. NULL = no commission owed (default). Snapshotted onto
   // SaleItem.commissionRateSnapshot at sale creation time so later rate
   // changes don't rewrite historical amounts.
-  commissionRate    Decimal?     @db.Decimal(5, 2)
-  active            Boolean      @default(true)
-  lastLoginAt       DateTime?
+  commissionRate     Decimal?     @db.Decimal(5, 2)
+  active             Boolean      @default(true)
+  lastLoginAt        DateTime?
   /// Echecs consecutifs de saisie du PIN. Remis a zero au premier succes.
-  pinFailedAttempts Int          @default(0)
+  pinFailedAttempts  Int          @default(0)
   /// Verrouillage temporaire apres trop d'echecs. NULL = ouvert.
-  pinLockedUntil    DateTime?
+  pinLockedUntil     DateTime?
   /// Mise en pause par la limite de la version gratuite (gerante + 1).
   /// Distinct d'une desactivation manuelle : seules les employees qui portent
   /// cette date sont reactivees au retour en Premium. NULL = pas concernee.
   suspendueParPlanAt DateTime?
-  createdAt         DateTime     @default(now())
-  updatedAt         DateTime     @updatedAt
+  createdAt          DateTime     @default(now())
+  updatedAt          DateTime     @updatedAt
 
   provider           ProviderProfile     @relation(fields: [providerId], references: [id], onDelete: Cascade)
   user               User?               @relation(fields: [userId], references: [id], onDelete: SetNull)
@@ -623,6 +628,8 @@ model SalonEmployee {
   cashDrawerSessions CashDrawerSession[] @relation("CashDrawerEmployee")
   rewardAdjustments  RewardTransaction[] @relation("RewardTransactionEmployee")
   expensesRecorded   CashDrawerExpense[] @relation("CashDrawerExpenseEmployee")
+  versementsRecus    Payment[]           @relation("PaymentRecuPar")
+  dettesEffacees     Sale[]              @relation("SaleDetteEffacee")
 
   @@index([providerId, active])
   @@index([userId])
@@ -723,6 +730,22 @@ model Sale {
   syncedAt      DateTime?
   syncConflicts Json?
 
+  /// Reste a payer par la cliente. 0 pour une vente reglee.
+  amountDue           Decimal   @default(0) @db.Decimal(10, 3)
+  /// Date a laquelle la cliente a promis de revenir payer. Facultative.
+  dueDate             DateTime?
+  /// Moment ou le dernier millime du credit a ete regle.
+  creditSettledAt     DateTime?
+  /// Dette abandonnee par le salon (« Effacer la dette ») : `amountDue` passe
+  /// a 0, la vente reste CREDIT. Les trois champs sont la seule trace — le
+  /// salon n'a pas de journal d'actions.
+  detteEffaceeAt      DateTime?
+  detteEffaceeMotif   String?
+  /// Montant efface, fige : `amountDue` vaut 0 ensuite, sans lui l'analytique
+  /// ne saurait plus combien a ete abandonne.
+  detteEffaceeMontant Decimal?  @db.Decimal(10, 3)
+  detteEffaceeParId   String?
+
   createdAt DateTime  @default(now())
   closedAt  DateTime?
   updatedAt DateTime  @updatedAt
@@ -730,6 +753,7 @@ model Sale {
   provider           ProviderProfile     @relation(fields: [providerId], references: [id], onDelete: Cascade)
   customer           Customer?           @relation(fields: [customerId], references: [id], onDelete: SetNull)
   employee           SalonEmployee       @relation(fields: [employeeId], references: [id])
+  detteEffaceePar    SalonEmployee?      @relation("SaleDetteEffacee", fields: [detteEffaceeParId], references: [id], onDelete: SetNull)
   booking            Booking?            @relation(fields: [bookingId], references: [id], onDelete: SetNull)
   items              SaleItem[]
   payments           Payment[]
@@ -740,6 +764,7 @@ model Sale {
 
   @@unique([providerId, receiptNumber])
   @@index([providerId, status, createdAt])
+  @@index([providerId, status, amountDue])
   @@index([customerId])
   @@index([employeeId])
 }
@@ -789,16 +814,24 @@ model SaleItem {
 }
 
 model Payment {
-  id                  String        @id @default(cuid())
-  saleId              String
-  method              PaymentMethod
-  amount              Decimal       @db.Decimal(10, 3)
-  reference           String?
-  cashDrawerSessionId String?
-  createdAt           DateTime      @default(now())
+  id                   String        @id @default(cuid())
+  saleId               String
+  method               PaymentMethod
+  amount               Decimal       @db.Decimal(10, 3)
+  reference            String?
+  cashDrawerSessionId  String?
+  createdAt            DateTime      @default(now())
+  /// true = versement recu APRES la vente, pour regler un credit. Date du
+  /// jour ou l'argent est recu (createdAt), rattache au tiroir ouvert CE
+  /// jour-la.
+  isCreditSettlement   Boolean       @default(false)
+  /// L'employee qui a recu ce versement — pas forcement celle qui a encaisse
+  /// la vente.
+  receivedByEmployeeId String?
 
-  sale              Sale               @relation(fields: [saleId], references: [id], onDelete: Cascade)
-  cashDrawerSession CashDrawerSession? @relation(fields: [cashDrawerSessionId], references: [id], onDelete: SetNull)
+  sale               Sale               @relation(fields: [saleId], references: [id], onDelete: Cascade)
+  cashDrawerSession  CashDrawerSession? @relation(fields: [cashDrawerSessionId], references: [id], onDelete: SetNull)
+  receivedByEmployee SalonEmployee?     @relation("PaymentRecuPar", fields: [receivedByEmployeeId], references: [id], onDelete: SetNull)
 
   @@index([saleId])
   @@index([cashDrawerSessionId])
@@ -1124,7 +1157,7 @@ model CampaignEvent {
 /// L'historique des appels : « a rappele pour son PIN », « demande une
 /// facture ». Jamais visible par le salon — c'est un carnet d'equipe.
 model SupportNote {
-  id          String   @id @default(cuid())
+  id          String    @id @default(cuid())
   providerId  String
   /// Qui a ecrit. L'e-mail est conserve en texte : si le compte superadmin
   /// disparait, la note doit rester attribuable.
@@ -1141,8 +1174,8 @@ model SupportNote {
   /// L'appel a leve ce qui bloquait le salon (PIN reinitialise, horaires
   /// ajoutes ensemble...). Sert a mesurer ce que les appels debloquent
   /// vraiment, pas seulement combien on en passe.
-  blocageLeve Boolean  @default(false)
-  createdAt   DateTime @default(now())
+  blocageLeve Boolean   @default(false)
+  createdAt   DateTime  @default(now())
 
   provider ProviderProfile @relation(fields: [providerId], references: [id], onDelete: Cascade)
 
@@ -1230,7 +1263,7 @@ model DevicePairingCode {
 ///
 /// Aucune purge n'est encore prevue : a decider quand le volume le justifiera.
 model EvenementSalon {
-  id         String  @id @default(cuid())
+  id         String   @id @default(cuid())
   providerId String
   /// L'employee concernee, quand l'evenement en vise une (PIN, visite d'ecran).
   employeeId String?

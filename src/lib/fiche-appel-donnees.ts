@@ -15,6 +15,7 @@
 
 import { prisma } from "@/lib/prisma";
 import { EVENEMENTS } from "@/lib/evenement-salon";
+import { STATUTS_VENTE_REALISEE } from "@/lib/statut-vente";
 
 /** Fenetre d'observation des signaux, en jours. */
 const FENETRE_JOURS = 7;
@@ -140,7 +141,7 @@ export async function ficheAppel(
     prisma.sale.count({
       where: {
         providerId,
-        status: { in: ["PAID", "PARTIALLY_REFUNDED", "REFUNDED"] },
+        status: { in: [...STATUTS_VENTE_REALISEE] },
       },
     }),
     prisma.offer.findFirst({

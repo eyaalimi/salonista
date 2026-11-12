@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { requireModule } from "@/lib/modules";
 import { requireEmployee, toResponse } from "@/lib/employee-session";
 import { rankAndTake, synthesizeServiceCode, type ScoredCandidate } from "@/lib/pos-search";
+import { STATUTS_VENTE_REALISEE } from "@/lib/statut-vente";
 
 const FREQUENTLY_USED_CACHE = new Map<string, { at: number; data: unknown }>();
 const CACHE_TTL_MS = 60_000;
@@ -220,7 +221,7 @@ async function _frequentlyUsed(providerId: string, limit: number) {
     where: {
       sale: {
         providerId,
-        status: { in: ["PAID", "PARTIALLY_REFUNDED", "REFUNDED"] },
+        status: { in: [...STATUTS_VENTE_REALISEE] },
         closedAt: { gte: since },
       },
     },

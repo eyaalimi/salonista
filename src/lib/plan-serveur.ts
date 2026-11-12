@@ -15,9 +15,12 @@ import {
   type Fonction,
   type Plan,
 } from "@/lib/plan";
+import { STATUTS_VENTE_REALISEE } from "@/lib/statut-vente";
 
 /** Statuts d'une vente qui a bel et bien ete encaissee a sa creation. */
-const STATUTS_VENDUS = ["PAID", "PARTIALLY_REFUNDED", "REFUNDED"] as const;
+// Une vente a credit fait demarrer le mois offert comme une autre : le
+// salon s'est servi de la caisse.
+const STATUTS_VENDUS = STATUTS_VENTE_REALISEE;
 
 export async function datePremiereVente(providerId: string): Promise<Date | null> {
   const vente = await prisma.sale.findFirst({

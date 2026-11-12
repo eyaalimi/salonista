@@ -27,6 +27,7 @@ import { creerLignePremiumManquante, hasFeature } from "@/lib/plan-serveur";
 import { MESSAGES_PREMIUM } from "@/lib/plan";
 import { applySaleRedemption, validateRedemption, RedemptionError } from "@/lib/rewards/redeem";
 import { sendLoyaltyEarnedEmail } from "@/lib/mail";
+import { calculerCredit, lireEcheance } from "@/lib/credit";
 import type { PaymentMethod, SaleStatus } from "@/generated/prisma/enums";
 import type { Prisma } from "@/generated/prisma/client";
 
@@ -66,6 +67,9 @@ export type SalePayload = {
   bookingId?: string | null;
   /** Optional override for the createdAt timestamp (used by offline sync). */
   createdAt?: string;
+  /** Paiement plus tard : le reste (total - somme des paiements) devient un
+   *  credit. `dueDate` = "AAAA-MM-JJ" promis par la cliente, ou null. */
+  payLater?: { dueDate?: string | null } | null;
 };
 
 export type SaleConflict =
@@ -81,6 +85,9 @@ export type SaleCreateResult =
       saleId: string;
       receiptNumber: string;
       status: SaleStatus;
+      /** Reste du, pour une vente a credit ("0.000" sinon). */
+      amountDue?: string;
+      dueDate?: string | null;
       rewards?: { earned: number; redeemed: number; welcomeBonus: number; birthdayBonus: number };
     }
   | { kind: "duplicate"; saleId: string; receiptNumber: string }
@@ -266,9 +273,50 @@ export async function createSaleFromPayload(args: {
     }
   }
 
-  // Validate sum of payments equals total.
   const paymentSumM = payload.payments.reduce((s, p) => s + toMillimes(p.amount), 0);
-  if (Math.abs(paymentSumM - toMillimes(totals.total)) > TOTAL_TOLERANCE_MILLIMES) {
+
+  // ------------------------------------------------------------------
+  // « Payer plus tard » : le reste devient un credit rattache a la vente.
+  //
+  // Toutes les regles sont ICI, cote serveur : la tuile grisee de la caisse
+  // ne protege de rien contre un appel direct. La permission `pos.credit`
+  // est verifiee dans la route, comme `pos.discount`.
+  // ------------------------------------------------------------------
+  let credit: { amountDue: string; dueDate: Date | null } | null = null;
+  if (payload.payLater) {
+    // Hors ligne, rien ne garantit que la cliente rattachee existe encore ni
+    // que la caissiere avait le droit : un credit doit naitre en ligne. La
+    // route de synchronisation transforme ce refus en `conflict`.
+    if (fromSync) {
+      return { kind: "validation", error: "Le paiement plus tard demande une connexion." };
+    }
+    // Un credit sans cliente est une dette que personne ne pourra reclamer.
+    if (!customerId) {
+      return { kind: "validation", error: "Ajoutez d'abord la cliente pour noter un crédit." };
+    }
+    // Un pourboire a credit n'a pas de sens : l'employee le toucherait sur de
+    // l'argent pas encore recu — et peut-etre jamais.
+    if (toMillimes(totals.tipTotal) > 0) {
+      return { kind: "validation", error: "Pas de pourboire sur une vente à crédit." };
+    }
+    // Des points depenses sur une vente que la cliente ne paie pas encore :
+    // si elle ne revient jamais, il faudrait les lui reprendre.
+    if (payload.payments.some((p) => p.method === "LOYALTY_POINTS")) {
+      return {
+        kind: "validation",
+        error: "Les points fidélité ne peuvent pas payer une vente à crédit.",
+      };
+    }
+    if (payload.payments.some((p) => toMillimes(p.amount) <= 0)) {
+      return { kind: "validation", error: "Un paiement doit être supérieur à zéro." };
+    }
+    const calcul = calculerCredit({ total: totals.total, payeAujourdhui: fromMillimes(paymentSumM) });
+    if (!calcul.ok) return { kind: "validation", error: calcul.erreur };
+    const echeance = lireEcheance(payload.payLater.dueDate, new Date());
+    if (!echeance.ok) return { kind: "validation", error: echeance.erreur };
+    credit = { amountDue: calcul.amountDue, dueDate: echeance.dueDate };
+  } else if (Math.abs(paymentSumM - toMillimes(totals.total)) > TOTAL_TOLERANCE_MILLIMES) {
+    // Vente normale : la somme des paiements doit egaler le total.
     return {
       kind: "validation",
       error: `Somme des paiements (${fromMillimes(paymentSumM)}) différente du total (${totals.total})`,
@@ -453,7 +501,9 @@ export async function createSaleFromPayload(args: {
           employeeId,
           bookingId: payload.bookingId ?? null,
           receiptNumber,
-          status: "PAID",
+          status: credit ? "CREDIT" : "PAID",
+          amountDue: credit?.amountDue ?? "0",
+          dueDate: credit?.dueDate ?? null,
           subtotal: totals.subtotal,
           discountAmount: totals.saleDiscountAmount,
           discountIsPercent: payload.saleDiscount?.isPercent ?? false,
@@ -641,7 +691,11 @@ export async function createSaleFromPayload(args: {
           await applySaleRedemption(tx, sale.id, p.walletId, p.pointsRedeemed);
           rewardsResult.redeemed += p.pointsRedeemed;
         }
-        const earnings = fideliteActive
+        // Une vente a credit ne fait PAS gagner de points a sa creation : ils
+        // sont gagnes quand elle passe a PAID, au reglement complet (voir
+        // /api/pos/credits/settle). Rien a reprendre si la cliente ne revient
+        // jamais payer.
+        const earnings = fideliteActive && !credit
           ? await applySaleEarnings(tx, sale.id)
           : { earned: 0, welcomeBonus: 0, birthdayBonus: 0 };
         rewardsResult = {
@@ -735,7 +789,9 @@ export async function createSaleFromPayload(args: {
           kind: "ok",
           saleId: result.saleId,
           receiptNumber: result.receiptNumber,
-          status: "PAID",
+          status: credit ? "CREDIT" : "PAID",
+          amountDue: credit?.amountDue ?? "0.000",
+          dueDate: credit?.dueDate?.toISOString() ?? null,
           rewards: result.rewards,
         };
   } catch (err) {

@@ -1121,6 +1121,52 @@ Sources et licences (SIL OFL 1.1) dans `src/app/fonts/LISEZMOI.md`.
   s'affichent dans la police de secours. Le français et l'arabe ne sont pas
   concernés — l'arabe passe par Noto Kufi, chargée côté navigateur.
 
+### 34. Crédits clientes : vendu n'est pas encaissé
+
+« Payer plus tard » laisse une cliente repartir en payant une partie, ou rien ;
+le reste devient un crédit sur la vente (`Sale.status = CREDIT`,
+`Sale.amountDue`). Page `/pos/credits`, calculs purs dans
+[credit.ts](src/lib/credit.ts) (tests), rappel `wa.me` dans
+[whatsapp-credit.ts](src/lib/whatsapp-credit.ts).
+
+**Deux lectures de l'argent, à ne jamais confondre :**
+
+- **Vendu** (chiffre d'affaires, commissions, historique cliente) : une vente
+  CREDIT compte **en entier**. La liste des statuts vendus est **unique** :
+  `STATUTS_VENTE_REALISEE` dans [statut-vente.ts](src/lib/statut-vente.ts).
+  Elle était recopiée dans dix-sept requêtes ; oublier CREDIT dans une seule
+  faisait disparaître la vente du chiffre d'affaires de cet écran, sa
+  réservation automatique étant écartée parce qu'elle porte une vente. Le
+  rapport Z et la marge produit ne comptaient que `PAID` : ils passent par
+  `STATUTS_VENTE_PAYEE_OU_CREDIT` et gardent ce comportement.
+- **Encaissé** (tiroir, rapport Z) : on lit les `Payment`, à leur date et leur
+  tiroir. Un versement de crédit (`isCreditSettlement`) reçu aujourd'hui compte
+  dans la caisse d'aujourd'hui. Il est exclu du recalcul des pourboires du
+  tiroir, sinon le pourboire de sa vente serait compté deux fois.
+
+**Règles serveur** (dans `pos-sale-create.ts`, la tuile grisée ne protège de
+rien) : cliente obligatoire, permission `pos.credit` (pas la styliste), refus
+hors ligne (la synchronisation le rend en `conflict`), pas de points en
+paiement, pas de pourboire, payé aujourd'hui strictement sous le total.
+
+**Fidélité** : aucun point à la création ; ils sont gagnés au passage à PAID,
+au règlement complet (`applySaleEarnings`, idempotent). Rien à reprendre si la
+cliente ne revient pas.
+
+**Concurrence** : le règlement et l'effacement mettent chaque vente à jour
+**à condition** que `amountDue` n'ait pas bougé depuis la lecture ; sinon toute
+la transaction est annulée (409). Deux tablettes ne soldent pas deux fois le
+même crédit.
+
+**Effacer la dette** (`pos.void`, motif obligatoire) : `amountDue` passe à 0,
+la vente **reste CREDIT** (toujours vendue). `detteEffacee*` sont la seule
+trace — le salon n'a pas de journal d'actions — et `detteEffaceeMontant` fige
+le montant abandonné, que l'analytique affiche (« Dettes effacées »).
+
+Une vente CREDIT ne se **rembourse pas** (409). `Booking.paymentStatus` n'est
+pas touché, voir note 11. Le reçu de règlement s'imprime **sur demande**, pas
+automatiquement : la plupart des salons n'ont pas d'imprimante au comptoir.
+
 ---
 
 ## Repo layout

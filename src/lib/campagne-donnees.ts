@@ -20,6 +20,7 @@ import {
   statutSalon,
   type StatutSalon,
 } from "./campagne-tableau";
+import { STATUTS_VENTE_REALISEE } from "@/lib/statut-vente";
 
 /** Periode d'analyse, bornes incluses. */
 export type Periode = { depuis: Date; jusqua: Date };
@@ -107,7 +108,7 @@ export async function signesDeVieParSalon(
 
   const ventes = await prisma.sale.groupBy({
     by: ["providerId"],
-    where: { providerId: { in: ids }, status: { in: ["PAID", "PARTIALLY_REFUNDED", "REFUNDED"] } },
+    where: { providerId: { in: ids }, status: { in: [...STATUTS_VENTE_REALISEE] } },
     _max: { createdAt: true },
   });
   for (const v of ventes) {

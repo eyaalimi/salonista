@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/prisma";
+import { STATUTS_VENTE_PAYEE_OU_CREDIT } from "@/lib/statut-vente";
 
 export type DetailReportSale = {
   id: string;
@@ -104,7 +105,7 @@ export async function buildDetailReport(
   const [salesAgg, refundsAgg, paymentsByMethod, taxGroups, expenses, sales] =
     await Promise.all([
       prisma.sale.aggregate({
-        where: { providerId, status: "PAID", closedAt: windowFilter },
+        where: { providerId, status: { in: [...STATUTS_VENTE_PAYEE_OU_CREDIT] }, closedAt: windowFilter },
         _count: true,
         _sum: { total: true, discountAmount: true, tipTotal: true },
       }),
@@ -120,7 +121,7 @@ export async function buildDetailReport(
       }),
       prisma.saleItem.groupBy({
         by: ["taxRateSnapshot"],
-        where: { sale: { providerId, status: "PAID", closedAt: windowFilter } },
+        where: { sale: { providerId, status: { in: [...STATUTS_VENTE_PAYEE_OU_CREDIT] }, closedAt: windowFilter } },
         _sum: { lineSubtotal: true, lineTaxAmount: true },
       }),
       (prisma as never as {
@@ -136,7 +137,7 @@ export async function buildDetailReport(
           findMany: (args: unknown) => Promise<unknown[]>;
         };
       }).sale.findMany({
-        where: { providerId, status: "PAID", closedAt: windowFilter },
+        where: { providerId, status: { in: [...STATUTS_VENTE_PAYEE_OU_CREDIT] }, closedAt: windowFilter },
         orderBy: { closedAt: "asc" },
         select: {
           id: true,
