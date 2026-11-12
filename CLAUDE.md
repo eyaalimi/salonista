@@ -1079,6 +1079,40 @@ page fausse. Si vous ajoutez un évènement, la page change avec.
 **Pas de purge** : décision reportée, assumée. À reprendre quand le volume le
 justifiera.
 
+
+### 33. Les polices sont dans le dépôt : le build ne dépend plus de Google
+
+`next/font/google` téléchargeait les polices **à chaque build**. Deux
+déploiements sont tombés sur cette seule étape — Playfair en octobre, Archivo
+le 12/11/2026 — avec *« Module not found: Can't resolve
+'@vercel/turbopack-next/internal/font/google/font' »*, alors que le code était
+sain et que la CI passait.
+
+**Un premier diagnostic était faux** : on avait accusé le cache `.next` du
+serveur. Le correctif (`rm -rf .next` dans `deploy.sh`) n'a jamais été
+fusionné, et une dizaine de déploiements ont pourtant réussi entre les deux
+pannes. Un cache corrompu aurait fait échouer **tous** les builds suivants ;
+une panne qui va et vient désigne le **réseau**. Vérifié en local : avec Google
+injoignable, le build échoue ; avec les polices dans le dépôt, il passe.
+
+Les sept fichiers de [src/app/fonts/](src/app/fonts/) sont **exactement** ceux
+que Google servait (sous-ensemble latin, celui que `subsets: ["latin"]`
+préchargeait) : le rendu ne change pas. Quatre polices sont **variables** (un
+fichier pour toutes les graisses) ; IBM Plex Mono a un fichier par graisse.
+Sources et licences (SIL OFL 1.1) dans `src/app/fonts/LISEZMOI.md`.
+
+**Trois règles :**
+
+- **Ne pas revenir à `next/font/google`.** Pour une nouvelle police ou
+  graisse : télécharger le `.woff2` latin, le déposer dans `src/app/fonts/`,
+  le déclarer avec `next/font/local`.
+- **Playfair garde `adjustFontFallback: "Times New Roman"`** : police à
+  empattements, sa police de secours ajustée doit en être une aussi.
+  `next/font/google` le décidait seul, `next/font/local` prend Arial par défaut.
+- Les caractères hors du sous-ensemble latin (rares : `ğ`, `ł`, vietnamien)
+  s'affichent dans la police de secours. Le français et l'arabe ne sont pas
+  concernés — l'arabe passe par Noto Kufi, chargée côté navigateur.
+
 ---
 
 ## Repo layout

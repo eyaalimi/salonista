@@ -1,5 +1,5 @@
 import { redirect } from "next/navigation";
-import { IBM_Plex_Sans, IBM_Plex_Mono } from "next/font/google";
+import localFont from "next/font/local";
 import { SwRegister } from "@/components/sw-register";
 import { SuiviInstallation } from "@/components/suivi-installation";
 import { BandeauConsultation } from "@/components/pos/bandeau-consultation";
@@ -22,14 +22,20 @@ import { PosTopbar } from "@/components/pos/topbar";
 import { Rail } from "@/components/pos/rail";
 import { IdleLock } from "@/components/pos/idle-lock";
 
-const plexSans = IBM_Plex_Sans({
-  subsets: ["latin"],
-  weight: ["400", "500", "600", "700"],
+// Hebergees dans le depot, comme celles du layout racine : voir le
+// commentaire de `src/app/layout.tsx` sur les builds tombes faute de Google.
+const plexSans = localFont({
+  src: "../fonts/ibm-plex-sans.woff2",
+  weight: "400 700",
   variable: "--font-pos-sans",
 });
-const plexMono = IBM_Plex_Mono({
-  subsets: ["latin"],
-  weight: ["400", "500", "600"],
+// IBM Plex Mono n'existe pas en variable : un fichier par graisse.
+const plexMono = localFont({
+  src: [
+    { path: "../fonts/ibm-plex-mono-400.woff2", weight: "400" },
+    { path: "../fonts/ibm-plex-mono-500.woff2", weight: "500" },
+    { path: "../fonts/ibm-plex-mono-600.woff2", weight: "600" },
+  ],
   variable: "--font-pos-mono",
 });
 
