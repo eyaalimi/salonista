@@ -2,7 +2,12 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { tryNormalizePhone } from "@/lib/phone";
-import { searchCachedCustomers, getCachedCatalog } from "@/lib/pos-offline-db";
+import {
+  searchCachedCustomers,
+  getCachedCatalog,
+  refreshCatalog,
+} from "@/lib/pos-offline-db";
+import { suggestionsParNom, telephoneAffichable } from "@/lib/suggestions-cliente";
 import { messageAbsence, type RaisonAbsence } from "@/lib/creneaux-absents";
 
 type Offer = {
@@ -62,6 +67,8 @@ export function BookingCreateDrawer({
   // dit rien a la caissiere qui prepare sa journee.
   const [nom, setNom] = useState("");
   const [results, setResults] = useState<Customer[]>([]);
+  /** Toute la clientele du salon, pour suggerer a la saisie du NOM. */
+  const [clientes, setClientes] = useState<Customer[]>([]);
   const [notes, setNotes] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -79,16 +86,44 @@ export function BookingCreateDrawer({
   const [raisonAbsence, setRaisonAbsence] = useState<RaisonAbsence | null>(null);
 
   useEffect(() => {
+    let actif = true;
+    const appliquer = (cat: NonNullable<Awaited<ReturnType<typeof getCachedCatalog>>>) => {
+      if (!actif) return;
+      setOffers(
+        cat.offers.map((o) => ({ id: o.id, title: o.title, durationMinutes: o.durationMinutes })),
+      );
+      setEmployees(cat.employees);
+      setClientes(cat.customers);
+    };
     (async () => {
+      // Le cache d'abord : l'affichage est immediat, et il marche hors ligne.
       const cat = await getCachedCatalog();
-      if (cat) {
-        setOffers(
-          cat.offers.map((o) => ({ id: o.id, title: o.title, durationMinutes: o.durationMinutes })),
-        );
-        setEmployees(cat.employees);
-      }
+      if (cat) appliquer(cat);
+      /*
+       * PUIS un rafraichissement en arriere-plan.
+       *
+       * Le cache n'etait remis a jour QUE par l'ecran de caisse : une gerante
+       * qui travaille depuis le calendrier ne voyait pas la cliente creee hier
+       * depuis ce meme calendrier. `refreshCatalog` rend `null` hors ligne ou
+       * sans module caisse, et ne touche alors PAS au cache existant.
+       */
+      const frais = await refreshCatalog();
+      if (frais) appliquer(frais);
     })();
+    return () => {
+      actif = false;
+    };
   }, []);
+
+  /*
+   * Suggestions a la saisie du NOM, des la premiere lettre — le meme principe
+   * que le telephone. Calcul en memoire, sans requete : instantane, et
+   * disponible hors ligne. Voir `suggestionsParNom`.
+   */
+  const suggestionsNom = useMemo(
+    () => (customer ? [] : suggestionsParNom(clientes, nom)),
+    [clientes, nom, customer],
+  );
 
   useEffect(() => {
     let active = true;
@@ -462,7 +497,9 @@ export function BookingCreateDrawer({
                 <span className="text-sm text-prune">
                   {[customer.firstName, customer.lastName].filter(Boolean).join(" ") ||
                     "Sans nom"}
-                  <span className="ml-2 text-prune/70">{customer.phone}</span>
+                  {telephoneAffichable(customer.phone) && (
+                    <span className="ml-2 text-prune/70">{customer.phone}</span>
+                  )}
                 </span>
                 <button
                   type="button"
@@ -486,8 +523,42 @@ export function BookingCreateDrawer({
                   value={nom}
                   onChange={(e) => setNom(e.target.value)}
                   placeholder="Nom de la cliente"
+                  autoComplete="off"
+                  aria-controls="suggestions-nom-cliente"
                   className="mb-2 w-full rounded border border-hairline bg-white px-3 py-2 text-base text-prune placeholder:text-prune/50"
                 />
+                {/* Une ancienne cliente se retrouve par son NOM : sans cette
+                    liste, on lui creait une seconde fiche, avec un historique
+                    et une cagnotte vides. */}
+                {suggestionsNom.length > 0 && (
+                  <ul
+                    id="suggestions-nom-cliente"
+                    aria-label="Clientes déjà enregistrées"
+                    className="-mt-1 mb-2 rounded border border-brand-line bg-white"
+                  >
+                    {suggestionsNom.map((c) => {
+                      const tel = telephoneAffichable(c.phone);
+                      return (
+                        <li key={c.id}>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setCustomer(c);
+                              setNom("");
+                              setPhone("");
+                            }}
+                            className="flex min-h-[44px] w-full items-center justify-between gap-2 px-3 py-2 text-left text-sm text-prune hover:bg-brand-sand"
+                          >
+                            <span className="truncate">
+                              {[c.firstName, c.lastName].filter(Boolean).join(" ")}
+                            </span>
+                            {tel && <span className="shrink-0 text-xs text-prune/70">{tel}</span>}
+                          </button>
+                        </li>
+                      );
+                    })}
+                  </ul>
+                )}
                 <input
                   type="tel"
                   inputMode="tel"
@@ -507,7 +578,8 @@ export function BookingCreateDrawer({
                           onClick={() => setCustomer(c)}
                           className="w-full px-3 py-2 text-left text-xs hover:bg-brand-sand"
                         >
-                          {[c.firstName, c.lastName].filter(Boolean).join(" ")} · {c.phone}
+                          {[c.firstName, c.lastName].filter(Boolean).join(" ")}
+                          {telephoneAffichable(c.phone) ? ` · ${c.phone}` : ""}
                         </button>
                       </li>
                     ))}
