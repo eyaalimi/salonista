@@ -1,7 +1,7 @@
 "use client";
 
 /**
- * Le bloc « Combien vous offrez ? » : une reglette 3–10 % et l'apercu en
+ * Le bloc « Combien vous offrez ? » : une reglette 1–100 % et l'apercu en
  * direct de ce qu'elle donne.
  *
  * LA REGLETTE EST UN `<input type="range">` NATIF. Le projet n'a pas de
@@ -22,6 +22,7 @@ import {
   RECOMPENSE_MIN_PCT,
   RECOMPENSE_PAS_PCT,
   apercuRecompense,
+  lireSaisiePct,
   type EtatRecompense,
 } from "@/lib/rewards/fidelite-affichage";
 import { formatDT } from "@/lib/money";
@@ -38,6 +39,8 @@ export function RegletteRecompense({
   onEnregistrer: (pct: number) => Promise<void>;
 }) {
   const [pct, setPct] = useState(etat.curseur);
+  /** Texte du champ chiffre PENDANT l'edition ; `null` sinon. */
+  const [saisie, setSaisie] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [erreur, setErreur] = useState<string | null>(null);
   const [enregistre, setEnregistre] = useState(false);
@@ -97,6 +100,61 @@ export function RegletteRecompense({
           </span>
           <span className="text-sm text-pos-ink-3">du prix</span>
         </p>
+
+        {/*
+          LA VALEUR EXACTE, au clavier ou par un pas.
+
+          La reglette va maintenant de 1 a 100 %. Sur cent crans, viser 5 %
+          plutot que 6 % au doigt devient impossible sur un telephone : les
+          boutons −/+ avancent d'un point, et le champ accepte la valeur
+          tapee. Les trois restent synchronises sur le meme etat.
+        */}
+        {peutModifier && (
+          <div className="mt-4 flex items-center gap-2">
+            <button
+              type="button"
+              aria-label="Retirer un pour cent"
+              disabled={pct <= RECOMPENSE_MIN_PCT}
+              onClick={() => setPct((p) => Math.max(RECOMPENSE_MIN_PCT, p - RECOMPENSE_PAS_PCT))}
+              className="min-h-[44px] min-w-[44px] rounded-xl border border-pos-border text-lg text-pos-ink hover:bg-pos-highlight disabled:opacity-40"
+            >
+              −
+            </button>
+            <label htmlFor={`${idReglette}-nombre`} className="sr-only">
+              Pourcentage exact, de {RECOMPENSE_MIN_PCT} à {RECOMPENSE_MAX_PCT}
+            </label>
+            <input
+              id={`${idReglette}-nombre`}
+              type="number"
+              inputMode="numeric"
+              min={RECOMPENSE_MIN_PCT}
+              max={RECOMPENSE_MAX_PCT}
+              step={RECOMPENSE_PAS_PCT}
+              // Pendant la frappe on affiche le TEXTE tape, pas la valeur :
+              // sinon effacer « 5 » pour taper « 15 » etait impossible, le
+              // champ vide etant refuse et le « 5 » revenant aussitot. Hors
+              // edition (`saisie === null`), le champ suit la reglette.
+              value={saisie ?? String(pct)}
+              onChange={(e) => {
+                setSaisie(e.target.value);
+                const v = lireSaisiePct(e.target.value);
+                if (v !== null) setPct(v);
+              }}
+              onBlur={() => setSaisie(null)}
+              className="min-h-[44px] w-20 rounded-xl border border-pos-border px-3 text-center text-base tabular-nums focus:border-pos-accent focus:outline-none"
+            />
+            <span className="text-sm text-pos-ink-3">%</span>
+            <button
+              type="button"
+              aria-label="Ajouter un pour cent"
+              disabled={pct >= RECOMPENSE_MAX_PCT}
+              onClick={() => setPct((p) => Math.min(RECOMPENSE_MAX_PCT, p + RECOMPENSE_PAS_PCT))}
+              className="min-h-[44px] min-w-[44px] rounded-xl border border-pos-border text-lg text-pos-ink hover:bg-pos-highlight disabled:opacity-40"
+            >
+              +
+            </button>
+          </div>
+        )}
 
         <label htmlFor={`${idReglette}-range`} className="sr-only">
           Récompense offerte, en pourcentage du prix

@@ -128,16 +128,14 @@ export function programToCashbackPct(p: {
 /**
  * Convert a cashback % into the canonical (1 pt = 0.010 DT) ratios.
  *
- * BORNES 3–10 %. La reglette de la page Fidelite ne propose que cet
- * intervalle, et la validation doit l'imposer ici aussi : une borne tenue
- * seulement par un `<input type="range">` se contourne avec un `curl`.
+ * BORNES 1–100 %. Le taux est le CHOIX du salon : les anciennes bornes
+ * 3–10 % ont ete levees (novembre 2026). Il ne reste que celles d'un
+ * pourcentage, imposees ICI aussi : une borne tenue seulement par un
+ * `<input type="range">` se contourne avec un `curl`.
  *
- * Les salons DEJA hors bornes ne sont pas migres — le defaut du schema
- * (1 pt/DT × 0,010 = 1 %) en a cree, et leur reecrire leur reglage
- * changerait ce que leurs clientes gagnent sans qu'elles l'aient demande.
- * La page affiche leur vraie valeur et un avertissement ; la borne ne mord
- * qu'au prochain enregistrement. Voir `etatRecompense` dans
- * fidelite-affichage.ts.
+ * Une valeur deja en base hors de ces bornes n'est pas migree : la page
+ * affiche la vraie valeur et un avertissement, la borne ne mord qu'au
+ * prochain enregistrement. Voir `etatRecompense` dans fidelite-affichage.ts.
  */
 export function cashbackPctToProgram(pct: number): {
   pointsPerDinar: string;

@@ -59,7 +59,7 @@ type Step3Product = {
 type Step4Loyalty = {
   enabled?: boolean;
   /**
-   * Recompense en % du prix, 3–10. C'est la SEULE forme acceptee depuis que
+   * Recompense en % du prix, 1–100. C'est la SEULE forme acceptee depuis que
    * l'assistant pose la meme question que la page Fidelite ; les deux ratios
    * en decoulent via `cashbackPctToProgram`.
    */
@@ -260,9 +260,8 @@ export async function PATCH(req: NextRequest) {
       where: { providerId },
     });
     // Les ratios viennent du pourcentage, par le MEME chemin que la page
-    // Fidelite — bornes 3–10 % comprises. L'ancienne version acceptait deux
-    // ratios bruts et creait des salons a 1 %, hors des bornes que la page
-    // impose ensuite.
+    // Fidelite — memes bornes (1–100 %). L'ancienne version acceptait deux
+    // ratios bruts, sans aucune verification.
     let ratios: { pointsPerDinar: string; dinarPerPoint: string };
     try {
       ratios = cashbackPctToProgram(program.cashbackPct ?? 5);
