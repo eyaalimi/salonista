@@ -428,6 +428,16 @@ model Booking {
   qrVerifiedAt           DateTime?
   qrVerifiedByEmployeeId String?
   paidAt                 DateTime?
+  /// Heure PREVUE d'un passage libre (sans service, donc sans creneau).
+  ///
+  /// Un rendez-vous avec des services tire son heure de ses creneaux ; un
+  /// passage libre n'en a aucun. Son heure, choisie dans le formulaire, etait
+  /// calculee puis JETEE : le calendrier le plaçait a sa date de creation, si
+  /// bien qu'un passage prevu jeudi s'affichait le jour ou on l'avait saisi.
+  /// NUL pour les passages libres anterieurs, qui retombent sur `createdAt`.
+  /// Voir `src/lib/date-rendez-vous.ts`.
+  debutPrevu             DateTime?
+  finPrevue              DateTime?
   createdAt              DateTime      @default(now())
 
   client               User           @relation(fields: [clientId], references: [id], onDelete: Cascade)
@@ -441,6 +451,8 @@ model Booking {
   sale                 Sale?
 
   @@index([customerId])
+  /// Le calendrier filtre les passages libres sur leur heure prevue.
+  @@index([debutPrevu])
   @@index([assignedEmployeeId])
 }
 

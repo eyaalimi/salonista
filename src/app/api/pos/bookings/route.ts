@@ -1,4 +1,5 @@
 import { NextRequest } from "next/server";
+import { filtreFenetreRendezVous } from "@/lib/date-rendez-vous";
 import { prisma } from "@/lib/prisma";
 import { requirePermission, requireEmployee, toResponse } from "@/lib/employee-session";
 import { decideFicheClient, placeholderTelephone } from "@/lib/booking-customer";
@@ -29,26 +30,19 @@ export async function GET(req: NextRequest) {
   const from = fromStr ? new Date(fromStr) : new Date();
   const to = toStr ? new Date(toStr) : new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
 
-  // Bookings for this provider in the time window. We match either by:
-  //   - Booking.assignedEmployeeId belonging to this provider's employees
-  //   - Any BookingItem on an offer owned by this provider, with a slot in the range
-  // The latter catches public-flow bookings (where assignedEmployeeId is null).
+  /*
+   * Les rendez-vous de la fenetre — chacun UNE SEULE FOIS, le jour ou il a
+   * lieu.
+   *
+   * L'ancien filtre retenait aussi tout rendez-vous CREE dans la fenetre. Un
+   * rendez-vous pris aujourd'hui pour jeudi s'affichait donc aujourd'hui ET
+   * jeudi. La regle vit desormais dans `filtreFenetreRendezVous` (testee sur
+   * une semaine simulee) : la date de creation ne sert plus qu'aux anciens
+   * passages libres, qui n'ont aucune autre date.
+   */
   const bookings = await prisma.booking.findMany({
     where: {
-      OR: [
-        {
-          items: {
-            some: {
-              offer: { providerId: employee.providerId },
-              slot: { startTime: { gte: from, lte: to } },
-            },
-          },
-        },
-        {
-          assignedEmployee: { providerId: employee.providerId },
-          createdAt: { gte: from, lte: to },
-        },
-      ],
+      ...filtreFenetreRendezVous(employee.providerId, from, to),
       ...(employeeId ? { assignedEmployeeId: employeeId } : {}),
       ...(includePhantom ? {} : { phantom: false }),
     },
@@ -219,6 +213,10 @@ export async function POST(req: NextRequest) {
           totalPrice,
           notes: body.notes ?? null,
           ...(itemRows.length > 0 ? { items: { create: itemRows } } : {}),
+          // Sans service, aucun creneau ne porte l'heure du rendez-vous : on
+          // l'ENREGISTRE. Elle etait calculee puis jetee, et le calendrier
+          // plaçait le passage libre a sa date de creation — le mauvais jour.
+          ...(itemRows.length === 0 ? { debutPrevu: start, finPrevue: endTime } : {}),
         },
         include: {
           items: { include: { offer: true, slot: true } },

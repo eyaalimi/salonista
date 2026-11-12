@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/prisma";
+import { debutRendezVous } from "@/lib/date-rendez-vous";
 import { requireEmployee, toResponse } from "@/lib/employee-session";
 
 export async function GET() {
@@ -51,20 +52,20 @@ export async function GET() {
   const startOfDay = today.getTime();
   const endOfDay = tomorrow.getTime();
 
+  // La regle commune (`date-rendez-vous.ts`) plutot qu'une copie locale :
+  // c'est ici que le calendrier recopiait « creneau, sinon creation ». Elle
+  // prend aussi le PREMIER creneau dans le temps, et non `items[0]`, dont
+  // l'ordre en base n'est pas garanti.
   const todays = bookings.filter((b) => {
-    const start = b.items[0]?.slot?.startTime?.getTime() ?? b.createdAt.getTime();
+    const start = debutRendezVous(b).getTime();
     return start >= startOfDay && start < endOfDay;
   });
 
-  todays.sort((a, b) => {
-    const sa = a.items[0]?.slot?.startTime?.getTime() ?? a.createdAt.getTime();
-    const sb = b.items[0]?.slot?.startTime?.getTime() ?? b.createdAt.getTime();
-    return sa - sb;
-  });
+  todays.sort((a, b) => debutRendezVous(a).getTime() - debutRendezVous(b).getTime());
 
   return Response.json({
     bookings: todays.map((b) => {
-      const start = b.items[0]?.slot?.startTime ?? b.createdAt;
+      const start = debutRendezVous(b);
       const lastSlotEnd = b.items.reduce<Date | null>((latest, it) => {
         const end = it.slot?.endTime;
         if (!end) return latest;
