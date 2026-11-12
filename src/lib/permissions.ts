@@ -22,6 +22,8 @@ export const PERMISSIONS = [
   "analytics.view",
   "rewards.adjust",
   "rewards.settings",
+  /** Envoyer des promos WhatsApp : chaque message est facture par Meta. */
+  "promos.send",
   "employees.manage",
   "settings.manage",
 ] as const;
@@ -61,6 +63,7 @@ export const ROLE_DEFAULTS: Record<EmployeeRole, PermissionMap> = {
     "analytics.view",
     "rewards.adjust",
     "rewards.settings",
+    "promos.send",
     "employees.manage",
     "settings.manage",
   ]),
@@ -82,6 +85,7 @@ export const ROLE_DEFAULTS: Record<EmployeeRole, PermissionMap> = {
     "products.manage",
     "analytics.view",
     "rewards.adjust",
+    "promos.send",
   ]),
   CASHIER: makeMap([
     "pos.sell",

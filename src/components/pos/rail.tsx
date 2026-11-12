@@ -20,6 +20,7 @@ import {
   ShoppingBag,
   Lock,
   Clock,
+  Megaphone,
 } from "lucide-react";
 import type { SubscriptionModule } from "@/generated/prisma/enums";
 
@@ -79,6 +80,9 @@ export function Rail({
     { href: "/pos/credits", label: "Crédits", shortcut: "", icon: <Clock size={20} />, perm: "pos.sell", module: "POS" },
     { href: "/pos/cash-drawer", label: "Tiroir", shortcut: "F", icon: <Wallet size={20} />, perm: "pos.cash_drawer", module: "POS" },
     { href: "/pos/loyalty", label: "Fidélité", shortcut: "L", icon: <Star size={20} />, perm: "rewards.adjust" },
+    // Promos WhatsApp : hors Premium, visible avec `promos.send` (proprietaire
+    // et gerante). La page explique elle-meme si le salon n'est pas connecte.
+    { href: "/pos/promos", label: "Promos", shortcut: "", icon: <Megaphone size={20} />, perm: "promos.send", module: "POS" },
     { href: "/pos/commissions", label: "Commissions", shortcut: "M", icon: <Coins size={20} />, perm: "employees.manage", module: "POS" },
     { href: "/pos/employees", label: "Équipe", shortcut: "E", icon: <UserCog size={20} />, perm: "employees.manage", module: "POS" },
     { href: "/pos/settings", label: "Profil", shortcut: "R", icon: <Settings size={20} />, perm: "settings.manage" },

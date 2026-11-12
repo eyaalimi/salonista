@@ -15,6 +15,8 @@ type Detail = {
     email: string | null;
     birthday: string | null;
     notes: string | null;
+    promosAcceptees?: boolean;
+    promosRefuseesAt?: string | null;
     createdAt: string;
   };
   stats: { totalVisits: number; totalSpent: string };
@@ -64,6 +66,7 @@ export function CustomerDetailDrawer({
     email: "",
     notes: "",
     birthday: "",
+    promosAcceptees: true,
   });
   const [busy, setBusy] = useState(false);
 
@@ -82,6 +85,7 @@ export function CustomerDetailDrawer({
           birthday: d.customer.birthday
             ? new Date(d.customer.birthday).toISOString().slice(0, 10)
             : "",
+          promosAcceptees: d.customer.promosAcceptees !== false,
         });
       } else if (res.status === 404) {
         setError("Cliente introuvable.");
@@ -120,6 +124,7 @@ export function CustomerDetailDrawer({
           email: form.email.trim() || null,
           notes: form.notes.trim() || null,
           birthday: form.birthday || null,
+          promosAcceptees: form.promosAcceptees,
         }),
       });
       if (res.ok) {
@@ -242,6 +247,13 @@ export function CustomerDetailDrawer({
                       )}
                     </p>
                   )}
+                  {data.customer.promosAcceptees === false && (
+                    <p className="mt-2 text-xs text-pos-ink-3">
+                      Ne reçoit pas les promos WhatsApp
+                      {data.customer.promosRefuseesAt &&
+                        ` (refus du ${new Date(data.customer.promosRefuseesAt).toLocaleDateString("fr-FR")})`}
+                    </p>
+                  )}
                   {data.customer.notes && (
                     <p className="mt-3 text-xs text-pos-ink-2 bg-pos-bg p-3 rounded whitespace-pre-wrap">
                       {data.customer.notes}
@@ -290,6 +302,15 @@ export function CustomerDetailDrawer({
                       onChange={(e) => setForm({ ...form, birthday: e.target.value })}
                       className="mt-1 w-full px-3 py-2 border border-pos-border rounded text-sm"
                     />
+                  </label>
+                  <label className="flex min-h-[44px] items-center gap-2 text-sm">
+                    <input
+                      type="checkbox"
+                      checked={form.promosAcceptees}
+                      onChange={(e) => setForm({ ...form, promosAcceptees: e.target.checked })}
+                      className="h-5 w-5"
+                    />
+                    Accepte de recevoir les promos du salon sur WhatsApp
                   </label>
                   <label className="block">
                     <span className="text-xs text-pos-ink-2">Notes</span>

@@ -1,0 +1,239 @@
+import { describe, expect, it } from "vitest";
+import {
+  OFFRE_MAX,
+  TENTATIVES_MAX,
+  apresTentative,
+  composerApercu,
+  compterRevenues,
+  coutEstime,
+  estAudience,
+  estDesinscription,
+  estErreurDefinitive,
+  libelleCout,
+  lireProgrammation,
+  nettoyerOffre,
+  prenomPourModele,
+  selectionnerDestinataires,
+  statutApresEvenement,
+  telephonePourWhatsapp,
+  type ClientePromo,
+} from "./promos";
+
+describe("nettoyerOffre", () => {
+  it("retours à la ligne, tabulations et espaces multiples deviennent un espace", () => {
+    expect(nettoyerOffre("Promo à 10 DT :\népilation\t+ sourcils     + brushing  ")).toEqual({
+      ok: true,
+      offre: "Promo à 10 DT : épilation + sourcils + brushing",
+    });
+  });
+
+  it("refuse une offre vide", () => {
+    expect(nettoyerOffre("   \n ").ok).toBe(false);
+    expect(nettoyerOffre(undefined).ok).toBe(false);
+  });
+
+  it(`refuse au-delà de ${OFFRE_MAX} caractères, accepte la limite`, () => {
+    expect(nettoyerOffre("a".repeat(OFFRE_MAX)).ok).toBe(true);
+    const r = nettoyerOffre("a".repeat(OFFRE_MAX + 1));
+    expect(r.ok).toBe(false);
+    if (!r.ok) expect(r.erreur).toMatch(/501 caractères/);
+  });
+});
+
+describe("composerApercu", () => {
+  const texteFin = "Nestanewk 3andna 💖 Pour réserver, appelez le salon au 22 345 678 (ne répondez pas à ce numéro).";
+
+  it("reproduit le modèle : salutation, offre, texte de fin du salon", () => {
+    expect(composerApercu({ prenom: "Amira", offre: "Brushing à 10 DT", texteFin })).toBe(
+      `Aslema Amira ! 3andna promo jdida lik :\n\nBrushing à 10 DT\n\n${texteFin}`,
+    );
+  });
+
+  it("prénom absent : « 3zizti »", () => {
+    expect(composerApercu({ prenom: null, offre: "x", texteFin: "" })).toBe(
+      "Aslema 3zizti ! 3andna promo jdida lik :\n\nx",
+    );
+    expect(prenomPourModele("   ")).toBe("3zizti");
+  });
+});
+
+describe("selectionnerDestinataires", () => {
+  const maintenant = new Date("2026-11-12T10:00:00Z");
+  const jours = (n: number) => new Date(maintenant.getTime() - n * 86400000);
+  const cliente = (o: Partial<ClientePromo> & { id: string }): ClientePromo => ({
+    telephone: "+21622345678",
+    prenom: "X",
+    promosAcceptees: true,
+    derniereVenteAt: null,
+    ...o,
+  });
+  const clientes: ClientePromo[] = [
+    cliente({ id: "recente", telephone: "+21622000001", derniereVenteAt: jours(10) }),
+    cliente({ id: "limite90", telephone: "+21622000002", derniereVenteAt: jours(90) }),
+    cliente({ id: "inactive", telephone: "+21622000003", derniereVenteAt: jours(75) }),
+    cliente({ id: "jamais", telephone: "+21622000004", derniereVenteAt: null }),
+    cliente({ id: "refus", telephone: "+21622000005", promosAcceptees: false, derniereVenteAt: jours(70) }),
+    cliente({ id: "invalide", telephone: "walk-in-123", derniereVenteAt: jours(80) }),
+    cliente({ id: "doublon", telephone: "22 000 003", derniereVenteAt: jours(100) }),
+  ];
+
+  it("TOUTES : tout le monde sauf refus, numéros invalides et doublons", () => {
+    const r = selectionnerDestinataires({ clientes, audience: "TOUTES", maintenant });
+    expect(r.retenues.map((x) => x.customerId)).toEqual(["recente", "limite90", "inactive", "jamais"]);
+    expect(r.exclues).toEqual({ refus: 1, numeroInvalide: 1, doublon: 1 });
+    expect(r.retenues[0].telephone).toBe("21622000001");
+  });
+
+  it("RECENTES_90J : dernière vente il y a 90 jours au plus (chevauche INACTIVES_60J, voulu)", () => {
+    const r = selectionnerDestinataires({ clientes, audience: "RECENTES_90J", maintenant });
+    expect(r.retenues.map((x) => x.customerId)).toEqual(["recente", "limite90", "inactive"]);
+  });
+
+  it("INACTIVES_60J : au moins une vente, aucune depuis 60 jours ; jamais venue exclue", () => {
+    const r = selectionnerDestinataires({ clientes, audience: "INACTIVES_60J", maintenant });
+    expect(r.retenues.map((x) => x.customerId)).toEqual(["limite90", "inactive"]);
+    expect(r.exclues).toEqual({ refus: 1, numeroInvalide: 1, doublon: 1 });
+  });
+
+  it("MANUELLE : seulement les cochées, et un refus reste exclu même coché", () => {
+    const r = selectionnerDestinataires({
+      clientes,
+      audience: "MANUELLE",
+      maintenant,
+      idsManuels: ["jamais", "refus"],
+    });
+    expect(r.retenues.map((x) => x.customerId)).toEqual(["jamais"]);
+    expect(r.exclues.refus).toBe(1);
+  });
+
+  it("une cliente qui a refusé n'est JAMAIS retenue, quelle que soit l'audience", () => {
+    for (const audience of ["TOUTES", "RECENTES_90J", "INACTIVES_60J", "MANUELLE"] as const) {
+      const r = selectionnerDestinataires({ clientes, audience, maintenant, idsManuels: ["refus"] });
+      expect(r.retenues.some((x) => x.customerId === "refus")).toBe(false);
+    }
+  });
+
+  it("estAudience", () => {
+    expect(estAudience("TOUTES")).toBe(true);
+    expect(estAudience("autre")).toBe(false);
+  });
+
+  it("telephonePourWhatsapp", () => {
+    expect(telephonePourWhatsapp("+216 22 345 678")).toBe("21622345678");
+    expect(telephonePourWhatsapp("123")).toBeNull();
+  });
+});
+
+describe("coût", () => {
+  it("en millimes, null si prix inconnu", () => {
+    expect(coutEstime(236, "0.150")).toBe(35400);
+    expect(coutEstime(236, null)).toBeNull();
+    expect(libelleCout(236, "0.150")).toBe("coût estimé 35,400 DT");
+    expect(libelleCout(236, null)).toBe("coût selon le tarif Meta");
+  });
+});
+
+describe("erreurs Meta", () => {
+  it("définitives : pas de WhatsApp, limite marketing, refus marketing, modèle, jeton, anti-spam", () => {
+    for (const c of ["131026", "131049", "131050", "132001", "132015", "190", "131048", 100, "250"]) {
+      expect(estErreurDefinitive(c)).toBe(true);
+    }
+  });
+
+  it("temporaires : débit, indisponibilité, inconnues, réseau", () => {
+    for (const c of ["130429", "131056", "80007", "4", "2", "1", "131000", "131016", "RESEAU", "HTTP_503", null]) {
+      expect(estErreurDefinitive(c)).toBe(false);
+    }
+  });
+
+  it("apresTentative : succès, temporaire réessayé, définitif ou 3e échec → ECHEC", () => {
+    expect(apresTentative({ tentatives: 0, resultat: { ok: true, messageIdExterne: "wamid.1" } })).toEqual({
+      statut: "ENVOYE",
+      tentatives: 1,
+      erreur: null,
+    });
+    const temp = { ok: false as const, code: "130429", message: "Rate limit hit", definitive: false };
+    expect(apresTentative({ tentatives: 0, resultat: temp }).statut).toBe("EN_ATTENTE");
+    expect(apresTentative({ tentatives: TENTATIVES_MAX - 1, resultat: temp })).toMatchObject({
+      statut: "ECHEC",
+      tentatives: TENTATIVES_MAX,
+    });
+    expect(
+      apresTentative({
+        tentatives: 0,
+        resultat: { ok: false, code: "131026", message: "Unable to deliver", definitive: true },
+      }),
+    ).toEqual({ statut: "ECHEC", tentatives: 1, erreur: "131026 — Unable to deliver" });
+  });
+});
+
+describe("statutApresEvenement", () => {
+  it("avance, ne recule jamais", () => {
+    expect(statutApresEvenement("ENVOYE", "delivered")).toBe("DELIVRE");
+    expect(statutApresEvenement("DELIVRE", "read")).toBe("LU");
+    expect(statutApresEvenement("LU", "delivered")).toBeNull();
+    expect(statutApresEvenement("LU", "sent")).toBeNull();
+    expect(statutApresEvenement("RESERVE", "sent")).toBe("ENVOYE");
+  });
+
+  it("un échec n'écrase ni un message délivré ni un lu ; évènement inconnu ignoré", () => {
+    expect(statutApresEvenement("ENVOYE", "failed")).toBe("ECHEC");
+    expect(statutApresEvenement("DELIVRE", "failed")).toBeNull();
+    expect(statutApresEvenement("ECHEC", "delivered")).toBeNull();
+    expect(statutApresEvenement("ENVOYE", "played")).toBeNull();
+  });
+});
+
+describe("estDesinscription", () => {
+  it("bouton et mots clés, toutes casses et accents", () => {
+    for (const t of ["STOP", "stop", " Stop! ", "arrêt", "Arret", "Ne plus recevoir", "Ne plus recevoir de promos"]) {
+      expect(estDesinscription(t)).toBe(true);
+    }
+  });
+  it("une phrase qui contient stop n'en est pas une", () => {
+    expect(estDesinscription("on s'arrête au salon demain, stop ou encore ?")).toBe(false);
+    expect(estDesinscription("Merci !")).toBe(false);
+    expect(estDesinscription(null)).toBe(false);
+  });
+});
+
+describe("compterRevenues", () => {
+  const envoi = new Date("2026-11-01T10:00:00Z");
+  it("distinctes, dans les 15 jours après l'envoi seulement", () => {
+    const n = compterRevenues(
+      [
+        { customerId: "a", envoyeLe: envoi },
+        { customerId: "b", envoyeLe: envoi },
+        { customerId: "c", envoyeLe: envoi },
+        { customerId: "d", envoyeLe: null },
+        { customerId: null, envoyeLe: envoi },
+      ],
+      [
+        { customerId: "a", createdAt: new Date("2026-11-03T10:00:00Z") },
+        { customerId: "a", createdAt: new Date("2026-11-05T10:00:00Z") },
+        { customerId: "b", createdAt: new Date("2026-10-30T10:00:00Z") }, // avant l'envoi
+        { customerId: "c", createdAt: new Date("2026-11-17T10:00:00Z") }, // 16 jours après
+        { customerId: "d", createdAt: new Date("2026-11-02T10:00:00Z") }, // jamais envoyé
+      ],
+    );
+    expect(n).toBe(1);
+  });
+});
+
+describe("lireProgrammation", () => {
+  const maintenant = new Date("2026-11-12T10:00:00Z");
+  it("vide = maintenant ; futur accepté", () => {
+    expect(lireProgrammation(null, maintenant)).toEqual({ ok: true, programmeeLe: null });
+    expect(lireProgrammation("", maintenant)).toEqual({ ok: true, programmeeLe: null });
+    const r = lireProgrammation("2026-11-13T09:00:00Z", maintenant);
+    expect(r.ok && r.programmeeLe?.toISOString()).toBe("2026-11-13T09:00:00.000Z");
+  });
+  it("passé de moins de 5 min = maintenant ; au-delà refusé", () => {
+    expect(lireProgrammation("2026-11-12T09:57:00Z", maintenant)).toEqual({ ok: true, programmeeLe: null });
+    expect(lireProgrammation("2026-11-12T09:00:00Z", maintenant).ok).toBe(false);
+  });
+  it("invalide ou à plus de 60 jours : refusé", () => {
+    expect(lireProgrammation("demain", maintenant).ok).toBe(false);
+    expect(lireProgrammation("2027-02-01T10:00:00Z", maintenant).ok).toBe(false);
+  });
+});

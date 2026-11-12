@@ -14,6 +14,8 @@ import {
 } from "@/lib/profil-salon-complet";
 import { Copiable } from "../copiable";
 import { ActionsClient, NoteClient } from "./actions-client";
+import { WhatsappClient } from "./whatsapp-client";
+import { prisma } from "@/lib/prisma";
 
 export default async function FicheSalonPage({
   params,
@@ -249,6 +251,27 @@ export default async function FicheSalonPage({
       )}
 
       <ActionsClient salonId={s.id} suspendu={s.suspendedAt !== null} />
+
+      {/* Le jeton n'est PAS selectionne : il ne doit jamais atteindre le
+          navigateur, meme chiffre. */}
+      <WhatsappClient
+        salonId={s.id}
+        connexion={await prisma.connexionWhatsapp
+          .findUnique({
+            where: { providerId: s.id },
+            select: {
+              statut: true,
+              numeroAffiche: true,
+              phoneNumberId: true,
+              wabaId: true,
+              nomModele: true,
+              langueModele: true,
+              texteFinModele: true,
+              prixMessageDT: true,
+            },
+          })
+          .then((c) => (c ? { ...c, prixMessageDT: c.prixMessageDT ? String(c.prixMessageDT) : null } : null))}
+      />
 
       <section className="flex flex-col gap-3">
         <h2 className="ds-display text-lg text-prune">Notes de support</h2>

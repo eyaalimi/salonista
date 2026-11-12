@@ -234,6 +234,35 @@ sudo nginx -t && sudo systemctl reload nginx
 curl -sI -H "Host: inconnu.example" http://127.0.0.1/   # doit ne rien renvoyer
 ```
 
+### Promos WhatsApp : variables et cron (novembre 2026, une seule fois)
+
+`deploy.sh` ne touche ni au `.env` ni au cron. Sur un serveur deja en place :
+
+1. Ajouter au `.env` les variables de `scripts/deploy/.env.production.example`
+   (generer `CLE_CHIFFREMENT_SECRETS` avec `openssl rand -base64 32`, et
+   `CRON_SECRET` avec `openssl rand -hex 32`), puis
+   `pm2 reload ecosystem.config.js --update-env`.
+2. Installer le cron du moteur d'envoi (chaque minute) :
+
+```bash
+sudo tee /etc/cron.d/salonista-promos >/dev/null <<'CRON'
+# Salonista promos WhatsApp — moteur d'envoi, chaque minute
+* * * * * ubuntu cd /home/ubuntu/salonista && bash scripts/deploy/promos-tick.sh >> /home/ubuntu/promos-tick.log 2>&1
+CRON
+sudo chmod 0644 /etc/cron.d/salonista-promos
+```
+
+3. Verifier a la main : aucun message et `OK` = le moteur repond ; une
+   erreur `curl: (22) … 401` = `CRON_SECRET` different entre `.env` et le
+   processus (oubli du `pm2 reload --update-env`).
+
+```bash
+cd /home/ubuntu/salonista && bash scripts/deploy/promos-tick.sh && echo OK
+```
+
+Le pas-a-pas Meta (numero dedie, modele, webhook) est dans
+[docs/whatsapp-cloud.md](../../docs/whatsapp-cloud.md).
+
 ### Open a Postgres shell
 ```bash
 sudo -u postgres psql -d salonista_prod

@@ -242,6 +242,7 @@ function NewCustomerModal({
   const [lastName, setLastName] = useState("");
   const [phone, setPhone] = useState("");
   const [email, setEmail] = useState("");
+  const [promosAcceptees, setPromosAcceptees] = useState(true);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -269,6 +270,7 @@ function NewCustomerModal({
           firstName: firstName.trim() || undefined,
           lastName: lastName.trim() || undefined,
           email: email.trim() || undefined,
+          promosAcceptees,
         }),
       });
       if (res.ok) {
@@ -348,6 +350,18 @@ function NewCustomerModal({
               placeholder="cliente@example.tn"
               className="mt-1 w-full px-3 py-2 border border-pos-border rounded text-sm"
             />
+          </label>
+
+          {/* Cochee par defaut : la gerante pose la question a la cliente et
+              la decoche si elle refuse. Modifiable ensuite depuis la fiche. */}
+          <label className="flex min-h-[44px] items-center gap-2 text-sm text-pos-ink">
+            <input
+              type="checkbox"
+              checked={promosAcceptees}
+              onChange={(e) => setPromosAcceptees(e.target.checked)}
+              className="h-5 w-5"
+            />
+            Accepte de recevoir les promos du salon sur WhatsApp
           </label>
 
           {error && (

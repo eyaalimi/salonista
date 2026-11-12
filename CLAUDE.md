@@ -1167,6 +1167,56 @@ Une vente CREDIT ne se **rembourse pas** (409). `Booking.paymentStatus` n'est
 pas touché, voir note 11. Le reçu de règlement s'imprime **sur demande**, pas
 automatiquement : la plupart des salons n'ont pas d'imprimante au comptoir.
 
+### 35. Promos WhatsApp : la base est la file, le jeton ne sort jamais
+
+`/pos/promos` envoie une offre aux clientes d'un salon via l'**API officielle
+WhatsApp Cloud**. Pas-à-pas fondateurs : [docs/whatsapp-cloud.md](docs/whatsapp-cloud.md).
+Décisions pures dans [promos.ts](src/lib/promos.ts), canal remplaçable dans
+[src/lib/canal-promo/](src/lib/canal-promo/), moteur dans
+[promos-moteur.ts](src/lib/promos-moteur.ts).
+
+**Le modèle Meta** : `Aslema {{1}} ! 3andna promo jdida lik :` / `{{2}}` /
+texte de fin **propre au salon** (`ConnexionWhatsapp.texteFinModele`, recopié
+à l'identique, sert à l'aperçu). Meta refuse un modèle qui finit par une
+variable (2388299) ou en a trop pour son texte (2388293). Prénom absent →
+« 3zizti » : une variable vide n'est pas documentée.
+
+**Aucun envoi dans une requête HTTP.** `POST /api/pos/promos` crée la campagne
+et ses destinataires `EN_ATTENTE`, puis lance un passage via `after()`. Le
+cron (`scripts/deploy/promos-tick.sh`, chaque minute) appelle
+`/api/internal/promos/tick` avec `CRON_SECRET`. **Le cron s'installe à la
+main** sur un serveur existant (runbook) : `deploy.sh` n'y touche pas.
+
+**Jamais deux envois au même destinataire** : la réservation est UNE requête
+`UPDATE … WHERE id IN (SELECT … FOR UPDATE SKIP LOCKED)` qui passe 60 lignes
+en `RESERVE`. L'envoi se fait hors transaction. Un bail de 5 min relâche les
+lignes d'un passage mort ; revers assumé, un message parti juste avant un
+plantage peut repartir une fois.
+
+**Le canal de la campagne fait foi** : une campagne `SIMULATION` ne part
+jamais en réel, une campagne `WHATSAPP` exige une connexion `ACTIVE` à chaque
+passage (sinon ses destinataires passent en échec).
+
+**Le jeton** est chiffré AES-256-GCM (`CLE_CHIFFREMENT_SECRETS`), n'est jamais
+sélectionné pour une page, jamais renvoyé, jamais journalisé (le journal
+superadmin note `jetonModifie: true/false`). Perdre la clé = ressaisir tous les
+jetons.
+
+**Webhook** : signature HMAC vérifiée sur le corps **brut** avant tout
+`JSON.parse`, comparaisons à temps constant. Statuts qui n'avancent que vers
+l'avant (Meta renvoie et désordonne pendant 36 h). « Ne plus recevoir », STOP
+et l'erreur **131050** passent la cliente en `promosAcceptees = false`, chez
+**ce** salon seulement.
+
+**Erreurs** : la liste des codes définitifs est commentée dans `promos.ts`,
+source officielle Meta. 131048 (anti-spam) et 131064 sont classés définitifs :
+les réessayer dégrade la note de qualité du numéro.
+
+**`/confidentialite` décrit ce qui part chez Meta** (téléphone, prénom, offre).
+La promesse « aucune donnée de vos clientes chez Meta » est restreinte à la
+mesure des publicités. Tout nouvel envoi de données change cette page avant
+la mise en production (§23, §29).
+
 ---
 
 ## Repo layout
