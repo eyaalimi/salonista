@@ -3,8 +3,8 @@ import { prisma } from "@/lib/prisma";
 import { requirePermission, toResponse } from "@/lib/employee-session";
 import { parseRange } from "@/lib/analytics-range";
 import { hasFeature } from "@/lib/plan-serveur";
+import { STATUTS_VENTE_REALISEE } from "@/lib/statut-vente";
 
-const PAID_STATUSES = ["PAID", "PARTIALLY_REFUNDED", "REFUNDED"] as const;
 
 export async function GET(req: NextRequest) {
   let employee;
@@ -20,7 +20,7 @@ export async function GET(req: NextRequest) {
   const sales = await prisma.sale.findMany({
     where: {
       providerId: employee.providerId,
-      status: { in: PAID_STATUSES as unknown as ("PAID" | "PARTIALLY_REFUNDED" | "REFUNDED")[] },
+      status: { in: [...STATUTS_VENTE_REALISEE] },
       closedAt: { gte: from, lte: to },
     },
     select: { employeeId: true, total: true, employee: { select: { displayName: true } } },
@@ -49,7 +49,7 @@ export async function GET(req: NextRequest) {
     where: {
       sale: {
         providerId: employee.providerId,
-        status: { in: PAID_STATUSES as unknown as ("PAID" | "PARTIALLY_REFUNDED" | "REFUNDED")[] },
+        status: { in: [...STATUTS_VENTE_REALISEE] },
         closedAt: { gte: from, lte: to },
       },
     },

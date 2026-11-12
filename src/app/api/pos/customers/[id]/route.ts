@@ -1,6 +1,7 @@
 import { NextRequest } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requirePermission, toResponse } from "@/lib/employee-session";
+import { STATUTS_VENTE_REALISEE } from "@/lib/statut-vente";
 
 /**
  * GET — customer detail + sales history for the current provider.
@@ -56,7 +57,7 @@ export async function GET(
     where: {
       providerId,
       customerId: id,
-      status: { in: ["PAID", "PARTIALLY_REFUNDED", "REFUNDED"] },
+      status: { in: [...STATUTS_VENTE_REALISEE] },
     },
     orderBy: { closedAt: "desc" },
     take: 100,

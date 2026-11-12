@@ -19,6 +19,7 @@ import {
   Handshake,
   ShoppingBag,
   Lock,
+  Clock,
 } from "lucide-react";
 import type { SubscriptionModule } from "@/generated/prisma/enums";
 
@@ -73,6 +74,9 @@ export function Rail({
   // Groupe 3 — GESTION : ce que le proprietaire consulte.
   const groupGestion: RailItem[] = [
     { href: "/pos/sales", label: "Ventes", shortcut: "V", icon: <Receipt size={20} />, perm: "pos.sell", module: "POS" },
+    // Credits clientes : qui doit combien. `pos.sell` — regler un credit,
+    // c'est encaisser.
+    { href: "/pos/credits", label: "Crédits", shortcut: "", icon: <Clock size={20} />, perm: "pos.sell", module: "POS" },
     { href: "/pos/cash-drawer", label: "Tiroir", shortcut: "F", icon: <Wallet size={20} />, perm: "pos.cash_drawer", module: "POS" },
     { href: "/pos/loyalty", label: "Fidélité", shortcut: "L", icon: <Star size={20} />, perm: "rewards.adjust" },
     { href: "/pos/commissions", label: "Commissions", shortcut: "M", icon: <Coins size={20} />, perm: "employees.manage", module: "POS" },

@@ -60,6 +60,16 @@ export async function POST(req: NextRequest, ctx: { params: Promise<{ id: string
       { status: 409 },
     );
   }
+  // Rembourser une vente a credit rendrait de l'argent que la cliente n'a
+  // peut-etre pas verse, et laisserait son ardoise ouverte. Une vente reglee
+  // repasse a PAID : ce refus ne vise que les credits en cours et les dettes
+  // effacees.
+  if (saleHead.status === "CREDIT") {
+    return Response.json(
+      { error: "Vente à crédit : réglez d'abord le crédit avant de rembourser." },
+      { status: 409 },
+    );
+  }
 
   try {
     const result = await prisma.$transaction(async (tx) => {

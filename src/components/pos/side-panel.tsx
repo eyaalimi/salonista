@@ -12,6 +12,9 @@ import {
 import { usePOSShortcut } from "@/lib/use-pos-shortcuts";
 import { getShortcutLabel } from "@/lib/pos-shortcuts";
 import { BookingDetailDrawer } from "./booking-detail-drawer";
+import Link from "next/link";
+import { toMillimes } from "@/lib/money";
+import { useCreditCliente } from "./use-credit-cliente";
 
 type Permission = string;
 
@@ -57,6 +60,8 @@ export function SidePanel({
 function CustomerBlock() {
   const customer = usePosStore((s) => s.customer);
   const setCustomer = usePosStore((s) => s.setCustomer);
+  // Hors ligne, la requete echoue en silence : pas de badge plutot qu'un faux.
+  const creditCliente = useCreditCliente(customer?.id ?? null, true);
   const [query, setQuery] = useState("");
   const [searching, setSearching] = useState(false);
   const [serverHits, setServerHits] = useState<CustomerLite[]>([]);
@@ -246,10 +251,20 @@ function CustomerBlock() {
               </span>
             </div>
           )}
+          {/* Vu AVANT d'encaisser : la caissiere peut proposer de regler
+              l'ardoise en meme temps que la prestation du jour. */}
+          {creditCliente && toMillimes(creditCliente.totalDu) > 0 && (
+            <Link
+              href={`/pos/credits?client=${customer.id}`}
+              className="mt-2 inline-flex min-h-[32px] items-center rounded bg-pos-danger-soft px-2 text-xs font-semibold text-pos-danger hover:underline"
+            >
+              Doit {formatDT(creditCliente.totalDu).replace(" TND", " DT")}
+            </Link>
+          )}
           <button
             type="button"
             onClick={() => setCustomer(null)}
-            className="mt-2 text-[10px] uppercase tracking-[0.18em] text-pos-ink-3 hover:text-pos-ink"
+            className="mt-2 block text-[10px] uppercase tracking-[0.18em] text-pos-ink-3 hover:text-pos-ink"
           >
             Retirer
           </button>

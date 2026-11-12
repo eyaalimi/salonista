@@ -1,5 +1,6 @@
 "use client";
-import type { ReceiptData } from "@/components/pos/receipt";
+import type { ReceiptData, ReglementCreditData } from "@/components/pos/receipt";
+import { formatDateCourte } from "@/lib/credit";
 import {
   ThermalHeader,
   ThermalSeparator,
@@ -16,6 +17,45 @@ const METHOD_LABELS: Record<string, string> = {
   OTHER: "Autre",
   LOYALTY_POINTS: "Points fidélité",
 };
+
+export function ReglementCreditContent({ data }: { data: ReglementCreditData }) {
+  return (
+    <>
+      <ThermalHeader provider={data.provider} />
+      <ThermalSeparator />
+      <div className="thermal-center" style={{ fontWeight: "bold" }}>
+        Règlement de crédit
+      </div>
+      <div>{new Date(data.date).toLocaleString("fr-FR")}</div>
+      <div>Reçu par : {data.employee.displayName}</div>
+      {data.customerName && <div>Client : {data.customerName}</div>}
+      <ThermalSeparator />
+      {data.ventes.map((v, i) => (
+        <div key={i}>
+          <ThermalRow label={`Vente N° ${v.receiptNumber}`} value={formatDT(v.montantImpute)} />
+          <div style={{ paddingLeft: "4mm", fontSize: 10 }}>
+            {Number(v.resteApres) > 0 ? `reste ${formatDT(v.resteApres)}` : "soldée"}
+          </div>
+        </div>
+      ))}
+      <ThermalSeparator />
+      <ThermalTotal label="REÇU" value={formatDT(data.montant)} />
+      <ThermalRow label={METHOD_LABELS[data.methode] ?? data.methode} value={formatDT(data.montant)} />
+      <ThermalSeparator />
+      <ThermalTotal label="Reste dû" value={formatDT(data.resteDuApres)} />
+      {data.pointsGagnes > 0 && (
+        <ThermalRow label="Points gagnés" value={`+${data.pointsGagnes} pts`} />
+      )}
+      {data.provider?.receiptFooter && (
+        <>
+          <ThermalSeparator />
+          <ThermalFooter text={data.provider.receiptFooter} />
+        </>
+      )}
+      <ThermalFooter text="Merci !" />
+    </>
+  );
+}
 
 export function ReceiptContent({ data }: { data: ReceiptData }) {
   const cashPaid = data.payments
@@ -81,6 +121,15 @@ export function ReceiptContent({ data }: { data: ReceiptData }) {
       ))}
       {change > 0 && (
         <ThermalRow label="Rendu" value={formatDT(change.toFixed(3))} />
+      )}
+      {data.credit && (
+        <>
+          <ThermalRow label="Payé" value={formatDT(data.credit.paye)} />
+          <ThermalTotal label="Reste à payer" value={formatDT(data.credit.reste)} />
+          {data.credit.dueDate && (
+            <div>À régler avant le : {formatDateCourte(new Date(data.credit.dueDate))}</div>
+          )}
+        </>
       )}
       {data.rewards &&
         (data.rewards.earned > 0 ||

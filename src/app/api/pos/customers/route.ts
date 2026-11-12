@@ -1,6 +1,7 @@
 import { NextRequest } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requirePermission, toResponse } from "@/lib/employee-session";
+import { STATUTS_VENTE_REALISEE } from "@/lib/statut-vente";
 
 /**
  * Phase 2 — POS-scoped customer list with per-customer aggregates.
@@ -57,7 +58,7 @@ export async function GET(_req: NextRequest) {
     where: {
       providerId,
       customerId: { in: customers.map((c) => c.id) },
-      status: { in: ["PAID", "PARTIALLY_REFUNDED", "REFUNDED"] },
+      status: { in: [...STATUTS_VENTE_REALISEE] },
     },
     _count: { _all: true },
     _sum: { total: true },

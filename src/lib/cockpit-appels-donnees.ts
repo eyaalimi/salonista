@@ -32,6 +32,7 @@ import {
 } from "@/lib/cockpit-appels";
 import { rappelEstDu, faitAujourdhui } from "@/lib/compte-rendu-appel";
 import type { ProfilSalon } from "@/lib/onboarding-salon";
+import { STATUTS_VENTE_REALISEE } from "@/lib/statut-vente";
 
 /** Fenetre d'observation des signaux, en jours. */
 export const FENETRE_SIGNAUX_JOURS = 7;
@@ -145,7 +146,7 @@ export async function donneesCockpit(
       by: ["providerId"],
       where: {
         providerId: { in: ids },
-        status: { in: ["PAID", "PARTIALLY_REFUNDED", "REFUNDED"] },
+        status: { in: [...STATUTS_VENTE_REALISEE] },
       },
       _min: { createdAt: true },
     }),

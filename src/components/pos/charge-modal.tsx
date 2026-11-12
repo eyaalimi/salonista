@@ -7,6 +7,8 @@ import type { CartLine } from "@/lib/pos-store";
 import type { ReceiptData } from "./receipt";
 import type { CachedCatalogProvider } from "@/lib/pos-offline-db";
 import { signalerEvenement } from "@/lib/signaler-evenement";
+import { echeancesProposees, formatJourMois } from "@/lib/credit";
+import { useCreditCliente } from "./use-credit-cliente";
 
 type EmployeeLite = { id: string; displayName: string; role: string };
 type EmployeePerm = { id: string; displayName: string; role: string; permissions: Record<string, boolean> };
@@ -28,6 +30,15 @@ type Payment = {
   pointsRedeemed?: number;
   walletId?: string;
 };
+
+/** Modes acceptes pour la part payee le jour d'une vente a credit. */
+type MethodeCredit = "CASH" | "CARD" | "TRANSFER";
+
+/**
+ * « Payer plus tard » en cours de saisie. `echeance` = "AAAA-MM-JJ" promis, ou
+ * null (« Sans date »).
+ */
+type SaisieCredit = { paye: string; methode: MethodeCredit; echeance: string | null };
 
 export type WalletForCharge = {
   walletId: string;
@@ -129,12 +140,64 @@ export function ChargeModal({
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  const [credit, setCredit] = useState<SaisieCredit | null>(null);
+  const creditExistant = useCreditCliente(customerId, online);
+  // Calculees une fois a l'ouverture : la modale ne reste pas ouverte d'un
+  // jour sur l'autre.
+  const [echeances] = useState(() => echeancesProposees(new Date()));
+
   const totalM = toMillimes(totals.total);
   const paidM = payments.reduce((s, p) => s + toMillimes(p.amount), 0);
   const remainingM = totalM - paidM;
   const remaining = fromMillimes(Math.max(0, remainingM));
   const change = paidM > totalM ? fromMillimes(paidM - totalM) : "0.000";
-  const canContinue = paidM >= totalM;
+  // Vente a credit : la part payee aujourd'hui doit rester STRICTEMENT sous le
+  // total (tout payer = vente normale). Le serveur applique la meme regle via
+  // `calculerCredit` ; ici on evite seulement un aller-retour pour rien.
+  const payeCreditM = (() => {
+    if (!credit) return 0;
+    const n = Number(credit.paye.replace(",", "."));
+    return Number.isFinite(n) ? Math.round(n * 1000) : -1;
+  })();
+  const resteCreditM = totalM - payeCreditM;
+  const creditValide =
+    !!credit &&
+    payeCreditM >= 0 &&
+    payeCreditM < totalM &&
+    !(credit.methode === "CASH" && payeCreditM > 0 && tiroirOuvert === false);
+  const canContinue = credit ? creditValide : paidM >= totalM;
+
+  /*
+   * La tuile « Payer plus tard ».
+   *
+   * MASQUEE sans la permission `pos.credit` : une styliste encaisse, mais ne
+   * decide pas de laisser partir une cliente avec une ardoise. DESACTIVEE,
+   * avec la raison, dans les cas qui se reglent sur place.
+   *
+   * Le pourboire n'est saisi nulle part dans la caisse aujourd'hui ; le cas
+   * est tenu quand meme, le serveur refusant un pourboire a credit.
+   */
+  const peutCredit = employee.permissions["pos.credit"] === true;
+  const raisonCreditBloque = !customerId
+    ? "Ajoutez d'abord la cliente"
+    : !online
+      ? "Demande une connexion"
+      : toMillimes(tipTotal) > 0
+        ? "Pas de pourboire sur une vente à crédit"
+        : null;
+
+  function choisirCredit() {
+    if (raisonCreditBloque) return;
+    // Le credit remplace les paiements composes : les deux chemins ne se
+    // melangent pas, sinon on ne saurait plus ce qui est du.
+    setPayments([]);
+    setShowLoyaltyExpansion(false);
+    setCredit({
+      paye: "0",
+      methode: tiroirOuvert === false ? "CARD" : "CASH",
+      echeance: echeances.uneSemaine,
+    });
+  }
 
   // Loyalty redemption helpers — math mirrors the server (rewards/redeem.ts):
   //   maxM_DT_in_millimes = floor(totalM × maxPct / 100)
@@ -227,9 +290,20 @@ export function ChargeModal({
   }
 
   async function submit() {
+    // Le credit ne part JAMAIS dans la file hors ligne : le serveur le
+    // refuserait a la synchronisation, et la vente finirait en conflit.
+    if (credit && !online) {
+      setError("Le paiement plus tard demande une connexion.");
+      return;
+    }
     setSubmitting(true);
     setError(null);
     try {
+      const paiementsEnvoyes: Payment[] = credit
+        ? payeCreditM > 0
+          ? [{ method: credit.methode, amount: fromMillimes(payeCreditM) }]
+          : []
+        : payments;
       const offlineId = crypto.randomUUID();
       const payload = {
         offlineId,
@@ -244,13 +318,14 @@ export function ChargeModal({
           assignedEmployeeId: l.assignedEmployeeId,
         })),
         saleDiscount: saleDiscount ?? undefined,
-        payments: payments.map((p) => ({
+        payments: paiementsEnvoyes.map((p) => ({
           method: p.method,
           amount: p.amount,
           reference: p.reference ?? null,
           pointsRedeemed: p.pointsRedeemed,
           walletId: p.walletId,
         })),
+        payLater: credit ? { dueDate: credit.echeance } : undefined,
         tipTotal,
         tipAllocations: tipAllocs.length > 0 ? tipAllocs : undefined,
         notes: notes || null,
@@ -310,11 +385,18 @@ export function ChargeModal({
         taxBreakdown: totals.taxBreakdown,
         tipTotal: totals.tipTotal,
         total: totals.total,
-        payments: payments.map((p) => ({
+        payments: paiementsEnvoyes.map((p) => ({
           method: p.method,
           amount: p.amount,
           pointsRedeemed: p.pointsRedeemed,
         })),
+        credit: credit
+          ? {
+              paye: fromMillimes(payeCreditM),
+              reste: fromMillimes(resteCreditM),
+              dueDate: credit.echeance,
+            }
+          : undefined,
         date: new Date().toISOString(),
         offline: !online,
         rewards: rewardsResp,
@@ -402,7 +484,7 @@ export function ChargeModal({
               ))}
             </ul>
 
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-6">
+            <div className={`grid grid-cols-2 gap-2 mb-6 ${peutCredit ? "sm:grid-cols-5" : "sm:grid-cols-4"}`}>
               {(["CASH", "CARD", "TRANSFER", "OTHER"] as Method[]).map((m) => {
                 // Especes bloquees tiroir ferme : mieux vaut un bouton inerte
                 // qu'un clic qui echoue au moment de valider.
@@ -413,7 +495,10 @@ export function ChargeModal({
                     key={m}
                     type="button"
                     disabled={disabled}
-                    onClick={() => addPayment(m)}
+                    onClick={() => {
+                      setCredit(null);
+                      addPayment(m);
+                    }}
                     title={
                       especesBloquees
                         ? "Ouvre la caisse pour encaisser en espèces"
@@ -427,9 +512,143 @@ export function ChargeModal({
                   </button>
                 );
               })}
+              {peutCredit && (
+                <button
+                  type="button"
+                  disabled={raisonCreditBloque !== null}
+                  onClick={choisirCredit}
+                  title={raisonCreditBloque ?? "La cliente paie une partie, ou rien, et revient payer le reste"}
+                  aria-pressed={credit !== null}
+                  className={`ds-press ds-focus col-span-2 sm:col-span-1 min-h-[56px] rounded-[var(--radius-card)] border px-2 text-base text-prune disabled:opacity-40 ${
+                    credit ? "border-2 border-rose bg-rose-soft" : "border-hairline bg-white hover:border-rose"
+                  }`}
+                >
+                  <span aria-hidden="true">🕒 </span>Payer plus tard
+                  {raisonCreditBloque && (
+                    <span className="block text-[11px] leading-tight text-prune/70">{raisonCreditBloque}</span>
+                  )}
+                </button>
+              )}
             </div>
 
-            {wallet?.enPause ? (
+            {credit && (
+              <div className="mb-6 rounded-[var(--radius-card)] border-2 border-rose bg-rose-soft/60 p-4">
+                {creditExistant && toMillimes(creditExistant.totalDu) > 0 && (
+                  <p className="mb-3 inline-block rounded-[var(--radius-pill)] bg-white px-3 py-1 text-xs font-semibold text-rose-fonce">
+                    Doit déjà {formatDT(creditExistant.totalDu).replace(" TND", " DT")}
+                    {creditExistant.depuis && ` · depuis le ${formatJourMois(new Date(creditExistant.depuis))}`}
+                  </p>
+                )}
+
+                <p className="text-sm font-semibold text-prune">Elle paie combien aujourd&apos;hui ?</p>
+                <div className="mt-2 flex flex-wrap items-center gap-2">
+                  <input
+                    type="number"
+                    inputMode="decimal"
+                    step="0.001"
+                    min="0"
+                    value={credit.paye}
+                    onChange={(e) => setCredit({ ...credit, paye: e.target.value })}
+                    aria-label="Montant payé aujourd'hui"
+                    className="min-h-[44px] w-32 rounded border border-hairline bg-white px-3 font-mono text-base"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setCredit({ ...credit, paye: "0" })}
+                    className="ds-press min-h-[44px] rounded-[var(--radius-pill)] border border-hairline bg-white px-4 text-sm text-prune"
+                  >
+                    Rien
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setCredit({ ...credit, paye: fromMillimes(Math.floor(totalM / 2)) })}
+                    className="ds-press min-h-[44px] rounded-[var(--radius-pill)] border border-hairline bg-white px-4 text-sm text-prune"
+                  >
+                    La moitié
+                  </button>
+                </div>
+                {payeCreditM > 0 && (
+                  <div className="mt-2 flex flex-wrap gap-2" role="radiogroup" aria-label="Mode de ce paiement">
+                    {(["CASH", "CARD", "TRANSFER"] as MethodeCredit[]).map((m) => {
+                      const bloque = m === "CASH" && tiroirOuvert === false;
+                      return (
+                        <button
+                          key={m}
+                          type="button"
+                          role="radio"
+                          aria-checked={credit.methode === m}
+                          disabled={bloque}
+                          title={bloque ? "Ouvre la caisse pour encaisser en espèces" : ""}
+                          onClick={() => setCredit({ ...credit, methode: m })}
+                          className={`ds-press min-h-[44px] rounded-[var(--radius-pill)] border px-4 text-sm disabled:opacity-40 ${
+                            credit.methode === m ? "border-prune bg-prune text-white" : "border-hairline bg-white text-prune"
+                          }`}
+                        >
+                          {METHOD_LABELS[m]}
+                        </button>
+                      );
+                    })}
+                  </div>
+                )}
+                {payeCreditM < 0 && <p className="mt-1 text-xs text-pos-danger">Montant invalide.</p>}
+                {payeCreditM >= totalM && (
+                  <p className="mt-1 text-xs text-pos-danger">
+                    Elle paie tout : ce n&apos;est pas un crédit. Choisis Espèces, Carte ou Virement.
+                  </p>
+                )}
+
+                <p className="mt-4 text-sm font-semibold text-prune">Elle reviendra payer :</p>
+                <div className="mt-2 flex flex-wrap gap-2" role="radiogroup" aria-label="Date de retour">
+                  {(
+                    [
+                      { label: "Samedi", jour: echeances.samedi },
+                      { label: "Dans 1 semaine", jour: echeances.uneSemaine },
+                      { label: "Fin du mois", jour: echeances.finDuMois },
+                      { label: "Sans date", jour: null },
+                    ] as Array<{ label: string; jour: string | null }>
+                  ).map((o) => (
+                    <button
+                      key={o.label}
+                      type="button"
+                      role="radio"
+                      aria-checked={credit.echeance === o.jour}
+                      onClick={() => setCredit({ ...credit, echeance: o.jour })}
+                      className={`ds-press min-h-[44px] rounded-[var(--radius-pill)] border px-4 text-sm ${
+                        credit.echeance === o.jour ? "border-prune bg-prune text-white" : "border-hairline bg-white text-prune"
+                      }`}
+                    >
+                      {o.label}
+                      {o.jour && (
+                        <span className="ml-1 font-mono text-xs opacity-80">
+                          {o.jour.slice(8, 10)}/{o.jour.slice(5, 7)}
+                        </span>
+                      )}
+                    </button>
+                  ))}
+                </div>
+
+                {creditValide && (
+                  <dl className="mt-4 space-y-1 rounded-lg bg-white p-3 text-sm">
+                    <div className="flex justify-between">
+                      <dt className="text-prune/70">Payé aujourd&apos;hui</dt>
+                      <dd className="font-mono">{formatDT(fromMillimes(payeCreditM))}</dd>
+                    </div>
+                    <div className="flex justify-between font-semibold text-pos-danger">
+                      <dt>Reste à payer sur cette vente</dt>
+                      <dd className="font-mono">{formatDT(fromMillimes(resteCreditM))}</dd>
+                    </div>
+                    <div className="flex justify-between gap-3 border-t border-hairline pt-1">
+                      <dt className="text-prune/70">Total dû par la cliente après cette vente</dt>
+                      <dd className="font-mono">
+                        {formatDT(fromMillimes(resteCreditM + toMillimes(creditExistant?.totalDu ?? "0")))}
+                      </dd>
+                    </div>
+                  </dl>
+                )}
+              </div>
+            )}
+
+            {credit ? null : wallet?.enPause ? (
               // Version gratuite : la tuile reste, grisee, avec la raison.
               // Cachee, l'employee croirait a une panne devant une cliente
               // qui reclame ses points.
@@ -553,7 +772,7 @@ export function ChargeModal({
             <div className="flex items-center justify-end gap-4">
               {/* Le bouton restait gris sans que rien n'explique pourquoi :
                   il faut d'abord choisir un moyen de paiement. */}
-              {!canContinue && (
+              {!canContinue && !credit && (
                 <p className="text-sm text-prune/70">
                   Choisis un moyen de paiement ci-dessus.
                 </p>
@@ -564,7 +783,9 @@ export function ChargeModal({
                 disabled={!canContinue}
                 className="ds-press ds-focus min-h-[48px] rounded-[var(--radius-pill)] bg-rose px-6 font-medium text-prune disabled:opacity-40"
               >
-                Continuer
+                {credit && creditValide
+                  ? `Valider · ${formatDT(fromMillimes(resteCreditM)).replace(" TND", " DT")} à crédit`
+                  : "Continuer"}
               </button>
             </div>
           </>
@@ -672,7 +893,7 @@ export function ChargeModal({
                 disabled={submitting}
                 className="ds-press ds-focus min-h-[48px] rounded-[var(--radius-pill)] bg-rose px-6 font-medium text-prune hover:bg-rose/90 disabled:opacity-50"
               >
-                {submitting ? "Enregistrement…" : "Confirmer"}
+                {submitting ? "Enregistrement…" : credit ? "Confirmer le crédit" : "Confirmer"}
               </button>
             </div>
           </>

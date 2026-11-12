@@ -24,6 +24,10 @@ type ZReportData = {
   openedBy: string;
   salesCount: number;
   grossTotal: string;
+  /** Part du brut TTC non payee le jour meme (ventes a credit). */
+  creditsAccordes?: string;
+  /** Versements recus pendant la session pour des credits anterieurs. */
+  reglementsCredit?: string;
   discountsTotal: string;
   tipsTotal: string;
   refundsTotal: string;
@@ -84,6 +88,9 @@ export function ZReportPrintFrame({ data }: { data: ZReportData }) {
 
       <ThermalRow label="Ventes" value={String(data.salesCount)} />
       <ThermalRow label="Brut TTC" value={formatDT(data.grossTotal)} />
+      {Number(data.creditsAccordes ?? 0) > 0 && (
+        <ThermalRow label="dont laissé à crédit" value={formatDT(data.creditsAccordes!)} />
+      )}
       {Number(data.discountsTotal) > 0 && (
         <ThermalRow label="Remises" value={`-${formatDT(data.discountsTotal)}`} />
       )}
@@ -106,6 +113,9 @@ export function ZReportPrintFrame({ data }: { data: ZReportData }) {
             value={formatDT(p.amount)}
           />
         ))
+      )}
+      {Number(data.reglementsCredit ?? 0) > 0 && (
+        <ThermalRow label="dont règlements de crédit" value={formatDT(data.reglementsCredit!)} />
       )}
       <ThermalSeparator />
 

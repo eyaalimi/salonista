@@ -61,8 +61,12 @@ export async function computeSummary(sessionId: string): Promise<DrawerSummary |
   // Sum tips from sales whose payments hit this session (de-dup by sale).
   const seenSales = new Set<string>();
   let tipsTotal = "0.000";
+  // Un versement de CREDIT ne rapporte pas le pourboire de sa vente : il est
+  // deja compte le jour de la vente (et une vente a credit n'en porte
+  // d'ailleurs aucun, la caisse le refuse). Sans ce filtre, le pourboire
+  // d'une vente reglee plus tard serait compte deux fois.
   const tipsPayments = await prisma.payment.findMany({
-    where: { cashDrawerSessionId: sessionId },
+    where: { cashDrawerSessionId: sessionId, isCreditSettlement: false },
     select: { saleId: true, sale: { select: { tipTotal: true } } },
   });
   for (const p of tipsPayments) {

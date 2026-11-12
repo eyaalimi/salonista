@@ -10,6 +10,8 @@ type Sale = {
   id: string;
   receiptNumber: string;
   status: string;
+  amountDue?: string;
+  dueDate?: string | null;
   subtotal: string;
   discountAmount: string;
   taxTotal: string;
@@ -163,6 +165,18 @@ export function SaleDetailClient({
       tipTotal: String(sale.tipTotal),
       total: String(sale.total),
       payments: sale.payments.map((p) => ({ method: p.method, amount: String(p.amount) })),
+      // Reimpression d'une vente a credit : le reste du a CE jour, versements
+      // ulterieurs compris (ils figurent dans les paiements ci-dessus).
+      credit:
+        sale.status === "CREDIT" && Number(sale.amountDue ?? 0) > 0
+          ? {
+              paye: (
+                sale.payments.reduce((s, p) => s + Math.round(Number(p.amount) * 1000), 0) / 1000
+              ).toFixed(3),
+              reste: String(sale.amountDue),
+              dueDate: sale.dueDate ?? null,
+            }
+          : undefined,
       date: sale.closedAt ?? sale.createdAt,
       offline: false,
     };

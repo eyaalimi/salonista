@@ -5,6 +5,9 @@ export const PERMISSIONS = [
   "pos.sell",
   "pos.refund",
   "pos.discount",
+  /** « Payer plus tard » : laisser repartir une cliente avec un credit.
+   *  Regler un credit existant, c'est encaisser : `pos.sell` suffit. */
+  "pos.credit",
   "pos.void",
   "pos.cash_drawer",
   "bookings.view",
@@ -42,6 +45,7 @@ export const ROLE_DEFAULTS: Record<EmployeeRole, PermissionMap> = {
   OWNER: makeMap([
     "pos.sell",
     "pos.discount",
+    "pos.credit",
     "pos.refund",
     "pos.void",
     "pos.cash_drawer",
@@ -63,6 +67,7 @@ export const ROLE_DEFAULTS: Record<EmployeeRole, PermissionMap> = {
   MANAGER: makeMap([
     "pos.sell",
     "pos.discount",
+    "pos.credit",
     "pos.refund",
     "pos.void",
     "pos.cash_drawer",
@@ -80,6 +85,9 @@ export const ROLE_DEFAULTS: Record<EmployeeRole, PermissionMap> = {
   ]),
   CASHIER: makeMap([
     "pos.sell",
+    // La caissiere est celle qui a la cliente devant elle : lui refuser le
+    // credit renverrait chercher la gerante pour chaque ardoise.
+    "pos.credit",
     "pos.cash_drawer",
     "bookings.view",
     "bookings.create",

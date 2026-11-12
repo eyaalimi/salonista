@@ -18,6 +18,7 @@ type Sale = {
 
 const STATUS_LABELS: Record<string, string> = {
   PAID: "Payée",
+  CREDIT: "À crédit",
   PARTIALLY_REFUNDED: "Partiellement remboursée",
   REFUNDED: "Remboursée",
   VOIDED: "Annulée",

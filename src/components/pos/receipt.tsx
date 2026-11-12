@@ -1,6 +1,6 @@
 "use client";
 import { ThermalLayout } from "./thermal/thermal-layout";
-import { ReceiptContent } from "./thermal/receipt-content";
+import { ReceiptContent, ReglementCreditContent } from "./thermal/receipt-content";
 import type { CachedCatalogProvider } from "@/lib/pos-offline-db";
 
 export type ReceiptData = {
@@ -23,6 +23,8 @@ export type ReceiptData = {
   payments: Array<{ method: string; amount: string; pointsRedeemed?: number }>;
   date: string;
   offline: boolean;
+  /** Vente a credit : ce qui a ete paye le jour meme et ce qui reste du. */
+  credit?: { paye: string; reste: string; dueDate: string | null };
   rewards?: {
     earned: number;
     redeemed: number;
@@ -31,6 +33,32 @@ export type ReceiptData = {
     newBalance?: number;
   };
 };
+
+/**
+ * Recu d'un REGLEMENT de credit — un versement recu apres coup, qui peut
+ * solder plusieurs ventes (la plus ancienne d'abord). Ce n'est pas un recu de
+ * vente : il ne repete pas les prestations, il dit quelles ventes ont ete
+ * reglees, combien, et ce qui reste du.
+ */
+export type ReglementCreditData = {
+  provider: CachedCatalogProvider | null;
+  employee: { displayName: string };
+  customerName: string | null;
+  date: string;
+  montant: string;
+  methode: string;
+  ventes: Array<{ receiptNumber: string; montantImpute: string; resteApres: string }>;
+  resteDuApres: string;
+  pointsGagnes: number;
+};
+
+export function ReglementCreditPrintFrame({ data }: { data: ReglementCreditData }) {
+  return (
+    <ThermalLayout>
+      <ReglementCreditContent data={data} />
+    </ThermalLayout>
+  );
+}
 
 /**
  * Hidden, print-only frame for thermal receipts.

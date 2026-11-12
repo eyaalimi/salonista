@@ -6,6 +6,7 @@ import type { SubscriptionModule, SubscriptionStatus } from "@/generated/prisma/
 import { calculerPlan } from "@/lib/plan";
 import { getPlan } from "@/lib/plan-serveur";
 import { apresEcriturePremium, etatAvantEcriturePremium } from "@/lib/plan-premium";
+import { STATUTS_VENTE_REALISEE } from "@/lib/statut-vente";
 
 async function requireAdmin() {
   const session = await getServerSession(authOptions);
@@ -46,7 +47,7 @@ export async function GET() {
   // Date de la premiere vente de chaque salon : le mois offert en part.
   const premieresVentes = await prisma.sale.groupBy({
     by: ["providerId"],
-    where: { status: { in: ["PAID", "PARTIALLY_REFUNDED", "REFUNDED"] } },
+    where: { status: { in: [...STATUTS_VENTE_REALISEE] } },
     _min: { closedAt: true },
   });
   const premiereVenteParSalon = new Map(

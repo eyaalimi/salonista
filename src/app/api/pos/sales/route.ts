@@ -81,6 +81,15 @@ export async function POST(req: NextRequest) {
     return Response.json({ error: "Permission insuffisante pour appliquer une remise" }, { status: 403 });
   }
 
+  // « Payer plus tard » : une permission a part — une styliste encaisse, mais
+  // ne decide pas de laisser partir une cliente avec une ardoise.
+  if (body.payLater && !employee.permissions["pos.credit"]) {
+    return Response.json(
+      { error: "Permission insuffisante pour le paiement plus tard" },
+      { status: 403 },
+    );
+  }
+
   const result = await createSaleFromPayload({
     payload: body,
     providerId: employee.providerId,

@@ -8,6 +8,7 @@ import { prisma } from "./prisma";
 import { normaliserTerme, termeRecherchable } from "./support-salon";
 import { statutSalon, type StatutSalon } from "./campagne-tableau";
 import { lienTelephone } from "./profil-salon-complet";
+import { STATUTS_VENTE_REALISEE } from "@/lib/statut-vente";
 
 /** Un resultat de recherche : les coordonnees COMPLETES, pour pouvoir rappeler. */
 export type ResultatRecherche = {
@@ -281,10 +282,10 @@ export async function ficheSalon(id: string): Promise<FicheSalon | null> {
 
   const [nbVentes, derniere] = await Promise.all([
     prisma.sale.count({
-      where: { providerId: id, status: { in: ["PAID", "PARTIALLY_REFUNDED", "REFUNDED"] } },
+      where: { providerId: id, status: { in: [...STATUTS_VENTE_REALISEE] } },
     }),
     prisma.sale.findFirst({
-      where: { providerId: id, status: { in: ["PAID", "PARTIALLY_REFUNDED", "REFUNDED"] } },
+      where: { providerId: id, status: { in: [...STATUTS_VENTE_REALISEE] } },
       select: { createdAt: true },
       orderBy: { createdAt: "desc" },
     }),
