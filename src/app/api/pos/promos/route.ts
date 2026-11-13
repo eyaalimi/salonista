@@ -59,12 +59,7 @@ export async function POST(req: NextRequest) {
   if (!corps) return Response.json({ error: "Corps invalide" }, { status: 400 });
 
   const etat = await etatPromos(employee.providerId);
-  if (etat.mode === "AUCUN") {
-    return Response.json(
-      { error: "WhatsApp n'est pas encore connecté pour votre salon. Contactez Salonista pour l'activer." },
-      { status: 409 },
-    );
-  }
+  const parLiens = etat.mode === "LIEN";
   // Sans cle, le jeton ne se dechiffre pas : refuser AVANT de creer une
   // campagne dont aucun message ne partirait.
   if (etat.mode === "WHATSAPP" && (!cleChiffrementPresente() || !process.env.WHATSAPP_GRAPH_VERSION)) {
@@ -80,7 +75,11 @@ export async function POST(req: NextRequest) {
     return Response.json({ error: "Choisissez qui reçoit la promo." }, { status: 422 });
   }
   const maintenant = new Date();
-  const programmation = lireProgrammation(corps.programmeeLe, maintenant);
+  // Par liens, rien ne part tout seul : c'est la gerante qui envoie, donc pas
+  // de programmation possible.
+  const programmation = parLiens
+    ? ({ ok: true, programmeeLe: null } as const)
+    : lireProgrammation(corps.programmeeLe, maintenant);
   if (!programmation.ok) return Response.json({ error: programmation.erreur }, { status: 422 });
 
   const idsManuels = Array.isArray(corps.idsManuels)
@@ -102,11 +101,14 @@ export async function POST(req: NextRequest) {
       data: {
         providerId: employee.providerId,
         employeeId: employee.id,
-        canal: etat.mode === "WHATSAPP" ? "WHATSAPP" : "SIMULATION",
+        canal: etat.mode,
         texteOffre: offre.offre,
         audience: corps.audience as string,
         programmeeLe: programmation.programmeeLe,
-        statut: "PROGRAMMEE",
+        // Par liens : EN_COURS d'emblee, la gerante envoie depuis la file.
+        // Le moteur ne la touchera pas (filtre sur le canal) ; il la passera
+        // TERMINEE quand plus personne n'attendra.
+        statut: parLiens ? "EN_COURS" : "PROGRAMMEE",
         nbDestinataires: retenues.length,
       },
       select: { id: true, nbDestinataires: true, programmeeLe: true },
@@ -123,7 +125,7 @@ export async function POST(req: NextRequest) {
     return c;
   });
 
-  if (!programmation.programmeeLe) {
+  if (!parLiens && !programmation.programmeeLe) {
     // Apres la reponse : la gerante voit sa campagne creee tout de suite,
     // l'envoi demarre sans qu'elle attende. Une erreur ici n'est pas perdue :
     // le cron repasse dans la minute.

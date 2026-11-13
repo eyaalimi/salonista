@@ -11,6 +11,7 @@ import {
   estErreurDefinitive,
   libelleCout,
   lireProgrammation,
+  lienPromoWhatsapp,
   modePromos,
   nettoyerOffre,
   prenomPourModele,
@@ -247,16 +248,34 @@ describe("modePromos", () => {
 
   it("simulation : salon de démo, sans connexion, variable posée — les trois", () => {
     expect(modePromos({ statutConnexion: null, simulationActivee: true, salonDemo: true })).toBe("SIMULATION");
-    expect(modePromos({ statutConnexion: null, simulationActivee: false, salonDemo: true })).toBe("AUCUN");
+    expect(modePromos({ statutConnexion: null, simulationActivee: false, salonDemo: true })).toBe("LIEN");
   });
 
-  it("un VRAI salon ne voit jamais le mode démo, même avec PROMOS_SIMULATION=1", () => {
-    expect(modePromos({ statutConnexion: null, simulationActivee: true, salonDemo: false })).toBe("AUCUN");
+  it("un VRAI salon ne voit jamais le mode démo : il envoie par liens wa.me", () => {
+    expect(modePromos({ statutConnexion: null, simulationActivee: true, salonDemo: false })).toBe("LIEN");
+    expect(modePromos({ statutConnexion: null, simulationActivee: false, salonDemo: false })).toBe("LIEN");
   });
 
-  it("brouillon ou suspendue : aucun canal, jamais la simulation", () => {
+  it("brouillon ou suspendue : liens wa.me, jamais la simulation ni l'envoi automatique", () => {
     for (const statutConnexion of ["BROUILLON", "SUSPENDUE"] as const) {
-      expect(modePromos({ statutConnexion, simulationActivee: true, salonDemo: true })).toBe("AUCUN");
+      expect(modePromos({ statutConnexion, simulationActivee: true, salonDemo: true })).toBe("LIEN");
     }
+  });
+});
+
+describe("lienPromoWhatsapp", () => {
+  it("ouvre la conversation de la cliente avec le message prêt, STOP compris", () => {
+    const lien = lienPromoWhatsapp({ telephone: "21622345678", prenom: "Amira", offre: "Brushing à 10 DT" });
+    expect(lien).toMatch(/^https:\/\/wa\.me\/21622345678\?text=/);
+    const texte = decodeURIComponent(lien!.split("text=")[1]);
+    expect(texte).toBe(
+      "Aslema Amira ! 3andna promo jdida lik :\n\nBrushing à 10 DT\n\nNestanewk 3andna 💖\n(Répondez STOP pour ne plus recevoir nos promos.)",
+    );
+  });
+
+  it("prénom absent : « 3zizti » ; numéro trop court : pas de lien", () => {
+    const lien = lienPromoWhatsapp({ telephone: "21622345678", prenom: null, offre: "x" });
+    expect(decodeURIComponent(lien!.split("text=")[1])).toMatch(/^Aslema 3zizti !/);
+    expect(lienPromoWhatsapp({ telephone: "22345678", prenom: "A", offre: "x" })).toBeNull();
   });
 });

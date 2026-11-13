@@ -1302,6 +1302,10 @@ model EvenementSalon {
 enum CanalPromo {
   WHATSAPP
   SIMULATION
+  /// Liens `wa.me`, un par cliente : la gerante envoie depuis SON WhatsApp,
+  /// une cliente a la fois. Gratuit, sans compte Meta. Le moteur d'envoi
+  /// ne touche JAMAIS ces campagnes.
+  LIEN
 }
 
 enum StatutConnexionWhatsapp {

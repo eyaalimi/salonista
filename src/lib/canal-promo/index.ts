@@ -5,7 +5,8 @@
  *   canal reel.
  * - Salon de DEMONSTRATION sans connexion, avec PROMOS_SIMULATION=1 :
  *   simulation. Un vrai salon, jamais (voir `modePromos`).
- * - Sinon (connexion en BROUILLON ou SUSPENDUE, ou rien) : aucun canal.
+ * - Sinon : liens wa.me, envoyes a la main par la gerante. Aucun canal
+ *   automatique : le moteur ne touche pas ces campagnes.
  *
  * JAMAIS de canal reel si la connexion n'est pas ACTIVE. Et une connexion en
  * brouillon ne bascule pas en simulation : les fondateurs sont en train de la
@@ -16,7 +17,7 @@ import { prisma } from "@/lib/prisma";
 import { cleChiffrementPresente, dechiffrer } from "@/lib/chiffrement";
 import { creerCanalSimulation } from "./simulation";
 import { creerCanalWhatsapp } from "./whatsapp-cloud";
-import { modePromos, type ModePromos } from "@/lib/promos";
+import { TEXTE_FIN_LIEN, modePromos, type ModePromos } from "@/lib/promos";
 import type { CanalPromo } from "./types";
 
 export type { CanalPromo, ResultatEnvoi } from "./types";
@@ -69,7 +70,8 @@ export async function etatPromos(providerId: string): Promise<{
       configIncomplete: false,
     };
   }
-  return { mode: "AUCUN", numeroAffiche: null, prixMessageDT: null, texteFinModele: "", configIncomplete: false };
+  // Liens wa.me : gratuit, depuis le WhatsApp du salon (voir `modePromos`).
+  return { mode: "LIEN", numeroAffiche: null, prixMessageDT: null, texteFinModele: TEXTE_FIN_LIEN, configIncomplete: false };
 }
 
 /** Canal reel a partir d'une connexion, quel que soit son statut (envoi de test). */
@@ -94,9 +96,12 @@ export async function canalDepuisConnexion(providerId: string): Promise<CanalPro
  */
 export async function obtenirCanal(
   providerId: string,
-  canalCampagne: "WHATSAPP" | "SIMULATION",
+  canalCampagne: "WHATSAPP" | "SIMULATION" | "LIEN",
 ): Promise<CanalPromo | null> {
   if (canalCampagne === "SIMULATION") return creerCanalSimulation();
+  // Une campagne par liens n'a pas de canal automatique : c'est la gerante
+  // qui envoie. (Le moteur ne la reserve d'ailleurs jamais.)
+  if (canalCampagne === "LIEN") return null;
   const c = await prisma.connexionWhatsapp.findUnique({
     where: { providerId },
     select: { statut: true },

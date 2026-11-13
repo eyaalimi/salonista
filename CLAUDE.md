@@ -1193,6 +1193,19 @@ en `RESERVE`. L'envoi se fait hors transaction. Un bail de 5 min relâche les
 lignes d'un passage mort ; revers assumé, un message parti juste avant un
 plantage peut repartir une fois.
 
+**Sans connexion Meta, envoi par liens `wa.me`** (13/11/2026), comme le
+message de fidélité : `modePromos` rend `LIEN` pour tout salon non connecté
+(brouillon et suspendue compris). La campagne est créée `EN_COURS`, canal
+`LIEN`, et la gérante la déroule cliente par cliente
+([file-envoi-lien.tsx](src/components/pos/file-envoi-lien.tsx), route
+`/api/pos/promos/[id]/lien`). **Le moteur ne réserve jamais une campagne
+`LIEN`** (filtre dans la requête SQL) : il passerait ses destinataires en
+échec faute de canal. « Envoyé » y veut dire « WhatsApp ouvert » — on ne peut
+pas savoir si elle a appuyé sur Envoyer. Pas de bouton « Ne plus recevoir »
+hors API : le message finit par « Répondez STOP », la gérante décoche la
+fiche. Le clic passe par un vrai `<a target="_blank">`, jamais un
+`window.open` après `await` (bloqué comme popup).
+
 **La simulation est réservée aux salons de démonstration**
 (`ProviderProfile.demo`, même critère que le Premium sans échéance) :
 `modePromos` dans `promos.ts`, testé. `PROMOS_SIMULATION=1` ne suffit pas —
