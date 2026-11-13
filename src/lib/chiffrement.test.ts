@@ -10,12 +10,17 @@ describe("chiffrement AES-256-GCM", () => {
     expect(dechiffrer(chiffrer(jeton, cle), cle)).toBe(jeton);
   });
 
-  it("format iv:tag:donnees, IV différent à chaque fois", () => {
-    const a = chiffrer("x", cle);
-    const b = chiffrer("x", cle);
+  it("format iv:tag:donnees, IV différent à chaque fois, secret absent du blob", () => {
+    // Un secret entier, pas une lettre : le base64 contient n'importe quelle
+    // lettre par hasard (une premiere version testait « x » et echouait une
+    // fois sur deux).
+    const secret = "EAAG-jeton-secret-0123456789";
+    const a = chiffrer(secret, cle);
+    const b = chiffrer(secret, cle);
     expect(a.split(":")).toHaveLength(3);
     expect(a).not.toBe(b);
-    expect(a).not.toContain("x");
+    expect(a).not.toContain(secret);
+    expect(a).not.toContain(Buffer.from(secret).toString("base64"));
   });
 
   it("refuse un blob altéré", () => {

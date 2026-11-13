@@ -1193,6 +1193,11 @@ en `RESERVE`. L'envoi se fait hors transaction. Un bail de 5 min relâche les
 lignes d'un passage mort ; revers assumé, un message parti juste avant un
 plantage peut repartir une fois.
 
+**La simulation est réservée aux salons de démonstration**
+(`ProviderProfile.demo`, même critère que le Premium sans échéance) :
+`modePromos` dans `promos.ts`, testé. `PROMOS_SIMULATION=1` ne suffit pas —
+un vrai salon croirait avoir envoyé une promo partie chez personne.
+
 **Le canal de la campagne fait foi** : une campagne `SIMULATION` ne part
 jamais en réel, une campagne `WHATSAPP` exige une connexion `ACTIVE` à chaque
 passage (sinon ses destinataires passent en échec).

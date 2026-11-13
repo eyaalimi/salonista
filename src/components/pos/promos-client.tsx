@@ -29,6 +29,7 @@ type Campagne = {
   programmeeLe: string | null;
   nbDestinataires: number;
   envoyes: number;
+  lus: number;
   echecs: number;
   restants: number;
   nonEnvoyes: number;
@@ -422,6 +423,11 @@ export function PromosClient() {
                       ) : (
                         <p className="mt-1">
                           <span className="pos-mono">{c.envoyes}</span> envoyés ·{" "}
+                          {c.canal === "WHATSAPP" && (
+                            <>
+                              <span className="pos-mono">{c.lus}</span> lus ·{" "}
+                            </>
+                          )}
                           <span className="pos-mono">{c.revenues}</span>{" "}
                           {c.revenues > 1 ? "revenues" : "revenue"} dans les 15 jours
                           {c.echecs > 0 && <span className="text-pos-ink-3"> · {c.echecs} en échec</span>}

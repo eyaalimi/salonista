@@ -11,6 +11,7 @@ import {
   estErreurDefinitive,
   libelleCout,
   lireProgrammation,
+  modePromos,
   nettoyerOffre,
   prenomPourModele,
   selectionnerDestinataires,
@@ -235,5 +236,27 @@ describe("lireProgrammation", () => {
   it("invalide ou à plus de 60 jours : refusé", () => {
     expect(lireProgrammation("demain", maintenant).ok).toBe(false);
     expect(lireProgrammation("2027-02-01T10:00:00Z", maintenant).ok).toBe(false);
+  });
+});
+
+describe("modePromos", () => {
+  it("connexion ACTIVE : WhatsApp, salon de démo ou non", () => {
+    expect(modePromos({ statutConnexion: "ACTIVE", simulationActivee: true, salonDemo: true })).toBe("WHATSAPP");
+    expect(modePromos({ statutConnexion: "ACTIVE", simulationActivee: false, salonDemo: false })).toBe("WHATSAPP");
+  });
+
+  it("simulation : salon de démo, sans connexion, variable posée — les trois", () => {
+    expect(modePromos({ statutConnexion: null, simulationActivee: true, salonDemo: true })).toBe("SIMULATION");
+    expect(modePromos({ statutConnexion: null, simulationActivee: false, salonDemo: true })).toBe("AUCUN");
+  });
+
+  it("un VRAI salon ne voit jamais le mode démo, même avec PROMOS_SIMULATION=1", () => {
+    expect(modePromos({ statutConnexion: null, simulationActivee: true, salonDemo: false })).toBe("AUCUN");
+  });
+
+  it("brouillon ou suspendue : aucun canal, jamais la simulation", () => {
+    for (const statutConnexion of ["BROUILLON", "SUSPENDUE"] as const) {
+      expect(modePromos({ statutConnexion, simulationActivee: true, salonDemo: true })).toBe("AUCUN");
+    }
   });
 });

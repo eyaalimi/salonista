@@ -107,7 +107,13 @@ Attendre l'**approbation** du modèle (de quelques minutes à 24 h).
 
 ## 5. Webhook (statuts et « Ne plus recevoir »)
 
-À faire **une fois pour toute l'application**, pas par salon.
+Deux choses distinctes : la configuration du webhook (**une fois** pour
+l'application) et l'abonnement de l'application au compte WhatsApp (**pour
+CHAQUE salon**). Sans la seconde, Meta n'envoie **aucune** notification
+pour ce salon, sans aucune erreur : les statuts restent bloqués sur
+« envoyé » et le bouton « Ne plus recevoir » n'a aucun effet.
+
+### 5a. Configuration du webhook (une seule fois)
 
 Dans l'application Meta, **WhatsApp > Configuration** :
 
@@ -121,9 +127,65 @@ Le serveur vérifie la signature de chaque notification avec
 `WHATSAPP_APP_SECRET` (App Secret de l'application). Une notification non
 signée est refusée.
 
-Chaque compte WhatsApp de salon doit être **abonné à l'application** :
-c'est automatique quand l'utilisateur système de l'étape 3 a accès aux deux.
-Sinon, voir « Abonner l'application au WABA » dans la documentation Meta.
+L'application doit être en mode **Live** (en ligne), pas en
+développement : certaines notifications ne partent pas en mode
+développement.
+
+### 5b. Abonner l'application au compte WhatsApp du salon (À CHAQUE SALON)
+
+La documentation de Meta est explicite : « You must individually subscribe
+to every Messaging account for which you want to receive webhooks ». Ce
+n'est **pas** automatique.
+
+Depuis un terminal (Git Bash sur Windows, ou le serveur), avec le **WABA ID**
+de l'étape 2 et le **jeton** de l'étape 3 :
+
+```bash
+# Le jeton est lu sans s'afficher, pour qu'il ne reste ni a l'ecran ni dans
+# l'historique du terminal. Collez-le puis Entree.
+read -rs JETON
+WABA_ID=102290129340398   # <- le WABA ID du salon
+
+curl -sS -X POST "https://graph.facebook.com/v27.0/$WABA_ID/subscribed_apps" \
+  -H "Authorization: Bearer $JETON"
+```
+
+Réponse attendue :
+
+```json
+{"success": true}
+```
+
+**Vérifier que l'abonnement est actif** (même terminal) :
+
+```bash
+curl -sS "https://graph.facebook.com/v27.0/$WABA_ID/subscribed_apps" \
+  -H "Authorization: Bearer $JETON"
+
+unset JETON
+```
+
+L'abonnement est actif si la réponse contient l'application Salonista :
+
+```json
+{"data": [{"whatsapp_business_api_data": {"id": "<id de l'application>", "link": "...", "name": "Salonista"}}]}
+```
+
+`{"data": []}` : l'application n'est **pas** abonnée, relancez la commande
+POST. Une erreur `190` : jeton expiré ou mal collé. Une erreur `200` ou `10` :
+le jeton n'a pas l'autorisation `whatsapp_business_management` (étape 3).
+
+Remplacez `v27.0` par la valeur de `WHATSAPP_GRAPH_VERSION` du serveur si elle
+a changé.
+
+**Contrôle en conditions réelles**, après l'étape 6 : depuis la caisse du
+salon, envoyez une promo à une seule fiche cliente portant **votre** numéro
+(« Je choisis moi-même »). Ouvrez le message sur votre téléphone, puis
+regardez « Dernières promos » sur `/pos/promos` : la ligne doit afficher
+« 1 lus » dans la minute. Si elle reste à « 0 lus » alors que vous avez lu le
+message, l'abonnement 5b manque. (Le compteur « lus » n'apparaît que si vos
+clientes n'ont pas désactivé les confirmations de lecture dans WhatsApp :
+faites l'essai avec votre propre téléphone, réglage activé.)
 
 ## 6. Fiche superadmin
 
@@ -145,8 +207,9 @@ Sinon, voir « Abonner l'application au WABA » dans la documentation Meta.
 1. Enregistrer en **Brouillon**.
 2. **Envoyer un test** vers votre propre numéro. C'est un vrai message,
    facturé.
-3. Message reçu et conforme : passer le statut à **Active**. La gérante
-   peut envoyer.
+3. Vérifier l'abonnement de l'étape 5b (commande `GET`).
+4. Message reçu et conforme, abonnement actif : passer le statut à
+   **Active**. La gérante peut envoyer.
 
 **Suspendre** bloque immédiatement tout envoi, y compris une campagne en
 cours : ses destinataires restants passent en échec.

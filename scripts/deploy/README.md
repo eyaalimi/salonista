@@ -252,7 +252,33 @@ CRON
 sudo chmod 0644 /etc/cron.d/salonista-promos
 ```
 
-3. Verifier a la main : aucun message et `OK` = le moteur repond ; une
+3. Installer la rotation du journal (hebdomadaire, 4 semaines gardees,
+   compressees). Le script n'y ecrit que les passages qui ont envoye au moins
+   un message, rencontre un echec ou programme un reessai, et les erreurs
+   d'appel — pas les 1 440 passages a vide de la journee.
+
+```bash
+sudo tee /etc/logrotate.d/salonista-promos >/dev/null <<'ROT'
+/home/ubuntu/promos-tick.log {
+    weekly
+    rotate 4
+    compress
+    delaycompress
+    missingok
+    notifempty
+    su ubuntu ubuntu
+    create 0644 ubuntu ubuntu
+}
+ROT
+sudo chmod 0644 /etc/logrotate.d/salonista-promos
+sudo logrotate --debug /etc/logrotate.d/salonista-promos
+```
+
+   `--debug` ne fait rien, il affiche ce que logrotate ferait : aucune ligne
+   `error` attendue. `su ubuntu ubuntu` est necessaire, `/home/ubuntu`
+   appartenant a `ubuntu` et non a `root`.
+
+4. Verifier a la main : aucun message et `OK` = le moteur repond ; une
    erreur `curl: (22) … 401` = `CRON_SECRET` different entre `.env` et le
    processus (oubli du `pm2 reload --update-env`).
 
