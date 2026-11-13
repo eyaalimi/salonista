@@ -12,6 +12,11 @@ import {
   libelleCout,
   lireProgrammation,
   lienPromoWhatsapp,
+  composerMessageLien,
+  validerMessageLien,
+  MESSAGE_LIEN_PAR_DEFAUT,
+  MESSAGE_LIEN_MAX,
+  TEXTE_FIN_LIEN,
   modePromos,
   nettoyerOffre,
   prenomPourModele,
@@ -277,5 +282,40 @@ describe("lienPromoWhatsapp", () => {
     const lien = lienPromoWhatsapp({ telephone: "21622345678", prenom: null, offre: "x" });
     expect(decodeURIComponent(lien!.split("text=")[1])).toMatch(/^Aslema 3zizti !/);
     expect(lienPromoWhatsapp({ telephone: "22345678", prenom: "A", offre: "x" })).toBeNull();
+  });
+});
+
+describe("message par liens modifiable", () => {
+  it("le message par défaut donne le même texte qu'avant", () => {
+    expect(composerMessageLien(null, { prenom: "Amira", offre: "Brushing à 10 DT" })).toBe(
+      composerApercu({ prenom: "Amira", offre: "Brushing à 10 DT", texteFin: TEXTE_FIN_LIEN }),
+    );
+    expect(MESSAGE_LIEN_PAR_DEFAUT).toContain("{prenom}");
+    expect(validerMessageLien(MESSAGE_LIEN_PAR_DEFAUT).ok).toBe(true);
+  });
+
+  it("message du salon : variables remplacées, retours à la ligne gardés, inconnue laissée", () => {
+    const gabarit = "Salam {prenom} 🌸\n{offre}\nÀ très vite chez Yasmine ! {salon}\nRépondez STOP pour arrêter.";
+    expect(composerMessageLien(gabarit, { prenom: null, offre: "  -20 % sur les soins " })).toBe(
+      "Salam 3zizti 🌸\n-20 % sur les soins\nÀ très vite chez Yasmine ! {salon}\nRépondez STOP pour arrêter.",
+    );
+  });
+
+  it("validation : {offre} et STOP obligatoires, vide et trop long refusés", () => {
+    expect(validerMessageLien("Bonjour {prenom}, Répondez STOP").ok).toBe(false);
+    expect(validerMessageLien("Bonjour {prenom} ! {offre}").ok).toBe(false);
+    expect(validerMessageLien("   ").ok).toBe(false);
+    expect(validerMessageLien(`{offre} stop ${"a".repeat(MESSAGE_LIEN_MAX)}`).ok).toBe(false);
+    expect(validerMessageLien("{offre}\r\nstop svp")).toEqual({ ok: true, message: "{offre}\nstop svp" });
+  });
+
+  it("le lien utilise le message du salon", () => {
+    const lien = lienPromoWhatsapp({
+      telephone: "21622345678",
+      prenom: "Sana",
+      offre: "Promo",
+      gabarit: "Coucou {prenom} : {offre}. STOP pour arrêter.",
+    });
+    expect(decodeURIComponent(lien!.split("text=")[1])).toBe("Coucou Sana : Promo. STOP pour arrêter.");
   });
 });

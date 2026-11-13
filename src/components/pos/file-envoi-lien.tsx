@@ -28,6 +28,8 @@ export function FileEnvoiLien({
   onFermer: () => void;
 }) {
   const [offre, setOffre] = useState("");
+  // Le message fige a la creation de la campagne (null = message par defaut).
+  const [gabarit, setGabarit] = useState<string | null>(null);
   const [total, setTotal] = useState(0);
   const [envoyes, setEnvoyes] = useState(0);
   const [restants, setRestants] = useState<Restant[] | null>(null);
@@ -44,6 +46,7 @@ export function FileEnvoiLien({
           return;
         }
         setOffre(d.campagne.texteOffre);
+        setGabarit(d.campagne.messageLien ?? null);
         setTotal(d.campagne.nbDestinataires);
         setEnvoyes(d.envoyes);
         setRestants(d.restants);
@@ -79,7 +82,7 @@ export function FileEnvoiLien({
 
   const suivante = restants[0];
   const nom = suivante ? [suivante.prenom, suivante.nom].filter(Boolean).join(" ") || "Cliente sans nom" : "";
-  const lien = suivante ? lienPromoWhatsapp({ telephone: suivante.telephone, prenom: suivante.prenom, offre }) : null;
+  const lien = suivante ? lienPromoWhatsapp({ telephone: suivante.telephone, prenom: suivante.prenom, offre, gabarit }) : null;
 
   return (
     <section

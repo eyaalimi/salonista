@@ -328,6 +328,9 @@ model ProviderProfile {
   featureInterests      FeatureInterest[]
   devicePairingCodes    DevicePairingCode[]
   evenements            EvenementSalon[]
+  /// Dernier message de promo par liens wa.me ecrit par le salon ({prenom},
+  /// {offre}). Repropose a la promo suivante. NULL = message par defaut.
+  modelePromoLien       String?
   connexionWhatsapp     ConnexionWhatsapp?
   campagnesPromo        CampagnePromo[]
 }
@@ -1352,6 +1355,10 @@ model CampagnePromo {
   employeeId      String
   canal           CanalPromo
   texteOffre      String
+  /// Campagne par liens wa.me : le message COMPLET choisi par le salon, avec
+  /// {prenom} et {offre}. Fige a la creation : le modifier ensuite ne change
+  /// pas une campagne en cours. NULL = message par defaut.
+  messageLien     String?
   /// "TOUTES" | "RECENTES_90J" | "INACTIVES_60J" | "MANUELLE"
   audience        String
   /// null = maintenant.

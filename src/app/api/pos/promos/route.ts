@@ -4,7 +4,14 @@ import { requireModule } from "@/lib/modules";
 import { requirePermission, toResponse } from "@/lib/employee-session";
 import { etatPromos } from "@/lib/canal-promo";
 import { cleChiffrementPresente } from "@/lib/chiffrement";
-import { estAudience, lireProgrammation, nettoyerOffre, selectionnerDestinataires } from "@/lib/promos";
+import {
+  MESSAGE_LIEN_PAR_DEFAUT,
+  estAudience,
+  lireProgrammation,
+  nettoyerOffre,
+  selectionnerDestinataires,
+  validerMessageLien,
+} from "@/lib/promos";
 import { chargerClientesPromo, dernieresCampagnes } from "@/lib/promos-donnees";
 import { passerMoteur } from "@/lib/promos-moteur";
 
@@ -28,10 +35,19 @@ export async function GET() {
   }
   const [etat, salon, campagnes] = await Promise.all([
     etatPromos(employee.providerId),
-    prisma.providerProfile.findUnique({ where: { id: employee.providerId }, select: { salonName: true } }),
+    prisma.providerProfile.findUnique({
+      where: { id: employee.providerId },
+      select: { salonName: true, modelePromoLien: true },
+    }),
     dernieresCampagnes(employee.providerId),
   ]);
-  return Response.json({ etat, salonName: salon?.salonName ?? "", campagnes });
+  return Response.json({
+    etat,
+    salonName: salon?.salonName ?? "",
+    // Le dernier message ecrit par le salon, repropose tel quel.
+    messageLien: salon?.modelePromoLien || MESSAGE_LIEN_PAR_DEFAUT,
+    campagnes,
+  });
 }
 
 /**
@@ -82,6 +98,14 @@ export async function POST(req: NextRequest) {
     : lireProgrammation(corps.programmeeLe, maintenant);
   if (!programmation.ok) return Response.json({ error: programmation.erreur }, { status: 422 });
 
+  // Par liens, le salon ecrit tout le message ({prenom}, {offre}).
+  let messageLien: string | null = null;
+  if (parLiens) {
+    const v = validerMessageLien(corps.messageLien ?? MESSAGE_LIEN_PAR_DEFAUT);
+    if (!v.ok) return Response.json({ error: v.erreur }, { status: 422 });
+    messageLien = v.message;
+  }
+
   const idsManuels = Array.isArray(corps.idsManuels)
     ? corps.idsManuels.filter((x): x is string => typeof x === "string")
     : [];
@@ -103,6 +127,7 @@ export async function POST(req: NextRequest) {
         employeeId: employee.id,
         canal: etat.mode,
         texteOffre: offre.offre,
+        messageLien,
         audience: corps.audience as string,
         programmeeLe: programmation.programmeeLe,
         // Par liens : EN_COURS d'emblee, la gerante envoie depuis la file.
@@ -113,6 +138,13 @@ export async function POST(req: NextRequest) {
       },
       select: { id: true, nbDestinataires: true, programmeeLe: true },
     });
+    if (messageLien) {
+      // Retenu pour la prochaine promo : la gerante ne le reecrit pas.
+      await tx.providerProfile.update({
+        where: { id: employee.providerId },
+        data: { modelePromoLien: messageLien === MESSAGE_LIEN_PAR_DEFAUT ? null : messageLien },
+      });
+    }
     await tx.destinatairePromo.createMany({
       data: retenues.map((r) => ({
         campagneId: c.id,
