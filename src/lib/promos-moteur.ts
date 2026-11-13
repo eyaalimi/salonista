@@ -79,6 +79,10 @@ export async function passerMoteur(maintenant: Date = new Date()): Promise<{
       FROM "DestinatairePromo" d2
       JOIN "CampagnePromo" c ON c."id" = d2."campagneId"
       WHERE d2."statut" = 'EN_ATTENTE' AND c."statut" = 'EN_COURS'
+        -- Les campagnes par liens wa.me sont envoyees A LA MAIN par la
+        -- gerante : le moteur ne doit JAMAIS les prendre, sinon il passerait
+        -- leurs destinataires en echec faute de canal.
+        AND c."canal" <> 'LIEN'
       ORDER BY c."creeLe" ASC, d2."id" ASC
       LIMIT ${LOT_PAR_PASSAGE}
       FOR UPDATE OF d2 SKIP LOCKED

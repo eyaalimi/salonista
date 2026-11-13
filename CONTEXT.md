@@ -687,7 +687,12 @@ propriétaire et à la gérante (`promos.send`), **hors Premium**.
 - **Envoi en tâche de fond** : rien ne part dans la requête de la caisse. Un
   moteur, lancé chaque minute par le cron du serveur, envoie 60 messages par
   passage et réessaie les erreurs temporaires (3 fois au plus).
-- **Sans compte Meta** : avec `PROMOS_SIMULATION=1`, les **salons de
+- **Sans connexion Meta (le cas de tous les salons au départ)** : envoi par
+  **liens `wa.me`**, comme le message de fidélité. La gérante appuie sur
+  « Envoyer à Amira », WhatsApp s'ouvre avec le message prêt, elle envoie,
+  la cliente suivante s'affiche. Gratuit, depuis le WhatsApp du salon, et
+  reprenable plus tard. Une réponse STOP se traite en décochant la fiche.
+- **Démonstration** : avec `PROMOS_SIMULATION=1`, les **salons de
   démonstration** (`demo`, le même critère que le Premium sans échéance)
   envoient en simulation, bandeau « Mode démo » à l'écran. Un vrai salon
   sans connexion voit toujours « WhatsApp n'est pas encore connecté ».

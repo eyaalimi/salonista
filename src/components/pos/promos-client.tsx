@@ -11,9 +11,10 @@ import {
   nettoyerOffre,
   type Audience,
 } from "@/lib/promos";
+import { FileEnvoiLien } from "./file-envoi-lien";
 
 type Etat = {
-  mode: "WHATSAPP" | "SIMULATION" | "AUCUN";
+  mode: "WHATSAPP" | "SIMULATION" | "LIEN";
   numeroAffiche: string | null;
   prixMessageDT: string | null;
   texteFinModele: string;
@@ -23,7 +24,7 @@ type Etat = {
 type Campagne = {
   id: string;
   texteOffre: string;
-  canal: "WHATSAPP" | "SIMULATION";
+  canal: "WHATSAPP" | "SIMULATION" | "LIEN";
   statut: "PROGRAMMEE" | "EN_COURS" | "TERMINEE" | "ARRETEE";
   creeLe: string;
   programmeeLe: string | null;
@@ -71,6 +72,8 @@ export function PromosClient() {
   const [envoi, setEnvoi] = useState(false);
   const [erreur, setErreur] = useState<string | null>(null);
   const [succes, setSucces] = useState<string | null>(null);
+  // Campagne par liens dont la file d'envoi est ouverte a l'ecran.
+  const [fileOuverte, setFileOuverte] = useState<string | null>(null);
 
   useEffect(() => {
     let vivant = true;
@@ -118,10 +121,14 @@ export function PromosClient() {
     offre: offreNette.ok ? offreNette.offre : "Votre offre apparaîtra ici.",
     texteFin: etat?.texteFinModele ?? "",
   });
-  const programmationValide = quand === "maintenant" || (dateProgrammee !== "" && new Date(dateProgrammee) > new Date());
+  // Par liens wa.me : la gerante envoie elle-meme depuis son WhatsApp, une
+  // cliente a la fois. Gratuit, pas de programmation.
+  const parLiens = etat?.mode === "LIEN";
+  const programmationValide =
+    parLiens || quand === "maintenant" || (dateProgrammee !== "" && new Date(dateProgrammee) > new Date());
   const peutEnvoyer =
-    !!etat && etat.mode !== "AUCUN" && !etat.configIncomplete && offreNette.ok && nombre > 0 && programmationValide && !envoi;
-  const cout = libelleCout(nombre, etat?.prixMessageDT ?? null);
+    !!etat && !etat.configIncomplete && offreNette.ok && nombre > 0 && programmationValide && !envoi;
+  const cout = parLiens ? "gratuit, depuis votre WhatsApp" : libelleCout(nombre, etat?.prixMessageDT ?? null);
 
   const listeFiltree = useMemo(() => {
     const q = normaliser(recherche);
@@ -153,7 +160,7 @@ export function PromosClient() {
           offre,
           audience,
           idsManuels: audience === "MANUELLE" ? Array.from(coches) : undefined,
-          programmeeLe: quand === "programmer" ? new Date(dateProgrammee).toISOString() : null,
+          programmeeLe: !parLiens && quand === "programmer" ? new Date(dateProgrammee).toISOString() : null,
         }),
       });
       const d = await res.json().catch(() => ({}));
@@ -161,11 +168,17 @@ export function PromosClient() {
         setErreur(d.error ?? `Erreur ${res.status}`);
         return;
       }
-      setSucces(
-        quand === "programmer"
-          ? `Promo programmée pour ${d.campagne.nbDestinataires} clientes.`
-          : `C'est parti : ${d.campagne.nbDestinataires} messages en cours d'envoi.`,
-      );
+      if (parLiens) {
+        // La file s'ouvre tout de suite : la premiere cliente est prete.
+        setFileOuverte(d.campagne.id);
+        setSucces(null);
+      } else {
+        setSucces(
+          quand === "programmer"
+            ? `Promo programmée pour ${d.campagne.nbDestinataires} clientes.`
+            : `C'est parti : ${d.campagne.nbDestinataires} messages en cours d'envoi.`,
+        );
+      }
       setOffre("");
       setCoches(new Set());
       setConfirmation(false);
@@ -177,8 +190,13 @@ export function PromosClient() {
     }
   }
 
-  async function arreter(id: string) {
-    if (!window.confirm("Arrêter cette promo ? Les messages déjà partis ne peuvent pas être rappelés.")) return;
+  async function arreter(id: string, canal: Campagne["canal"]) {
+    const question =
+      canal === "LIEN"
+        ? "Arrêter cette promo ? Les clientes restantes ne recevront rien."
+        : "Arrêter cette promo ? Les messages déjà partis ne peuvent pas être rappelés.";
+    if (!window.confirm(question)) return;
+    if (fileOuverte === id) setFileOuverte(null);
     const res = await fetch(`/api/pos/promos/${id}/arreter`, { method: "POST" });
     const d = await res.json().catch(() => ({}));
     if (!res.ok) setErreur(d.error ?? `Erreur ${res.status}`);
@@ -195,9 +213,16 @@ export function PromosClient() {
         <div>
           <h1 className="text-2xl font-semibold">Promos par WhatsApp</h1>
           <p className="mt-1 text-sm text-pos-ink-3">
-            Écrivez votre offre : elle part en un clic sur le WhatsApp de vos clientes.
+            {parLiens
+              ? "Écrivez votre offre : elle s'ouvre, prête à envoyer, dans le WhatsApp de chaque cliente."
+              : "Écrivez votre offre : elle part en un clic sur le WhatsApp de vos clientes."}
           </p>
         </div>
+        {parLiens && (
+          <span className="rounded-full bg-pos-accent-soft px-3 py-1 text-sm font-medium text-pos-accent">
+            Envoi depuis votre WhatsApp · gratuit
+          </span>
+        )}
         {etat?.mode === "WHATSAPP" && (
           <span className="rounded-full bg-pos-accent-soft px-3 py-1 text-sm font-medium text-pos-accent">
             ● WhatsApp connecté · {etat.numeroAffiche}
@@ -214,6 +239,17 @@ export function PromosClient() {
         <p role="status" className="mt-4 rounded border border-pos-accent bg-pos-accent-soft px-4 py-2 text-sm">
           {succes}
         </p>
+      )}
+
+      {fileOuverte && (
+        <div className="mt-5">
+          <FileEnvoiLien
+            key={fileOuverte}
+            campagneId={fileOuverte}
+            onChange={() => setRechargement((n) => n + 1)}
+            onFermer={() => setFileOuverte(null)}
+          />
+        </div>
       )}
 
       <div className="mt-5 grid grid-cols-1 gap-5 lg:grid-cols-[1fr_380px]">
@@ -307,7 +343,9 @@ export function PromosClient() {
             </p>
           )}
 
-          {/* 3. Quand */}
+          {/* 3. Quand — sans objet par liens : rien ne part tout seul. */}
+          {!parLiens && (
+          <>
           <h2 className="mt-6 font-semibold">
             <span className="mr-2 inline-flex h-6 w-6 items-center justify-center rounded-full bg-pos-ink text-xs text-pos-bg">3</span>
             Quand ?
@@ -337,22 +375,20 @@ export function PromosClient() {
               />
             )}
           </div>
+          </>
+          )}
 
           {/* Pied */}
           <div className="mt-6 border-t border-pos-border pt-4">
-            {etat?.mode === "AUCUN" ? (
-              <p className="rounded border border-pos-border bg-pos-bg p-4 text-sm">
-                WhatsApp n&apos;est pas encore connecté pour votre salon. Contactez Salonista pour
-                l&apos;activer.
-              </p>
-            ) : etat?.configIncomplete ? (
+            {etat?.configIncomplete ? (
               <p className="rounded border border-pos-warn bg-pos-bg p-4 text-sm text-pos-warn">
                 L&apos;envoi WhatsApp n&apos;est pas encore configuré sur le serveur. Contactez Salonista.
               </p>
             ) : (
               <>
                 <p className="text-sm text-pos-ink-3">
-                  <span className="pos-mono">{nombre}</span> messages WhatsApp · {cout}
+                  <span className="pos-mono">{nombre}</span> messages WhatsApp ·{" "}
+                  {parLiens ? "envoyés un par un depuis votre WhatsApp, gratuit" : cout}
                 </p>
                 {erreur && !confirmation && <p className="mt-2 text-sm text-pos-danger">{erreur}</p>}
                 <button
@@ -364,7 +400,7 @@ export function PromosClient() {
                   disabled={!peutEnvoyer}
                   className="mt-3 min-h-[56px] w-full rounded bg-pos-ink px-4 text-lg font-semibold text-pos-bg disabled:opacity-40"
                 >
-                  Envoyer à {nombre} {nombre > 1 ? "clientes" : "cliente"}
+                  {parLiens ? "Préparer l'envoi à" : "Envoyer à"} {nombre} {nombre > 1 ? "clientes" : "cliente"}
                 </button>
               </>
             )}
@@ -380,9 +416,13 @@ export function PromosClient() {
                   {salonName || "Votre salon"} <span className="font-normal text-pos-ink-3">· Compte professionnel</span>
                 </p>
                 <p className="mt-1 whitespace-pre-line">{apercu}</p>
-                <p className="mt-2 border-t border-pos-border pt-2 text-center text-sm font-medium text-[#027EB5]">
-                  Ne plus recevoir de promos
-                </p>
+                {/* Le bouton n'existe qu'avec le modele Meta. Par liens, la
+                    cliente repond STOP (ecrit en fin de message). */}
+                {!parLiens && (
+                  <p className="mt-2 border-t border-pos-border pt-2 text-center text-sm font-medium text-[#027EB5]">
+                    Ne plus recevoir de promos
+                  </p>
+                )}
               </div>
             </div>
           </section>
@@ -405,6 +445,7 @@ export function PromosClient() {
                           ? `Programmée le ${new Date(c.programmeeLe).toLocaleString("fr-FR", { dateStyle: "short", timeStyle: "short" })}`
                           : dateCourte(c.creeLe)}
                         {c.canal === "SIMULATION" && " · démo"}
+                        {c.canal === "LIEN" && " · par votre WhatsApp"}
                         {c.statut === "ARRETEE" && " · arrêtée"}
                       </p>
                       {actif ? (
@@ -412,9 +453,18 @@ export function PromosClient() {
                           <span className="pos-mono">
                             {c.envoyes} / {c.nbDestinataires} envoyés
                           </span>
+                          {c.canal === "LIEN" && fileOuverte !== c.id && (
+                            <button
+                              type="button"
+                              onClick={() => setFileOuverte(c.id)}
+                              className="min-h-[44px] rounded bg-pos-accent px-3 font-medium text-white"
+                            >
+                              Continuer
+                            </button>
+                          )}
                           <button
                             type="button"
-                            onClick={() => arreter(c.id)}
+                            onClick={() => arreter(c.id, c.canal)}
                             className="min-h-[44px] rounded border border-pos-danger px-3 text-pos-danger"
                           >
                             Arrêter
@@ -448,10 +498,18 @@ export function PromosClient() {
             <p className="text-lg font-semibold">
               Envoyer la promo à {nombre} {nombre > 1 ? "clientes" : "cliente"} ?
             </p>
-            <p className="mt-2 text-sm">
-              {cout.charAt(0).toUpperCase() + cout.slice(1)}. Une fois partis, les messages ne peuvent pas être
-              rappelés.
-            </p>
+            {parLiens ? (
+              <p className="mt-2 text-sm">
+                Vous l&apos;enverrez une par une : pour chaque cliente, WhatsApp s&apos;ouvre avec le message
+                prêt, vous appuyez sur Envoyer. C&apos;est gratuit. Vous pouvez vous arrêter et reprendre plus
+                tard.
+              </p>
+            ) : (
+              <p className="mt-2 text-sm">
+                {cout.charAt(0).toUpperCase() + cout.slice(1)}. Une fois partis, les messages ne peuvent pas être
+                rappelés.
+              </p>
+            )}
             {erreur && <p className="mt-2 text-sm text-pos-danger">{erreur}</p>}
             <div className="mt-5 flex justify-end gap-2">
               <button type="button" onClick={() => setConfirmation(false)} className="min-h-[44px] px-4">
@@ -463,7 +521,7 @@ export function PromosClient() {
                 disabled={envoi}
                 className="min-h-[44px] rounded bg-pos-ink px-5 font-semibold text-pos-bg disabled:opacity-40"
               >
-                {envoi ? "Envoi…" : "Envoyer"}
+                {envoi ? "Préparation…" : parLiens ? "Commencer" : "Envoyer"}
               </button>
             </div>
           </div>

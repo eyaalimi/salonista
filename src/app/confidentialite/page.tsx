@@ -34,9 +34,10 @@ export const metadata = {
  * politique precedente promettait « aucune donnee issue de votre caisse », et
  * c'est une promesse qu'on tient.
  *
- * PROMOS WHATSAPP (12/11/2026). Quand un salon les active, le prenom et le
- * numero de ses clientes partent chez Meta (API WhatsApp Cloud) pour
- * remettre le message — c'est la section « Les promos WhatsApp de votre
+ * PROMOS WHATSAPP (12/11/2026). Deux modes. Par liens wa.me (cas general,
+ * 13/11/2026) : le message part du WhatsApp du salon, rien ne transite par
+ * nous vers Meta. Par l'API WhatsApp Cloud (salons connectes) : le prenom et
+ * le numero des clientes partent chez Meta pour remettre le message — c'est la section « Les promos WhatsApp de votre
  * salon ». La phrase « aucune donnee de vos clientes n'est transmise a Meta,
  * a aucun moment » est donc devenue fausse et a ete restreinte a la MESURE
  * DES PUBLICITES, qui reste inchangee. Code : src/lib/canal-promo/.
@@ -225,10 +226,33 @@ export default function ConfidentialitePage() {
 
       <h2>Les promos WhatsApp de votre salon</h2>
       <p>
-        Si votre salon active les promos WhatsApp, c&apos;est vous qui écrivez
-        l&apos;offre et choisissez les clientes qui la reçoivent. Pour la leur
-        remettre, nous passons par l&apos;API officielle de WhatsApp (Meta) :
+        Si votre salon envoie des promos WhatsApp, c&apos;est vous qui écrivez
+        l&apos;offre et choisissez les clientes qui la reçoivent. Selon la
+        configuration de votre salon, elles partent de l&apos;une de deux
+        façons.
       </p>
+      <h3>Depuis votre propre WhatsApp (cas général)</h3>
+      <ul>
+        <li>
+          Pour chaque cliente, la caisse ouvre <strong>votre</strong> WhatsApp
+          avec le message déjà écrit ; c&apos;est vous qui appuyez sur Envoyer.
+          Le message part de votre téléphone, comme n&apos;importe quel message
+          que vous écrivez vous-même :{" "}
+          <strong>Salonista ne le transmet à personne</strong>.
+        </li>
+        <li>
+          Nous gardons seulement la liste des clientes choisies et celles pour
+          lesquelles WhatsApp a été ouvert, pour que vous puissiez reprendre
+          l&apos;envoi plus tard et voir le résultat de la promo.
+        </li>
+        <li>
+          Le message invite la cliente à répondre « STOP » pour ne plus en
+          recevoir. Cette réponse arrive sur votre WhatsApp : décochez alors
+          « Accepte les promos » sur sa fiche, et elle est exclue de toutes les
+          promos suivantes.
+        </li>
+      </ul>
+      <h3>Par l&apos;API officielle de WhatsApp (salons connectés par Salonista)</h3>
       <ul>
         <li>
           <strong>Ce qui part chez Meta</strong>, pour chaque destinataire : son{" "}
@@ -241,17 +265,20 @@ export default function ConfidentialitePage() {
           (envoyé, reçu, lu, échec), pour vous afficher le résultat de la promo.
         </li>
         <li>
-          <strong>Seulement les clientes qui l&apos;acceptent.</strong> Le salon
-          recueille leur accord sur leur fiche. Chaque message porte un bouton{" "}
-          « Ne plus recevoir » ; répondre « STOP » a le même effet. Le refus est
-          enregistré immédiatement, n&apos;est valable que pour ce salon, et
-          aucune promo ne lui est plus envoyée.
+          Chaque message porte un bouton « Ne plus recevoir » ; répondre « STOP »
+          a le même effet. Le refus est enregistré immédiatement, n&apos;est
+          valable que pour ce salon, et aucune promo ne lui est plus envoyée.
         </li>
         <li>
           Les messages partent d&apos;un numéro WhatsApp propre au salon. Nous ne
           les utilisons à aucune autre fin.
         </li>
       </ul>
+      <p>
+        <strong>Dans les deux cas, seules les clientes qui l&apos;acceptent
+        reçoivent des promos</strong> : le salon recueille leur accord sur leur
+        fiche.
+      </p>
 
       <h2>À qui nous confions des données</h2>
       <table>

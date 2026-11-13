@@ -382,19 +382,25 @@ export function lireProgrammation(
 // Mode du salon
 // ---------------------------------------------------------------------------
 
-export type ModePromos = "WHATSAPP" | "SIMULATION" | "AUCUN";
+export type ModePromos = "WHATSAPP" | "SIMULATION" | "LIEN";
 
 /**
  * Par quel canal ce salon envoie-t-il ?
  *
- * - connexion ACTIVE : WhatsApp, toujours ;
+ * - connexion ACTIVE : WhatsApp Cloud, envoi automatique ;
  * - SIMULATION seulement pour un salon de DEMONSTRATION (`ProviderProfile.demo`,
  *   le meme critere que le Premium sans echeance), sans connexion, et avec
  *   PROMOS_SIMULATION=1. Un vrai salon ne voit JAMAIS le mode demo, meme si
  *   la variable est posee en production : il croirait avoir envoye une promo
  *   qui n'est partie chez personne ;
- * - sinon : aucun canal (« WhatsApp n'est pas encore connecte »). Une
- *   connexion en brouillon ou suspendue ne bascule jamais en simulation.
+ * - sinon : LIENS `wa.me`, comme le message de fidelite. La gerante envoie
+ *   depuis son propre WhatsApp, une cliente a la fois. Auparavant, un salon
+ *   non connecte n'avait AUCUN moyen d'envoyer (encart « pas encore
+ *   connecte ») — et aucun salon ne l'etait.
+ *
+ * Une connexion en BROUILLON ou SUSPENDUE retombe aussi sur les liens : elle
+ * bloque l'envoi AUTOMATIQUE par notre compte Meta, pas le WhatsApp du salon,
+ * que nous ne controlons pas de toute facon.
  */
 export function modePromos(args: {
   statutConnexion: "BROUILLON" | "ACTIVE" | "SUSPENDUE" | null;
@@ -403,5 +409,28 @@ export function modePromos(args: {
 }): ModePromos {
   if (args.statutConnexion === "ACTIVE") return "WHATSAPP";
   if (args.statutConnexion === null && args.simulationActivee && args.salonDemo) return "SIMULATION";
-  return "AUCUN";
+  return "LIEN";
+}
+
+// ---------------------------------------------------------------------------
+// Envoi par liens wa.me
+// ---------------------------------------------------------------------------
+
+/**
+ * Fin du message en mode lien. Pas de bouton « Ne plus recevoir » possible
+ * hors API : la cliente repond STOP au salon, qui decoche la case sur sa
+ * fiche. C'est la seule facon de rester honnete sur le refus.
+ */
+export const TEXTE_FIN_LIEN = "Nestanewk 3andna 💖\n(Répondez STOP pour ne plus recevoir nos promos.)";
+
+/**
+ * Le lien `wa.me` d'une cliente : WhatsApp s'ouvre sur sa conversation avec
+ * le message deja ecrit. Meme texte que l'apercu de l'ecran. Le numero est
+ * deja au format Meta (chiffres, indicatif compris) dans DestinatairePromo.
+ */
+export function lienPromoWhatsapp(args: { telephone: string; prenom: string | null; offre: string }): string | null {
+  const numero = args.telephone.replace(/\D/g, "");
+  if (numero.length < 11) return null;
+  const texte = composerApercu({ prenom: args.prenom, offre: args.offre, texteFin: TEXTE_FIN_LIEN });
+  return `https://wa.me/${numero}?text=${encodeURIComponent(texte)}`;
 }
