@@ -7,6 +7,10 @@ import {
   MODELES_OFFRE,
   OFFRE_MAX,
   composerApercu,
+  composerMessageLien,
+  MESSAGE_LIEN_MAX,
+  MESSAGE_LIEN_PAR_DEFAUT,
+  validerMessageLien,
   libelleCout,
   nettoyerOffre,
   type Audience,
@@ -57,6 +61,9 @@ function dateCourte(iso: string): string {
 export function PromosClient() {
   const [etat, setEtat] = useState<Etat | null>(null);
   const [salonName, setSalonName] = useState("");
+  // Message complet en mode lien ({prenom}, {offre}), modifiable sur l'apercu.
+  const [messageLien, setMessageLien] = useState(MESSAGE_LIEN_PAR_DEFAUT);
+  const [editionMessage, setEditionMessage] = useState(false);
   const [campagnes, setCampagnes] = useState<Campagne[]>([]);
   const [audiences, setAudiences] = useState<Audiences | null>(null);
   const [erreurChargement, setErreurChargement] = useState<string | null>(null);
@@ -87,6 +94,7 @@ export function PromosClient() {
         }
         setEtat(d.etat);
         setSalonName(d.salonName);
+        if (d.messageLien) setMessageLien(d.messageLien);
         setCampagnes(d.campagnes);
       })
       .catch(() => vivant && setErreurChargement("Connexion impossible."));
@@ -116,18 +124,26 @@ export function PromosClient() {
     audience === "MANUELLE" ? coches.size : audiences?.comptes[audience] ?? 0;
   const offreNette = nettoyerOffre(offre);
   const exemplePrenom = audiences?.clientes.find((c) => c.prenom)?.prenom ?? "Amira";
-  const apercu = composerApercu({
-    prenom: exemplePrenom,
-    offre: offreNette.ok ? offreNette.offre : "Votre offre apparaîtra ici.",
-    texteFin: etat?.texteFinModele ?? "",
-  });
   // Par liens wa.me : la gerante envoie elle-meme depuis son WhatsApp, une
   // cliente a la fois. Gratuit, pas de programmation.
   const parLiens = etat?.mode === "LIEN";
+  const offreApercu = offreNette.ok ? offreNette.offre : "Votre offre apparaîtra ici.";
+  // Par liens, TOUT le message est au salon. Avec l'API, seul {{2}} l'est :
+  // le reste est fige par le modele approuve par Meta.
+  const apercu = parLiens
+    ? composerMessageLien(messageLien, { prenom: exemplePrenom, offre: offreApercu })
+    : composerApercu({ prenom: exemplePrenom, offre: offreApercu, texteFin: etat?.texteFinModele ?? "" });
+  const messageValide = parLiens ? validerMessageLien(messageLien) : null;
   const programmationValide =
     parLiens || quand === "maintenant" || (dateProgrammee !== "" && new Date(dateProgrammee) > new Date());
   const peutEnvoyer =
-    !!etat && !etat.configIncomplete && offreNette.ok && nombre > 0 && programmationValide && !envoi;
+    !!etat &&
+    !etat.configIncomplete &&
+    offreNette.ok &&
+    nombre > 0 &&
+    programmationValide &&
+    (messageValide === null || messageValide.ok) &&
+    !envoi;
   const cout = parLiens ? "gratuit, depuis votre WhatsApp" : libelleCout(nombre, etat?.prixMessageDT ?? null);
 
   const listeFiltree = useMemo(() => {
@@ -161,6 +177,7 @@ export function PromosClient() {
           audience,
           idsManuels: audience === "MANUELLE" ? Array.from(coches) : undefined,
           programmeeLe: !parLiens && quand === "programmer" ? new Date(dateProgrammee).toISOString() : null,
+          messageLien: parLiens ? messageLien : undefined,
         }),
       });
       const d = await res.json().catch(() => ({}));
@@ -391,6 +408,11 @@ export function PromosClient() {
                   {parLiens ? "envoyés un par un depuis votre WhatsApp, gratuit" : cout}
                 </p>
                 {erreur && !confirmation && <p className="mt-2 text-sm text-pos-danger">{erreur}</p>}
+                {messageValide && !messageValide.ok && (
+                  <p className="mt-2 text-sm text-pos-danger">
+                    Message à corriger : {messageValide.erreur} (« Modifier le message », à droite)
+                  </p>
+                )}
                 <button
                   type="button"
                   onClick={() => {
@@ -409,7 +431,62 @@ export function PromosClient() {
 
         <aside className="flex flex-col gap-5">
           <section aria-label="Ce que reçoit la cliente">
-            <h2 className="mb-2 font-semibold">Ce que reçoit la cliente</h2>
+            <div className="mb-2 flex items-center justify-between gap-2">
+              <h2 className="font-semibold">Ce que reçoit la cliente</h2>
+              {parLiens && (
+                <button
+                  type="button"
+                  onClick={() => setEditionMessage((e) => !e)}
+                  aria-expanded={editionMessage}
+                  className="min-h-[44px] rounded border border-pos-border bg-pos-surface px-3 text-sm font-medium"
+                >
+                  {editionMessage ? "Voir l'aperçu" : "✎ Modifier le message"}
+                </button>
+              )}
+            </div>
+            {parLiens && editionMessage && (
+              <div className="mb-3 rounded border border-pos-border bg-pos-surface p-3">
+                <label htmlFor="message-lien" className="text-sm font-medium">
+                  Votre message
+                </label>
+                <textarea
+                  id="message-lien"
+                  value={messageLien}
+                  onChange={(e) => setMessageLien(e.target.value)}
+                  rows={8}
+                  maxLength={MESSAGE_LIEN_MAX + 100}
+                  className="mt-1 w-full rounded border-2 border-pos-ink p-2 text-sm"
+                />
+                <p className="mt-1 text-xs text-pos-ink-3">
+                  <span className="pos-mono">{"{prenom}"}</span> est remplacé par le prénom de chaque cliente,{" "}
+                  <span className="pos-mono">{"{offre}"}</span> par votre offre (étape 1). Gardez « Répondez STOP » :
+                  c&apos;est le seul moyen pour une cliente de ne plus recevoir vos promos.
+                </p>
+                <div className="mt-2 flex flex-wrap gap-2">
+                  {["{prenom}", "{offre}"].map((v) => (
+                    <button
+                      key={v}
+                      type="button"
+                      onClick={() => setMessageLien((m) => `${m}${m.endsWith(" ") || m.endsWith("\n") ? "" : " "}${v}`)}
+                      className="min-h-[44px] rounded-full border border-pos-border px-3 pos-mono text-xs"
+                    >
+                      + {v}
+                    </button>
+                  ))}
+                  <button
+                    type="button"
+                    onClick={() => setMessageLien(MESSAGE_LIEN_PAR_DEFAUT)}
+                    className="min-h-[44px] px-2 text-xs underline"
+                  >
+                    Remettre le message d&apos;origine
+                  </button>
+                </div>
+                {messageValide && !messageValide.ok && (
+                  <p className="mt-2 text-sm text-pos-danger">{messageValide.erreur}</p>
+                )}
+                <p className="mt-2 text-xs text-pos-ink-3">Il sera gardé pour vos prochaines promos.</p>
+              </div>
+            )}
             <div className="rounded bg-[#EFEAE2] p-4">
               <div className="max-w-[90%] rounded-lg bg-white p-3 text-sm shadow-sm">
                 <p className="text-xs font-semibold text-pos-accent">

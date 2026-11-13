@@ -1206,6 +1206,13 @@ hors API : le message finit par « Répondez STOP », la gérante décoche la
 fiche. Le clic passe par un vrai `<a target="_blank">`, jamais un
 `window.open` après `await` (bloqué comme popup).
 
+**Le message par liens est modifiable en entier** (« ✎ Modifier le message »
+sur l'aperçu) : `{prenom}` et `{offre}` remplacés, retours à la ligne gardés.
+`validerMessageLien` exige `{offre}` et « STOP » — sans ce dernier,
+`/confidentialite` mentirait. Figé sur la campagne (`messageLien`), retenu
+pour la suivante (`ProviderProfile.modelePromoLien`). Avec l'API, seul `{{2}}`
+reste modifiable : le reste est le modèle approuvé par Meta.
+
 **La simulation est réservée aux salons de démonstration**
 (`ProviderProfile.demo`, même critère que le Premium sans échéance) :
 `modePromos` dans `promos.ts`, testé. `PROMOS_SIMULATION=1` ne suffit pas —

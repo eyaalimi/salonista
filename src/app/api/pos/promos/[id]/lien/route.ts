@@ -17,7 +17,7 @@ import { requirePermission, toResponse } from "@/lib/employee-session";
 async function campagneDuSalon(id: string, providerId: string) {
   return prisma.campagnePromo.findFirst({
     where: { id, providerId, canal: "LIEN" },
-    select: { id: true, texteOffre: true, statut: true, nbDestinataires: true },
+    select: { id: true, texteOffre: true, messageLien: true, statut: true, nbDestinataires: true },
   });
 }
 

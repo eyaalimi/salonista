@@ -424,13 +424,74 @@ export function modePromos(args: {
 export const TEXTE_FIN_LIEN = "Nestanewk 3andna 💖\n(Répondez STOP pour ne plus recevoir nos promos.)";
 
 /**
+ * Message par defaut en mode lien, MODIFIABLE par le salon. {prenom} et
+ * {offre} sont remplaces pour chaque cliente. Hors API, aucun modele Meta
+ * n'impose le texte : le salon ecrit ce qu'il veut, a deux conditions (voir
+ * `validerMessageLien`).
+ */
+export const MESSAGE_LIEN_PAR_DEFAUT = `Aslema {prenom} ! ${PHRASE_INTRO}\n\n{offre}\n\n${TEXTE_FIN_LIEN}`;
+
+export const MESSAGE_LIEN_MAX = 1000;
+
+/**
+ * Le message du salon est-il envoyable ?
+ *
+ * - {offre} OBLIGATOIRE : sans lui, l'offre ecrite a l'etape 1 ne partirait
+ *   pas, et la gerante ne s'en apercevrait qu'en recevant les reponses ;
+ * - « STOP » OBLIGATOIRE : c'est la seule facon, hors API, pour une cliente
+ *   de refuser les promos. /confidentialite l'annonce ; un message qui
+ *   l'omettrait rendrait la page fausse.
+ */
+export function validerMessageLien(texte: unknown): { ok: true; message: string } | Refus {
+  const message = typeof texte === "string" ? texte.replace(/\r\n/g, "\n").trim() : "";
+  if (!message) return { ok: false, erreur: "Le message est vide." };
+  if (message.length > MESSAGE_LIEN_MAX) {
+    return { ok: false, erreur: `Le message est trop long : ${message.length} caractères pour ${MESSAGE_LIEN_MAX} au maximum.` };
+  }
+  if (!message.includes("{offre}")) {
+    return { ok: false, erreur: "Gardez {offre} dans le message : c'est là que votre offre s'affiche." };
+  }
+  if (!/stop/i.test(message)) {
+    return {
+      ok: false,
+      erreur: "Gardez la mention « Répondez STOP » : c'est le seul moyen pour une cliente de ne plus recevoir vos promos.",
+    };
+  }
+  return { ok: true, message };
+}
+
+/**
+ * Le texte qu'une cliente recoit. Memes regles que le message de fidelite :
+ * variable inconnue laissee telle quelle (l'erreur se voit dans l'apercu),
+ * espaces doubles nettoyes — mais les RETOURS A LA LIGNE sont gardes, le
+ * salon les a voulus. Prenom absent : « 3zizti ».
+ */
+export function composerMessageLien(
+  gabarit: string | null | undefined,
+  vars: { prenom: string | null | undefined; offre: string },
+): string {
+  const modele = gabarit?.trim() || MESSAGE_LIEN_PAR_DEFAUT;
+  return modele
+    .replace(/\{prenom\}/g, prenomPourModele(vars.prenom))
+    .replace(/\{offre\}/g, vars.offre.trim())
+    .replace(/[ \t]{2,}/g, " ")
+    .trim();
+}
+
+/**
  * Le lien `wa.me` d'une cliente : WhatsApp s'ouvre sur sa conversation avec
  * le message deja ecrit. Meme texte que l'apercu de l'ecran. Le numero est
  * deja au format Meta (chiffres, indicatif compris) dans DestinatairePromo.
  */
-export function lienPromoWhatsapp(args: { telephone: string; prenom: string | null; offre: string }): string | null {
+export function lienPromoWhatsapp(args: {
+  telephone: string;
+  prenom: string | null;
+  offre: string;
+  /** Message du salon ({prenom}, {offre}) ; absent = message par defaut. */
+  gabarit?: string | null;
+}): string | null {
   const numero = args.telephone.replace(/\D/g, "");
   if (numero.length < 11) return null;
-  const texte = composerApercu({ prenom: args.prenom, offre: args.offre, texteFin: TEXTE_FIN_LIEN });
+  const texte = composerMessageLien(args.gabarit, { prenom: args.prenom, offre: args.offre });
   return `https://wa.me/${numero}?text=${encodeURIComponent(texte)}`;
 }
