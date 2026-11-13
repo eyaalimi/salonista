@@ -5,14 +5,11 @@ import { useOnlineStatus } from "./online-status";
 export function OnlineStatusBadge() {
   const { online, pendingCount, syncing } = useOnlineStatus();
 
-  if (online && pendingCount === 0) {
-    return (
-      <span className="inline-flex items-center gap-2 text-xs shrink-0" title="En ligne">
-        <span className="h-2 w-2 rounded-full bg-pos-accent" />
-        <span className="hidden md:inline">En ligne</span>
-      </span>
-    );
-  }
+  // Tout va bien : on n'affiche RIEN. « En ligne » en permanence n'apprenait
+  // rien a la caissiere et prenait de la place dans la barre. Le badge ne
+  // parle que lorsqu'il y a quelque chose a savoir : hors ligne, ou des
+  // ventes en attente de synchronisation.
+  if (online && pendingCount === 0) return null;
   if (online && pendingCount > 0) {
     return (
       <span
