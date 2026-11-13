@@ -687,9 +687,10 @@ propriétaire et à la gérante (`promos.send`), **hors Premium**.
 - **Envoi en tâche de fond** : rien ne part dans la requête de la caisse. Un
   moteur, lancé chaque minute par le cron du serveur, envoie 60 messages par
   passage et réessaie les erreurs temporaires (3 fois au plus).
-- **Sans compte Meta** : `PROMOS_SIMULATION=1` fait tout tourner en
-  simulation (développement, démonstrations), bandeau « Mode démo » à
-  l'écran.
+- **Sans compte Meta** : avec `PROMOS_SIMULATION=1`, les **salons de
+  démonstration** (`demo`, le même critère que le Premium sans échéance)
+  envoient en simulation, bandeau « Mode démo » à l'écran. Un vrai salon
+  sans connexion voit toujours « WhatsApp n'est pas encore connecté ».
 - `/confidentialite` décrit ce qui part chez Meta (téléphone, prénom, texte
   de l'offre).
 

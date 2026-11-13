@@ -3,7 +3,8 @@
  *
  * - Connexion WhatsApp ACTIVE (+ cle de chiffrement + version Graph) :
  *   canal reel.
- * - AUCUNE connexion et PROMOS_SIMULATION=1 : simulation.
+ * - Salon de DEMONSTRATION sans connexion, avec PROMOS_SIMULATION=1 :
+ *   simulation. Un vrai salon, jamais (voir `modePromos`).
  * - Sinon (connexion en BROUILLON ou SUSPENDUE, ou rien) : aucun canal.
  *
  * JAMAIS de canal reel si la connexion n'est pas ACTIVE. Et une connexion en
@@ -15,12 +16,13 @@ import { prisma } from "@/lib/prisma";
 import { cleChiffrementPresente, dechiffrer } from "@/lib/chiffrement";
 import { creerCanalSimulation } from "./simulation";
 import { creerCanalWhatsapp } from "./whatsapp-cloud";
+import { modePromos, type ModePromos } from "@/lib/promos";
 import type { CanalPromo } from "./types";
 
 export type { CanalPromo, ResultatEnvoi } from "./types";
 export { creerCanalSimulation, creerCanalWhatsapp };
 
-export type ModePromos = "WHATSAPP" | "SIMULATION" | "AUCUN";
+export type { ModePromos };
 
 export function simulationActivee(): boolean {
   return process.env.PROMOS_SIMULATION === "1";
@@ -37,11 +39,19 @@ export async function etatPromos(providerId: string): Promise<{
   /** Mode WHATSAPP mais configuration serveur incomplete. */
   configIncomplete: boolean;
 }> {
-  const c = await prisma.connexionWhatsapp.findUnique({
-    where: { providerId },
-    select: { statut: true, numeroAffiche: true, prixMessageDT: true, texteFinModele: true },
+  const [c, salon] = await Promise.all([
+    prisma.connexionWhatsapp.findUnique({
+      where: { providerId },
+      select: { statut: true, numeroAffiche: true, prixMessageDT: true, texteFinModele: true },
+    }),
+    prisma.providerProfile.findUnique({ where: { id: providerId }, select: { demo: true } }),
+  ]);
+  const mode = modePromos({
+    statutConnexion: c?.statut ?? null,
+    simulationActivee: simulationActivee(),
+    salonDemo: salon?.demo === true,
   });
-  if (c?.statut === "ACTIVE") {
+  if (mode === "WHATSAPP" && c) {
     return {
       mode: "WHATSAPP",
       numeroAffiche: c.numeroAffiche,
@@ -50,7 +60,7 @@ export async function etatPromos(providerId: string): Promise<{
       configIncomplete: !cleChiffrementPresente() || !process.env.WHATSAPP_GRAPH_VERSION,
     };
   }
-  if (!c && simulationActivee()) {
+  if (mode === "SIMULATION") {
     return {
       mode: "SIMULATION",
       numeroAffiche: null,

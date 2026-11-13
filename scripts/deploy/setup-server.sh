@@ -179,6 +179,22 @@ sudo tee /etc/cron.d/salonista-promos >/dev/null <<'CRON'
 CRON
 sudo chmod 0644 /etc/cron.d/salonista-promos
 
+# Rotation du journal du moteur : hebdomadaire, 4 semaines gardees.
+# `su ubuntu ubuntu` : /home/ubuntu n'appartient pas a root.
+sudo tee /etc/logrotate.d/salonista-promos >/dev/null <<'ROT'
+/home/ubuntu/promos-tick.log {
+    weekly
+    rotate 4
+    compress
+    delaycompress
+    missingok
+    notifempty
+    su ubuntu ubuntu
+    create 0644 ubuntu ubuntu
+}
+ROT
+sudo chmod 0644 /etc/logrotate.d/salonista-promos
+
 # --------------------------------------------------------------------
 # Done
 # --------------------------------------------------------------------

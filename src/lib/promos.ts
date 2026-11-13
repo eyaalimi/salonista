@@ -377,3 +377,31 @@ export function lireProgrammation(
   }
   return { ok: true, programmeeLe: d };
 }
+
+// ---------------------------------------------------------------------------
+// Mode du salon
+// ---------------------------------------------------------------------------
+
+export type ModePromos = "WHATSAPP" | "SIMULATION" | "AUCUN";
+
+/**
+ * Par quel canal ce salon envoie-t-il ?
+ *
+ * - connexion ACTIVE : WhatsApp, toujours ;
+ * - SIMULATION seulement pour un salon de DEMONSTRATION (`ProviderProfile.demo`,
+ *   le meme critere que le Premium sans echeance), sans connexion, et avec
+ *   PROMOS_SIMULATION=1. Un vrai salon ne voit JAMAIS le mode demo, meme si
+ *   la variable est posee en production : il croirait avoir envoye une promo
+ *   qui n'est partie chez personne ;
+ * - sinon : aucun canal (« WhatsApp n'est pas encore connecte »). Une
+ *   connexion en brouillon ou suspendue ne bascule jamais en simulation.
+ */
+export function modePromos(args: {
+  statutConnexion: "BROUILLON" | "ACTIVE" | "SUSPENDUE" | null;
+  simulationActivee: boolean;
+  salonDemo: boolean;
+}): ModePromos {
+  if (args.statutConnexion === "ACTIVE") return "WHATSAPP";
+  if (args.statutConnexion === null && args.simulationActivee && args.salonDemo) return "SIMULATION";
+  return "AUCUN";
+}
